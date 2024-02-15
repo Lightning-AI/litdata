@@ -20,7 +20,7 @@ import numpy as np
 import pytest
 import torch
 from lightning import seed_everything
-from lightning.data.streaming.serializers import (
+from lit_data.streaming.serializers import (
     _AV_AVAILABLE,
     _NUMPY_DTYPES_MAPPING,
     _SERIALIZERS,

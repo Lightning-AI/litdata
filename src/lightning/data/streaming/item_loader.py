@@ -19,11 +19,11 @@ from typing import Any, Dict, List, Optional, Tuple
 import numpy as np
 import torch
 
-from lightning.data.constants import (
+from lit_data.constants import (
     _TORCH_DTYPES_MAPPING,
     _TORCH_GREATER_EQUAL_2_1_0,
 )
-from lightning.data.streaming.serializers import Serializer
+from lit_data.streaming.serializers import Serializer
 
 if _TORCH_GREATER_EQUAL_2_1_0:
     from torch.utils._pytree import PyTree, tree_unflatten

@@ -22,11 +22,11 @@ from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 import torch
 
-from lightning.data.constants import _IS_IN_STUDIO, _TORCH_GREATER_EQUAL_2_1_0
-from lightning.data.processing.data_processor import DataChunkRecipe, DataProcessor, DataTransformRecipe
-from lightning.data.processing.readers import BaseReader
-from lightning.data.processing.utilities import optimize_dns_context
-from lightning.data.streaming.resolver import (
+from lit_data.constants import _IS_IN_STUDIO, _TORCH_GREATER_EQUAL_2_1_0
+from lit_data.processing.data_processor import DataChunkRecipe, DataProcessor, DataTransformRecipe
+from lit_data.processing.readers import BaseReader
+from lit_data.processing.utilities import optimize_dns_context
+from lit_data.streaming.resolver import (
     Dir,
     _assert_dir_has_index_file,
     _assert_dir_is_empty,

@@ -1,7 +1,7 @@
 from unittest.mock import MagicMock
 
-from lightning.data.processing import utilities as utilities_module
-from lightning.data.processing.utilities import optimize_dns_context
+from lit_data.processing import utilities as utilities_module
+from lit_data.processing.utilities import optimize_dns_context
 
 
 def test_optimize_dns_context(monkeypatch):
@@ -31,6 +31,6 @@ def test_optimize_dns_context(monkeypatch):
     cmd = popen_mock._mock_call_args_list[0].args[0]
     expected_cmd = (
         "sudo /home/zeus/miniconda3/envs/cloudspace/bin/python"
-        " -c 'from lightning.data.processing.utilities import _optimize_dns; _optimize_dns(True)'"
+        " -c 'from lit_data.processing.utilities import _optimize_dns; _optimize_dns(True)'"
     )
     assert cmd == expected_cmd

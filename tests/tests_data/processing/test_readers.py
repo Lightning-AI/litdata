@@ -2,8 +2,8 @@ import os
 import sys
 
 import pytest
-from lightning.data import map
-from lightning.data.processing.readers import _PYARROW_AVAILABLE, BaseReader, ParquetReader
+from lit_data import map
+from lit_data.processing.readers import _PYARROW_AVAILABLE, BaseReader, ParquetReader
 
 
 class DummyReader(BaseReader):

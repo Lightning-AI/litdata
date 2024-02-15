@@ -1,4 +1,4 @@
-from lightning.data.utilities.format import _human_readable_bytes
+from lit_data.utilities.format import _human_readable_bytes
 
 
 def test_human_readable_bytes():

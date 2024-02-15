@@ -3,7 +3,7 @@ from pathlib import Path
 from unittest import mock
 
 import pytest
-from lightning.data.streaming import resolver
+from lit_data.streaming import resolver
 from lightning_cloud import login
 from lightning_cloud.openapi import (
     Externalv1Cluster,

@@ -1,9 +1,9 @@
 from lightning_utilities.core.imports import RequirementCache
 
-from lightning.data.processing.functions import map, optimize, walk
-from lightning.data.streaming.combined import CombinedStreamingDataset
-from lightning.data.streaming.dataloader import StreamingDataLoader
-from lightning.data.streaming.dataset import StreamingDataset
+from lit_data.processing.functions import map, optimize, walk
+from lit_data.streaming.combined import CombinedStreamingDataset
+from lit_data.streaming.dataloader import StreamingDataLoader
+from lit_data.streaming.dataset import StreamingDataset
 
 __all__ = [
     "LightningDataset",

@@ -1,5 +1,5 @@
 import pytest
-from lightning.data.utilities.packing import _pack_greedily
+from lit_data.utilities.packing import _pack_greedily
 
 
 def test_pack_greedily():

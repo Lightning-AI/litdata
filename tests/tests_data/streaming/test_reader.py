@@ -3,13 +3,13 @@ import shutil
 from time import sleep
 
 import numpy as np
-from lightning.data.streaming import reader
-from lightning.data.streaming.cache import Cache
-from lightning.data.streaming.config import ChunkedIndex
-from lightning.data.streaming.item_loader import PyTreeLoader
-from lightning.data.streaming.reader import _END_TOKEN, PrepareChunksThread, _get_folder_size
-from lightning.data.streaming.resolver import Dir
-from lightning.data.utilities.env import _DistributedEnv
+from lit_data.streaming import reader
+from lit_data.streaming.cache import Cache
+from lit_data.streaming.config import ChunkedIndex
+from lit_data.streaming.item_loader import PyTreeLoader
+from lit_data.streaming.reader import _END_TOKEN, PrepareChunksThread, _get_folder_size
+from lit_data.streaming.resolver import Dir
+from lit_data.utilities.env import _DistributedEnv
 
 
 def test_reader_chunk_removal(tmpdir):

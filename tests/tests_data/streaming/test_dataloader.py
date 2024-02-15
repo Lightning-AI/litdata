@@ -2,8 +2,8 @@ import os
 
 import pytest
 import torch
-from lightning.data.streaming import CombinedStreamingDataset, StreamingDataLoader
-from lightning.data.streaming import dataloader as streaming_dataloader_module
+from lit_data.streaming import CombinedStreamingDataset, StreamingDataLoader
+from lit_data.streaming import dataloader as streaming_dataloader_module
 from torch import tensor
 
 

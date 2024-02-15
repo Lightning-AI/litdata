@@ -3,7 +3,7 @@ from time import sleep, time
 from unittest import mock
 
 import pytest
-from lightning.data.streaming import client
+from lit_data.streaming import client
 
 
 def test_s3_client_without_cloud_space_id(monkeypatch):

@@ -20,11 +20,11 @@ import numpy as np
 import pytest
 import torch
 from lightning import seed_everything
-from lightning.data.processing import functions
-from lightning.data.streaming import Cache
-from lightning.data.streaming import dataset as dataset_module
-from lightning.data.streaming.dataloader import StreamingDataLoader
-from lightning.data.streaming.dataset import (
+from lit_data.processing import functions
+from lit_data.streaming import Cache
+from lit_data.streaming import dataset as dataset_module
+from lit_data.streaming.dataloader import StreamingDataLoader
+from lit_data.streaming.dataset import (
     _INDEX_FILENAME,
     Dir,
     StreamingDataset,
@@ -34,9 +34,9 @@ from lightning.data.streaming.dataset import (
     _should_replace_path,
     _try_create_cache_dir,
 )
-from lightning.data.streaming.item_loader import TokensLoader
-from lightning.data.streaming.shuffle import FullShuffle, NoShuffle
-from lightning.data.utilities.env import _DistributedEnv, _WorkerEnv
+from lit_data.streaming.item_loader import TokensLoader
+from lit_data.streaming.shuffle import FullShuffle, NoShuffle
+from lit_data.utilities.env import _DistributedEnv, _WorkerEnv
 from torch.utils.data import DataLoader
 
 
@@ -391,7 +391,7 @@ def test_try_create_cache_dir():
     # the cache dir creating at /cache requires root privileges, so we need to mock `os.makedirs()`
     with (
         mock.patch.dict("os.environ", {"LIGHTNING_CLUSTER_ID": "abc", "LIGHTNING_CLOUD_PROJECT_ID": "123"}),
-        mock.patch("lightning.data.streaming.dataset.os.makedirs") as makedirs_mock,
+        mock.patch("lit_data.streaming.dataset.os.makedirs") as makedirs_mock,
     ):
         cache_dir_1 = _try_create_cache_dir("")
         cache_dir_2 = _try_create_cache_dir("ssdf")

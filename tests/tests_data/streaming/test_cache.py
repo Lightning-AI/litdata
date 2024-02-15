@@ -19,12 +19,12 @@ import numpy as np
 import pytest
 import torch
 from lightning import seed_everything
-from lightning.data.streaming import Cache
-from lightning.data.streaming.dataloader import CacheDataLoader
-from lightning.data.streaming.dataset import StreamingDataset
-from lightning.data.streaming.item_loader import TokensLoader
-from lightning.data.streaming.serializers import Serializer
-from lightning.data.utilities.env import _DistributedEnv
+from lit_data.streaming import Cache
+from lit_data.streaming.dataloader import CacheDataLoader
+from lit_data.streaming.dataset import StreamingDataset
+from lit_data.streaming.item_loader import TokensLoader
+from lit_data.streaming.serializers import Serializer
+from lit_data.utilities.env import _DistributedEnv
 from lightning.fabric import Fabric
 from lightning.pytorch.demos.boring_classes import RandomDataset
 from lightning_utilities.core.imports import RequirementCache

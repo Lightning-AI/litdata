@@ -2,7 +2,7 @@ from unittest import mock
 
 import pytest
 from lightning import seed_everything
-from lightning.data.streaming.sampler import CacheBatchSampler
+from lit_data.streaming.sampler import CacheBatchSampler
 
 
 @pytest.mark.parametrize(
