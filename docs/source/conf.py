@@ -16,20 +16,19 @@ import pypandoc
 
 _PATH_HERE = os.path.abspath(os.path.dirname(__file__))
 _PATH_ROOT = os.path.realpath(os.path.join(_PATH_HERE, "..", ".."))
-_PATH_SOURCE = os.path.join(_PATH_ROOT, "src")
 sys.path.insert(0, os.path.abspath(_PATH_ROOT))
 
 SPHINX_MOCK_REQUIREMENTS = int(os.environ.get("SPHINX_MOCK_REQUIREMENTS", True))
 
 # alternative https://stackoverflow.com/a/67692/4521646
-spec = spec_from_file_location("pl_sandbox/__about__.py", os.path.join(_PATH_SOURCE, "pl_sandbox", "__about__.py"))
+spec = spec_from_file_location("lit_data/__about__.py", os.path.join(_PATH_ROOT, "lit_data", "__about__.py"))
 about = module_from_spec(spec)
 spec.loader.exec_module(about)
 
 # -- Project information -----------------------------------------------------
 
 # this name shall match the project name in Github as it is used for linking to code
-project = "Lightning-Sandbox"
+project = "lit-data"
 copyright = about.__copyright__
 author = about.__author__
 
@@ -317,8 +316,8 @@ def linkcode_resolve(domain, info):
         fname = inspect.getsourcefile(obj)
         # https://github.com/rtfd/readthedocs.org/issues/5735
         if any(s in fname for s in ("readthedocs", "rtfd", "checkouts")):
-            # /home/docs/checkouts/readthedocs.org/user_builds/pytorch_lightning/checkouts/
-            #  devel/pytorch_lightning/utilities/cls_experiment.py#L26-L176
+            # /home/docs/checkouts/readthedocs.org/user_builds/lit_data/checkouts/
+            #  devel/lit_data/utilities/cls_experiment.py#L26-L176
             path_top = os.path.abspath(os.path.join("..", "..", ".."))
             fname = os.path.relpath(fname, start=path_top)
         else:
@@ -381,8 +380,8 @@ import importlib
 import os
 import torch
 
-import pytorch_lightning as pl
-from pytorch_lightning import Trainer, LightningModule
+import lit_data
+from lit_data import StreamingDataset
 
 """
 coverage_skip_undoc_in_source = True

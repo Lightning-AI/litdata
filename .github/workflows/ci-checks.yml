@@ -25,10 +25,10 @@ jobs:
       azure-dir: ""
 
   check-package:
-    uses: Lightning-AI/utilities/.github/workflows/check-package.yml@main
+    uses: ./check-typing.yml
     with:
       actions-ref: main
-      import-name: "pl_sandbox"
+      import-name: "lit_data"
       artifact-name: dist-packages-${{ github.sha }}
       testing-matrix: |
         {
@@ -39,4 +39,4 @@ jobs:
   check-docs:
     uses: Lightning-AI/utilities/.github/workflows/check-docs.yml@main
     with:
-      requirements-file: "_requirements/docs.txt"
+      requirements-file: "requirements/docs.txt"
