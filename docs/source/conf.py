@@ -22,14 +22,14 @@ sys.path.insert(0, os.path.abspath(_PATH_ROOT))
 SPHINX_MOCK_REQUIREMENTS = int(os.environ.get("SPHINX_MOCK_REQUIREMENTS", True))
 
 # alternative https://stackoverflow.com/a/67692/4521646
-spec = spec_from_file_location("pl_sandbox/__about__.py", os.path.join(_PATH_SOURCE, "pl_sandbox", "__about__.py"))
+spec = spec_from_file_location("lit_data/__about__.py", os.path.join(_PATH_SOURCE, "lit_data", "__about__.py"))
 about = module_from_spec(spec)
 spec.loader.exec_module(about)
 
 # -- Project information -----------------------------------------------------
 
 # this name shall match the project name in Github as it is used for linking to code
-project = "Lightning-Sandbox"
+project = "lit-data"
 copyright = about.__copyright__
 author = about.__author__
 

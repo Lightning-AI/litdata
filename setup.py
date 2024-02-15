@@ -8,12 +8,11 @@ from pkg_resources import parse_requirements
 from setuptools import find_packages, setup
 
 _PATH_ROOT = os.path.dirname(__file__)
-_PATH_SOURCE = os.path.join(_PATH_ROOT, "src")
 _PATH_REQUIRES = os.path.join(_PATH_ROOT, "_requirements")
 
 
-def _load_py_module(fname, pkg="pl_sandbox"):
-    spec = spec_from_file_location(os.path.join(pkg, fname), os.path.join(_PATH_SOURCE, pkg, fname))
+def _load_py_module(fname, pkg="lit_data"):
+    spec = spec_from_file_location(os.path.join(pkg, fname), os.path.join(_PATH_ROOT, pkg, fname))
     py = module_from_spec(spec)
     spec.loader.exec_module(py)
     return py
@@ -52,13 +51,13 @@ def _prepare_extras(requirements_dir: str = _PATH_REQUIRES, skip_files: tuple = 
 # the goal of the project is simplicity for researchers, don't want to add too much
 # engineer specific practices
 setup(
-    name="lightning-sandbox",
+    name="lit_data",
     version=about.__version__,
     description=about.__docs__,
     author=about.__author__,
     author_email=about.__author_email__,
     url=about.__homepage__,
-    download_url="https://github.com/Lightning-AI/lightning-sandbox",
+    download_url="https://github.com/Lightning-AI/lit-data",
     license=about.__license__,
     packages=find_packages(where="src"),
     package_dir={"": "src"},
@@ -72,9 +71,9 @@ setup(
     install_requires=_load_requirements(),
     extras_require=_prepare_extras(),
     project_urls={
-        "Bug Tracker": "https://github.com/Lightning-AI/lightning-sandbox/issues",
-        "Documentation": "https://lightning-ai.github.io/lightning-sandbox/",
-        "Source Code": "https://github.com/Lightning-AI/lightning-sandbox",
+        "Bug Tracker": "https://github.com/Lightning-AI/lit-data/issues",
+        "Documentation": "https://lightning-ai.github.io/lit-data/",
+        "Source Code": "https://github.com/Lightning-AI/lit-data",
     },
     classifiers=[
         "Environment :: Console",
