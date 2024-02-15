@@ -1,0 +1,37 @@
+name: "Build (& deploy) Docs"
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build-docs:
+    uses: Lightning-AI/utilities/.github/workflows/check-docs.yml@main
+    with:
+      requirements-file: "_requirements/docs.txt"
+
+  # https://github.com/marketplace/actions/deploy-to-github-pages
+  docs-deploy:
+    needs: build-docs
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4 # deploy needs git credentials
+      - name: Download prepared docs
+        uses: actions/download-artifact@v3
+        with:
+          name: docs-html-${{ github.sha }}
+          path: docs/build/html
+
+      - name: Deploy 🚀
+        uses: JamesIves/github-pages-deploy-action@v4.5.0
+        if: ${{ github.event_name == 'push' }}
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: gh-pages # The branch the action should deploy to.
+          folder: docs/build/html # The folder the action should deploy.
+          clean: true # Automatically remove deleted files from the deploy branch
+          target-folder: docs # If you'd like to push the contents of the deployment folder into a specific directory
+          single-commit: true # you'd prefer to have a single commit on the deployment branch instead of full history
