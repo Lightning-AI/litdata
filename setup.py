@@ -31,7 +31,7 @@ with open(os.path.join(_PATH_ROOT, "README.md"), encoding="utf-8") as fopen:
 def _prepare_extras(requirements_dir: str = _PATH_REQUIRES, skip_files: tuple = ()) -> dict:
     # https://setuptools.readthedocs.io/en/latest/setuptools.html#declaring-extras
     # Define package extras. These are only installed if you specify them.
-    # From remote, use like `pip install pytorch-lightning[dev, docs]`
+    # From remote, use like `pip install lit-data[dev, docs]`
     # From local copy of repo, use like `pip install ".[dev, docs]"`
     req_files = [Path(p) for p in glob.glob(os.path.join(requirements_dir, "*.txt"))]
     extras = {

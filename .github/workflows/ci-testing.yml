@@ -46,6 +46,11 @@ jobs:
               open(fpath, 'w').write(req)
         shell: python
 
+      - name: Display dependencies
+        run: |
+          cat requirements.txt
+          cat requirements/test.txt
+
       - name: Get pip cache dir
         id: pip-cache
         run: echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
