@@ -77,7 +77,7 @@ lint.ignore-init-module-imports = true
 
 [tool.ruff.lint.per-file-ignores]
 ".actions/*" = ["S101", "S310"]
-"setup.py" = ["S101"]
+"setup.py" = ["S101", "SIM115"]
 "examples/**" = [
     "S101",  # Use of `assert` detected
     "S113",  # todo: Probable use of requests call without
