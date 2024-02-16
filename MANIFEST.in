@@ -28,7 +28,7 @@ exclude docs
 
 # Include the Requirements
 include requirements.txt
-recursive-include _requirements *.tx;t
+recursive-include requirements *.tx;t
 
 # Exclude Makefile
 exclude Makefile

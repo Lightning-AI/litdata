@@ -6,15 +6,15 @@ export SLURM_LOCALID=0
 export SPHINX_MOCK_REQUIREMENTS=0
 
 test: clean
-	pip install -q -r requirements.txt
-	pip install -q -r _requirements/test.txt
+	pip install -q -r requirements/requirements.txt
+	pip install -q -r requirements/test.txt
 
 	# use this to run tests
 	python -m coverage run --source lit_data -m pytest src tests -v --flake8
 	python -m coverage report
 
 docs: clean
-	pip install . --quiet -r _requirements/docs.txt
+	pip install . --quiet -r requirements/docs.txt
 	python -m sphinx -b html -W --keep-going docs/source docs/build
 
 clean:

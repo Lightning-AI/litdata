@@ -41,7 +41,7 @@ jobs:
       - name: Set min. dependencies
         if: matrix.requires == 'oldest'
         run: |
-          for fpath in ('requirements.txt', '_requirements/test.txt'):
+          for fpath in ('requirements.txt', 'requirements/test.txt'):
               req = open(fpath).read().replace('>=', '==')
               open(fpath, 'w').write(req)
         shell: python
