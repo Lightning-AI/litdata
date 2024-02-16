@@ -7,6 +7,9 @@ recursive-exclude __pycache__  *.py[cod] *.orig
 include *.md
 recursive-include lit_data *.md
 
+# Include the code
+recursive-include lit_data *.py
+
 # Include the license file
 include LICENSE
 
