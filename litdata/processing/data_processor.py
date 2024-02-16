@@ -20,7 +20,7 @@ import numpy as np
 from lightning import seed_everything
 from tqdm.auto import tqdm as _tqdm
 
-from lit_data.constants import (
+from litdata.constants import (
     _BOTO3_AVAILABLE,
     _DEFAULT_FAST_DEV_RUN_ITEMS,
     _INDEX_FILENAME,
@@ -28,13 +28,13 @@ from lit_data.constants import (
     _LIGHTNING_CLOUD_LATEST,
     _TORCH_GREATER_EQUAL_2_1_0,
 )
-from lit_data.processing.readers import BaseReader
-from lit_data.streaming import Cache
-from lit_data.streaming.cache import Dir
-from lit_data.streaming.client import S3Client
-from lit_data.streaming.resolver import _resolve_dir
-from lit_data.utilities.broadcast import broadcast_object
-from lit_data.utilities.packing import _pack_greedily
+from litdata.processing.readers import BaseReader
+from litdata.streaming import Cache
+from litdata.streaming.cache import Dir
+from litdata.streaming.client import S3Client
+from litdata.streaming.resolver import _resolve_dir
+from litdata.utilities.broadcast import broadcast_object
+from litdata.utilities.packing import _pack_greedily
 
 if _TORCH_GREATER_EQUAL_2_1_0:
     from torch.utils._pytree import tree_flatten, tree_unflatten, treespec_loads

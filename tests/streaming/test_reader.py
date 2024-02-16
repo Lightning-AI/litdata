@@ -4,13 +4,13 @@ from time import sleep
 
 import numpy as np
 
-from lit_data.streaming import reader
-from lit_data.streaming.cache import Cache
-from lit_data.streaming.config import ChunkedIndex
-from lit_data.streaming.item_loader import PyTreeLoader
-from lit_data.streaming.reader import _END_TOKEN, PrepareChunksThread, _get_folder_size
-from lit_data.streaming.resolver import Dir
-from lit_data.utilities.env import _DistributedEnv
+from litdata.streaming import reader
+from litdata.streaming.cache import Cache
+from litdata.streaming.config import ChunkedIndex
+from litdata.streaming.item_loader import PyTreeLoader
+from litdata.streaming.reader import _END_TOKEN, PrepareChunksThread, _get_folder_size
+from litdata.streaming.resolver import Dir
+from litdata.utilities.env import _DistributedEnv
 
 
 def test_reader_chunk_removal(tmpdir):

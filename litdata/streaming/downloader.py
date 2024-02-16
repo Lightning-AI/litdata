@@ -19,8 +19,8 @@ from urllib import parse
 
 from filelock import FileLock, Timeout
 
-from lit_data.constants import _INDEX_FILENAME
-from lit_data.streaming.client import S3Client
+from litdata.constants import _INDEX_FILENAME
+from litdata.streaming.client import S3Client
 
 
 class Downloader(ABC):
