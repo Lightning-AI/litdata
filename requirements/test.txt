@@ -9,3 +9,4 @@ pandas
 pyarrow
 pillow
 lightning
+mypy
