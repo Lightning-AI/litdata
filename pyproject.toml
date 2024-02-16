@@ -87,7 +87,7 @@ lint.ignore-init-module-imports = true
     "S501",  # Probable use of `requests` call with `verify=False` disabling SSL certificate checks
     "S108",  # Probable insecure usage of temporary file or directory: "/tmp/data/MNIST"
 ]
-"src/**" = [
+"lit_data/**" = [
     "S101",  # todo: Use of `assert` detected
     "S105", "S106", "S107",  # todo: Possible hardcoded password: ...
     "S113",  # todo: Probable use of requests call without timeout
@@ -101,8 +101,6 @@ lint.ignore-init-module-imports = true
     "S607",  # todo: Starting a process with a partial executable path
     "RET504",  # todo:Unnecessary variable assignment before `return` statement
     "RET503",
-]
-"src/lightning/data/**" = [
     "S310",  # todo: Audit URL open for permitted schemes. Allowing use of `file:` or custom schemes is often unexpected.
 ]
 "tests/**" = [

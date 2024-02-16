@@ -17,9 +17,9 @@ from typing import Any, Dict, List, Optional, Tuple, TypeVar, Union
 from urllib import parse
 
 import numpy as np
+from lightning import seed_everything
 from tqdm.auto import tqdm as _tqdm
 
-from lightning import seed_everything
 from lit_data.constants import (
     _BOTO3_AVAILABLE,
     _DEFAULT_FAST_DEV_RUN_ITEMS,
@@ -427,7 +427,7 @@ class BaseWorker:
                             uploader.join()
 
                     if self.remove:
-                        assert self.remover
+                        assert self.remover  # noqa: S101
                         self.remove_queue.put(None)
                         self.remover.join()
 
@@ -487,7 +487,7 @@ class BaseWorker:
         if isinstance(data, str):
             assert os.path.exists(data), data
         else:
-            assert os.path.exists(data[-1]), data
+            assert os.path.exists(data[-1]), data  # noqa: S101
 
         self.to_upload_queues[self._counter % self.num_uploaders].put(data)
 
@@ -772,7 +772,7 @@ class DataChunkRecipe(DataRecipe):
             # Get the index file locally
             for node_rank in range(num_nodes - 1):
                 output_dir_path = output_dir.url if output_dir.url else output_dir.path
-                assert output_dir_path
+                assert output_dir_path  # noqa: S101
                 remote_filepath = os.path.join(output_dir_path, f"{node_rank}-{_INDEX_FILENAME}")
                 node_index_filepath = os.path.join(cache_dir, os.path.basename(remote_filepath))
                 if obj.scheme == "s3":
@@ -941,7 +941,7 @@ class DataProcessor:
                 error = self.error_queue.get(timeout=0.001)
                 self._exit_on_error(error)
             except Empty:
-                assert self.progress_queue
+                assert self.progress_queue  # noqa: S101
                 try:
                     index, counter = self.progress_queue.get(timeout=0.001)
                 except Empty:

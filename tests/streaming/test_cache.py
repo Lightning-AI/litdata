@@ -19,17 +19,18 @@ import numpy as np
 import pytest
 import torch
 from lightning import seed_everything
+from lightning.fabric import Fabric
+from lightning.pytorch.demos.boring_classes import RandomDataset
+from lightning_utilities.core.imports import RequirementCache
+from lightning_utilities.test.warning import no_warning_call
+from torch.utils.data import Dataset
+
 from lit_data.streaming import Cache
 from lit_data.streaming.dataloader import CacheDataLoader
 from lit_data.streaming.dataset import StreamingDataset
 from lit_data.streaming.item_loader import TokensLoader
 from lit_data.streaming.serializers import Serializer
 from lit_data.utilities.env import _DistributedEnv
-from lightning.fabric import Fabric
-from lightning.pytorch.demos.boring_classes import RandomDataset
-from lightning_utilities.core.imports import RequirementCache
-from lightning_utilities.test.warning import no_warning_call
-from torch.utils.data import Dataset
 
 _PIL_AVAILABLE = RequirementCache("PIL")
 _TORCH_VISION_AVAILABLE = RequirementCache("torchvision")

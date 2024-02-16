@@ -2,9 +2,10 @@ import os
 
 import pytest
 import torch
+from torch import tensor
+
 from lit_data.streaming import CombinedStreamingDataset, StreamingDataLoader
 from lit_data.streaming import dataloader as streaming_dataloader_module
-from torch import tensor
 
 
 class TestStatefulDataset:

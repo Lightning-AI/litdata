@@ -4,12 +4,13 @@ from unittest.mock import ANY
 
 import pytest
 import torch
+from torch.utils.data import IterableDataset
+from torch.utils.data.dataloader import DataLoader
+
 from lit_data.streaming.cache import Cache
 from lit_data.streaming.combined import CombinedStreamingDataset
 from lit_data.streaming.dataloader import StreamingDataLoader
 from lit_data.streaming.dataset import Dir, StreamingDataset
-from torch.utils.data import IterableDataset
-from torch.utils.data.dataloader import DataLoader
 
 
 class TestCombinedStreamingDataset(CombinedStreamingDataset):

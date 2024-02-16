@@ -19,7 +19,8 @@ def _load_py_module(fname, pkg="lit_data"):
 
 
 def _load_requirements(path_dir: str = _PATH_ROOT, file_name: str = "requirements.txt") -> list:
-    reqs = parse_requirements(open(os.path.join(path_dir, file_name)).readlines())
+    with open(os.path.join(path_dir, file_name)) as f:
+        reqs = parse_requirements(f).readlines()
     return list(map(str, reqs))
 
 

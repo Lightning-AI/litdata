@@ -2,7 +2,7 @@ import io
 import os
 import urllib
 from contextlib import contextmanager
-from subprocess import Popen
+from subprocess import Popen  # noqa: S404
 from typing import Any, Callable, Optional, Tuple
 
 from lit_data.constants import _IS_IN_STUDIO
