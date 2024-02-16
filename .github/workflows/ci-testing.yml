@@ -65,7 +65,7 @@ jobs:
 
       - name: Tests
         run: |
-          coverage run --source lit_data -m pytest src tests -v
+          coverage run --source lit_data -m pytest tests -v
 
       - name: Statistics
         if: success()
