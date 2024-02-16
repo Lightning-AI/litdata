@@ -8,7 +8,7 @@ from pkg_resources import parse_requirements
 from setuptools import find_packages, setup
 
 _PATH_ROOT = os.path.dirname(__file__)
-_PATH_REQUIRES = os.path.join(_PATH_ROOT, "_requirements")
+_PATH_REQUIRES = os.path.join(_PATH_ROOT, "requirements")
 
 
 def _load_py_module(fname, pkg="lit_data"):
@@ -28,10 +28,10 @@ with open(os.path.join(_PATH_ROOT, "README.md"), encoding="utf-8") as fopen:
     readme = fopen.read()
 
 
-def _prepare_extras(requirements_dir: str = _PATH_REQUIRES, skip_files: tuple = ("devel.txt", "docs.txt")) -> dict:
+def _prepare_extras(requirements_dir: str = _PATH_REQUIRES, skip_files: tuple = ()) -> dict:
     # https://setuptools.readthedocs.io/en/latest/setuptools.html#declaring-extras
     # Define package extras. These are only installed if you specify them.
-    # From remote, use like `pip install pytorch-lightning[dev, docs]`
+    # From remote, use like `pip install lit-data[dev, docs]`
     # From local copy of repo, use like `pip install ".[dev, docs]"`
     req_files = [Path(p) for p in glob.glob(os.path.join(requirements_dir, "*.txt"))]
     extras = {
@@ -59,8 +59,8 @@ setup(
     url=about.__homepage__,
     download_url="https://github.com/Lightning-AI/lit-data",
     license=about.__license__,
-    packages=find_packages(where="src"),
-    package_dir={"": "src"},
+    packages=find_packages(where="lit_data"),
+    package_dir={"": "lit_data"},
     long_description=readme,
     long_description_content_type="text/markdown",
     include_package_data=True,
@@ -91,9 +91,8 @@ setup(
         # Specify the Python versions you support here. In particular, ensure
         # that you indicate whether you support Python 2, Python 3 or both.
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.8",
-        "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
     ],
 )

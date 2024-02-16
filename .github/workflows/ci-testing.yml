@@ -41,10 +41,15 @@ jobs:
       - name: Set min. dependencies
         if: matrix.requires == 'oldest'
         run: |
-          for fpath in ('requirements.txt', '_requirements/test.txt'):
+          for fpath in ('requirements.txt', 'requirements/test.txt'):
               req = open(fpath).read().replace('>=', '==')
               open(fpath, 'w').write(req)
         shell: python
+
+      - name: Display dependencies
+        run: |
+          cat requirements.txt
+          cat requirements/test.txt
 
       - name: Get pip cache dir
         id: pip-cache
@@ -65,7 +70,7 @@ jobs:
 
       - name: Tests
         run: |
-          coverage run --source lit_data -m pytest src tests -v
+          coverage run --source lit_data -m pytest tests -v
 
       - name: Statistics
         if: success()

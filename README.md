@@ -32,7 +32,7 @@ Lightning Data can be installed with `pip`:
 <!--pytest.mark.skip-->
 
 ```bash
-pip install --no-cache-dir git+https://github.com/Lightning-AI/pytorch-lightning.git@master
+pip install --no-cache-dir git+https://github.com/Lightning-AI/lit-data.git@master
 ```
 
 ## 🏁 Quick Start

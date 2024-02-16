@@ -10,6 +10,8 @@ import numpy as np
 import pytest
 import torch
 from lightning import seed_everything
+from lightning_utilities.core.imports import RequirementCache
+
 from lit_data.processing import data_processor as data_processor_module
 from lit_data.processing import functions
 from lit_data.processing.data_processor import (
@@ -28,7 +30,6 @@ from lit_data.processing.data_processor import (
 from lit_data.processing.functions import LambdaDataTransformRecipe, map, optimize
 from lit_data.streaming import resolver
 from lit_data.streaming.cache import Cache, Dir
-from lightning_utilities.core.imports import RequirementCache
 
 _PIL_AVAILABLE = RequirementCache("PIL")
 

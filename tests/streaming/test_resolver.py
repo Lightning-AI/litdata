@@ -3,7 +3,6 @@ from pathlib import Path
 from unittest import mock
 
 import pytest
-from lit_data.streaming import resolver
 from lightning_cloud import login
 from lightning_cloud.openapi import (
     Externalv1Cluster,
@@ -16,6 +15,8 @@ from lightning_cloud.openapi import (
     V1ListClustersResponse,
     V1ListDataConnectionsResponse,
 )
+
+from lit_data.streaming import resolver
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="windows isn't supported")
