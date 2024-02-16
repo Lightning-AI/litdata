@@ -15,19 +15,19 @@ import logging
 import os
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-from lit_data.constants import (
+from litdata.constants import (
     _INDEX_FILENAME,
     _LIGHTNING_CLOUD_LATEST,
     _TORCH_GREATER_EQUAL_2_1_0,
 )
-from lit_data.streaming.item_loader import BaseItemLoader
-from lit_data.streaming.reader import BinaryReader
-from lit_data.streaming.resolver import Dir, _resolve_dir
-from lit_data.streaming.sampler import ChunkedIndex
-from lit_data.streaming.serializers import Serializer
-from lit_data.streaming.writer import BinaryWriter
-from lit_data.utilities.env import _DistributedEnv, _WorkerEnv
-from lit_data.utilities.format import _convert_bytes_to_int
+from litdata.streaming.item_loader import BaseItemLoader
+from litdata.streaming.reader import BinaryReader
+from litdata.streaming.resolver import Dir, _resolve_dir
+from litdata.streaming.sampler import ChunkedIndex
+from litdata.streaming.serializers import Serializer
+from litdata.streaming.writer import BinaryWriter
+from litdata.utilities.env import _DistributedEnv, _WorkerEnv
+from litdata.utilities.format import _convert_bytes_to_int
 
 logger = logging.Logger(__name__)
 
