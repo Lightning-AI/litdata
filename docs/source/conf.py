@@ -317,8 +317,8 @@ def linkcode_resolve(domain, info):
         fname = inspect.getsourcefile(obj)
         # https://github.com/rtfd/readthedocs.org/issues/5735
         if any(s in fname for s in ("readthedocs", "rtfd", "checkouts")):
-            # /home/docs/checkouts/readthedocs.org/user_builds/pytorch_lightning/checkouts/
-            #  devel/pytorch_lightning/utilities/cls_experiment.py#L26-L176
+            # /home/docs/checkouts/readthedocs.org/user_builds/lit_data/checkouts/
+            #  devel/lit_data/utilities/cls_experiment.py#L26-L176
             path_top = os.path.abspath(os.path.join("..", "..", ".."))
             fname = os.path.relpath(fname, start=path_top)
         else:
@@ -381,8 +381,8 @@ import importlib
 import os
 import torch
 
-import pytorch_lightning as pl
-from pytorch_lightning import Trainer, LightningModule
+import lit_data
+from lit_data import StreamingDataset
 
 """
 coverage_skip_undoc_in_source = True

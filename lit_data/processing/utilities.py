@@ -29,12 +29,12 @@ def catch(func: Callable) -> Callable:
 def make_request(
     url: str,
     timeout: int = 10,
-    user_agent_token: str = "pytorch-lightning",
+    user_agent_token: str = "lit-data",
 ) -> io.BytesIO:
     """Download an image with urllib."""
     user_agent_string = "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:72.0) Gecko/20100101 Firefox/72.0"
     if user_agent_token:
-        user_agent_string += f" (compatible; {user_agent_token}; +https://github.com/Lightning-AI/pytorch-lightning)"
+        user_agent_string += f" (compatible; {user_agent_token}; +https://github.com/Lightning-AI/lit-data)"
 
     with urllib.request.urlopen(  # noqa: S310
         urllib.request.Request(url, data=None, headers={"User-Agent": user_agent_string}), timeout=timeout
