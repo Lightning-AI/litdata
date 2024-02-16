@@ -28,7 +28,7 @@ with open(os.path.join(_PATH_ROOT, "README.md"), encoding="utf-8") as fopen:
     readme = fopen.read()
 
 
-def _prepare_extras(requirements_dir: str = _PATH_REQUIRES, skip_files: tuple = ("devel.txt", "docs.txt")) -> dict:
+def _prepare_extras(requirements_dir: str = _PATH_REQUIRES, skip_files: tuple = ("devel.txt", "docs.txt", "test.txt")) -> dict:
     # https://setuptools.readthedocs.io/en/latest/setuptools.html#declaring-extras
     # Define package extras. These are only installed if you specify them.
     # From remote, use like `pip install pytorch-lightning[dev, docs]`
@@ -59,8 +59,8 @@ setup(
     url=about.__homepage__,
     download_url="https://github.com/Lightning-AI/lit-data",
     license=about.__license__,
-    packages=find_packages(where="src"),
-    package_dir={"": "src"},
+    packages=find_packages(where="lit_data"),
+    package_dir={"": "lit_data"},
     long_description=readme,
     long_description_content_type="text/markdown",
     include_package_data=True,
