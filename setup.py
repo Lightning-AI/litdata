@@ -11,7 +11,7 @@ _PATH_ROOT = os.path.dirname(__file__)
 _PATH_REQUIRES = os.path.join(_PATH_ROOT, "requirements")
 
 
-def _load_py_module(fname, pkg="litdata"):
+def _load_py_module(fname, pkg="lightning_data"):
     spec = spec_from_file_location(os.path.join(pkg, fname), os.path.join(_PATH_ROOT, pkg, fname))
     py = module_from_spec(spec)
     spec.loader.exec_module(py)
@@ -51,7 +51,7 @@ def _prepare_extras(requirements_dir: str = _PATH_REQUIRES, skip_files: tuple = 
 # the goal of the project is simplicity for researchers, don't want to add too much
 # engineer specific practices
 setup(
-    name="litdata",
+    name="lightning_data",
     version=about.__version__,
     description=about.__docs__,
     author=about.__author__,
@@ -59,8 +59,8 @@ setup(
     url=about.__homepage__,
     download_url="https://github.com/Lightning-AI/lit-data",
     license=about.__license__,
-    packages=find_packages(where="litdata"),
-    package_dir={"": "litdata"},
+    packages=find_packages(where="lightning_data"),
+    package_dir={"": "lightning_data"},
     long_description=readme,
     long_description_content_type="text/markdown",
     include_package_data=True,

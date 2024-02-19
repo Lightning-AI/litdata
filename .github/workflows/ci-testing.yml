@@ -70,7 +70,7 @@ jobs:
 
       - name: Tests
         run: |
-          coverage run --source litdata -m pytest tests -v
+          coverage run --source lightning_data -m pytest tests -v
 
       - name: Statistics
         if: success()

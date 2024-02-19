@@ -1,7 +1,7 @@
 import os
 from unittest import mock
 
-from litdata.utilities.broadcast import broadcast_object, requests
+from lightning_data.utilities.broadcast import broadcast_object, requests
 
 
 @mock.patch.dict(

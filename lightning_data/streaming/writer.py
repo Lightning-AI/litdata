@@ -21,12 +21,12 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import numpy as np
 import torch
 
-from litdata.constants import _INDEX_FILENAME, _TORCH_GREATER_EQUAL_2_1_0
-from litdata.processing.utilities import get_worker_rank
-from litdata.streaming.compression import _COMPRESSORS, Compressor
-from litdata.streaming.serializers import Serializer, _get_serializers
-from litdata.utilities.env import _DistributedEnv, _WorkerEnv
-from litdata.utilities.format import _convert_bytes_to_int, _human_readable_bytes
+from lightning_data.constants import _INDEX_FILENAME, _TORCH_GREATER_EQUAL_2_1_0
+from lightning_data.processing.utilities import get_worker_rank
+from lightning_data.streaming.compression import _COMPRESSORS, Compressor
+from lightning_data.streaming.serializers import Serializer, _get_serializers
+from lightning_data.utilities.env import _DistributedEnv, _WorkerEnv
+from lightning_data.utilities.format import _convert_bytes_to_int, _human_readable_bytes
 
 if _TORCH_GREATER_EQUAL_2_1_0:
     from torch.utils._pytree import PyTree, tree_flatten, treespec_dumps
