@@ -17,7 +17,7 @@ import time
 __author__ = "Lightning AI et al."
 __author_email__ = "pytorch@lightning.ai"
 __license__ = "Apache-2.0"
-__copyright__ = f"Copyright (c) 2018-{time.strftime('%Y')}, {__author__}."
+__copyright__ = f"Copyright (c) 2023-{time.strftime('%Y')}, {__author__}."
 __homepage__ = "https://github.com/Lightning-AI/lit-data"
 __docs_url__ = "https://lightning.ai/docs/pytorch/stable/"
 # this has to be simple string, see: https://github.com/pypa/twine/issues/522
@@ -26,7 +26,7 @@ __long_doc__ = """
 What is it?
 -----------
 
-TBD @eden
+TBD @tchaton
 """  # TODO
 
 __all__ = [
@@ -40,4 +40,4 @@ __all__ = [
     "__version__",
 ]
 
-__version__ = "0.0.1"
+__version__ = "0.2.0.dev"

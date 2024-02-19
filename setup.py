@@ -28,7 +28,7 @@ with open(os.path.join(_PATH_ROOT, "README.md"), encoding="utf-8") as fopen:
     readme = fopen.read()
 
 
-def _prepare_extras(requirements_dir: str = _PATH_REQUIRES, skip_files: tuple = ()) -> dict:
+def _prepare_extras(requirements_dir: str = _PATH_REQUIRES, skip_files: tuple = ("docs.txt", "test.txt")) -> dict:
     # https://setuptools.readthedocs.io/en/latest/setuptools.html#declaring-extras
     # Define package extras. These are only installed if you specify them.
     # From remote, use like `pip install lit-data[dev, docs]`
@@ -51,7 +51,7 @@ def _prepare_extras(requirements_dir: str = _PATH_REQUIRES, skip_files: tuple = 
 # the goal of the project is simplicity for researchers, don't want to add too much
 # engineer specific practices
 setup(
-    name="lightning_data",
+    name="lightning-data",
     version=about.__version__,
     description=about.__docs__,
     author=about.__author__,
