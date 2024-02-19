@@ -13,7 +13,7 @@
 # limitations under the License.
 
 [metadata]
-name = "litdata"
+name = "lightning_data"
 author = "Lightning-AI et al."
 url = "https://github.com/Lightning-AI/lit-data"
 
@@ -87,7 +87,7 @@ lint.ignore-init-module-imports = true
     "S501",  # Probable use of `requests` call with `verify=False` disabling SSL certificate checks
     "S108",  # Probable insecure usage of temporary file or directory: "/tmp/data/MNIST"
 ]
-"litdata/**" = [
+"lightning_data/**" = [
     "S101",  # todo: Use of `assert` detected
     "S105", "S106", "S107",  # todo: Possible hardcoded password: ...
     "S113",  # todo: Probable use of requests call without timeout

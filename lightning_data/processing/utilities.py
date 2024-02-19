@@ -5,7 +5,7 @@ from contextlib import contextmanager
 from subprocess import Popen  # noqa: S404
 from typing import Any, Callable, Optional, Tuple
 
-from litdata.constants import _IS_IN_STUDIO
+from lightning_data.constants import _IS_IN_STUDIO
 
 
 def get_worker_rank() -> Optional[str]:
@@ -66,7 +66,7 @@ def optimize_dns(enable: bool) -> None:
     ):
         cmd = (
             f"sudo /home/zeus/miniconda3/envs/cloudspace/bin/python"
-            f" -c 'from litdata.processing.utilities import _optimize_dns; _optimize_dns({enable})'"
+            f" -c 'from lightning_data.processing.utilities import _optimize_dns; _optimize_dns({enable})'"
         )
         Popen(cmd, shell=True).wait()  # E501
 

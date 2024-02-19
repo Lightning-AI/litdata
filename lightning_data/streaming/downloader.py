@@ -19,8 +19,8 @@ from urllib import parse
 
 from filelock import FileLock, Timeout
 
-from litdata.constants import _INDEX_FILENAME
-from litdata.streaming.client import S3Client
+from lightning_data.constants import _INDEX_FILENAME
+from lightning_data.streaming.client import S3Client
 
 
 class Downloader(ABC):
