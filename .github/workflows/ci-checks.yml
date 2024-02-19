@@ -15,7 +15,7 @@ jobs:
     uses: Lightning-AI/utilities/.github/workflows/check-precommit.yml@v0.10.1
 
   check-typing:
-    # FIXME: switch to main after fix lends
+    # TODO: switch to main after fix lends
     uses: Lightning-AI/utilities/.github/workflows/check-typing.yml@ci/mypy-dir
     with:
       actions-ref: ci/mypy-dir
