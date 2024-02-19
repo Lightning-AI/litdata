@@ -3,8 +3,8 @@ import sys
 
 import pytest
 
-from litdata import map
-from litdata.processing.readers import _PYARROW_AVAILABLE, BaseReader, ParquetReader
+from lightning_data import map
+from lightning_data.processing.readers import _PYARROW_AVAILABLE, BaseReader, ParquetReader
 
 
 class DummyReader(BaseReader):

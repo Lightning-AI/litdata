@@ -5,10 +5,10 @@ recursive-exclude __pycache__  *.py[cod] *.orig
 
 # Include the README and CHANGELOG
 include *.md
-recursive-include litdata *.md
+recursive-include lightning_data *.md
 
 # Include the code
-recursive-include litdata *.py
+recursive-include lightning_data *.py
 
 # Include the license file
 include LICENSE

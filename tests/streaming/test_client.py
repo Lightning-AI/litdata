@@ -4,7 +4,7 @@ from unittest import mock
 
 import pytest
 
-from litdata.streaming import client
+from lightning_data.streaming import client
 
 
 def test_s3_client_without_cloud_space_id(monkeypatch):

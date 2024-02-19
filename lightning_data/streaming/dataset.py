@@ -20,17 +20,17 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import numpy as np
 from torch.utils.data import IterableDataset
 
-from litdata.constants import (
+from lightning_data.constants import (
     _DEFAULT_CACHE_DIR,
     _INDEX_FILENAME,
 )
-from litdata.streaming import Cache
-from litdata.streaming.item_loader import BaseItemLoader
-from litdata.streaming.resolver import Dir, _resolve_dir
-from litdata.streaming.sampler import ChunkedIndex
-from litdata.streaming.serializers import Serializer
-from litdata.streaming.shuffle import FullShuffle, NoShuffle, Shuffle
-from litdata.utilities.env import _DistributedEnv, _is_in_dataloader_worker, _WorkerEnv
+from lightning_data.streaming import Cache
+from lightning_data.streaming.item_loader import BaseItemLoader
+from lightning_data.streaming.resolver import Dir, _resolve_dir
+from lightning_data.streaming.sampler import ChunkedIndex
+from lightning_data.streaming.serializers import Serializer
+from lightning_data.streaming.shuffle import FullShuffle, NoShuffle, Shuffle
+from lightning_data.utilities.env import _DistributedEnv, _is_in_dataloader_worker, _WorkerEnv
 
 logger = Logger(__name__)
 
