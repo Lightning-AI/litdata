@@ -4,8 +4,8 @@ import pytest
 import torch
 from torch import tensor
 
-from litdata.streaming import CombinedStreamingDataset, StreamingDataLoader
-from litdata.streaming import dataloader as streaming_dataloader_module
+from lightning_data.streaming import CombinedStreamingDataset, StreamingDataLoader
+from lightning_data.streaming import dataloader as streaming_dataloader_module
 
 
 class TestStatefulDataset:

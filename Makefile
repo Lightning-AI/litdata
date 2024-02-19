@@ -10,7 +10,7 @@ test: clean
 	pip install -q -r requirements/test.txt
 
 	# use this to run tests
-	python -m coverage run --source litdata -m pytest src -v --flake8
+	python -m coverage run --source lightning_data -m pytest src -v --flake8
 	python -m coverage report
 
 docs: clean

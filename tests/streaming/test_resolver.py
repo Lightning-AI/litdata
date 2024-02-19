@@ -16,7 +16,7 @@ from lightning_cloud.openapi import (
     V1ListDataConnectionsResponse,
 )
 
-from litdata.streaming import resolver
+from lightning_data.streaming import resolver
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="windows isn't supported")

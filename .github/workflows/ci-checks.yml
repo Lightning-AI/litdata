@@ -28,7 +28,7 @@ jobs:
     uses: ./check-typing.yml
     with:
       actions-ref: main
-      import-name: "litdata"
+      import-name: "lightning_data"
       artifact-name: dist-packages-${{ github.sha }}
       testing-matrix: |
         {

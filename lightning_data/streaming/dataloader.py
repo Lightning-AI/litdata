@@ -33,16 +33,16 @@ from torch.utils.data.dataloader import (
 )
 from torch.utils.data.sampler import BatchSampler, Sampler
 
-from litdata.constants import _DEFAULT_CHUNK_BYTES, _TORCH_GREATER_EQUAL_2_1_0, _VIZ_TRACKER_AVAILABLE
-from litdata.streaming import Cache
-from litdata.streaming.combined import (
+from lightning_data.constants import _DEFAULT_CHUNK_BYTES, _TORCH_GREATER_EQUAL_2_1_0, _VIZ_TRACKER_AVAILABLE
+from lightning_data.streaming import Cache
+from lightning_data.streaming.combined import (
     __NUM_SAMPLES_YIELDED_KEY__,
     __SAMPLES_KEY__,
     CombinedStreamingDataset,
 )
-from litdata.streaming.dataset import StreamingDataset
-from litdata.streaming.sampler import CacheBatchSampler
-from litdata.utilities.env import _DistributedEnv
+from lightning_data.streaming.dataset import StreamingDataset
+from lightning_data.streaming.sampler import CacheBatchSampler
+from lightning_data.utilities.env import _DistributedEnv
 
 if _TORCH_GREATER_EQUAL_2_1_0:
     from torch.utils._pytree import tree_flatten
@@ -105,7 +105,7 @@ class CacheDataset(Dataset):
                 if not _equal_items(data_1, data2):
                     raise ValueError(
                         f"Your dataset items aren't deterministic. Found {data_1} and {data2} for index {index}."
-                        " HINT: Use the `litdata.cache.Cache` directly within your dataset."
+                        " HINT: Use the `lightning_data.cache.Cache` directly within your dataset."
                     )
                 self._is_deterministic = True
             self._cache[index] = data_1
@@ -180,7 +180,7 @@ class WorkerLoop:
     ) -> None:
         from torch.utils.data._utils import worker
 
-        from litdata.streaming.cache import Cache
+        from lightning_data.streaming.cache import Cache
 
         enable_profiling = self._global_rank == 0 and worker_id == 0 and _VIZ_TRACKER_AVAILABLE and self._profile
 
@@ -481,7 +481,7 @@ class _StreamingMultiProcessingDataLoaderIter(_MultiProcessingDataLoaderIter):
 class StreamingDataLoader(DataLoader):
     r"""The StreamingDataLoader combines a dataset and a sampler, and provides an iterable over the given dataset.
 
-    The :class:`~litdata.streaming.dataloader.StreamingDataLoader` supports either a
+    The :class:`~lightning_data.streaming.dataloader.StreamingDataLoader` supports either a
     StreamingDataset and CombinedStreamingDataset datasets with single- or multi-process loading,
     customizing
     loading order and optional automatic batching (collation) and memory pinning.
