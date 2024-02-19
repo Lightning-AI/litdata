@@ -14,6 +14,7 @@
 
 import time
 
+__version__ = "0.2.0.dev"
 __author__ = "Lightning AI et al."
 __author_email__ = "pytorch@lightning.ai"
 __license__ = "Apache-2.0"
@@ -39,5 +40,3 @@ __all__ = [
     "__license__",
     "__version__",
 ]
-
-__version__ = "0.2.0.dev"
