@@ -65,12 +65,11 @@ jobs:
       - name: Install package & dependencies
         run: |
           pip --version
-          pip install -e '.[test]' -U -q --find-links $TORCH_URL
+          pip install -e . -r requirements/test.txt -U -q --find-links $TORCH_URL
           pip list
 
       - name: Tests
-        run: |
-          coverage run --source lightning_data -m pytest tests -v
+        run: coverage run --source lightning_data -m pytest tests -v
 
       - name: Statistics
         if: success()
