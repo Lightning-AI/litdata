@@ -7,10 +7,10 @@ import torch
 from torch.utils.data import IterableDataset
 from torch.utils.data.dataloader import DataLoader
 
-from lit_data.streaming.cache import Cache
-from lit_data.streaming.combined import CombinedStreamingDataset
-from lit_data.streaming.dataloader import StreamingDataLoader
-from lit_data.streaming.dataset import Dir, StreamingDataset
+from litdata.streaming.cache import Cache
+from litdata.streaming.combined import CombinedStreamingDataset
+from litdata.streaming.dataloader import StreamingDataLoader
+from litdata.streaming.dataset import Dir, StreamingDataset
 
 
 class TestCombinedStreamingDataset(CombinedStreamingDataset):

@@ -20,12 +20,12 @@ from queue import Empty
 from threading import Thread
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-from lit_data.constants import _TORCH_GREATER_EQUAL_2_1_0
-from lit_data.streaming.config import ChunksConfig
-from lit_data.streaming.item_loader import BaseItemLoader, PyTreeLoader
-from lit_data.streaming.sampler import ChunkedIndex
-from lit_data.streaming.serializers import Serializer, _get_serializers
-from lit_data.utilities.env import _DistributedEnv, _WorkerEnv
+from litdata.constants import _TORCH_GREATER_EQUAL_2_1_0
+from litdata.streaming.config import ChunksConfig
+from litdata.streaming.item_loader import BaseItemLoader, PyTreeLoader
+from litdata.streaming.sampler import ChunkedIndex
+from litdata.streaming.serializers import Serializer, _get_serializers
+from litdata.utilities.env import _DistributedEnv, _WorkerEnv
 
 warnings.filterwarnings("ignore", message=".*The given buffer is not writable.*")
 

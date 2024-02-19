@@ -1,6 +1,6 @@
 <div align="center">
 
-<img alt="Lightning" src="https://pl-flash-data.s3.amazonaws.com/lit_data_logo.png" width="800px" style="max-width: 100%;">
+<img alt="Lightning" src="https://pl-flash-data.s3.amazonaws.com/lightning_data_logo.png" width="800px" style="max-width: 100%;">
 
 <br/>
 <br/>
@@ -45,7 +45,7 @@ Convert your raw dataset into Lightning Streaming format using the `optimize` op
 
 ```python
 import numpy as np
-from lit_data import optimize
+from litdata import optimize
 from PIL import Image
 
 
@@ -84,7 +84,7 @@ Here is an example with [AWS S3](https://aws.amazon.com/s3).
 ### 3. Use StreamingDataset and DataLoader
 
 ```python
-from lit_data import StreamingDataset
+from litdata import StreamingDataset
 from torch.utils.data import DataLoader
 
 # Remote path where full dataset is persistently stored
@@ -135,7 +135,7 @@ for i in range(1000):
 
 ```python
 import os
-from lit_data import map
+from litdata import map
 from PIL import Image
 
 input_dir = "s3://my-bucket/my_images"
@@ -174,7 +174,7 @@ We have end-to-end free [Studios](https://lightning.ai) showing all the steps to
 To scale data processing, create a free account on [lightning.ai](https://lightning.ai/) platform. With the platform, the `optimize` and `map` can start multiple machines to make data processing drastically faster as follows:
 
 ```python
-from lit_data import optimize, Machine
+from litdata import optimize, Machine
 
 optimize(
   ...
@@ -186,7 +186,7 @@ optimize(
 OR
 
 ```python
-from lit_data import map, Machine
+from litdata import map, Machine
 
 map(
   ...
@@ -216,8 +216,8 @@ The `StreamingDataset` and `StreamingDataLoader` takes care of everything for yo
 You can easily experiment with dataset mixtures using the CombinedStreamingDataset.
 
 ```python
-from lit_data import StreamingDataset, CombinedStreamingDataset
-from lit_data.streaming.item_loader import TokensLoader
+from litdata import StreamingDataset, CombinedStreamingDataset
+from litdata.streaming.item_loader import TokensLoader
 from tqdm import tqdm
 import os
 from torch.utils.data import DataLoader
@@ -257,7 +257,7 @@ Note: The `StreamingDataLoader` is used by [Lit-GPT](https://github.com/Lightnin
 ```python
 import os
 import torch
-from lit_data import StreamingDataset, StreamingDataLoader
+from litdata import StreamingDataset, StreamingDataLoader
 
 dataset = StreamingDataset("s3://my-bucket/my-data", shuffle=True)
 dataloader = StreamingDataLoader(dataset, num_workers=os.cpu_count(), batch_size=64)
@@ -280,7 +280,7 @@ for batch_idx, batch in enumerate(dataloader):
 The `StreamingDataLoader` supports profiling your data loading. Simply use the `profile_batches` argument as follows:
 
 ```python
-from lit_data import StreamingDataset, StreamingDataLoader
+from litdata import StreamingDataset, StreamingDataLoader
 
 StreamingDataLoader(..., profile_batches=5)
 ```
@@ -292,7 +292,7 @@ This generates a Chrome trace called `result.json`. You can visualize this trace
 Access the data you need when you need it.
 
 ```python
-from lit_data import StreamingDataset
+from litdata import StreamingDataset
 
 dataset = StreamingDataset(...)
 
@@ -304,7 +304,7 @@ print(dataset[42]) # show the 42th element of the dataset
 ## ✢ Use data transforms
 
 ```python
-from lit_data import StreamingDataset, StreamingDataLoader
+from litdata import StreamingDataset, StreamingDataLoader
 import torchvision.transforms.v2.functional as F
 
 class ImagenetStreamingDataset(StreamingDataset):
@@ -326,7 +326,7 @@ for batch in dataloader:
 Limit the size of the cache holding the chunks.
 
 ```python
-from lit_data import StreamingDataset
+from litdata import StreamingDataset
 
 dataset = StreamingDataset(..., max_cache_size="10GB")
 ```
@@ -338,7 +338,7 @@ When processing large files like compressed [parquet files](https://en.wikipedia
 ```python
 from pathlib import Path
 import pyarrow.parquet as pq
-from lit_data import optimize
+from litdata import optimize
 from tokenizer import Tokenizer
 from functools import partial
 

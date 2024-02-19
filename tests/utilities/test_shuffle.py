@@ -1,5 +1,5 @@
-from lit_data.utilities.env import _DistributedEnv
-from lit_data.utilities.shuffle import _associate_chunks_and_internals_to_ranks, _intra_node_chunk_shuffle
+from litdata.utilities.env import _DistributedEnv
+from litdata.utilities.shuffle import _associate_chunks_and_internals_to_ranks, _intra_node_chunk_shuffle
 
 
 def test_intra_node_chunk_shuffle():

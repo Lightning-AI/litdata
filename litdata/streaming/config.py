@@ -15,11 +15,11 @@ import json
 import os
 from typing import Any, Dict, List, Optional, Tuple
 
-from lit_data.constants import _INDEX_FILENAME, _TORCH_GREATER_EQUAL_2_1_0
-from lit_data.streaming.downloader import get_downloader_cls
-from lit_data.streaming.item_loader import BaseItemLoader, PyTreeLoader, TokensLoader
-from lit_data.streaming.sampler import ChunkedIndex
-from lit_data.streaming.serializers import Serializer
+from litdata.constants import _INDEX_FILENAME, _TORCH_GREATER_EQUAL_2_1_0
+from litdata.streaming.downloader import get_downloader_cls
+from litdata.streaming.item_loader import BaseItemLoader, PyTreeLoader, TokensLoader
+from litdata.streaming.sampler import ChunkedIndex
+from litdata.streaming.serializers import Serializer
 
 if _TORCH_GREATER_EQUAL_2_1_0:
     from torch.utils._pytree import tree_unflatten, treespec_loads
