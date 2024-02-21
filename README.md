@@ -32,7 +32,7 @@ Finally, the `StreamingDataset` is fast! Check out our [benchmark](https://light
 | Web Dataset  | 3134.42 | 3924.95 | 3343.40 | 4424.62 |
 | Mosaic ML  | 2898.61 | 5099.93 | 2809.69 | 5158.98 |
 
-Note: Higher is better.
+Higher is better.
 
 ### Imagenet-1.2M Conversion
 
@@ -44,7 +44,7 @@ Note: Higher is better.
 
 The dataset underlying format needs to be changed to be optimized for data cloud streaming. We measure how long it takes to convert the 1.2 million images.
 
-Note: Lower is better.
+Lower is better.
 
 # 🎬 Getting Started
 
