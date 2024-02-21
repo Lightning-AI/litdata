@@ -122,7 +122,7 @@ cls = sample['class']
 dataloader = DataLoader(dataset)
 ```
 
-Here is an illustration showing how the `StreamingDataset` works.
+Here is an illustration showing how the `StreamingDataset` works under the hood.
 
 ![An illustration showing how the Streaming Dataset works.](https://pl-flash-data.s3.amazonaws.com/streaming_dataset.gif)
 
