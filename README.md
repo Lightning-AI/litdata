@@ -35,9 +35,9 @@ Higher is better.
 
 | Framework |Train Conversion Time | Val Conversion Time | Dataset Size | # Files |
 |---|---|---|---|---|
-| PL Data  |  ${\textbf{\color{Fuchsia}10:05 min}}$ | ${\textbf{\color{Fuchsia}00:30 min}}$ | 143.1 GB  | 2.339  |
+| PL Data  |  ${\textbf{\color{Fuchsia}10:05 min}}$ | ${\textbf{\color{Fuchsia}00:30 min}}$ |  ${\textbf{\color{Fuchsia}143.1 GB}}$  | 2.339  |
 | Web Dataset  | 32:36 min | 01:22 min | 147.8 GB | 1.144 |
-| Mosaic ML  | 49:49 min | 01:04 min | 143.1 GB | 2.298 |
+| Mosaic ML  | 49:49 min | 01:04 min | ${\textbf{\color{Fuchsia}143.1 GB}}$ | 2.298 |
 
 The dataset needs to be converted into an optimized format for cloud streaming. We measured how fast the 1.2 million images are converted.
 
