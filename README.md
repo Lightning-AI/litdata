@@ -17,9 +17,6 @@ Specifically crafted for multi-gpu & multi-node (with [DDP](https://lightning.ai
 
 The `StreamingDataset` is compatible with any data type, including **images, text, video, audio, geo-spatial, and multimodal data** and it is a drop-in replacement for your PyTorch [IterableDataset](https://pytorch.org/docs/stable/data.html#torch.utils.data.IterableDataset) class. For example, it is used by [Lit-GPT](https://github.com/Lightning-AI/lit-gpt/blob/main/pretrain/tinyllama.py) to pretrain LLMs.
 
-Finally, the `StreamingDataset` is fast! Check out our [benchmark](https://lightning.ai/lightning-ai/studios/benchmark-cloud-data-loading-libraries).
-
-
 # 🚀 Benchmarks
 
 [Imagenet-1.2M](https://www.image-net.org/) is a famous dataset used to compare Computer Vision deep learning models. Its train dataset contains 1281167 images. Find the full reproducible [Lightning Studio Benchmark](https://lightning.ai/) [here](https://lightning.ai/lightning-ai/studios/benchmark-cloud-data-loading-libraries).
