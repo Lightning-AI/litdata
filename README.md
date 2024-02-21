@@ -26,23 +26,13 @@ Finally, the `StreamingDataset` is fast! Check out our [benchmark](https://light
 
 ### Imagenet-1.2M Streaming from AWS S3
 
-<style type="text/css">
-  .highlight {
-    background-color: yellow;
-  }
-</style>
-
-<table>
-  <tr class="highlight">
-    <td>Exciting contents</td>
-  </tr>
-</table>
-
 | Framework | Images / sec  1st Epoch (float32)  | Images / sec   2nd Epoch (float32) | Images / sec 1st Epoch (torch16) | Images / sec 2nd Epoch (torch16) |
 |---|---|---|---|---|
-| PL Data  |<span style="font-family: Source Code Pro; padding: 20px; background-color: #990033; color: #fff;">5800.34</span> | 6589.98  | 6282.17  | 7221.88  |
+| PL Data  | 5800.34 | 6589.98  | 6282.17  | 7221.88  |
 | Web Dataset  | 3134.42 | 3924.95 | 3343.40 | 4424.62 |
 | Mosaic ML  | 2898.61 | 5099.93 | 2809.69 | 5158.98 |
+
+Note: Higher is better.
 
 ### Imagenet-1.2M Preparation
 
@@ -53,6 +43,8 @@ The dataset underlying format needs to be changed to be optimized for data cloud
 | PL Data  |  10:05 min  | 00:30 min  | 143.1 GB  | 2.339  |
 | Web Dataset  | 32:36 min | 01:22 min | 147.8 GB | 1.144 |
 | Mosaic ML  | 49:49 min | 01:04 min | 143.1 GB | 2.298 |
+
+Note: Lower is better.
 
 # 🎬 Getting Started
 
