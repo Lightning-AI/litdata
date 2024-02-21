@@ -2,6 +2,7 @@ import concurrent
 import json
 import logging
 import os
+import random
 import shutil
 import signal
 import tempfile
@@ -17,7 +18,7 @@ from typing import Any, Dict, List, Optional, Tuple, TypeVar, Union
 from urllib import parse
 
 import numpy as np
-from lightning import seed_everything
+import torch
 from tqdm.auto import tqdm as _tqdm
 
 from lightning_data.constants import (
@@ -29,6 +30,7 @@ from lightning_data.constants import (
     _TORCH_GREATER_EQUAL_2_1_0,
 )
 from lightning_data.processing.readers import BaseReader
+from lightning_data.processing.utilities import _create_dataset
 from lightning_data.streaming import Cache
 from lightning_data.streaming.cache import Dir
 from lightning_data.streaming.client import S3Client
@@ -41,7 +43,6 @@ if _TORCH_GREATER_EQUAL_2_1_0:
 
 if _LIGHTNING_CLOUD_LATEST:
     from lightning_cloud.openapi import V1DatasetType
-    from lightning_cloud.utils.dataset import _create_dataset
 
 
 if _BOTO3_AVAILABLE:
@@ -427,7 +428,7 @@ class BaseWorker:
                             uploader.join()
 
                     if self.remove:
-                        assert self.remover  # noqa: S101
+                        assert self.remover
                         self.remove_queue.put(None)
                         self.remover.join()
 
@@ -487,7 +488,7 @@ class BaseWorker:
         if isinstance(data, str):
             assert os.path.exists(data), data
         else:
-            assert os.path.exists(data[-1]), data  # noqa: S101
+            assert os.path.exists(data[-1]), data
 
         self.to_upload_queues[self._counter % self.num_uploaders].put(data)
 
@@ -724,7 +725,12 @@ class DataChunkRecipe(DataRecipe):
 
             size = sum([c["dim"] if c["dim"] is not None else c["chunk_size"] for c in config["chunks"]])
             num_bytes = sum([c["chunk_bytes"] for c in config["chunks"]])
-            data_format = tree_unflatten(config["config"]["data_format"], treespec_loads(config["config"]["data_spec"]))
+            if config["config"] is not None:
+                data_format = tree_unflatten(
+                    config["config"]["data_format"], treespec_loads(config["config"]["data_spec"])
+                )
+            else:
+                data_format = None
             num_chunks = len(config["chunks"])
 
             # The platform can't store more than 1024 entries.
@@ -735,7 +741,7 @@ class DataChunkRecipe(DataRecipe):
                 size=size,
                 num_bytes=num_bytes,
                 data_format=data_format,
-                compression=config["config"]["compression"],
+                compression=config["config"]["compression"] if config["config"] else None,
                 num_chunks=len(config["chunks"]),
                 num_bytes_per_chunk=num_bytes_per_chunk,
             )
@@ -772,7 +778,7 @@ class DataChunkRecipe(DataRecipe):
             # Get the index file locally
             for node_rank in range(num_nodes - 1):
                 output_dir_path = output_dir.url if output_dir.url else output_dir.path
-                assert output_dir_path  # noqa: S101
+                assert output_dir_path
                 remote_filepath = os.path.join(output_dir_path, f"{node_rank}-{_INDEX_FILENAME}")
                 node_index_filepath = os.path.join(cache_dir, os.path.basename(remote_filepath))
                 if obj.scheme == "s3":
@@ -874,7 +880,9 @@ class DataProcessor:
         print(f"Setup started with fast_dev_run={self.fast_dev_run}.")
 
         # Force random seed to be fixed
-        seed_everything(self.random_seed)
+        random.seed(self.random_seed)
+        np.random.seed(self.random_seed)
+        torch.manual_seed(self.random_seed)
 
         # Call the setup method of the user
         user_items: List[Any] = data_recipe.prepare_structure(self.input_dir.path if self.input_dir else None)
@@ -941,7 +949,7 @@ class DataProcessor:
                 error = self.error_queue.get(timeout=0.001)
                 self._exit_on_error(error)
             except Empty:
-                assert self.progress_queue  # noqa: S101
+                assert self.progress_queue
                 try:
                     index, counter = self.progress_queue.get(timeout=0.001)
                 except Empty:
@@ -973,7 +981,8 @@ class DataProcessor:
         print("Workers are finished.")
         result = data_recipe._done(len(user_items), self.delete_cached_files, self.output_dir)
 
-        if num_nodes == node_rank + 1 and self.output_dir.url:
+        if num_nodes == node_rank + 1 and self.output_dir.url and _IS_IN_STUDIO:
+            assert self.output_dir.path
             _create_dataset(
                 input_dir=self.input_dir.path,
                 storage_dir=self.output_dir.path,
