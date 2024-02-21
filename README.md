@@ -41,7 +41,7 @@ Higher is better.
 
 The dataset needs to be converted into an optimized format for cloud streaming. We measured how fast the 1.2 million images are converted.
 
-Lower is better.
+Faster is better.
 
 # 📚 Real World Examples
 
