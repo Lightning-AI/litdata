@@ -19,7 +19,7 @@ The `StreamingDataset` is compatible with any data type, including **images, tex
 
 # 🚀 Benchmarks
 
-[Imagenet-1.2M](https://www.image-net.org/) is a famous dataset used to compare Computer Vision deep learning models. Its train dataset contains 1281167 images. Find the full reproducible [Lightning Studio Benchmark](https://lightning.ai/) [here](https://lightning.ai/lightning-ai/studios/benchmark-cloud-data-loading-libraries).
+[Imagenet-1.2M](https://www.image-net.org/) is a commonly used dataset to compare computer vision models. Its training dataset contains 1281167 images. In this benchmark, we are measured how many images per second from [AWS S3](https://aws.amazon.com/s3/) are loaded. Find the full reproducible [Lightning Studio Benchmark](https://lightning.ai/) [here](https://lightning.ai/lightning-ai/studios/benchmark-cloud-data-loading-libraries).
 
 ### Imagenet-1.2M Streaming from AWS S3
 
