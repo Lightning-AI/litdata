@@ -26,6 +26,18 @@ Finally, the `StreamingDataset` is fast! Check out our [benchmark](https://light
 
 ### Imagenet-1.2M Streaming from AWS S3
 
+<style type="text/css">
+  .highlight {
+    background-color: yellow;
+  }
+</style>
+
+<table>
+  <tr class="highlight">
+    <td>Exciting contents</td>
+  </tr>
+</table>
+
 | Framework | Images / sec  1st Epoch (float32)  | Images / sec   2nd Epoch (float32) | Images / sec 1st Epoch (torch16) | Images / sec 2nd Epoch (torch16) |
 |---|---|---|---|---|
 | PL Data  |<span style="font-family: Source Code Pro; padding: 20px; background-color: #990033; color: #fff;">5800.34</span> | 6589.98  | 6282.17  | 7221.88  |
