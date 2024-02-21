@@ -5,7 +5,7 @@
 <br/>
 <br/>
 
-## Blazing fast, distributed streaming of training data from cloud storage
+## Blazingly fast, distributed streaming of training data from cloud storage
 
 </div>
 
