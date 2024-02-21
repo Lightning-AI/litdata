@@ -23,7 +23,7 @@ The `StreamingDataset` is compatible with any data type, including **images, tex
 
 In this benchmark, we measured the streaming speed (`images per second`) loaded from [AWS S3](https://aws.amazon.com/s3/) for several frameworks. 
 
-Find the full reproducible [Lightning Studio Benchmark](https://lightning.ai/) [here](https://lightning.ai/lightning-ai/studios/benchmark-cloud-data-loading-libraries).
+Find the reproducible [Studio Benchmark](https://lightning.ai/lightning-ai/studios/benchmark-cloud-data-loading-libraries).
 
 ### Imagenet-1.2M Streaming from AWS S3
 
