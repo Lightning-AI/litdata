@@ -59,7 +59,7 @@ We have built end-to-end free [Studios](https://lightning.ai) showing all the st
 | [English Wikepedia](https://huggingface.co/datasets/wikipedia)                                                                               |        Text         |            [Embed English Wikipedia under 5 dollars](https://lightning.ai/lightning-ai/studios/embed-english-wikipedia-under-5-dollars) |
 | Generated                                                                                                                                    |    Parquet Files    |            [Convert parquets to Lightning Streaming](https://lightning.ai/lightning-ai/studios/convert-parquets-to-lightning-streaming) |
 
-[Lightning Studios](https://lightning.ai) are fully reproducible cloud IDE with data, code, dependencies, etc... So we finally have a support for reproducible science.
+[Lightning Studios](https://lightning.ai) are fully reproducible cloud IDE with data, code, dependencies, etc...
 
 # 🎬 Getting Started
 
