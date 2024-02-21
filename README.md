@@ -28,7 +28,7 @@ Finally, the `StreamingDataset` is fast! Check out our [benchmark](https://light
 
 | Framework | Images / sec  1st Epoch (float32)  | Images / sec   2nd Epoch (float32) | Images / sec 1st Epoch (torch16) | Images / sec 2nd Epoch (torch16) |
 |---|---|---|---|---|
-| PL Data  | ${\textbf{\color{Fuchsia}5800.34}}$ | **6589.98**  | **6282.17**  | **7221.88**  |
+| PL Data  | ${\textbf{\color{Fuchsia}5800.34}}$ | ${\textbf{\color{Fuchsia}6589.98}}$  | ${\textbf{\color{Fuchsia}6282.17}}$  | ${\textbf{\color{Fuchsia}7221.88}}$  |
 | Web Dataset  | 3134.42 | 3924.95 | 3343.40 | 4424.62 |
 | Mosaic ML  | 2898.61 | 5099.93 | 2809.69 | 5158.98 |
 
@@ -38,7 +38,7 @@ Higher is better.
 
 | Framework |Train Conversion Time | Val Conversion Time | Dataset Size | # Files |
 |---|---|---|---|---|
-| PL Data  |  **10:05 min**  | **00:30 min**  | 143.1 GB  | 2.339  |
+| PL Data  |  ${\textbf{\color{Fuchsia}10:05 min}}$ | ${\textbf{\color{Fuchsia}00:30 min}}$ | 143.1 GB  | 2.339  |
 | Web Dataset  | 32:36 min | 01:22 min | 147.8 GB | 1.144 |
 | Mosaic ML  | 49:49 min | 01:04 min | 143.1 GB | 2.298 |
 
