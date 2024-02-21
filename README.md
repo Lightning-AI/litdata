@@ -26,12 +26,28 @@ Finally, the `StreamingDataset` is fast! Check out our [benchmark](https://light
 
 ### Imagenet-1.2M Streaming from AWS S3
 
+<style>
+    .heatMap {
+        width: 70%;
+        text-align: center;
+    }
+    .heatMap th {
+        background: grey;
+        word-wrap: break-word;
+        text-align: center;
+    }
+    .heatMap tr:nth-child(2) { background: red; }
+</style>
+
+<div class="heatMap">
+
 | Framework | Images / sec  1st Epoch (float32)  | Images / sec   2nd Epoch (float32) | Images / sec 1st Epoch (torch16) | Images / sec 2nd Epoch (torch16) |
 |---|---|---|---|---|
-| PL Data  | <span style="color:blue">5800.34</span>  | 6589.98  | 6282.17  | 7221.88  |
+| PL Data  | 5800.34 | 6589.98  | 6282.17  | 7221.88  |
 | Web Dataset  | 3134.42 | 3924.95 | 3343.40 | 4424.62 |
 | Mosaic ML  | 2898.61 | 5099.93 | 2809.69 | 5158.98 |
 
+</div>
 
 ### Imagenet-1.2M Preparation
 
