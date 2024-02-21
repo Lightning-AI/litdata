@@ -19,7 +19,7 @@ The `StreamingDataset` is compatible with any data type, including **images, tex
 
 # 🚀 Benchmarks
 
-[Imagenet-1.2M](https://www.image-net.org/) is a commonly used dataset to compare computer vision models. Its training dataset contains 1,281,167 images. In this benchmark, we measured the streaming speed (images per second) loaded from [AWS S3](https://aws.amazon.com/s3/) for several frameworks. Find the full reproducible [Lightning Studio Benchmark](https://lightning.ai/) [here](https://lightning.ai/lightning-ai/studios/benchmark-cloud-data-loading-libraries).
+[Imagenet-1.2M](https://www.image-net.org/) is a commonly used dataset to compare computer vision models. Its training dataset contains `1,281,167 images`. In this benchmark, we measured the streaming speed (`images per second`) loaded from [AWS S3](https://aws.amazon.com/s3/) for several frameworks. Find the full reproducible [Lightning Studio Benchmark](https://lightning.ai/) [here](https://lightning.ai/lightning-ai/studios/benchmark-cloud-data-loading-libraries).
 
 ### Imagenet-1.2M Streaming from AWS S3
 
@@ -39,7 +39,7 @@ Higher is better.
 | Web Dataset  | 32:36 min | 01:22 min | 147.8 GB | 1.144 |
 | Mosaic ML  | 49:49 min | 01:04 min | 143.1 GB | 2.298 |
 
-The dataset underlying format needs to be changed to be optimized for data cloud streaming. We measure how long it takes to convert the 1.2 million images.
+The dataset needs to be converted into an optimized format for cloud streaming. We measured how fast the 1.2 million images are converted.
 
 Lower is better.
 
