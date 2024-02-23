@@ -1,6 +1,6 @@
 <div align="center">
 
-<img alt="Lightning" src="https://pl-flash-data.s3.amazonaws.com/litdata_logo.png" width="800px" style="max-width: 100%;">
+<img alt="Lightning" src="https://pl-flash-data.s3.amazonaws.com/lightning_data_logo.png" width="800px" style="max-width: 100%;">
 
 <br/>
 <br/>
