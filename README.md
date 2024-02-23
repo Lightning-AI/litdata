@@ -71,7 +71,7 @@ Lightning Data can be installed with `pip`:
 <!--pytest.mark.skip-->
 
 ```bash
-pip install --no-cache-dir git+https://github.com/Lightning-AI/lit-data.git@master
+pip install -U litdata
 ```
 
 ## 🏁 Quick Start
