@@ -30,7 +30,7 @@ jobs:
     uses: Lightning-AI/utilities/.github/workflows/check-package.yml@v0.10.1
     with:
       actions-ref: v0.10.1
-      import-name: "lightning_data"
+      import-name: "litdata"
       artifact-name: dist-packages-${{ github.sha }}
       testing-matrix: |
         {

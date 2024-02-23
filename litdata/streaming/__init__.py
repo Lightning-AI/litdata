@@ -11,11 +11,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from lightning_data.streaming.cache import Cache
-from lightning_data.streaming.combined import CombinedStreamingDataset
-from lightning_data.streaming.dataloader import StreamingDataLoader
-from lightning_data.streaming.dataset import StreamingDataset
-from lightning_data.streaming.item_loader import TokensLoader
+from litdata.streaming.cache import Cache
+from litdata.streaming.combined import CombinedStreamingDataset
+from litdata.streaming.dataloader import StreamingDataLoader
+from litdata.streaming.dataset import StreamingDataset
+from litdata.streaming.item_loader import TokensLoader
 
 __all__ = [
     "Cache",

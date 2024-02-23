@@ -2,7 +2,7 @@ import os
 from time import time
 from typing import Any, Optional
 
-from lightning_data.constants import _BOTO3_AVAILABLE
+from litdata.constants import _BOTO3_AVAILABLE
 
 if _BOTO3_AVAILABLE:
     import boto3

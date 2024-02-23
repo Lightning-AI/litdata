@@ -5,7 +5,7 @@ from contextlib import contextmanager
 from subprocess import DEVNULL, Popen
 from typing import Any, Callable, List, Optional, Tuple, Union
 
-from lightning_data.constants import _IS_IN_STUDIO, _LIGHTNING_CLOUD_LATEST
+from litdata.constants import _IS_IN_STUDIO, _LIGHTNING_CLOUD_LATEST
 
 if _LIGHTNING_CLOUD_LATEST:
     from lightning_cloud.openapi import (
@@ -132,7 +132,7 @@ def optimize_dns(enable: bool) -> None:
     ):
         cmd = (
             f"sudo /home/zeus/miniconda3/envs/cloudspace/bin/python"
-            f" -c 'from lightning_data.processing.utilities import _optimize_dns; _optimize_dns({enable})'"
+            f" -c 'from litdata.processing.utilities import _optimize_dns; _optimize_dns({enable})'"
         )
         Popen(cmd, shell=True, stdout=DEVNULL, stderr=DEVNULL).wait()  # E501
 

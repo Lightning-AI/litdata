@@ -1,7 +1,7 @@
 import os
 from unittest.mock import MagicMock
 
-from lightning_data.streaming.downloader import S3Downloader, subprocess
+from litdata.streaming.downloader import S3Downloader, subprocess
 
 
 def test_s3_downloader_fast(tmpdir, monkeypatch):
