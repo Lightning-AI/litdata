@@ -16,8 +16,8 @@ from typing import Any, Dict, Iterator, List, Optional, Sequence
 
 from torch.utils.data import IterableDataset
 
-from lightning_data.streaming.dataset import StreamingDataset
-from lightning_data.utilities.env import _WorkerEnv
+from litdata.streaming.dataset import StreamingDataset
+from litdata.utilities.env import _WorkerEnv
 
 __NUM_SAMPLES_YIELDED_KEY__ = "__NUM_SAMPLES_YIELDED__"
 __SAMPLES_KEY__ = "__SAMPLES__"

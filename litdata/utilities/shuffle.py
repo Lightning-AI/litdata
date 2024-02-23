@@ -2,7 +2,7 @@ from typing import Any, List, Tuple
 
 import numpy as np
 
-from lightning_data.utilities.env import _DistributedEnv
+from litdata.utilities.env import _DistributedEnv
 
 
 def _intra_node_chunk_shuffle(

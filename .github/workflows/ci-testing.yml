@@ -69,7 +69,7 @@ jobs:
           pip list
 
       - name: Tests
-        run: coverage run --source lightning_data -m pytest tests -v
+        run: coverage run --source litdata -m pytest tests -v
 
       - name: Statistics
         if: success()

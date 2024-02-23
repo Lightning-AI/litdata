@@ -17,9 +17,9 @@ from typing import Any, List
 
 import numpy as np
 
-from lightning_data.streaming import Cache
-from lightning_data.utilities.env import _DistributedEnv
-from lightning_data.utilities.shuffle import _associate_chunks_and_internals_to_ranks, _intra_node_chunk_shuffle
+from litdata.streaming import Cache
+from litdata.utilities.env import _DistributedEnv
+from litdata.utilities.shuffle import _associate_chunks_and_internals_to_ranks, _intra_node_chunk_shuffle
 
 
 class Shuffle(ABC):
