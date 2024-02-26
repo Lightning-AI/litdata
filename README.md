@@ -11,13 +11,11 @@
 
 # ⚡ Welcome to Lightning Data
 
-Lightning Data is a pivotal framework within the Lightning ecoystem, facilitating the efficient streaming of training data from cloud storage. As part of the Lightning ecosystem, Lightning Data integrates smoothly with other core packages, enabling users to leverage its capabilities alongside [PyTorch Lightning](https://lightning.ai/docs/pytorch/stable/), [Lightning Fabric](https://lightning.ai/docs/open-source/fabric), and [PyTorch](https://pytorch.org/docs/stable/index.html).
-
 With Lightning Data, users can transform and optimize their data in cloud environments with an intuitive approach and at any scale. 
 
 Then, efficient training becomes feasible regardless of the data's location, allowing users to effortlessly stream in the required data as needed.
 
-Lightning Data supports **images, text, video, audio, geo-spatial, and multimodal data** types and it is already used adopted framework such as [Lit-GPT](https://github.com/Lightning-AI/lit-gpt/blob/main/pretrain/tinyllama.py) to pretrain LLMs.
+Lightning Data supports **images, text, video, audio, geo-spatial, and multimodal data** types, is already adopted by frameworks such as [Lit-GPT](https://github.com/Lightning-AI/lit-gpt/blob/main/pretrain/tinyllama.py) to pretrain LLMs and integrates smoothly [PyTorch Lightning](https://lightning.ai/docs/pytorch/stable/), [Lightning Fabric](https://lightning.ai/docs/open-source/fabric), and [PyTorch](https://pytorch.org/docs/stable/index.html).
 
 ### Table of Content
 
