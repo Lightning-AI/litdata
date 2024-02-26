@@ -369,7 +369,11 @@ The Data Prep Job UI from the [LAION 400M Studio](https://lightning.ai/lightning
 
 <img alt="Lightning" src="https://pl-flash-data.s3.amazonaws.com/data-prep.jpg" width="800px" style="max-width: 100%;">
 
+</div> 
+
 <br/>
+
+
 
 # ⚡ Contributors
 
