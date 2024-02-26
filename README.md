@@ -125,36 +125,6 @@ We have built end-to-end free [Studios](https://lightning.ai) showing all the st
 
 [Lightning Studios](https://lightning.ai) are fully reproducible cloud IDE with data, code, dependencies, etc...
 
-# Benchmarks
-
-[Imagenet-1.2M](https://www.image-net.org/) is a commonly used dataset to compare computer vision models. Its training dataset contains `1,281,167 images`. 
-
-In this benchmark, we measured the streaming speed (`images per second`) loaded from [AWS S3](https://aws.amazon.com/s3/) for several frameworks. 
-
-Find the reproducible [Studio Benchmark](https://lightning.ai/lightning-ai/studios/benchmark-cloud-data-loading-libraries).
-
-### Imagenet-1.2M Streaming from AWS S3
-
-| Framework | Images / sec  1st Epoch (float32)  | Images / sec   2nd Epoch (float32) | Images / sec 1st Epoch (torch16) | Images / sec 2nd Epoch (torch16) |
-|---|---|---|---|---|
-| PL Data  | **5800.34** | **6589.98**  | **6282.17**  | **7221.88**  |
-| Web Dataset  | 3134.42 | 3924.95 | 3343.40 | 4424.62 |
-| Mosaic ML  | 2898.61 | 5099.93 | 2809.69 | 5158.98 |
-
-Higher is better.
-
-### Imagenet-1.2M Conversion
-
-| Framework |Train Conversion Time | Val Conversion Time | Dataset Size | # Files |
-|---|---|---|---|---|
-| PL Data  |  **10:05 min** | **00:30 min** | **143.1 GB**  | 2.339  |
-| Web Dataset  | 32:36 min | 01:22 min | 147.8 GB | 1.144 |
-| Mosaic ML  | 49:49 min | 01:04 min | **143.1 GB** | 2.298 |
-
-The dataset needs to be converted into an optimized format for cloud streaming. We measured how fast the 1.2 million images are converted.
-
-Faster is better.
-
 # Real World Examples
 
 We have built end-to-end free [Studios](https://lightning.ai) showing all the steps to prepare the following datasets:
