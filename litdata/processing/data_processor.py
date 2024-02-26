@@ -19,7 +19,9 @@ from urllib import parse
 
 import numpy as np
 import torch
-from llitdata.constants import (
+from tqdm.auto import tqdm as _tqdm
+
+from litdata.constants import (
     _BOTO3_AVAILABLE,
     _DEFAULT_FAST_DEV_RUN_ITEMS,
     _INDEX_FILENAME,
@@ -27,16 +29,15 @@ from llitdata.constants import (
     _LIGHTNING_CLOUD_LATEST,
     _TORCH_GREATER_EQUAL_2_1_0,
 )
-from llitdata.processing.readers import BaseReader, StreamingDataLoaderReader
-from llitdata.processing.utilities import _create_dataset
-from llitdata.streaming import Cache
-from llitdata.streaming.cache import Dir
-from llitdata.streaming.client import S3Client
-from llitdata.streaming.dataloader import StreamingDataLoader
-from llitdata.streaming.resolver import _resolve_dir
-from llitdata.utilities.broadcast import broadcast_object
-from llitdata.utilities.packing import _pack_greedily
-from tqdm.auto import tqdm as _tqdm
+from litdata.processing.readers import BaseReader, StreamingDataLoaderReader
+from litdata.processing.utilities import _create_dataset
+from litdata.streaming import Cache
+from litdata.streaming.cache import Dir
+from litdata.streaming.client import S3Client
+from litdata.streaming.dataloader import StreamingDataLoader
+from litdata.streaming.resolver import _resolve_dir
+from litdata.utilities.broadcast import broadcast_object
+from litdata.utilities.packing import _pack_greedily
 
 if _TORCH_GREATER_EQUAL_2_1_0:
     from torch.utils._pytree import tree_flatten, tree_unflatten, treespec_loads
