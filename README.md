@@ -367,24 +367,26 @@ Faster is better.
 
 # Lightning AI Platform: Scale cloud data processing
 
-To scale data processing, create a free account on the [Lightning.ai](https://lightning.ai/) platform. With the platform, the `optimize` and `map` can start multiple machines to make data processing / optimization drastically faster as follows:
+To scale data processing, create a free account on the [Lightning.ai](https://lightning.ai/) platform. 
+
+With the platform, the `map` operator can start multiple machines to make data processing drastically faster as follows:
 
 ```python
-from litdata import optimize, Machine
+from litdata import map, Machine
 
-optimize(
+map(
   ...
   num_nodes=32,
   machine=Machine.DATA_PREP, # You can select between dozens of optimized machines
 )
 ```
 
-OR
+Also, the `optimize`operator  can do the same to make immense dataset streamable as follows:
 
 ```python
-from litdata import map, Machine
+from litdata import optimize, Machine
 
-map(
+optimize(
   ...
   num_nodes=32,
   machine=Machine.DATA_PREP, # You can select between dozens of optimized machines
