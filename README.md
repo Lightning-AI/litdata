@@ -15,7 +15,7 @@ With Lightning Data, users can transform and optimize their data in cloud storag
 
 Then, efficient distributed training becomes feasible regardless of the data's location, allowing users to effortlessly stream your data as needed.
 
-Lightning Data supports **images, text, video, audio, geo-spatial, and multimodal data** types, is already adopted by frameworks such as [Lit-GPT](https://github.com/Lightning-AI/lit-gpt/blob/main/pretrain/tinyllama.py) to pretrain LLMs and integrates smoothly [PyTorch Lightning](https://lightning.ai/docs/pytorch/stable/), [Lightning Fabric](https://lightning.ai/docs/open-source/fabric), and [PyTorch](https://pytorch.org/docs/stable/index.html).
+Lightning Data supports **images, text, video, audio, geo-spatial, and multimodal data** types, is already adopted by frameworks such as [Lit-GPT](https://github.com/Lightning-AI/lit-gpt/blob/main/pretrain/tinyllama.py) to pretrain LLMs and integrates smoothly [PyTorch Lightning](https://lightning.ai/docs/pytorch/stable/), [Lightning Fabric](https://lightning.ai/docs/fabric/stable/), and [PyTorch](https://pytorch.org/docs/stable/index.html).
 
 ### Table of Contents
 
@@ -24,11 +24,11 @@ Lightning Data supports **images, text, video, audio, geo-spatial, and multimoda
     - [Quick Start](#quick-start)
         - [1. Prepare Your Data](#1-prepare-your-data)
         - [2. Upload Your Data to Cloud Storage](#2-upload-your-data-to-cloud-storage)
-        - [3. Use StreamingDataset and DataLoader](#3-use-streamingdataset-and-dataloader)
-- [Real World Examples](#real-world-examples)
+        - [3. Use StreamingDataset](#3-use-streamingdataset)
 - [Key Features](#key-features)
 - [Benchmarks](#benchmarks)
-- [Lightning AI Platform: Scale cloud data processing](#lightning-ai-platform-scale-cloud-data-processing)
+- [Real World Runnable Templates](#real-world-templates)
+- [Use Lightning AI Platform to scale](#lightning-ai-platform-scale-cloud-data-processing)
 - [Contributors](#-contributors)
 
 # Getting Started
@@ -111,31 +111,17 @@ cls = sample['class']
 dataloader = DataLoader(dataset)
 ```
 
-# Real World Examples
-
-We have built end-to-end free [Studios](https://lightning.ai) showing all the steps to prepare several data types of data. The [Studios](https://lightning.ai) are fully reproducible cloud IDE with data, code, dependencies, e.g so you can re-do everything yourself with ease !
-
-| Studio | Data type | Dataset |
-| -------------------------------------------------------------------------------------------------------------------------------------------- | :-----------------: | --------------------------------------------------------------------------------------------------------------------------------------: |
-| [Use or explore LAION-400MILLION dataset](https://lightning.ai/lightning-ai/studios/use-or-explore-laion-400million-dataset)                                                                                  | Image & description |[LAION-400M](https://laion.ai/blog/laion-400-open-dataset/) |
-| [Convert GeoSpatial data to Lightning Streaming](https://lightning.ai/lightning-ai/studios/convert-spatial-data-to-lightning-streaming) [Chesapeake Roads Spatial Context](https://github.com/isaaccorley/chesapeakersc)                                                             |    Image & Mask     |  [Chesapeake Roads Spatial Context](https://github.com/isaaccorley/chesapeakersc) |
-| [Benchmark cloud data-loading libraries](https://lightning.ai/lightning-ai/studios/benchmark-cloud-data-loading-libraries)                                               |    Image & Label    | [Imagenet 1M](https://paperswithcode.com/sota/image-classification-on-imagenet?tag_filter=171) |
-| [Prepare the TinyLlama 1T token dataset](https://lightning.ai/lightning-ai/studios/prepare-the-tinyllama-1t-token-dataset) |        Text         |              [SlimPajama](https://huggingface.co/datasets/cerebras/SlimPajama-627B) & [StartCoder](https://huggingface.co/datasets/bigcode/starcoderdata) |
-| [Tokenize 2M Swedish Wikipedia Articles](https://lightning.ai/lightning-ai/studios/tokenize-2m-swedish-wikipedia-articles) |        Text         |              [Swedish Wikipedia](https://huggingface.co/datasets/wikipedia) |
-| [Embed English Wikipedia under 5 dollars](https://lightning.ai/lightning-ai/studios/embed-english-wikipedia-under-5-dollars)                                                                               |        Text         |            [English Wikipedia](https://huggingface.co/datasets/wikipedia) |
-| [Convert parquets to Lightning Streaming](https://lightning.ai/lightning-ai/studios/convert-parquets-to-lightning-streaming)                                                                                                                                    |    Parquet Files    | Randomly Generated data |
-
 # Key Features
 
-- [Multi-GPU / Multi-Node](#multi-gpu--multi-node)
+- [Built-in Multi-GPU / Multi-Node](#multi-gpu--multi-node)
 - [Easy Data Mixing](#easy-data-mixing)
-- [Stateful StreamingDataLoader](#stateful-streamingdataloader)
-- [Profiling](#profiling)
-- [Random access](#random-access)
+- [Continue Training From Previous Dataset State](#stateful-streamingdataloader)
+- [Support Profiling](#profiling)
+- [Access any items](#random-access)
 - [Use data transforms](#use-data-transforms)
 - [Disk usage limits](#disk-usage-limits)
-- [Support the python yield keyword](#support-python-yield-keyword)
-- [Network Drive Storage](#on-prem-storage-with-network-drive)
+- [Reduce your memory footprint](#support-python-yield-keyword)
+- [Support Network Drive Storage](#on-prem-storage-with-network-drive)
 - [Map Operator](#map-operator)
 
 ## Multi-GPU / Multi-Node
@@ -185,9 +171,9 @@ for batch in tqdm(train_dataloader):
 
 ## Stateful Streaming DataLoader
 
-Lightning Data provides a stateful `StreamingDataLoader`. This simplifies resuming training over large datasets.
+Lightning Data provides a stateful `StreamingDataLoader`. This means you can pause and resume your training
 
-Note: The `StreamingDataLoader` is used by [Lit-GPT](https://github.com/Lightning-AI/lit-gpt/blob/main/pretrain/tinyllama.py) to pretrain LLMs. The statefulness still works when using a mixture of datasets with the `CombinedStreamingDataset`.
+Note: The `StreamingDataLoader` is used by [Lit-GPT](https://github.com/Lightning-AI/lit-gpt/blob/main/pretrain/tinyllama.py) to pretrain LLMs.
 
 ```python
 import os
@@ -268,7 +254,7 @@ from litdata import StreamingDataset
 dataset = StreamingDataset(..., max_cache_size="10GB")
 ```
 
-## Support python yield keyword
+## Reduce your memory footprint
 
 When processing large files like compressed [parquet files](https://en.wikipedia.org/wiki/Apache_Parquet), you can use the python yield keyword to process and store one item at the time, reducing the memory footprint of the entire program. 
 
@@ -300,7 +286,7 @@ outputs = optimize(
 )
 ```
 
-## On-Prem Storage with Network Drive
+## Support Network Drive Storage
 
 A network drive is a shared storage device on a local area network. On-prem compute nodes can mount and use network drive. In order to reduce their network overload, the `StreamingDataset` supports `caching` the chunks.
 
@@ -310,7 +296,7 @@ from lightning.data import StreamingDataset
 dataset = StreamingDataset(input_dir="local:/data/shared-drive/some-data")
 ```
 
-## Map Operator
+## The Map Operator
 
 The `map` operator can be used to apply a function over a list of inputs.
 
@@ -343,7 +329,32 @@ In this benchmark, we measured the streaming speed (`images per second`) loaded 
 
 You can reproduce this benchmark with this [Studio](https://lightning.ai/lightning-ai/studios/benchmark-cloud-data-loading-libraries). 
 
+
+# Real World Examples
+
+Fastest way to learn is with [Studios](https://lightning.ai/studios).  Studios are reproducible reproducible cloud IDE with data, code, dependencies, e.g. so you can re-do everything yourself with ease!
+
+We've published public templates that demonstrates 
+
+Studios also allow you to run this on the cloud
+
+Sign up here to and run your first Studio free
+
+We have built end-to-end free [Studios](https://lightning.ai) showing all the steps to prepare several data types. The [Studios](https://lightning.ai) are fully reproducible cloud IDE with data, code, dependencies, e.g. so you can re-do everything yourself with ease!
+
+| Studio | Data type | Dataset |
+| -------------------------------------------------------------------------------------------------------------------------------------------- | :-----------------: | --------------------------------------------------------------------------------------------------------------------------------------: |
+| [Use or explore LAION-400MILLION dataset](https://lightning.ai/lightning-ai/studios/use-or-explore-laion-400million-dataset)                                                                                  | Image & Text |[LAION-400M](https://laion.ai/blog/laion-400-open-dataset/) |
+| [Convert GeoSpatial data to Lightning Streaming](https://lightning.ai/lightning-ai/studios/convert-spatial-data-to-lightning-streaming) [Chesapeake Roads Spatial Context](https://github.com/isaaccorley/chesapeakersc)                                                             |    Image & Mask     |  [Chesapeake Roads Spatial Context](https://github.com/isaaccorley/chesapeakersc) |
+| [Benchmark cloud data-loading libraries](https://lightning.ai/lightning-ai/studios/benchmark-cloud-data-loading-libraries)                                               |    Image & Label    | [Imagenet 1M](https://paperswithcode.com/sota/image-classification-on-imagenet?tag_filter=171) |
+| [Prepare the TinyLlama 1T token dataset](https://lightning.ai/lightning-ai/studios/prepare-the-tinyllama-1t-token-dataset) |        Text         |              [SlimPajama](https://huggingface.co/datasets/cerebras/SlimPajama-627B) & [StartCoder](https://huggingface.co/datasets/bigcode/starcoderdata) |
+| [Tokenize 2M Swedish Wikipedia Articles](https://lightning.ai/lightning-ai/studios/tokenize-2m-swedish-wikipedia-articles) |        Text         |              [Swedish Wikipedia](https://huggingface.co/datasets/wikipedia) |
+| [Embed English Wikipedia under 5 dollars](https://lightning.ai/lightning-ai/studios/embed-english-wikipedia-under-5-dollars)                                                                               |        Text         |            [English Wikipedia](https://huggingface.co/datasets/wikipedia) |
+| [Convert parquets to Lightning Streaming](https://lightning.ai/lightning-ai/studios/convert-parquets-to-lightning-streaming)                                                                                                                                    |    Parquet Files    | Randomly Generated data |
+
 ### Imagenet-1.2M Streaming from AWS S3
+
+Higher is better.
 
 | Framework | Images / sec  1st Epoch (float32)  | Images / sec   2nd Epoch (float32) | Images / sec 1st Epoch (torch16) | Images / sec 2nd Epoch (torch16) |
 |---|---|---|---|---|
@@ -351,9 +362,9 @@ You can reproduce this benchmark with this [Studio](https://lightning.ai/lightni
 | Web Dataset  | 3134.42 | 3924.95 | 3343.40 | 4424.62 |
 | Mosaic ML  | 2898.61 | 5099.93 | 2809.69 | 5158.98 |
 
-Higher is better.
-
 ### Imagenet-1.2M Conversion
+
+Faster is better.
 
 | Framework |Train Conversion Time | Val Conversion Time | Dataset Size | # Files |
 |---|---|---|---|---|
@@ -363,11 +374,11 @@ Higher is better.
 
 The dataset needs to be converted into an optimized format for cloud streaming. We measured how fast the 1.2 million images are converted.
 
-Faster is better.
+# Infinite cloud data processing
 
-# Lightning AI Platform: Scale cloud data processing
+If you want to scale data processing, you typically need more machines and if you do this yourself, this becomes very tedious and can take a long time. 
 
-To scale data processing, create a free account on the [Lightning.ai](https://lightning.ai/) platform. 
+Instead, create a free account on the [Lightning.ai](https://lightning.ai/) platform .
 
 With the platform, the `map` operator can start multiple machines to make data processing drastically faster as follows:
 
