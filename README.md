@@ -19,10 +19,10 @@ Lightning Data supports **images, text, video, audio, geo-spatial, and multimoda
 
 ### Table of Content:
 
-- [Getting started](#and-a-table-of-contents)
-    - [Installation](#and-a-table-of-contents)
-    - [Quick Start](#and-a-table-of-contents)
-        - [Quick Start](#and-a-table-of-contents)
+- [Getting started](#getting-started)
+    - [Installation](#installation)
+    - [Quick Start](#quick-start)
+        - [Prepare Your Data](#1-prepare-your-data)
         - [Quick Start](#and-a-table-of-contents)
         - [Quick Start](#and-a-table-of-contents)
 - [Real world examples](#and-a-table-of-contents)
@@ -78,6 +78,37 @@ if __name__ == "__main__":
 ```
 
 The `optimize` operator supports any data structures and types. Serialize whatever you want.
+
+### 2. Upload Your Data to Cloud Storage
+
+Cloud providers such as [AWS](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html), [Google Cloud](https://cloud.google.com/storage/docs/uploading-objects?hl=en#upload-object-cli), [Azure](https://learn.microsoft.com/en-us/azure/import-export/storage-import-export-data-to-files?tabs=azure-portal-preview), etc.. provide command line client to upload your data to their storage.
+
+Here is an example with [AWS S3](https://aws.amazon.com/s3).
+
+```bash
+⚡ aws s3 cp --recursive my_dataset s3://my-bucket/my_dataset
+```
+
+### 3. Use StreamingDataset and DataLoader
+
+```python
+from litdata import StreamingDataset
+from torch.utils.data import DataLoader
+
+# Remote path where full dataset is persistently stored
+input_dir = 's3://pl-flash-data/my_dataset'
+
+# Create streaming dataset
+dataset = StreamingDataset(input_dir, shuffle=True)
+
+# Check any elements
+sample = dataset[50]
+img = sample['image']
+cls = sample['class']
+
+# Create PyTorch DataLoader
+dataloader = DataLoader(dataset)
+```
 
 # Real World Examples
 
