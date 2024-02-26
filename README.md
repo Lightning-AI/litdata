@@ -391,6 +391,16 @@ outputs = optimize(
 )
 ```
 
+## Network Drive On-Prem Support
+
+On-prem compute nodes can mount and use network drive. In order to reduce their network overload, the `StreamingDataset` supports `caching` the chunks.
+
+```python
+from lightning.data import StreamingDataset
+
+dataset = StreamingDataset(input_dir="local:/data/shared-drive/some-data")
+```
+
 # ⚡ Contributors
 
 We welcome any contributions, pull requests, or issues. If you use the Streaming Dataset for your own project, please reach out to us on Slack or Discord.
