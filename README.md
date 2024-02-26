@@ -121,8 +121,8 @@ dataloader = DataLoader(dataset)
 - [Add any data transforms](#add-any-data-transforms)
 - [Configure Cache Size Limit](#configure-cache-size-limit)
 - [Reduce your memory footprint](#reduce-your-memory-footprint)
-- [On-Prem Optimizations](#on-prem-storage-with-network-drive)
-- [The Map Operator](#map-operator)
+- [On-Prem Optimizations](#on-prem-optimizations)
+- [The Map Operator](#the-map-operator)
 
 ## Built-in Multi-GPU / Multi-Node
 
@@ -329,27 +329,6 @@ In this benchmark, we measured the streaming speed (`images per second`) loaded 
 
 You can reproduce this benchmark with this [Studio](https://lightning.ai/lightning-ai/studios/benchmark-cloud-data-loading-libraries). 
 
-
-# Real World Runnable Templates
-
-Fastest way to learn is with [Studios](https://lightning.ai/studios).  
-
-[Studios](https://lightning.ai/studios) are reproducible cloud IDE with data, code, dependencies, e.g. so you can re-do everything yourself with ease!
-
-We've published [public templates](https://lightning.ai/studios) that demonstrates how best to use the Lightning Data framework at scale and with several data types.
-
-Sign up [here](https://lightning.ai/) to and run your first Studio free.
-
-| Studio | Data type | Dataset |
-| -------------------------------------------------------------------------------------------------------------------------------------------- | :-----------------: | --------------------------------------------------------------------------------------------------------------------------------------: |
-| [Use or explore LAION-400MILLION dataset](https://lightning.ai/lightning-ai/studios/use-or-explore-laion-400million-dataset)                                                                                  | Image & Text |[LAION-400M](https://laion.ai/blog/laion-400-open-dataset/) |
-| [Convert GeoSpatial data to Lightning Streaming](https://lightning.ai/lightning-ai/studios/convert-spatial-data-to-lightning-streaming) [Chesapeake Roads Spatial Context](https://github.com/isaaccorley/chesapeakersc)                                                             |    Image & Mask     |  [Chesapeake Roads Spatial Context](https://github.com/isaaccorley/chesapeakersc) |
-| [Benchmark cloud data-loading libraries](https://lightning.ai/lightning-ai/studios/benchmark-cloud-data-loading-libraries)                                               |    Image & Label    | [Imagenet 1M](https://paperswithcode.com/sota/image-classification-on-imagenet?tag_filter=171) |
-| [Prepare the TinyLlama 1T token dataset](https://lightning.ai/lightning-ai/studios/prepare-the-tinyllama-1t-token-dataset) |        Text         |              [SlimPajama](https://huggingface.co/datasets/cerebras/SlimPajama-627B) & [StartCoder](https://huggingface.co/datasets/bigcode/starcoderdata) |
-| [Tokenize 2M Swedish Wikipedia Articles](https://lightning.ai/lightning-ai/studios/tokenize-2m-swedish-wikipedia-articles) |        Text         |              [Swedish Wikipedia](https://huggingface.co/datasets/wikipedia) |
-| [Embed English Wikipedia under 5 dollars](https://lightning.ai/lightning-ai/studios/embed-english-wikipedia-under-5-dollars)                                                                               |        Text         |            [English Wikipedia](https://huggingface.co/datasets/wikipedia) |
-| [Convert parquets to Lightning Streaming](https://lightning.ai/lightning-ai/studios/convert-parquets-to-lightning-streaming)                                                                                                                                    |    Parquet Files    | Randomly Generated data |
-
 ### Imagenet-1.2M Streaming from AWS S3
 
 Higher is better.
@@ -371,6 +350,27 @@ Faster is better.
 | Mosaic ML  | 49:49 min | 01:04 min | **143.1 GB** | 2.298 |
 
 The dataset needs to be converted into an optimized format for cloud streaming. We measured how fast the 1.2 million images are converted.
+
+
+# Real World Runnable Templates
+
+Fastest way to learn is with [Studios](https://lightning.ai/studios).  
+
+[Studios](https://lightning.ai/studios) are reproducible cloud IDE with data, code, dependencies, e.g. so you can re-do everything yourself with ease!
+
+We've published [public templates](https://lightning.ai/studios) that demonstrates how best to use the Lightning Data framework at scale and with several data types.
+
+Sign up [here](https://lightning.ai/) to and run your first Studio free.
+
+| Studio | Data type | Dataset |
+| -------------------------------------------------------------------------------------------------------------------------------------------- | :-----------------: | --------------------------------------------------------------------------------------------------------------------------------------: |
+| [Use or explore LAION-400MILLION dataset](https://lightning.ai/lightning-ai/studios/use-or-explore-laion-400million-dataset)                                                                                  | Image & Text |[LAION-400M](https://laion.ai/blog/laion-400-open-dataset/) |
+| [Convert GeoSpatial data to Lightning Streaming](https://lightning.ai/lightning-ai/studios/convert-spatial-data-to-lightning-streaming) [Chesapeake Roads Spatial Context](https://github.com/isaaccorley/chesapeakersc)                                                             |    Image & Mask     |  [Chesapeake Roads Spatial Context](https://github.com/isaaccorley/chesapeakersc) |
+| [Benchmark cloud data-loading libraries](https://lightning.ai/lightning-ai/studios/benchmark-cloud-data-loading-libraries)                                               |    Image & Label    | [Imagenet 1M](https://paperswithcode.com/sota/image-classification-on-imagenet?tag_filter=171) |
+| [Prepare the TinyLlama 1T token dataset](https://lightning.ai/lightning-ai/studios/prepare-the-tinyllama-1t-token-dataset) |        Text         |              [SlimPajama](https://huggingface.co/datasets/cerebras/SlimPajama-627B) & [StartCoder](https://huggingface.co/datasets/bigcode/starcoderdata) |
+| [Tokenize 2M Swedish Wikipedia Articles](https://lightning.ai/lightning-ai/studios/tokenize-2m-swedish-wikipedia-articles) |        Text         |              [Swedish Wikipedia](https://huggingface.co/datasets/wikipedia) |
+| [Embed English Wikipedia under 5 dollars](https://lightning.ai/lightning-ai/studios/embed-english-wikipedia-under-5-dollars)                                                                               |        Text         |            [English Wikipedia](https://huggingface.co/datasets/wikipedia) |
+| [Convert parquets to Lightning Streaming](https://lightning.ai/lightning-ai/studios/convert-parquets-to-lightning-streaming)                                                                                                                                    |    Parquet Files    | Randomly Generated data |
 
 # Infinite cloud data processing
 
