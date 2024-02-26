@@ -333,7 +333,7 @@ def _execute(
         )
         if not has_printed:
             cloud_url = os.getenv("LIGHTNING_CLOUD_URL", "https://lightning.ai").replace(":443", "")
-            job_url = f"{cloud_url}/{studio.owner}/{studio._teamspace.name}"
+            job_url = f"{cloud_url}/{studio.owner.name}/{studio._teamspace.name}"
             job_url += f"/studios/{studio.name}/app?app_id=data-prep&job_name={curr_job.name}"
             print(f"Find your job at {job_url}")
             has_printed = True
