@@ -5,7 +5,7 @@ from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
 
 from pkg_resources import parse_requirements
-from setuptools import find_packages, setup
+from setuptools import setup
 
 _PATH_ROOT = os.path.dirname(__file__)
 _PATH_REQUIRES = os.path.join(_PATH_ROOT, "requirements")
@@ -57,9 +57,8 @@ setup(
     author=about.__author__,
     author_email=about.__author_email__,
     url=about.__homepage__,
-    download_url="https://github.com/Lightning-AI/lit-data",
+    download_url="https://github.com/Lightning-AI/litdata",
     license=about.__license__,
-    packages=find_packages(where="litdata"),
     package_dir={"": "litdata"},
     long_description=readme,
     long_description_content_type="text/markdown",
@@ -71,9 +70,9 @@ setup(
     install_requires=_load_requirements(),
     extras_require=_prepare_extras(),
     project_urls={
-        "Bug Tracker": "https://github.com/Lightning-AI/lit-data/issues",
-        "Documentation": "https://lightning-ai.github.io/lit-data/",
-        "Source Code": "https://github.com/Lightning-AI/lit-data",
+        "Bug Tracker": "https://github.com/Lightning-AI/litdata/issues",
+        "Documentation": "https://lightning-ai.github.io/litdata/",
+        "Source Code": "https://github.com/Lightning-AI/litdata",
     },
     classifiers=[
         "Environment :: Console",
