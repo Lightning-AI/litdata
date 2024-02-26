@@ -76,7 +76,7 @@ if __name__ == "__main__":
 
 ```
 
-The `optimize` operator supports any data structures and types. Serialize whatever you want. The resulting data are stored under the output directory `my_optimized_dataset`.
+The `optimize` operator supports any data structures and types. Serialize whatever you want. The optimized data are stored under the output directory `my_optimized_dataset`.
 
 ### 2. Upload Your Data to Cloud Storage
 
@@ -90,24 +90,24 @@ Here is how to upload the optimized dataset using the [AWS CLI](https://aws.amaz
 
 ### 3. Use StreamingDataset
 
-Then, the Streaming Dataset can read the data from [AWS S3](https://aws.amazon.com/s3/) directly.
+Then, the Streaming Dataset can read the data directly from [AWS S3](https://aws.amazon.com/s3/).
 
 ```python
 from litdata import StreamingDataset
 from torch.utils.data import DataLoader
 
-# Remote path where full dataset is persistently stored
+# Remote path where full dataset is stored
 input_dir = 's3://my-bucket/my_optimized_dataset'
 
-# Create streaming dataset
+# Create the Streaming Dataset
 dataset = StreamingDataset(input_dir, shuffle=True)
 
-# Check any elements
+# You can access any elements of the dataset
 sample = dataset[50]
 img = sample['image']
 cls = sample['class']
 
-# Create PyTorch DataLoader
+# Create PyTorch DataLoader and iterate over it to train your AI models.
 dataloader = DataLoader(dataset)
 ```
 
@@ -117,15 +117,15 @@ dataloader = DataLoader(dataset)
 
 We have built end-to-end free [Studios](https://lightning.ai) showing all the steps to prepare the following datasets. They are fully reproducible cloud IDE with data, code, dependencies, etc...
 
-| Dataset | Data type | Studio |
+| Studio | Data type | Dataset |
 | -------------------------------------------------------------------------------------------------------------------------------------------- | :-----------------: | --------------------------------------------------------------------------------------------------------------------------------------: |
-| [LAION-400M](https://laion.ai/blog/laion-400-open-dataset/)                                                                                  | Image & description |            [Use or explore LAION-400MILLION dataset](https://lightning.ai/lightning-ai/studios/use-or-explore-laion-400million-dataset) |
-| [Chesapeake Roads Spatial Context](https://github.com/isaaccorley/chesapeakersc)                                                             |    Image & Mask     | [Convert GeoSpatial data to Lightning Streaming](https://lightning.ai/lightning-ai/studios/convert-spatial-data-to-lightning-streaming) |
-| [Imagenet 1M](https://paperswithcode.com/sota/image-classification-on-imagenet?tag_filter=171)                                               |    Image & Label    |              [Benchmark cloud data-loading libraries](https://lightning.ai/lightning-ai/studios/benchmark-cloud-data-loading-libraries) |
-| [SlimPajama](https://huggingface.co/datasets/cerebras/SlimPajama-627B) & [StartCoder](https://huggingface.co/datasets/bigcode/starcoderdata) |        Text         |              [Prepare the TinyLlama 1T token dataset](https://lightning.ai/lightning-ai/studios/prepare-the-tinyllama-1t-token-dataset) |
-| [Swedish Wikipedia](https://huggingface.co/datasets/wikipedia) |        Text         |              [Tokenize 2M Swedish Wikipedia Articles](https://lightning.ai/lightning-ai/studios/tokenize-2m-swedish-wikipedia-articles) |
-| [English Wikepedia](https://huggingface.co/datasets/wikipedia)                                                                               |        Text         |            [Embed English Wikipedia under 5 dollars](https://lightning.ai/lightning-ai/studios/embed-english-wikipedia-under-5-dollars) |
-| Randomly Generate data                                                                                                                                    |    Parquet Files    |            [Convert parquets to Lightning Streaming](https://lightning.ai/lightning-ai/studios/convert-parquets-to-lightning-streaming) |
+| [Use or explore LAION-400MILLION dataset](https://lightning.ai/lightning-ai/studios/use-or-explore-laion-400million-dataset)                                                                                  | Image & description |[LAION-400M](https://laion.ai/blog/laion-400-open-dataset/) |
+| [Convert GeoSpatial data to Lightning Streaming](https://lightning.ai/lightning-ai/studios/convert-spatial-data-to-lightning-streaming) [Chesapeake Roads Spatial Context](https://github.com/isaaccorley/chesapeakersc)                                                             |    Image & Mask     |  [Chesapeake Roads Spatial Context](https://github.com/isaaccorley/chesapeakersc) |
+| [Benchmark cloud data-loading libraries](https://lightning.ai/lightning-ai/studios/benchmark-cloud-data-loading-libraries)                                               |    Image & Label    | [Imagenet 1M](https://paperswithcode.com/sota/image-classification-on-imagenet?tag_filter=171) |
+| [Prepare the TinyLlama 1T token dataset](https://lightning.ai/lightning-ai/studios/prepare-the-tinyllama-1t-token-dataset) |        Text         |              [SlimPajama](https://huggingface.co/datasets/cerebras/SlimPajama-627B) & [StartCoder](https://huggingface.co/datasets/bigcode/starcoderdata) |
+| [Tokenize 2M Swedish Wikipedia Articles](https://lightning.ai/lightning-ai/studios/tokenize-2m-swedish-wikipedia-articles) |        Text         |              [Swedish Wikipedia](https://huggingface.co/datasets/wikipedia) |
+| [Embed English Wikipedia under 5 dollars](https://lightning.ai/lightning-ai/studios/embed-english-wikipedia-under-5-dollars)                                                                               |        Text         |            [English Wikipedia](https://huggingface.co/datasets/wikipedia) |
+| [Convert parquets to Lightning Streaming](https://lightning.ai/lightning-ai/studios/convert-parquets-to-lightning-streaming)                                                                                                                                    |    Parquet Files    | Randomly Generated data |
 
 # Key Features
 
@@ -310,6 +310,31 @@ A network drive is a shared storage device on a local area network. On-prem comp
 from lightning.data import StreamingDataset
 
 dataset = StreamingDataset(input_dir="local:/data/shared-drive/some-data")
+```
+
+## Map Operator
+
+The `map` operator can be used to apply a function over a list of inputs.
+
+Here is an example where the `map` operator is used to apply a `resize_image` function over a folder of large images.
+
+```python
+from lightning.data import map
+from PIL import Image
+
+input_dir = "my_large_images"
+inputs = [os.path.join(input_dir, f) for f in os.listdir(input_dir)]
+
+# The resize image takes one of the input (image_path) and the output directory. Files written to output_dir are persisted.
+def resize_image(image_path, output_dir):
+  output_image_path = os.path.join(output_dir, os.path.basename(image_path))
+  Image.open(image_path).resize((224, 224)).save(output_image_path)
+  
+map(
+    fn=resize_image,
+    inputs=inputs, 
+    output_dir="my_resized_images",
+)
 ```
 
 # Benchmarks
