@@ -65,7 +65,7 @@ setup(
     long_description_content_type="text/markdown",
     include_package_data=True,
     zip_safe=False,
-    keywords=["deep learning", "pytorch", "AI"],
+    keywords=["deep learning", "pytorch", "AI", "streaming", "cloud", "data processing"],
     python_requires=">=3.8",
     setup_requires=["wheel"],
     install_requires=_load_requirements(),
