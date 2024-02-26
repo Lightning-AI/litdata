@@ -11,13 +11,15 @@
 
 # ⚡ Welcome to Lightning Data
 
-Lightning Data is a pivotal framework within the Lightning ecoystem, facilitating the efficient streaming of training data from cloud storage. As part of the Lightning ecosystem, Lightning Data integrates smoothly with other core packages, enabling users to leverage its capabilities alongside PyTorch Lightning, Lightning Fabric, and PyTorch.
+Lightning Data is a pivotal framework within the Lightning ecoystem, facilitating the efficient streaming of training data from cloud storage. As part of the Lightning ecosystem, Lightning Data integrates smoothly with other core packages, enabling users to leverage its capabilities alongside [PyTorch Lightning](https://lightning.ai/docs/pytorch/stable/), [Lightning Fabric](https://lightning.ai/docs/open-source/fabric), and [PyTorch](https://pytorch.org/docs/stable/index.html).
 
-With Lightning Data, users can transform and optimize their data in cloud environments with an intuitive and scalble approach. Then,efficient training becomes feasible regardless of the data's location, allowing users to effortlessly stream in the required data as needed.
+With Lightning Data, users can transform and optimize their data in cloud environments with an intuitive approach and at any scale. 
 
-Lightning Data supports **images, text, video, audio, geo-spatial, and multimodal data** data types and is already used large framework such as [Lit-GPT](https://github.com/Lightning-AI/lit-gpt/blob/main/pretrain/tinyllama.py) to pretrain LLMs.
+Then, efficient training becomes feasible regardless of the data's location, allowing users to effortlessly stream in the required data as needed.
 
-### Table of Content:
+Lightning Data supports **images, text, video, audio, geo-spatial, and multimodal data** types and it is already used adopted framework such as [Lit-GPT](https://github.com/Lightning-AI/lit-gpt/blob/main/pretrain/tinyllama.py) to pretrain LLMs.
+
+### Table of Content
 
 - [Getting started](#getting-started)
     - [Installation](#installation)
