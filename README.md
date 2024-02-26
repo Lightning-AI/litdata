@@ -24,14 +24,14 @@ Lightning Data supports **images, text, video, audio, geo-spatial, and multimoda
 - [Getting started](#getting-started)
     - [Installation](#installation)
     - [Quick Start](#quick-start)
-        - [Prepare Your Data](#1-prepare-your-data)
-        - [Quick Start](#and-a-table-of-contents)
-        - [Quick Start](#and-a-table-of-contents)
-- [Real world examples](#and-a-table-of-contents)
-- [Key Features](#and-a-table-of-contents)
-- [Benchmarks](#on-the-right)
-- [Lightning AI Platform: Scale cloud data processing](#on-the-right)
-- [Contributors](#on-the-right)
+        - [1. Prepare Your Data](#1-prepare-your-data)
+        - [2. Upload Your Data to Cloud Storage](#2-upload-your-data-to-cloud-storage)
+        - [3. Use StreamingDataset and DataLoader](#3-use-streamingdataset-and-dataloader)
+- [Real World Examples](#real-world-examples)
+- [Key Features](#key-features)
+- [Benchmarks](#benchmarks)
+- [Lightning AI Platform: Scale cloud data processing](#lightning-ai-platform-scale-cloud-data-processing)
+- [Contributors](#-contributors)
 
 # Getting Started
 
@@ -127,22 +127,17 @@ We have built end-to-end free [Studios](https://lightning.ai) showing all the st
 
 [Lightning Studios](https://lightning.ai) are fully reproducible cloud IDE with data, code, dependencies, etc...
 
-# Real World Examples
-
-We have built end-to-end free [Studios](https://lightning.ai) showing all the steps to prepare the following datasets:
-
-| Dataset                                                                                                                                      |      Data type      |                                                                                                                                  Studio |
-| -------------------------------------------------------------------------------------------------------------------------------------------- | :-----------------: | --------------------------------------------------------------------------------------------------------------------------------------: |
-| [LAION-400M](https://laion.ai/blog/laion-400-open-dataset/)                                                                                  | Image & description |            [Use or explore LAION-400MILLION dataset](https://lightning.ai/lightning-ai/studios/use-or-explore-laion-400million-dataset) |
-| [Chesapeake Roads Spatial Context](https://github.com/isaaccorley/chesapeakersc)                                                             |    Image & Mask     | [Convert GeoSpatial data to Lightning Streaming](https://lightning.ai/lightning-ai/studios/convert-spatial-data-to-lightning-streaming) |
-| [Imagenet 1M](https://paperswithcode.com/sota/image-classification-on-imagenet?tag_filter=171)                                               |    Image & Label    |              [Benchmark cloud data-loading libraries](https://lightning.ai/lightning-ai/studios/benchmark-cloud-data-loading-libraries) |
-| [SlimPajama](https://huggingface.co/datasets/cerebras/SlimPajama-627B) & [StartCoder](https://huggingface.co/datasets/bigcode/starcoderdata) |        Text         |              [Prepare the TinyLlama 1T token dataset](https://lightning.ai/lightning-ai/studios/prepare-the-tinyllama-1t-token-dataset) |
-| [English Wikepedia](https://huggingface.co/datasets/wikipedia)                                                                               |        Text         |            [Embed English Wikipedia under 5 dollars](https://lightning.ai/lightning-ai/studios/embed-english-wikipedia-under-5-dollars) |
-| Generated                                                                                                                                    |    Parquet Files    |            [Convert parquets to Lightning Streaming](https://lightning.ai/lightning-ai/studios/convert-parquets-to-lightning-streaming) |
-
-[Lightning Studios](https://lightning.ai) are fully reproducible cloud IDE with data, code, dependencies, etc...
-
 # Key Features
+
+- [Multi-GPU / Multi-Node](#multi-gpu--multi-node)
+- [Easy Data Mixing](#easy-data-mixing)
+- [Stateful StreamingDataLoader](#stateful-streamingdataloader)
+- [Profiling](#profiling)
+- [Random access](#random-access)
+- [Use data transforms](#use-data-transforms)
+- [Disk usage limits](#disk-usage-limits)
+- [Support yield](#support-yield)
+- [Network Drive On-Prem Support](#network-drive-on-prem-support)
 
 ## Multi-GPU / Multi-Node
 
@@ -150,7 +145,7 @@ The `StreamingDataset` and `StreamingDataLoader` takes care of everything for yo
 
 ![An illustration showing how the Streaming Dataset works with multi node.](https://pl-flash-data.s3.amazonaws.com/streaming_dataset.gif)
 
-## Easy data mixing
+## Easy Data Mixing
 
 You can easily experiment with dataset mixtures using the CombinedStreamingDataset.
 
@@ -368,13 +363,13 @@ map(
 )
 ```
 
+The Data Prep Job UI from the [LAION 400M Studio](https://lightning.ai/lightning-ai/studios/use-or-explore-laion-400million-dataset) where we used 32 machines with 32 CPU each to download 400 million images in only 2 hours.
+
 <div align="center">
 
 <img alt="Lightning" src="https://pl-flash-data.s3.amazonaws.com/data-prep.jpg" width="800px" style="max-width: 100%;">
 
 <br/>
-
-The Data Prep Job UI from the [LAION 400M Studio](https://lightning.ai/lightning-ai/studios/use-or-explore-laion-400million-dataset) where we used 32 machines with 32 CPU each to download 400 million images in only 2 hours.
 
 # ⚡ Contributors
 
