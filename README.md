@@ -113,7 +113,7 @@ dataloader = DataLoader(dataset)
 
 # Real World Examples
 
-We have built end-to-end free [Studios](https://lightning.ai) showing all the steps to prepare several data types of data. The [Studios](https://lightning.ai) are fully reproducible cloud IDE with data, code, dependencies, etc..., so you can reproduce everything yourself !
+We have built end-to-end free [Studios](https://lightning.ai) showing all the steps to prepare several data types of data. The [Studios](https://lightning.ai) are fully reproducible cloud IDE with data, code, dependencies, etc..., so you can re-do everything yourself !
 
 | Studio | Data type | Dataset |
 | -------------------------------------------------------------------------------------------------------------------------------------------- | :-----------------: | --------------------------------------------------------------------------------------------------------------------------------------: |
