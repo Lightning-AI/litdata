@@ -330,17 +330,13 @@ In this benchmark, we measured the streaming speed (`images per second`) loaded 
 You can reproduce this benchmark with this [Studio](https://lightning.ai/lightning-ai/studios/benchmark-cloud-data-loading-libraries). 
 
 
-# Real World Examples
+# Real World Runnable Templates
 
-Fastest way to learn is with [Studios](https://lightning.ai/studios).  Studios are reproducible reproducible cloud IDE with data, code, dependencies, e.g. so you can re-do everything yourself with ease!
+Fastest way to learn is with [Studios](https://lightning.ai/studios).  [Studios](https://lightning.ai/studios) are reproducible reproducible cloud IDE with data, code, dependencies, e.g. so you can re-do everything yourself with ease!
 
-We've published public templates that demonstrates 
+We've published [public templates]((https://lightning.ai/studios) that demonstrates how to best use the Lightning Data framework at scale.
 
-Studios also allow you to run this on the cloud
-
-Sign up here to and run your first Studio free
-
-We have built end-to-end free [Studios](https://lightning.ai) showing all the steps to prepare several data types. The [Studios](https://lightning.ai) are fully reproducible cloud IDE with data, code, dependencies, e.g. so you can re-do everything yourself with ease!
+Sign up here to and run your first Studio free.
 
 | Studio | Data type | Dataset |
 | -------------------------------------------------------------------------------------------------------------------------------------------- | :-----------------: | --------------------------------------------------------------------------------------------------------------------------------------: |
