@@ -94,11 +94,12 @@ class LocalDownloader(Downloader):
         if remote_filepath != local_filepath and not os.path.exists(local_filepath):
             shutil.copy(remote_filepath, local_filepath)
 
+
 class LocalDownloaderWithCache(LocalDownloader):
     def download_file(self, remote_filepath: str, local_filepath: str) -> None:
         remote_filepath = remote_filepath.replace("local:", "")
         super().download_file(remote_filepath, local_filepath)
-        
+
 
 _DOWNLOADERS = {"s3://": S3Downloader, "local:": LocalDownloaderWithCache, "": LocalDownloader}
 

@@ -1,7 +1,7 @@
 import os
 from unittest.mock import MagicMock
 
-from litdata.streaming.downloader import S3Downloader, LocalDownloaderWithCache, subprocess, shutil
+from litdata.streaming.downloader import LocalDownloaderWithCache, S3Downloader, shutil, subprocess
 
 
 def test_s3_downloader_fast(tmpdir, monkeypatch):
@@ -11,6 +11,7 @@ def test_s3_downloader_fast(tmpdir, monkeypatch):
     downloader = S3Downloader(tmpdir, tmpdir, [])
     downloader.download_file("s3://random_bucket/a.txt", os.path.join(tmpdir, "a.txt"))
     popen_mock.wait.assert_called()
+
 
 def test_download_with_cache(tmpdir, monkeypatch):
     # Create a file to download/cache
