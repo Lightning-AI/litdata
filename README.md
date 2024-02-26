@@ -136,9 +136,9 @@ We have built end-to-end free [Studios](https://lightning.ai) showing all the st
 - [Random access](#random-access)
 - [Use data transforms](#use-data-transforms)
 - [Disk usage limits](#disk-usage-limits)
-- [Support the python yield keyword](#support-yield)
-- [Network Drive Storage](#network-drive-on-prem-support)
-- [Map Operator](#network-drive-on-prem-support)
+- [Support the python yield keyword](#support-python-yield-keyword)
+- [Network Drive Storage](#on-prem-storage-with-network-drive)
+- [Map Operator](#map-operator)
 
 ## Multi-GPU / Multi-Node
 
@@ -150,7 +150,7 @@ The `StreamingDataset` and `StreamingDataLoader` take care of everything for you
 
 You can easily experiment with dataset mixtures using the `CombinedStreamingDataset` class. 
 
-As an example, this mixture train TinyLLAMA with mixture of Slimpajama & StarCoder. 
+As an example, this mixture of [Slimpajama](https://huggingface.co/datasets/cerebras/SlimPajama-627B) & [StarCoder](https://huggingface.co/datasets/bigcode/starcoderdata) was used in the [TinyLLAMA](https://github.com/jzhang38/TinyLlama) project to pretrain a 1.1B Llama model on 3 trillion tokens. 
 
 ```python
 from litdata import StreamingDataset, CombinedStreamingDataset
@@ -298,7 +298,7 @@ outputs = optimize(
     fn=partial(tokenize_fn, tokenizer=Tokenizer(f"{input_dir}/checkpoints/Llama-2-7b-hf")), # Note: You can use HF tokenizer or any others
     inputs=inputs,
     output_dir="/teamspace/datasets/starcoderdata",
-    chunk_size=(2049 * 8012),
+    chunk_size=(2049 * 8012), # Number of tokens to store by chunks. This is roughly 64MB of tokens per chunk.
 )
 ```
 
@@ -403,4 +403,4 @@ Here is a screenshot from the [LAION 400M Studio](https://lightning.ai/lightning
 
 # ⚡ Contributors
 
-We welcome any contributions, pull requests, or issues. If you use the Streaming Dataset for your own project, please reach out to us on Slack or Discord.
+We welcome any contributions, pull requests, or issues. If you use the Streaming Dataset for your own project, please reach out to us on [Discord](https://discord.com/invite/XncpTy7DSt).
