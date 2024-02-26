@@ -15,7 +15,7 @@ With Lightning Data, users can transform and optimize their data in cloud storag
 
 Then, efficient distributed training becomes feasible regardless of the data's location, allowing users to effortlessly stream your data as needed.
 
-Lightning Data supports **images, text, video, audio, geo-spatial, and multimodal data** types, is already adopted by frameworks such as [Lit-GPT](https://github.com/Lightning-AI/lit-gpt/blob/main/pretrain/tinyllama.py) to pretrain LLMs and integrates smoothly [PyTorch Lightning](https://lightning.ai/docs/pytorch/stable/), [Lightning Fabric](https://lightning.ai/docs/open-source/fabric), and [PyTorch](https://pytorch.org/docs/stable/index.html).
+Lightning Data supports **images, text, video, audio, geo-spatial, and multimodal data** types, is already adopted by frameworks such as [Lit-GPT](https://github.com/Lightning-AI/lit-gpt/blob/main/pretrain/tinyllama.py) to pretrain LLMs and integrates smoothly [PyTorch Lightning](https://lightning.ai/docs/pytorch/stable/), [Lightning Fabric](https://lightning.ai/docs/fabric/stable/), and [PyTorch](https://pytorch.org/docs/stable/index.html).
 
 ### Table of Contents
 
@@ -24,11 +24,11 @@ Lightning Data supports **images, text, video, audio, geo-spatial, and multimoda
     - [Quick Start](#quick-start)
         - [1. Prepare Your Data](#1-prepare-your-data)
         - [2. Upload Your Data to Cloud Storage](#2-upload-your-data-to-cloud-storage)
-        - [3. Use StreamingDataset and DataLoader](#3-use-streamingdataset-and-dataloader)
-- [Real World Examples](#real-world-examples)
+        - [3. Use StreamingDataset](#3-use-streamingdataset)
 - [Key Features](#key-features)
 - [Benchmarks](#benchmarks)
-- [Lightning AI Platform: Scale cloud data processing](#lightning-ai-platform-scale-cloud-data-processing)
+- [Real World Runnable Templates](#real-world-runnable-templates)
+- [Infinite cloud data processing](#real-world-runnable-templates)
 - [Contributors](#-contributors)
 
 # Getting Started
@@ -111,34 +111,20 @@ cls = sample['class']
 dataloader = DataLoader(dataset)
 ```
 
-# Real World Examples
-
-We have built end-to-end free [Studios](https://lightning.ai) showing all the steps to prepare several data types of data. The [Studios](https://lightning.ai) are fully reproducible cloud IDE with data, code, dependencies, e.g so you can re-do everything yourself with ease !
-
-| Studio | Data type | Dataset |
-| -------------------------------------------------------------------------------------------------------------------------------------------- | :-----------------: | --------------------------------------------------------------------------------------------------------------------------------------: |
-| [Use or explore LAION-400MILLION dataset](https://lightning.ai/lightning-ai/studios/use-or-explore-laion-400million-dataset)                                                                                  | Image & description |[LAION-400M](https://laion.ai/blog/laion-400-open-dataset/) |
-| [Convert GeoSpatial data to Lightning Streaming](https://lightning.ai/lightning-ai/studios/convert-spatial-data-to-lightning-streaming) [Chesapeake Roads Spatial Context](https://github.com/isaaccorley/chesapeakersc)                                                             |    Image & Mask     |  [Chesapeake Roads Spatial Context](https://github.com/isaaccorley/chesapeakersc) |
-| [Benchmark cloud data-loading libraries](https://lightning.ai/lightning-ai/studios/benchmark-cloud-data-loading-libraries)                                               |    Image & Label    | [Imagenet 1M](https://paperswithcode.com/sota/image-classification-on-imagenet?tag_filter=171) |
-| [Prepare the TinyLlama 1T token dataset](https://lightning.ai/lightning-ai/studios/prepare-the-tinyllama-1t-token-dataset) |        Text         |              [SlimPajama](https://huggingface.co/datasets/cerebras/SlimPajama-627B) & [StartCoder](https://huggingface.co/datasets/bigcode/starcoderdata) |
-| [Tokenize 2M Swedish Wikipedia Articles](https://lightning.ai/lightning-ai/studios/tokenize-2m-swedish-wikipedia-articles) |        Text         |              [Swedish Wikipedia](https://huggingface.co/datasets/wikipedia) |
-| [Embed English Wikipedia under 5 dollars](https://lightning.ai/lightning-ai/studios/embed-english-wikipedia-under-5-dollars)                                                                               |        Text         |            [English Wikipedia](https://huggingface.co/datasets/wikipedia) |
-| [Convert parquets to Lightning Streaming](https://lightning.ai/lightning-ai/studios/convert-parquets-to-lightning-streaming)                                                                                                                                    |    Parquet Files    | Randomly Generated data |
-
 # Key Features
 
-- [Multi-GPU / Multi-Node](#multi-gpu--multi-node)
-- [Easy Data Mixing](#easy-data-mixing)
-- [Stateful StreamingDataLoader](#stateful-streamingdataloader)
-- [Profiling](#profiling)
-- [Random access](#random-access)
-- [Use data transforms](#use-data-transforms)
-- [Disk usage limits](#disk-usage-limits)
-- [Support the python yield keyword](#support-python-yield-keyword)
-- [Network Drive Storage](#on-prem-storage-with-network-drive)
-- [Map Operator](#map-operator)
+- [Built-in Multi-GPU / Multi-Node](#built-in-multi-gpu--multi-node)
+- [Easy Data Mixing with the Combined Streaming Dataset](#easy-data-mixing-with-the-combined-streaming-dataset)
+- [Continue Training From Previous Dataset State](#continue-training-from-previous-dataset-state)
+- [Support Profiling](#support-profiling)
+- [Access any item](#access-any-item)
+- [Add any data transforms](#add-any-data-transforms)
+- [Configure Cache Size Limit](#configure-cache-size-limit)
+- [Reduce your memory footprint](#reduce-your-memory-footprint)
+- [On-Prem Optimizations](#on-prem-optimizations)
+- [The Map Operator](#the-map-operator)
 
-## Multi-GPU / Multi-Node
+## Built-in Multi-GPU / Multi-Node
 
 The `StreamingDataset` and `StreamingDataLoader` take care of everything for you. They automatically make sure each rank receives the same quantity of varied batches of data. 
 
@@ -183,11 +169,11 @@ for batch in tqdm(train_dataloader):
     pass
 ```
 
-## Stateful Streaming DataLoader
+## Continue Training From Previous Dataset State
 
-Lightning Data provides a stateful `StreamingDataLoader`. This simplifies resuming training over large datasets.
+Lightning Data provides a stateful `Streaming DataLoader`. This means you can `pause` and `resume` your training later on.
 
-Note: The `StreamingDataLoader` is used by [Lit-GPT](https://github.com/Lightning-AI/lit-gpt/blob/main/pretrain/tinyllama.py) to pretrain LLMs. The statefulness still works when using a mixture of datasets with the `CombinedStreamingDataset`.
+Info: The `Streaming DataLoader` was used by [Lit-GPT](https://github.com/Lightning-AI/lit-gpt/blob/main/pretrain/tinyllama.py) to pretrain LLMs. Restarting from an older checkpoint was critical to get to pretrain the full model due several failures (network, CUDA Errors, etc..).
 
 ```python
 import os
@@ -210,7 +196,7 @@ for batch_idx, batch in enumerate(dataloader):
         torch.save(dataloader.state_dict(), "dataloader_state.pt")
 ```
 
-## Profiling
+## Support Profiling
 
 The `StreamingDataLoader` supports profiling your dataloading. Simply use the `profile_batches` argument to set how many batches to profile:
 
@@ -222,7 +208,7 @@ StreamingDataLoader(..., profile_batches=5)
 
 This generates a Chrome trace called `result.json`. You can visualize this trace by opening Chrome browser at the `chrome://tracing` URL and load the trace inside.
 
-## Random access
+## Access any item
 
 Access the data you need when you need it whenever they are stored.
 
@@ -236,7 +222,7 @@ print(len(dataset)) # display the length of your data
 print(dataset[42]) # show the 42th element of the dataset
 ```
 
-## Use data transforms
+## Add any data transforms
 
 You can subclass the `StreamingDataset` and override its `__getitem__` method to add any extra data transformations.
 
@@ -258,7 +244,7 @@ for batch in dataloader:
     # Out: (4, 3, 224, 224)
 ```
 
-## Disk usage limits
+## Configure Cache Size Limit
 
 Adapt the local caching limit of the `StreamingDataset`.
 
@@ -268,7 +254,7 @@ from litdata import StreamingDataset
 dataset = StreamingDataset(..., max_cache_size="10GB")
 ```
 
-## Support python yield keyword
+## Reduce your memory footprint
 
 When processing large files like compressed [parquet files](https://en.wikipedia.org/wiki/Apache_Parquet), you can use the python yield keyword to process and store one item at the time, reducing the memory footprint of the entire program. 
 
@@ -300,9 +286,9 @@ outputs = optimize(
 )
 ```
 
-## On-Prem Storage with Network Drive
+## On-Prem Optimizations
 
-A network drive is a shared storage device on a local area network. On-prem compute nodes can mount and use network drive. In order to reduce their network overload, the `StreamingDataset` supports `caching` the chunks.
+On-prem compute nodes can mount and use network drive. A network drive is a shared storage device on a local area network. In order to reduce their network overload, the `StreamingDataset` supports `caching` the data chunks.
 
 ```python
 from lightning.data import StreamingDataset
@@ -310,7 +296,7 @@ from lightning.data import StreamingDataset
 dataset = StreamingDataset(input_dir="local:/data/shared-drive/some-data")
 ```
 
-## Map Operator
+## The Map Operator
 
 The `map` operator can be used to apply a function over a list of inputs.
 
@@ -345,15 +331,17 @@ You can reproduce this benchmark with this [Studio](https://lightning.ai/lightni
 
 ### Imagenet-1.2M Streaming from AWS S3
 
+Higher is better.
+
 | Framework | Images / sec  1st Epoch (float32)  | Images / sec   2nd Epoch (float32) | Images / sec 1st Epoch (torch16) | Images / sec 2nd Epoch (torch16) |
 |---|---|---|---|---|
 | PL Data  | **5800.34** | **6589.98**  | **6282.17**  | **7221.88**  |
 | Web Dataset  | 3134.42 | 3924.95 | 3343.40 | 4424.62 |
 | Mosaic ML  | 2898.61 | 5099.93 | 2809.69 | 5158.98 |
 
-Higher is better.
-
 ### Imagenet-1.2M Conversion
+
+Faster is better.
 
 | Framework |Train Conversion Time | Val Conversion Time | Dataset Size | # Files |
 |---|---|---|---|---|
@@ -363,13 +351,34 @@ Higher is better.
 
 The dataset needs to be converted into an optimized format for cloud streaming. We measured how fast the 1.2 million images are converted.
 
-Faster is better.
 
-# Lightning AI Platform: Scale cloud data processing
+# Real World Runnable Templates
 
-To scale data processing, create a free account on the [Lightning.ai](https://lightning.ai/) platform. 
+Fastest way to learn is with [Studios](https://lightning.ai/studios).  
 
-With the platform, the `map` operator can start multiple machines to make data processing drastically faster as follows:
+[Studios](https://lightning.ai/studios) are reproducible cloud IDE with data, code, dependencies, e.g. so you can re-do everything yourself with ease!
+
+We've published [public templates](https://lightning.ai/studios) that demonstrates how best to use the Lightning Data framework at scale and with several data types.
+
+Sign up [here](https://lightning.ai/) to and run your first Studio free.
+
+| Studio | Data type | Dataset |
+| -------------------------------------------------------------------------------------------------------------------------------------------- | :-----------------: | --------------------------------------------------------------------------------------------------------------------------------------: |
+| [Use or explore LAION-400MILLION dataset](https://lightning.ai/lightning-ai/studios/use-or-explore-laion-400million-dataset)                                                                                  | Image & Text |[LAION-400M](https://laion.ai/blog/laion-400-open-dataset/) |
+| [Convert GeoSpatial data to Lightning Streaming](https://lightning.ai/lightning-ai/studios/convert-spatial-data-to-lightning-streaming) [Chesapeake Roads Spatial Context](https://github.com/isaaccorley/chesapeakersc)                                                             |    Image & Mask     |  [Chesapeake Roads Spatial Context](https://github.com/isaaccorley/chesapeakersc) |
+| [Benchmark cloud data-loading libraries](https://lightning.ai/lightning-ai/studios/benchmark-cloud-data-loading-libraries)                                               |    Image & Label    | [Imagenet 1M](https://paperswithcode.com/sota/image-classification-on-imagenet?tag_filter=171) |
+| [Prepare the TinyLlama 1T token dataset](https://lightning.ai/lightning-ai/studios/prepare-the-tinyllama-1t-token-dataset) |        Text         |              [SlimPajama](https://huggingface.co/datasets/cerebras/SlimPajama-627B) & [StartCoder](https://huggingface.co/datasets/bigcode/starcoderdata) |
+| [Tokenize 2M Swedish Wikipedia Articles](https://lightning.ai/lightning-ai/studios/tokenize-2m-swedish-wikipedia-articles) |        Text         |              [Swedish Wikipedia](https://huggingface.co/datasets/wikipedia) |
+| [Embed English Wikipedia under 5 dollars](https://lightning.ai/lightning-ai/studios/embed-english-wikipedia-under-5-dollars)                                                                               |        Text         |            [English Wikipedia](https://huggingface.co/datasets/wikipedia) |
+| [Convert parquets to Lightning Streaming](https://lightning.ai/lightning-ai/studios/convert-parquets-to-lightning-streaming)                                                                                                                                    |    Parquet Files    | Randomly Generated data |
+
+# Infinite cloud data processing
+
+If you want to scale data processing, you typically need more machines and if you do this yourself, this becomes very tedious and can take a long time to get there.. 
+
+Instead, create a free account on the [Lightning.ai](https://lightning.ai/) platform and use as many machines as you need from code.
+
+On the platform, simply specify the number of nodes and the machine type you need as follows:
 
 ```python
 from litdata import map, Machine
