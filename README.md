@@ -45,7 +45,7 @@ pip install litdata
 
 ### 1. Prepare Your Data
 
-Convert your raw dataset into Lightning Streaming Format using the `optimize` operator. 
+Convert your raw dataset into Lightning Streaming Format using the `optimize` operator.
 
 Here is an example with some random images. 
 
@@ -55,15 +55,15 @@ from litdata import optimize
 from PIL import Image
 
 
-# Store random images into the chunks
+# Store random images into the data chunks
 def random_images(index):
     data = {
         "index": index, # int data type
         "image": Image.fromarray(np.random.randint(0, 256, (32, 32, 3), np.uint8)), # PIL image data type
         "class": np.random.randint(10), # numpy array data type
     }
-    # The data is serialized into bytes and stored into chunks by the optimize operator.
-    return data # The data is serialized into bytes and stored into chunks by the optimize operator.
+    # The data is serialized into bytes and stored into data chunks by the optimize operator.
+    return data # The data is serialized into bytes and stored into data chunks by the optimize operator.
 
 if __name__ == "__main__":
     optimize(
