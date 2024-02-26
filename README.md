@@ -71,7 +71,7 @@ if __name__ == "__main__":
         inputs=list(range(1000)),  # Provide any inputs. The fn is applied on each item.
         output_dir="my_optimized_dataset",  # The directory where the optimized data are stored.
         num_workers=4,  # The number of workers. The inputs are distributed among them.
-        chunk_bytes="64MB"  # The maximum number of bytes to write into a chunk.
+        chunk_bytes="64MB"  # The maximum number of bytes to write into a data chunk.
     )
 
 ```
@@ -381,7 +381,7 @@ map(
 )
 ```
 
-Also, the `optimize`operator  can do the same to make immense dataset streamable as follows:
+Also, the `optimize` operator  can do the same to make immense dataset streamable as follows:
 
 ```python
 from litdata import optimize, Machine
