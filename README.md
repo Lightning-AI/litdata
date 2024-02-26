@@ -114,17 +114,17 @@ dataloader = DataLoader(dataset)
 # Key Features
 
 - [Built-in Multi-GPU / Multi-Node](#multi-gpu--multi-node)
-- [Easy Data Mixing](#easy-data-mixing)
+- [Easy Data Mixing with the Combined Streaming Dataset](#easy-data-mixing-with-the-combined-streaming-dataset)
 - [Continue Training From Previous Dataset State](#stateful-streamingdataloader)
 - [Support Profiling](#profiling)
-- [Access any items](#random-access)
-- [Use data transforms](#use-data-transforms)
-- [Disk usage limits](#disk-usage-limits)
+- [Access any item](#random-access)
+- [Add any data transforms](#use-data-transforms)
+- [Configure Cache Size Limit](#disk-usage-limits)
 - [Reduce your memory footprint](#support-python-yield-keyword)
 - [Support Network Drive Storage](#on-prem-storage-with-network-drive)
-- [Map Operator](#map-operator)
+- [The Map Operator](#map-operator)
 
-## Multi-GPU / Multi-Node
+## Built-in Multi-GPU / Multi-Node
 
 The `StreamingDataset` and `StreamingDataLoader` take care of everything for you. They automatically make sure each rank receives the same quantity of varied batches of data. 
 
@@ -169,11 +169,11 @@ for batch in tqdm(train_dataloader):
     pass
 ```
 
-## Stateful Streaming DataLoader
+## Continue Training From Previous Dataset State
 
-Lightning Data provides a stateful `StreamingDataLoader`. This means you can pause and resume your training
+Lightning Data provides a stateful `Streaming DataLoader`. This means you can `pause` and `resume` your training later on.
 
-Note: The `StreamingDataLoader` is used by [Lit-GPT](https://github.com/Lightning-AI/lit-gpt/blob/main/pretrain/tinyllama.py) to pretrain LLMs.
+Info: The `Streaming DataLoader` was used by [Lit-GPT](https://github.com/Lightning-AI/lit-gpt/blob/main/pretrain/tinyllama.py) to pretrain LLMs. Restarting from an older checkpoint was critical to get to pretrain the full model due several failures (network, CUDA Errors, etc..).
 
 ```python
 import os
@@ -196,7 +196,7 @@ for batch_idx, batch in enumerate(dataloader):
         torch.save(dataloader.state_dict(), "dataloader_state.pt")
 ```
 
-## Profiling
+## Support Profiling
 
 The `StreamingDataLoader` supports profiling your dataloading. Simply use the `profile_batches` argument to set how many batches to profile:
 
@@ -208,7 +208,7 @@ StreamingDataLoader(..., profile_batches=5)
 
 This generates a Chrome trace called `result.json`. You can visualize this trace by opening Chrome browser at the `chrome://tracing` URL and load the trace inside.
 
-## Random access
+## Access any item
 
 Access the data you need when you need it whenever they are stored.
 
@@ -222,7 +222,7 @@ print(len(dataset)) # display the length of your data
 print(dataset[42]) # show the 42th element of the dataset
 ```
 
-## Use data transforms
+## Add any data transforms
 
 You can subclass the `StreamingDataset` and override its `__getitem__` method to add any extra data transformations.
 
@@ -244,7 +244,7 @@ for batch in dataloader:
     # Out: (4, 3, 224, 224)
 ```
 
-## Disk usage limits
+## Configure Cache Size Limit
 
 Adapt the local caching limit of the `StreamingDataset`.
 
