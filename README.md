@@ -11,15 +11,13 @@
 
 # ⚡ Welcome to Lightning Data
 
-Lightning Data is a pivotal framework within the Lightning ecoystem, facilitating the efficient streaming of training data from cloud storage. As part of the Lightning ecosystem, Lightning Data integrates smoothly with other core packages, enabling users to leverage its capabilities alongside [PyTorch Lightning](https://lightning.ai/docs/pytorch/stable/), [Lightning Fabric](https://lightning.ai/docs/open-source/fabric), and [PyTorch](https://pytorch.org/docs/stable/index.html).
-
 With Lightning Data, users can transform and optimize their data in cloud environments with an intuitive approach and at any scale. 
 
-Then, efficient training becomes feasible regardless of the data's location, allowing users to effortlessly stream in the required data as needed.
+Then, efficient distributed training becomes feasible regardless of the data's location, allowing users to effortlessly stream in the required data as needed.
 
-Lightning Data supports **images, text, video, audio, geo-spatial, and multimodal data** types and it is already used adopted framework such as [Lit-GPT](https://github.com/Lightning-AI/lit-gpt/blob/main/pretrain/tinyllama.py) to pretrain LLMs.
+Lightning Data supports **images, text, video, audio, geo-spatial, and multimodal data** types, is already adopted by frameworks such as [Lit-GPT](https://github.com/Lightning-AI/lit-gpt/blob/main/pretrain/tinyllama.py) to pretrain LLMs and integrates smoothly [PyTorch Lightning](https://lightning.ai/docs/pytorch/stable/), [Lightning Fabric](https://lightning.ai/docs/open-source/fabric), and [PyTorch](https://pytorch.org/docs/stable/index.html).
 
-### Table of Content
+### Table of Contents
 
 - [Getting started](#getting-started)
     - [Installation](#installation)
@@ -122,6 +120,7 @@ We have built end-to-end free [Studios](https://lightning.ai) showing all the st
 | [Chesapeake Roads Spatial Context](https://github.com/isaaccorley/chesapeakersc)                                                             |    Image & Mask     | [Convert GeoSpatial data to Lightning Streaming](https://lightning.ai/lightning-ai/studios/convert-spatial-data-to-lightning-streaming) |
 | [Imagenet 1M](https://paperswithcode.com/sota/image-classification-on-imagenet?tag_filter=171)                                               |    Image & Label    |              [Benchmark cloud data-loading libraries](https://lightning.ai/lightning-ai/studios/benchmark-cloud-data-loading-libraries) |
 | [SlimPajama](https://huggingface.co/datasets/cerebras/SlimPajama-627B) & [StartCoder](https://huggingface.co/datasets/bigcode/starcoderdata) |        Text         |              [Prepare the TinyLlama 1T token dataset](https://lightning.ai/lightning-ai/studios/prepare-the-tinyllama-1t-token-dataset) |
+| [Swedish Wikipedia](https://huggingface.co/datasets/wikipedia) |        Text         |              [Tokenize 2M Swedish Wikipedia Articles](https://lightning.ai/lightning-ai/studios/tokenize-2m-swedish-wikipedia-articles) |
 | [English Wikepedia](https://huggingface.co/datasets/wikipedia)                                                                               |        Text         |            [Embed English Wikipedia under 5 dollars](https://lightning.ai/lightning-ai/studios/embed-english-wikipedia-under-5-dollars) |
 | Generated                                                                                                                                    |    Parquet Files    |            [Convert parquets to Lightning Streaming](https://lightning.ai/lightning-ai/studios/convert-parquets-to-lightning-streaming) |
 
