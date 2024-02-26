@@ -17,6 +17,8 @@ Then, efficient distributed training becomes feasible regardless of the data's l
 
 Lightning Data supports **images, text, video, audio, geo-spatial, and multimodal data** types, is already adopted by frameworks such as [Lit-GPT](https://github.com/Lightning-AI/lit-gpt/blob/main/pretrain/tinyllama.py) to pretrain LLMs and integrates smoothly [PyTorch Lightning](https://lightning.ai/docs/pytorch/stable/), [Lightning Fabric](https://lightning.ai/docs/fabric/stable/), and [PyTorch](https://pytorch.org/docs/stable/index.html).
 
+[Runnable templates](#runnable-templates) at the end are available, they are fully reproducible with 1-click.
+
 ### Table of Contents
 
 - [Getting started](#getting-started)
@@ -27,8 +29,8 @@ Lightning Data supports **images, text, video, audio, geo-spatial, and multimoda
         - [3. Use StreamingDataset](#3-use-streamingdataset)
 - [Key Features](#key-features)
 - [Benchmarks](#benchmarks)
-- [Real World Runnable Templates](#real-world-runnable-templates)
-- [Infinite cloud data processing](#real-world-runnable-templates)
+- [Runnable Templates](#runnable-templates)
+- [Infinite cloud data processing](#infinite-cloud-data-processing)
 - [Contributors](#-contributors)
 
 # Getting Started
@@ -352,11 +354,11 @@ Faster is better.
 The dataset needs to be converted into an optimized format for cloud streaming. We measured how fast the 1.2 million images are converted.
 
 
-# Real World Runnable Templates
+# Runnable Templates
 
 Fastest way to learn is with [Studios](https://lightning.ai/studios).  
 
-[Studios](https://lightning.ai/studios) are reproducible cloud IDE with data, code, dependencies, e.g. so you can re-do everything yourself with ease!
+[Studios](https://lightning.ai/studios) are reproducible cloud IDE with data, code, dependencies, e.g. so you can redo everything yourself with ease!
 
 We've published [public templates](https://lightning.ai/studios) that demonstrates how best to use the Lightning Data framework at scale and with several data types.
 
@@ -402,7 +404,7 @@ optimize(
 )
 ```
 
-Here is a screenshot from the [LAION 400M Studio](https://lightning.ai/lightning-ai/studios/use-or-explore-laion-400million-dataset) where we used 32 machines with 32 CPU each to download 400 million images in only 2 hours. You can run this entire Studio to reproduce on your own.
+Here is a screenshot from the [LAION 400 MILLION Studio](https://lightning.ai/lightning-ai/studios/use-or-explore-laion-400million-dataset) on the [Lightning.ai](https://lightning.ai/) platform where we used 32 machines with 32 CPU each to download 400 million images in only 2 hours. You can run this template yourself [here](https://lightning.ai/lightning-ai/studios/use-or-explore-laion-400million-dataset).
 
 <div align="center">
 
