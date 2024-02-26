@@ -370,10 +370,6 @@ The Data Prep Job UI from the [LAION 400M Studio](https://lightning.ai/lightning
 
 </div> 
 
-<br/>
-
-
-
 # ⚡ Contributors
 
 We welcome any contributions, pull requests, or issues. If you use the Streaming Dataset for your own project, please reach out to us on Slack or Discord.
