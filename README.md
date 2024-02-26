@@ -113,9 +113,7 @@ dataloader = DataLoader(dataset)
 
 # Real World Examples
 
-# TODO: Re-order the columns
-
-We have built end-to-end free [Studios](https://lightning.ai) showing all the steps to prepare the following datasets. They are fully reproducible cloud IDE with data, code, dependencies, etc...
+We have built end-to-end free [Studios](https://lightning.ai) showing all the steps to prepare several data types of data. The [Studios](https://lightning.ai) are fully reproducible cloud IDE with data, code, dependencies, etc..., so you can reproduce everything yourself !
 
 | Studio | Data type | Dataset |
 | -------------------------------------------------------------------------------------------------------------------------------------------- | :-----------------: | --------------------------------------------------------------------------------------------------------------------------------------: |
