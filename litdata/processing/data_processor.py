@@ -19,9 +19,7 @@ from urllib import parse
 
 import numpy as np
 import torch
-from tqdm.auto import tqdm as _tqdm
-
-from litdata.constants import (
+from llitdata.constants import (
     _BOTO3_AVAILABLE,
     _DEFAULT_FAST_DEV_RUN_ITEMS,
     _INDEX_FILENAME,
@@ -29,14 +27,16 @@ from litdata.constants import (
     _LIGHTNING_CLOUD_LATEST,
     _TORCH_GREATER_EQUAL_2_1_0,
 )
-from litdata.processing.readers import BaseReader
-from litdata.processing.utilities import _create_dataset
-from litdata.streaming import Cache
-from litdata.streaming.cache import Dir
-from litdata.streaming.client import S3Client
-from litdata.streaming.resolver import _resolve_dir
-from litdata.utilities.broadcast import broadcast_object
-from litdata.utilities.packing import _pack_greedily
+from llitdata.processing.readers import BaseReader, StreamingDataLoaderReader
+from llitdata.processing.utilities import _create_dataset
+from llitdata.streaming import Cache
+from llitdata.streaming.cache import Dir
+from llitdata.streaming.client import S3Client
+from llitdata.streaming.dataloader import StreamingDataLoader
+from llitdata.streaming.resolver import _resolve_dir
+from llitdata.utilities.broadcast import broadcast_object
+from llitdata.utilities.packing import _pack_greedily
+from tqdm.auto import tqdm as _tqdm
 
 if _TORCH_GREATER_EQUAL_2_1_0:
     from torch.utils._pytree import tree_flatten, tree_unflatten, treespec_loads
@@ -64,11 +64,6 @@ def _get_node_rank() -> int:
 def _get_fast_dev_run() -> int:
     """Returns whether fast dev mode is enabled."""
     return bool(int(os.getenv("DATA_OPTIMIZER_FAST_DEV_RUN", 1)))
-
-
-def _get_home_folder() -> str:
-    """Returns whether cache folder for the filepaths."""
-    return os.getenv("DATA_OPTIMIZER_HOME_FOLDER", os.path.expanduser("~"))
 
 
 def _get_default_cache() -> str:
@@ -895,8 +890,11 @@ class DataProcessor:
         # Call the setup method of the user
         user_items: List[Any] = data_recipe.prepare_structure(self.input_dir.path if self.input_dir else None)
 
-        if not isinstance(user_items, list):
+        if not isinstance(user_items, (list, StreamingDataLoader)):
             raise ValueError("The `prepare_structure` should return a list of item metadata.")
+
+        if isinstance(user_items, StreamingDataLoader):
+            self.reader = StreamingDataLoaderReader(user_items)
 
         if self.reader:
             user_items = self.reader.remap_items(user_items, self.num_workers)
