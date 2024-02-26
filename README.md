@@ -28,7 +28,7 @@ Lightning Data supports **images, text, video, audio, geo-spatial, and multimoda
 - [Key Features](#key-features)
 - [Benchmarks](#benchmarks)
 - [Real World Runnable Templates](#real-world-templates)
-- [Use Lightning AI Platform to scale](#lightning-ai-platform-scale-cloud-data-processing)
+- [Infinite cloud data processing](#lightning-ai-platform-scale-cloud-data-processing)
 - [Contributors](#-contributors)
 
 # Getting Started
@@ -372,11 +372,11 @@ The dataset needs to be converted into an optimized format for cloud streaming. 
 
 # Infinite cloud data processing
 
-If you want to scale data processing, you typically need more machines and if you do this yourself, this becomes very tedious and can take a long time. 
+If you want to scale data processing, you typically need more machines and if you do this yourself, this becomes very tedious and can take a long time to get there.. 
 
-Instead, create a free account on the [Lightning.ai](https://lightning.ai/) platform .
+Instead, create a free account on the [Lightning.ai](https://lightning.ai/) platform and use as many machines as you need from code.
 
-With the platform, the `map` operator can start multiple machines to make data processing drastically faster as follows:
+On the platform, simply specify the number of nodes and the machine type you need as follows:
 
 ```python
 from litdata import map, Machine
