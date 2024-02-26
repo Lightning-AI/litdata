@@ -71,7 +71,7 @@ if __name__ == "__main__":
         inputs=list(range(1000)),  # Provide any inputs. The fn is applied on each item.
         output_dir="my_optimized_dataset",  # The directory where the optimized data are stored.
         num_workers=4,  # The number of workers. The inputs are distributed among them.
-        chunk_bytes="64MB"  # The maximum number of bytes to write into a chunk.
+        chunk_bytes="64MB"  # The maximum number of bytes to write into a data chunk.
     )
 
 ```
@@ -296,13 +296,13 @@ outputs = optimize(
     fn=partial(tokenize_fn, tokenizer=Tokenizer(f"{input_dir}/checkpoints/Llama-2-7b-hf")), # Note: You can use HF tokenizer or any others
     inputs=inputs,
     output_dir="/teamspace/datasets/starcoderdata",
-    chunk_size=(2049 * 8012), # Number of tokens to store by chunks. This is roughly 64MB of tokens per chunk.
+    chunk_size=(2049 * 8012), # Number of tokens to store by data chunks. This is roughly 64MB of tokens per data chunk.
 )
 ```
 
 ## On-Prem Storage with Network Drive
 
-A network drive is a shared storage device on a local area network. On-prem compute nodes can mount and use network drive. In order to reduce their network overload, the `StreamingDataset` supports `caching` the chunks.
+A network drive is a shared storage device on a local area network. On-prem compute nodes can mount and use network drive. In order to reduce their network overload, the `StreamingDataset` supports `caching` the data chunks.
 
 ```python
 from lightning.data import StreamingDataset
