@@ -11,56 +11,27 @@
 
 # ⚡ Welcome to Lightning Data
 
-We developed `StreamingDataset` to optimize training of large datasets stored on the cloud while prioritizing speed, affordability, and scalability.
+Lightning Data is a pivotal framework within the Lightning ecoystem, facilitating the efficient streaming of training data from cloud storage. As part of the Lightning ecosystem, Lightning Data integrates smoothly with other core packages, enabling users to leverage its capabilities alongside [PyTorch Lightning](https://lightning.ai/docs/pytorch/stable/), [Lightning Fabric](https://lightning.ai/docs/open-source/fabric), and [PyTorch](https://pytorch.org/docs/stable/index.html).
 
-Specifically crafted for multi-gpu & multi-node (with [DDP](https://lightning.ai/docs/pytorch/stable/accelerators/gpu_intermediate.html), [FSDP](https://lightning.ai/docs/pytorch/stable/advanced/model_parallel/fsdp.html), etc...), distributed training with large models, it enhances accuracy, performance, and user-friendliness. Now, training efficiently is possible regardless of the data's location. Simply stream in the required data when needed.
+With Lightning Data, users can transform and optimize their data in cloud environments with an intuitive approach and at any scale. 
 
-The `StreamingDataset` is compatible with any data type, including **images, text, video, audio, geo-spatial, and multimodal data** and it is a drop-in replacement for your PyTorch [IterableDataset](https://pytorch.org/docs/stable/data.html#torch.utils.data.IterableDataset) class. For example, it is used by [Lit-GPT](https://github.com/Lightning-AI/lit-gpt/blob/main/pretrain/tinyllama.py) to pretrain LLMs.
+Then, efficient training becomes feasible regardless of the data's location, allowing users to effortlessly stream in the required data as needed.
 
-# Benchmarks
+Lightning Data supports **images, text, video, audio, geo-spatial, and multimodal data** types and it is already used adopted framework such as [Lit-GPT](https://github.com/Lightning-AI/lit-gpt/blob/main/pretrain/tinyllama.py) to pretrain LLMs.
 
-[Imagenet-1.2M](https://www.image-net.org/) is a commonly used dataset to compare computer vision models. Its training dataset contains `1,281,167 images`. 
+### Table of Content
 
-In this benchmark, we measured the streaming speed (`images per second`) loaded from [AWS S3](https://aws.amazon.com/s3/) for several frameworks. 
-
-Find the reproducible [Studio Benchmark](https://lightning.ai/lightning-ai/studios/benchmark-cloud-data-loading-libraries).
-
-### Imagenet-1.2M Streaming from AWS S3
-
-| Framework | Images / sec  1st Epoch (float32)  | Images / sec   2nd Epoch (float32) | Images / sec 1st Epoch (torch16) | Images / sec 2nd Epoch (torch16) |
-|---|---|---|---|---|
-| PL Data  | **5800.34** | **6589.98**  | **6282.17**  | **7221.88**  |
-| Web Dataset  | 3134.42 | 3924.95 | 3343.40 | 4424.62 |
-| Mosaic ML  | 2898.61 | 5099.93 | 2809.69 | 5158.98 |
-
-Higher is better.
-
-### Imagenet-1.2M Conversion
-
-| Framework |Train Conversion Time | Val Conversion Time | Dataset Size | # Files |
-|---|---|---|---|---|
-| PL Data  |  **10:05 min** | **00:30 min** | **143.1 GB**  | 2.339  |
-| Web Dataset  | 32:36 min | 01:22 min | 147.8 GB | 1.144 |
-| Mosaic ML  | 49:49 min | 01:04 min | **143.1 GB** | 2.298 |
-
-The dataset needs to be converted into an optimized format for cloud streaming. We measured how fast the 1.2 million images are converted.
-
-Faster is better.
-
-# Real World Examples
-
-We have built end-to-end free [Studios](https://lightning.ai) showing all the steps to prepare the following datasets:
-
-| Dataset                                                                                                                                      |      Data type      |                                                                                                                                  Studio |
-| -------------------------------------------------------------------------------------------------------------------------------------------- | :-----------------: | --------------------------------------------------------------------------------------------------------------------------------------: |
-| [LAION-400M](https://laion.ai/blog/laion-400-open-dataset/)                                                                                  | Image & description |            [Use or explore LAION-400MILLION dataset](https://lightning.ai/lightning-ai/studios/use-or-explore-laion-400million-dataset) |
-| [Chesapeake Roads Spatial Context](https://github.com/isaaccorley/chesapeakersc)                                                             |    Image & Mask     | [Convert GeoSpatial data to Lightning Streaming](https://lightning.ai/lightning-ai/studios/convert-spatial-data-to-lightning-streaming) |
-| [Imagenet 1M](https://paperswithcode.com/sota/image-classification-on-imagenet?tag_filter=171)                                               |    Image & Label    |              [Benchmark cloud data-loading libraries](https://lightning.ai/lightning-ai/studios/benchmark-cloud-data-loading-libraries) |
-| [SlimPajama](https://huggingface.co/datasets/cerebras/SlimPajama-627B) & [StartCoder](https://huggingface.co/datasets/bigcode/starcoderdata) |        Text         |              [Prepare the TinyLlama 1T token dataset](https://lightning.ai/lightning-ai/studios/prepare-the-tinyllama-1t-token-dataset) |
-| [English Wikepedia](https://huggingface.co/datasets/wikipedia)                                                                               |        Text         |            [Embed English Wikipedia under 5 dollars](https://lightning.ai/lightning-ai/studios/embed-english-wikipedia-under-5-dollars) |
-| Generated                                                                                                                                    |    Parquet Files    |            [Convert parquets to Lightning Streaming](https://lightning.ai/lightning-ai/studios/convert-parquets-to-lightning-streaming) |
-
-[Lightning Studios](https://lightning.ai) are fully reproducible cloud IDE with data, code, dependencies, etc...
+- [Getting started](#getting-started)
+    - [Installation](#installation)
+    - [Quick Start](#quick-start)
+        - [1. Prepare Your Data](#1-prepare-your-data)
+        - [2. Upload Your Data to Cloud Storage](#2-upload-your-data-to-cloud-storage)
+        - [3. Use StreamingDataset and DataLoader](#3-use-streamingdataset-and-dataloader)
+- [Real World Examples](#real-world-examples)
+- [Key Features](#key-features)
+- [Benchmarks](#benchmarks)
+- [Lightning AI Platform: Scale cloud data processing](#lightning-ai-platform-scale-cloud-data-processing)
+- [Contributors](#-contributors)
 
 # Getting Started
 
@@ -141,105 +112,40 @@ cls = sample['class']
 dataloader = DataLoader(dataset)
 ```
 
-Here is an illustration showing how the `StreamingDataset` works under the hood.
+# Real World Examples
 
-![An illustration showing how the Streaming Dataset works.](https://pl-flash-data.s3.amazonaws.com/streaming_dataset.gif)
+We have built end-to-end free [Studios](https://lightning.ai) showing all the steps to prepare the following datasets:
 
-## Transform data
+| Dataset                                                                                                                                      |      Data type      |                                                                                                                                  Studio |
+| -------------------------------------------------------------------------------------------------------------------------------------------- | :-----------------: | --------------------------------------------------------------------------------------------------------------------------------------: |
+| [LAION-400M](https://laion.ai/blog/laion-400-open-dataset/)                                                                                  | Image & description |            [Use or explore LAION-400MILLION dataset](https://lightning.ai/lightning-ai/studios/use-or-explore-laion-400million-dataset) |
+| [Chesapeake Roads Spatial Context](https://github.com/isaaccorley/chesapeakersc)                                                             |    Image & Mask     | [Convert GeoSpatial data to Lightning Streaming](https://lightning.ai/lightning-ai/studios/convert-spatial-data-to-lightning-streaming) |
+| [Imagenet 1M](https://paperswithcode.com/sota/image-classification-on-imagenet?tag_filter=171)                                               |    Image & Label    |              [Benchmark cloud data-loading libraries](https://lightning.ai/lightning-ai/studios/benchmark-cloud-data-loading-libraries) |
+| [SlimPajama](https://huggingface.co/datasets/cerebras/SlimPajama-627B) & [StartCoder](https://huggingface.co/datasets/bigcode/starcoderdata) |        Text         |              [Prepare the TinyLlama 1T token dataset](https://lightning.ai/lightning-ai/studios/prepare-the-tinyllama-1t-token-dataset) |
+| [English Wikepedia](https://huggingface.co/datasets/wikipedia)                                                                               |        Text         |            [Embed English Wikipedia under 5 dollars](https://lightning.ai/lightning-ai/studios/embed-english-wikipedia-under-5-dollars) |
+| Generated                                                                                                                                    |    Parquet Files    |            [Convert parquets to Lightning Streaming](https://lightning.ai/lightning-ai/studios/convert-parquets-to-lightning-streaming) |
 
-Similar to `optimize`, the `map` operator can be used to transform data by applying a function over a list of item and persist all the files written inside the output directory.
-
-### 1. Put some images on a cloud storage
-
-We generates 1000 images and upload them to AWS S3.
-
-```python
-import os
-from PIL import Image
-import numpy as np
-
-data_dir = "my_images"
-os.makedirs(data_dir, exist_ok=True)
-
-for i in range(1000):
-    width = np.random.randint(224, 320) 
-    height = np.random.randint(224, 320) 
-    image_path = os.path.join(data_dir, f"{i}.JPEG")
-    Image.fromarray(
-        np.random.randint(0, 256, (width, height, 3), np.uint8)
-    ).save(image_path, format="JPEG", quality=90)
-```
-
-```bash
-⚡ aws s3 cp --recursive my_images s3://my-bucket/my_images
-```
-
-### 2. Resize the images
-
-```python
-import os
-from litdata import map
-from PIL import Image
-
-input_dir = "s3://my-bucket/my_images"
-inputs = [os.path.join(input_dir, f) for f in os.listdir(input_dir)]
-
-def resize_image(image_path, output_dir):
-  output_image_path = os.path.join(output_dir, os.path.basename(image_path))
-  Image.open(image_path).resize((224, 224)).save(output_image_path)
-  
-if __name__ == "__main__":
-    map(
-        fn=resize_image,
-        inputs=inputs, 
-        output_dir="s3://my-bucket/my_resized_images",
-        num_workers=4,
-    )
-```
-
-# Easily scale data processing
-
-To scale data processing, create a free account on [lightning.ai](https://lightning.ai/) platform. With the platform, the `optimize` and `map` can start multiple machines to make data processing drastically faster as follows:
-
-```python
-from litdata import optimize, Machine
-
-optimize(
-  ...
-  num_nodes=32,
-  machine=Machine.DATA_PREP, # You can select between dozens of optimized machines
-)
-```
-
-OR
-
-```python
-from litdata import map, Machine
-
-map(
-  ...
-  num_nodes=32,
-  machine=Machine.DATA_PREP, # You can select between dozens of optimized machines
-)
-```
-
-<div align="center">
-
-<img alt="Lightning" src="https://pl-flash-data.s3.amazonaws.com/data-prep.jpg" width="800px" style="max-width: 100%;">
-
-<br/>
-
-The Data Prep Job UI from the [LAION 400M Studio](https://lightning.ai/lightning-ai/studios/use-or-explore-laion-400million-dataset) where we used 32 machines with 32 CPU each to download 400 million images in only 2 hours.
-
-</div>
+[Lightning Studios](https://lightning.ai) are fully reproducible cloud IDE with data, code, dependencies, etc...
 
 # Key Features
+
+- [Multi-GPU / Multi-Node](#multi-gpu--multi-node)
+- [Easy Data Mixing](#easy-data-mixing)
+- [Stateful StreamingDataLoader](#stateful-streamingdataloader)
+- [Profiling](#profiling)
+- [Random access](#random-access)
+- [Use data transforms](#use-data-transforms)
+- [Disk usage limits](#disk-usage-limits)
+- [Support yield](#support-yield)
+- [Network Drive On-Prem Support](#network-drive-on-prem-support)
 
 ## Multi-GPU / Multi-Node
 
 The `StreamingDataset` and `StreamingDataLoader` takes care of everything for you. They automatically make sure each rank receives different batch of data. There is nothing for you to do if you use them.
 
-## Easy data mixing
+![An illustration showing how the Streaming Dataset works with multi node.](https://pl-flash-data.s3.amazonaws.com/streaming_dataset.gif)
+
+## Easy Data Mixing
 
 You can easily experiment with dataset mixtures using the CombinedStreamingDataset.
 
@@ -400,6 +306,74 @@ from lightning.data import StreamingDataset
 
 dataset = StreamingDataset(input_dir="local:/data/shared-drive/some-data")
 ```
+
+# Benchmarks
+
+[Imagenet-1.2M](https://www.image-net.org/) is a commonly used dataset to compare computer vision models. Its training dataset contains `1,281,167 images`. 
+
+In this benchmark, we measured the streaming speed (`images per second`) loaded from [AWS S3](https://aws.amazon.com/s3/) for several frameworks. 
+
+Find the reproducible [Studio Benchmark](https://lightning.ai/lightning-ai/studios/benchmark-cloud-data-loading-libraries).
+
+### Imagenet-1.2M Streaming from AWS S3
+
+| Framework | Images / sec  1st Epoch (float32)  | Images / sec   2nd Epoch (float32) | Images / sec 1st Epoch (torch16) | Images / sec 2nd Epoch (torch16) |
+|---|---|---|---|---|
+| PL Data  | **5800.34** | **6589.98**  | **6282.17**  | **7221.88**  |
+| Web Dataset  | 3134.42 | 3924.95 | 3343.40 | 4424.62 |
+| Mosaic ML  | 2898.61 | 5099.93 | 2809.69 | 5158.98 |
+
+Higher is better.
+
+### Imagenet-1.2M Conversion
+
+| Framework |Train Conversion Time | Val Conversion Time | Dataset Size | # Files |
+|---|---|---|---|---|
+| PL Data  |  **10:05 min** | **00:30 min** | **143.1 GB**  | 2.339  |
+| Web Dataset  | 32:36 min | 01:22 min | 147.8 GB | 1.144 |
+| Mosaic ML  | 49:49 min | 01:04 min | **143.1 GB** | 2.298 |
+
+The dataset needs to be converted into an optimized format for cloud streaming. We measured how fast the 1.2 million images are converted.
+
+Faster is better.
+
+# Lightning AI Platform: Scale cloud data processing
+
+To scale data processing, create a free account on [lightning.ai](https://lightning.ai/) platform. With the platform, the `optimize` and `map` can start multiple machines to make data processing drastically faster as follows:
+
+```python
+from litdata import optimize, Machine
+
+optimize(
+  ...
+  num_nodes=32,
+  machine=Machine.DATA_PREP, # You can select between dozens of optimized machines
+)
+```
+
+OR
+
+```python
+from litdata import map, Machine
+
+map(
+  ...
+  num_nodes=32,
+  machine=Machine.DATA_PREP, # You can select between dozens of optimized machines
+)
+```
+
+The Data Prep Job UI from the [LAION 400M Studio](https://lightning.ai/lightning-ai/studios/use-or-explore-laion-400million-dataset) where we used 32 machines with 32 CPU each to download 400 million images in only 2 hours.
+
+<div align="center">
+
+<img alt="Lightning" src="https://pl-flash-data.s3.amazonaws.com/data-prep.jpg" width="800px" style="max-width: 100%;">
+
+</div> 
+
+<br/>
+
+
 
 # ⚡ Contributors
 
