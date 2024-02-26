@@ -27,8 +27,8 @@ Lightning Data supports **images, text, video, audio, geo-spatial, and multimoda
         - [3. Use StreamingDataset](#3-use-streamingdataset)
 - [Key Features](#key-features)
 - [Benchmarks](#benchmarks)
-- [Real World Runnable Templates](#real-world-templates)
-- [Infinite cloud data processing](#lightning-ai-platform-scale-cloud-data-processing)
+- [Real World Runnable Templates](#real-world-runnable-templates)
+- [Infinite cloud data processing](#real-world-runnable-templates)
 - [Contributors](#-contributors)
 
 # Getting Started
@@ -113,15 +113,15 @@ dataloader = DataLoader(dataset)
 
 # Key Features
 
-- [Built-in Multi-GPU / Multi-Node](#multi-gpu--multi-node)
+- [Built-in Multi-GPU / Multi-Node](#built-in-multi-gpu--multi-node)
 - [Easy Data Mixing with the Combined Streaming Dataset](#easy-data-mixing-with-the-combined-streaming-dataset)
-- [Continue Training From Previous Dataset State](#stateful-streamingdataloader)
-- [Support Profiling](#profiling)
-- [Access any item](#random-access)
-- [Add any data transforms](#use-data-transforms)
-- [Configure Cache Size Limit](#disk-usage-limits)
-- [Reduce your memory footprint](#support-python-yield-keyword)
-- [Support Network Drive Storage](#on-prem-storage-with-network-drive)
+- [Continue Training From Previous Dataset State](#continue-training-from-previous-dataset-state)
+- [Support Profiling](#support-profiling)
+- [Access any item](#access-any-item)
+- [Add any data transforms](#add-any-data-transforms)
+- [Configure Cache Size Limit](#configure-cache-size-limit)
+- [Reduce your memory footprint](#reduce-your-memory-footprint)
+- [On-Prem Optimizations](#on-prem-storage-with-network-drive)
 - [The Map Operator](#map-operator)
 
 ## Built-in Multi-GPU / Multi-Node
@@ -286,9 +286,9 @@ outputs = optimize(
 )
 ```
 
-## Support Network Drive Storage
+## On-Prem Optimizations
 
-A network drive is a shared storage device on a local area network. On-prem compute nodes can mount and use network drive. In order to reduce their network overload, the `StreamingDataset` supports `caching` the chunks.
+On-prem compute nodes can mount and use network drive. A network drive is a shared storage device on a local area network. In order to reduce their network overload, the `StreamingDataset` supports `caching` the data chunks.
 
 ```python
 from lightning.data import StreamingDataset
@@ -332,11 +332,13 @@ You can reproduce this benchmark with this [Studio](https://lightning.ai/lightni
 
 # Real World Runnable Templates
 
-Fastest way to learn is with [Studios](https://lightning.ai/studios).  [Studios](https://lightning.ai/studios) are reproducible reproducible cloud IDE with data, code, dependencies, e.g. so you can re-do everything yourself with ease!
+Fastest way to learn is with [Studios](https://lightning.ai/studios).  
 
-We've published [public templates]((https://lightning.ai/studios) that demonstrates how to best use the Lightning Data framework at scale.
+[Studios](https://lightning.ai/studios) are reproducible cloud IDE with data, code, dependencies, e.g. so you can re-do everything yourself with ease!
 
-Sign up here to and run your first Studio free.
+We've published [public templates](https://lightning.ai/studios) that demonstrates how best to use the Lightning Data framework at scale and with several data types.
+
+Sign up [here](https://lightning.ai/) to and run your first Studio free.
 
 | Studio | Data type | Dataset |
 | -------------------------------------------------------------------------------------------------------------------------------------------- | :-----------------: | --------------------------------------------------------------------------------------------------------------------------------------: |
