@@ -13,7 +13,7 @@
 
 With Lightning Data, users can transform and optimize their data in cloud storage environments with an intuitive approach at any scale. 
 
-Then, efficient distributed training becomes feasible regardless of the data's location, allowing users to effortlessly stream your data as needed.
+Then, efficient distributed training becomes feasible regardless of the data's location, allowing users to effortlessly stream their data as needed with one or many machines.
 
 Lightning Data supports **images, text, video, audio, geo-spatial, and multimodal data** types, is already adopted by frameworks such as [Lit-GPT](https://github.com/Lightning-AI/lit-gpt/blob/main/pretrain/tinyllama.py) to pretrain LLMs and integrates smoothly [PyTorch Lightning](https://lightning.ai/docs/pytorch/stable/), [Lightning Fabric](https://lightning.ai/docs/fabric/stable/), and [PyTorch](https://pytorch.org/docs/stable/index.html).
 
