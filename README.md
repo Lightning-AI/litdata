@@ -117,7 +117,7 @@ dataloader = DataLoader(dataset)
 
 - [Multi-GPU / Multi-Node Support](#multi-gpu--multi-node-support)
 - [Access any item](#access-any-item)
-- [Use any data transforms](#add-any-data-transforms)
+- [Use any data transforms](#use-any-data-transforms)
 - [The Map Operator](#the-map-operator)
 - [Easy Data Mixing with the Combined Streaming Dataset](#easy-data-mixing-with-the-combined-streaming-dataset)
 - [Continue Training From Previous Dataset State](#continue-training-from-previous-dataset-state)
@@ -183,7 +183,8 @@ from PIL import Image
 input_dir = "my_large_images"
 inputs = [os.path.join(input_dir, f) for f in os.listdir(input_dir)]
 
-# The resize image takes one of the input (image_path) and the output directory. Files written to output_dir are persisted.
+# The resize image takes one of the input (image_path) and the output directory. 
+# Files written to output_dir are persisted.
 def resize_image(image_path, output_dir):
   output_image_path = os.path.join(output_dir, os.path.basename(image_path))
   Image.open(image_path).resize((224, 224)).save(output_image_path)
@@ -191,7 +192,7 @@ def resize_image(image_path, output_dir):
 map(
     fn=resize_image,
     inputs=inputs, 
-    output_dir="my_resized_images",
+    output_dir="s3://my-bucket/my_resized_images",
 )
 ```
 
