@@ -47,7 +47,7 @@ pip install litdata
 
 ### 1. Prepare Your Data
 
-Convert your raw dataset into Lightning Streaming Format using the `optimize` operator.
+Convert your raw dataset into **Lightning Data Optimized Streaming Format** using the `optimize` operator.
 
 Here is an example with some random images. 
 
