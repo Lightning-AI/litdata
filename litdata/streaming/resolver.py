@@ -295,6 +295,18 @@ def _resolve_time_template(path: str) -> str:
     return path.replace("{" + pattern + "}", datetime.datetime.now().strftime(pattern))
 
 
+def _resolve_owner_name(studio: "Studio") -> str:
+    from lightning_sdk.organization import Organization
+    from lightning_sdk.user import User
+
+    if issubclass(studio.owner, Organization):
+        return studio.owner.name
+    if issubclass(studio.owner, User):
+        return studio.owner
+
+    raise RuntimeError("Neither user nor org provided, but one of them needs to be provided")
+
+
 def _execute(
     name: str,
     num_nodes: int,
@@ -333,7 +345,8 @@ def _execute(
         )
         if not has_printed:
             cloud_url = os.getenv("LIGHTNING_CLOUD_URL", "https://lightning.ai").replace(":443", "")
-            job_url = f"{cloud_url}/{studio.owner.name}/{studio._teamspace.name}"
+            owner_name = _resolve_owner_name(studio)
+            job_url = f"{cloud_url}/{owner_name}/{studio._teamspace.name}"
             job_url += f"/studios/{studio.name}/app?app_id=data-prep&job_name={curr_job.name}"
             print(f"Find your job at {job_url}")
             has_printed = True
