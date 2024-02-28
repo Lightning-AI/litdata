@@ -115,9 +115,9 @@ dataloader = DataLoader(dataset)
 
 # Key Features
 
-- [Multi-GPU / Multi-Node Support](#built-in-multi-gpu--multi-node)
+- [Multi-GPU / Multi-Node Support](#multi-gpu--multi-node-support)
 - [Access any item](#access-any-item)
-- [Add any data transforms](#add-any-data-transforms)
+- [Use any data transforms](#add-any-data-transforms)
 - [The Map Operator](#the-map-operator)
 - [Easy Data Mixing with the Combined Streaming Dataset](#easy-data-mixing-with-the-combined-streaming-dataset)
 - [Continue Training From Previous Dataset State](#continue-training-from-previous-dataset-state)
@@ -148,7 +148,7 @@ print(len(dataset)) # display the length of your data
 print(dataset[42]) # show the 42th element of the dataset
 ```
 
-## Add any data transforms
+## Use any data transforms
 
 Subclass the `StreamingDataset` and override its `__getitem__` method to add any extra data transformations.
 
