@@ -406,7 +406,8 @@ optimize(
 )
 ```
 
-Here is a screenshot from the [LAION 400 MILLION Studio](https://lightning.ai/lightning-ai/studios/use-or-explore-laion-400million-dataset) on the [Lightning.ai](https://lightning.ai/) platform where we used 32 machines with 32 CPU each to download 400 million images in only 2 hours. You can run this template yourself [here](https://lightning.ai/lightning-ai/studios/use-or-explore-laion-400million-dataset).
+
+Within the [LAION 400 MILLION Studio](https://lightning.ai/lightning-ai/studios/use-or-explore-laion-400million-dataset), we utilized 32 machines, each equipped with 32 CPUs, to execute the `optimize` operator, enabling the download of 400 million images in just 2 hours. Below is a screenshot of that job within the [Lightning.ai](https://lightning.ai/) platform. You can execute it yourself [here](https://lightning.ai/lightning-ai/studios/use-or-explore-laion-400million-dataset).
 
 <div align="center">
 
