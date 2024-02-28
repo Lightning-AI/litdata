@@ -17,7 +17,7 @@ Then, efficient distributed training becomes feasible regardless of the data's l
 
 Lightning Data supports **images, text, video, audio, geo-spatial, and multimodal data** types, is already adopted by frameworks such as [Lit-GPT](https://github.com/Lightning-AI/lit-gpt/blob/main/pretrain/tinyllama.py) to pretrain LLMs and integrates smoothly with [PyTorch Lightning](https://lightning.ai/docs/pytorch/stable/), [Lightning Fabric](https://lightning.ai/docs/fabric/stable/), and [PyTorch](https://pytorch.org/docs/stable/index.html).
 
-[Runnable templates](#runnable-templates) published on the [Lightning.Ai](https://lightning.ai) Platform are available at the end, they are fully reproducible with 1-click.
+[Runnable templates](#runnable-templates) published on the [Lightning.AI Platform](https://lightning.ai) are available at the end, they are fully reproducible with 1-click.
 
 ### Table of Contents
 
