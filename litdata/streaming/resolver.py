@@ -23,6 +23,8 @@ except Exception:
 
 try:
     from lightning_sdk import Machine, Studio
+    from lightning_sdk.organization import Organization
+    from lightning_sdk.user import User
 
     _LIGHTNING_SDK_AVAILABLE = True
 except (ImportError, ModuleNotFoundError):
@@ -296,9 +298,6 @@ def _resolve_time_template(path: str) -> str:
 
 
 def _resolve_owner_name(studio: "Studio") -> str:
-    from lightning_sdk.organization import Organization
-    from lightning_sdk.user import User
-
     if issubclass(studio.owner, Organization):
         return studio.owner.name
     if issubclass(studio.owner, User):
