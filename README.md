@@ -37,7 +37,7 @@ Lightning Data supports **images, text, video, audio, geo-spatial, and multimoda
 
 ## Installation
 
-Lightning Data can be installed with `pip`:
+Install **Lightning Data** with `pip`
 
 ```bash
 pip install litdata
