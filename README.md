@@ -180,6 +180,7 @@ Here is an example where the `map` operator is used to apply a `resize_image` fu
 from lightning.data import map
 from PIL import Image
 
+# Note: Inputs could also refer to files on s3 directly.
 input_dir = "my_large_images"
 inputs = [os.path.join(input_dir, f) for f in os.listdir(input_dir)]
 
