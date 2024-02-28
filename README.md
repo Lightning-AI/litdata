@@ -11,7 +11,7 @@
 
 # ⚡ Welcome to Lightning Data
 
-With Lightning Data, users can transform and optimize their data efficientely in cloud storage environments with an intuitive approach at any scale. 
+With Lightning Data, users can transform and optimize their data in cloud storage environments with an intuitive approach at any scale. 
 
 Then, efficient distributed training becomes feasible regardless of the data's location, allowing users to effortlessly stream their data as needed with one or many machines.
 
