@@ -120,7 +120,7 @@ dataloader = DataLoader(dataset)
 - [Use any data transforms](#use-any-data-transforms)
 - [The Map Operator](#the-map-operator)
 - [Easy Data Mixing with the Combined Streaming Dataset](#easy-data-mixing-with-the-combined-streaming-dataset)
-- [Continue Training From Previous Dataset State](#continue-training-from-previous-dataset-state)
+- [Pause & Resume Made simple](#continue-training-from-previous-dataset-state)
 - [Support Profiling](#support-profiling)
 - [Reduce your memory footprint](#reduce-your-memory-footprint)
 - [Configure Cache Size Limit](#configure-cache-size-limit)
@@ -236,7 +236,7 @@ for batch in tqdm(train_dataloader):
     pass
 ```
 
-## Continue Training From Previous Dataset State
+## Pause & Resume Made Simple
 
 Lightning Data provides a stateful `Streaming DataLoader` e.g. you can `pause` and `resume` your training whenever you want.
 
