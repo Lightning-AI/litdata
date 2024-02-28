@@ -82,7 +82,7 @@ The `optimize` operator supports any data structures and types. Serialize whatev
 
 ### 2. Upload Your Data to Cloud Storage
 
-Cloud providers such as [AWS](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html), [Google Cloud](https://cloud.google.com/storage/docs/uploading-objects?hl=en#upload-object-cli), [Azure](https://learn.microsoft.com/en-us/azure/import-export/storage-import-export-data-to-files?tabs=azure-portal-preview), etc.. provide command line client to upload your data to their storage.
+Cloud providers such as [AWS](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html), [Google Cloud](https://cloud.google.com/storage/docs/uploading-objects?hl=en#upload-object-cli), [Azure](https://learn.microsoft.com/en-us/azure/import-export/storage-import-export-data-to-files?tabs=azure-portal-preview) provide command line client to upload your data to their storage.
 
 Here is how to upload the optimized dataset using the [AWS CLI](https://aws.amazon.com/s3) to [AWS S3](https://aws.amazon.com/s3/).
 
