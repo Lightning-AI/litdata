@@ -8,3 +8,4 @@ torchvision
 pillow
 viztracer
 pyarrow
+boto3[crt]
