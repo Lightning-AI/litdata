@@ -248,7 +248,7 @@ def map(
         with optimize_dns_context(True):
             return data_processor.run(LambdaDataTransformRecipe(fn, inputs))
     return _execute(
-        f"data-prep-map-{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}",
+        f"litdata-map-{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}",
         num_nodes,
         machine,
     )
@@ -363,7 +363,7 @@ def optimize(
             )
         return None
     return _execute(
-        f"data-prep-optimize-{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}",
+        f"litdata-optimize-{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}",
         num_nodes,
         machine,
     )

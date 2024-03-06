@@ -247,7 +247,7 @@ def test_execute(phase, monkeypatch):
     studio._teamspace.id = "teamspace_id"
     studio._studio.cluster_id = "cluster_id"
     studio._studio_api.get_machine.return_value = "cpu"
-    studio.owner = "username"
+    studio.owner.name = "username"
     studio._teamspace.name = "teamspace_name"
     studio.name = "studio_name"
     studio.name = "studio_name"
@@ -269,7 +269,7 @@ def test_execute(phase, monkeypatch):
         nonlocal called
         assert (
             msg
-            == "Find your job at https://lightning.ai/username/teamspace_name/studios/studio_name/app?app_id=data-prep&job_name=job_name"
+            == "Find your job at https://lightning.ai/username/teamspace_name/studios/studio_name/app?app_id=litdata&app_tab=Runs&job_name=job_name"
         )
         called = True
 

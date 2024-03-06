@@ -1,6 +1,6 @@
 <div align="center">
 
-<img alt="Lightning" src="https://pl-flash-data.s3.amazonaws.com/lightning_data_logo.png" width="800px" style="max-width: 100%;">
+<img alt="Lightning" src="https://pl-flash-data.s3.amazonaws.com/lit_data_logo.webp" width="800px" style="max-width: 100%;">
 
 <br/>
 <br/>
@@ -9,13 +9,13 @@
 
 </div>
 
-# ⚡ Welcome to Lightning Data
+# ⚡ Welcome to LitData
 
-With Lightning Data, users can transform and optimize their data in cloud storage environments with an intuitive approach at any scale and efficiently. 
+With LitData, users can transform and optimize their data in cloud storage environments with an intuitive approach at any scale and efficiently. 
 
 Once optimized, efficient distributed training becomes practical regardless of where the data is located, enabling users to seamlessly stream data of any size to one or multiple machines.
 
-Lightning Data supports **images, text, video, audio, geo-spatial, and multimodal data** types, is already adopted by frameworks such as [Lit-GPT](https://github.com/Lightning-AI/lit-gpt/blob/main/pretrain/tinyllama.py) to pretrain LLMs and integrates smoothly with [PyTorch Lightning](https://lightning.ai/docs/pytorch/stable/), [Lightning Fabric](https://lightning.ai/docs/fabric/stable/), and [PyTorch](https://pytorch.org/docs/stable/index.html).
+LitData supports **images, text, video, audio, geo-spatial, and multimodal data** types, is already adopted by frameworks such as [Lit-GPT](https://github.com/Lightning-AI/lit-gpt/blob/main/pretrain/tinyllama.py) to pretrain LLMs and integrates smoothly with [PyTorch Lightning](https://lightning.ai/docs/pytorch/stable/), [Lightning Fabric](https://lightning.ai/docs/fabric/stable/), and [PyTorch](https://pytorch.org/docs/stable/index.html).
 
 [Runnable templates](#runnable-templates) published on the [Lightning.AI Platform](https://lightning.ai) are available at the end, **reproducible in 1-click**.
 
@@ -37,7 +37,7 @@ Lightning Data supports **images, text, video, audio, geo-spatial, and multimoda
 
 ## Installation
 
-Install **Lightning Data** with `pip`
+Install **LitData** with `pip`
 
 ```bash
 pip install litdata
@@ -47,7 +47,7 @@ pip install litdata
 
 ### 1. Prepare Your Data
 
-Convert your raw dataset into **Lightning Data Optimized Streaming Format** using the `optimize` operator.
+Convert your raw dataset into **LitData Optimized Streaming Format** using the `optimize` operator.
 
 Here is an example with some random images. 
 
@@ -238,7 +238,7 @@ for batch in tqdm(train_dataloader):
 
 ## Pause & Resume Made Simple
 
-Lightning Data provides a stateful `Streaming DataLoader` e.g. you can `pause` and `resume` your training whenever you want.
+LitData provides a stateful `Streaming DataLoader` e.g. you can `pause` and `resume` your training whenever you want.
 
 Info: The `Streaming DataLoader` was used by [Lit-GPT](https://github.com/Lightning-AI/lit-gpt/blob/main/pretrain/tinyllama.py) to pretrain LLMs. Restarting from an older checkpoint was critical to get to pretrain the full model due several failures (network, CUDA Errors, etc..).
 
@@ -329,7 +329,7 @@ dataset = StreamingDataset(input_dir="local:/data/shared-drive/some-data")
 
 # Benchmarks
 
-In order to measure the effectiveness of Lightning Data, we used a commonly used dataset for benchmarks: [Imagenet-1.2M](https://www.image-net.org/) where the training set contains `1,281,167 images`. 
+In order to measure the effectiveness of LitData, we used a commonly used dataset for benchmarks: [Imagenet-1.2M](https://www.image-net.org/) where the training set contains `1,281,167 images`. 
 
 To align with other benchmarks, we measured the streaming speed (`images per second`) loaded from [AWS S3](https://aws.amazon.com/s3/) for several frameworks. 
 
@@ -337,7 +337,7 @@ Reproduce our benchmark **by running** this [Studio](https://lightning.ai/lightn
 
 ### Imagenet-1.2M Streaming from AWS S3
 
-We can observe Lightning Data is up to 85 % faster than the second best. Higher is better in the table below. 
+We can observe LitData is up to 85 % faster than the second best. Higher is better in the table below. 
 
 | Framework | Images / sec  1st Epoch (float32)  | Images / sec   2nd Epoch (float32) | Images / sec 1st Epoch (torch16) | Images / sec 2nd Epoch (torch16) |
 |---|---|---|---|---|
@@ -362,7 +362,7 @@ Fastest way to learn is with [Studios](https://lightning.ai/studios).
 
 [Studios](https://lightning.ai/studios) are reproducible cloud IDE with data, code, dependencies, e.g. so redo everything yourself with ease!
 
-We've published [public templates](https://lightning.ai/studios) that demonstrates how best to use the Lightning Data framework at scale and with several data types.
+We've published [public templates](https://lightning.ai/studios) that demonstrates how best to use the LitData framework at scale and with several data types.
 
 Sign up [here](https://lightning.ai/) and run your first Studio for free.
 
