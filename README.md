@@ -11,7 +11,7 @@
 
 # ⚡ Welcome to LitData
 
-With LitData, users can transform and optimize their data in cloud storage environments with an intuitive approach at any scale and efficiently. 
+With LitData, users can transform and optimize their data in cloud storage environments efficiently and intuitively, at any scale. 
 
 Once optimized, efficient distributed training becomes practical regardless of where the data is located, enabling users to seamlessly stream data of any size to one or multiple machines.
 
@@ -78,11 +78,11 @@ if __name__ == "__main__":
 
 ```
 
-The `optimize` operator supports any data structures and types. Serialize whatever you want. The optimized data are stored under the output directory `my_optimized_dataset`.
+The `optimize` operator supports any data structures and types. Serialize whatever you want. The optimized data is stored under the output directory `my_optimized_dataset`.
 
-### 2. Upload Your Data to Cloud Storage
+### 2. Upload your Data to Cloud Storage
 
-Cloud providers such as [AWS](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html), [Google Cloud](https://cloud.google.com/storage/docs/uploading-objects?hl=en#upload-object-cli), [Azure](https://learn.microsoft.com/en-us/azure/import-export/storage-import-export-data-to-files?tabs=azure-portal-preview) provide command line client to upload your data to their storage.
+Cloud providers such as [AWS](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html), [Google Cloud](https://cloud.google.com/storage/docs/uploading-objects?hl=en#upload-object-cli), [Azure](https://learn.microsoft.com/en-us/azure/import-export/storage-import-export-data-to-files?tabs=azure-portal-preview) provide command line clients to upload your data to their storage solutions.
 
 Here is how to upload the optimized dataset using the [AWS CLI](https://aws.amazon.com/s3) to [AWS S3](https://aws.amazon.com/s3/).
 
@@ -128,15 +128,15 @@ dataloader = DataLoader(dataset)
 
 ## Multi-GPU / Multi-Node Support
 
-The `StreamingDataset` and `StreamingDataLoader` automatically make sure each rank receives the same quantity of varied batches of data, so it works out of the box with your favorites frameworks ([PyTorch Lightning](https://lightning.ai/docs/pytorch/stable/), [Lightning Fabric](https://lightning.ai/docs/fabric/stable/), or [PyTorch](https://pytorch.org/docs/stable/index.html)) to do distributed training. 
+The `StreamingDataset` and `StreamingDataLoader` automatically make sure each rank receives the same quantity of varied batches of data, so it works out of the box with your favorite frameworks ([PyTorch Lightning](https://lightning.ai/docs/pytorch/stable/), [Lightning Fabric](https://lightning.ai/docs/fabric/stable/), or [PyTorch](https://pytorch.org/docs/stable/index.html)) to do distributed training. 
 
-Here is an illustration showing how the Streaming Dataset works with multi node / multi gpu under the hood.
+Here you can see an illustration showing how the Streaming Dataset works with multi node / multi gpu under the hood.
 
 ![An illustration showing how the Streaming Dataset works with multi node.](https://pl-flash-data.s3.amazonaws.com/streaming_dataset.gif)
 
 ## Access any item
 
-Access the data you need when you need it whenever they are stored.
+Access the data you need, whenever you need it, regardless of where it is stored.
 
 ```python
 from litdata import StreamingDataset
@@ -240,7 +240,7 @@ for batch in tqdm(train_dataloader):
 
 LitData provides a stateful `Streaming DataLoader` e.g. you can `pause` and `resume` your training whenever you want.
 
-Info: The `Streaming DataLoader` was used by [Lit-GPT](https://github.com/Lightning-AI/lit-gpt/blob/main/pretrain/tinyllama.py) to pretrain LLMs. Restarting from an older checkpoint was critical to get to pretrain the full model due several failures (network, CUDA Errors, etc..).
+Info: The `Streaming DataLoader` was used by [Lit-GPT](https://github.com/Lightning-AI/lit-gpt/blob/main/pretrain/tinyllama.py) to pretrain LLMs. Restarting from an older checkpoint was critical to get to pretrain the full model due to several failures (network, CUDA Errors, etc..).
 
 ```python
 import os
@@ -265,7 +265,7 @@ for batch_idx, batch in enumerate(dataloader):
 
 ## Support Profiling
 
-The `StreamingDataLoader` supports profiling your dataloading. Simply use the `profile_batches` argument to set how many batches to profile:
+The `StreamingDataLoader` supports profiling of your data loading process. Simply use the `profile_batches` argument to specify the number of batches you want to profile:
 
 ```python
 from litdata import StreamingDataset, StreamingDataLoader
@@ -277,7 +277,7 @@ This generates a Chrome trace called `result.json`. Then, visualize this trace b
 
 ## Reduce your memory footprint
 
-When processing large files like compressed [parquet files](https://en.wikipedia.org/wiki/Apache_Parquet), use the python yield keyword to process and store one item at the time, reducing the memory footprint of the entire program. 
+When processing large files like compressed [parquet files](https://en.wikipedia.org/wiki/Apache_Parquet), use the Python yield keyword to process and store one item at the time, reducing the memory footprint of the entire program. 
 
 ```python
 from pathlib import Path
@@ -394,7 +394,7 @@ map(
 )
 ```
 
-Also, the `optimize` operator  can do the same to make immense dataset streamable as follows:
+Also, the `optimize` operator can do the same to make immense datasets streamable as follows:
 
 ```python
 from litdata import optimize, Machine
