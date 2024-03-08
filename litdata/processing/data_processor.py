@@ -349,9 +349,12 @@ def _is_path(input_dir: Optional[str], element: Any) -> bool:
 
         element = str(Path(element).absolute())
         if element.startswith(input_dir):
-            return True
+            # check whether the element has an extension.
+            if os.path.splitext(element)[1]:
+                return True
+            return os.path.isfile(element)
 
-    return os.path.exists(element)
+    return os.path.isfile(element)
 
 
 class BaseWorker:
