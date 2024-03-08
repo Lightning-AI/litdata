@@ -52,7 +52,9 @@ class BaseItemLoader(ABC):
         pass
 
     @abstractmethod
-    def load_item_from_chunk(self, index: int, chunk_index: int, chunk_filepath: str, begin: int, chunk_bytes: int) -> Any:
+    def load_item_from_chunk(
+        self, index: int, chunk_index: int, chunk_filepath: str, begin: int, chunk_bytes: int
+    ) -> Any:
         """Returns an item loaded from a chunk."""
         pass
 
@@ -81,7 +83,9 @@ class PyTreeLoader(BaseItemLoader):
     def pre_load_chunk(self, chunk_index: int, chunk_filepath: str) -> None:
         pass
 
-    def load_item_from_chunk(self, index: int, chunk_index: int, chunk_filepath: str, begin: int, chunk_bytes: int) -> bytes:
+    def load_item_from_chunk(
+        self, index: int, chunk_index: int, chunk_filepath: str, begin: int, chunk_bytes: int
+    ) -> bytes:
         offset = (1 + (index - begin) if index >= begin else index + 1) * 4
 
         if chunk_filepath in self._chunk_filepaths and not os.path.isfile(chunk_filepath):
@@ -124,10 +128,7 @@ class PyTreeLoader(BaseItemLoader):
             data_bytes = raw_item_data[idx : idx + size]
             data.append(serializer.deserialize(data_bytes))
             idx += size
-        try:
-            return tree_unflatten(data, self._config["data_spec"])
-        except Exception:
-            breakpoint()
+        return tree_unflatten(data, self._config["data_spec"])
 
     def delete(self, chunk_index: int, chunk_filepath: str) -> None:
         if os.path.exists(chunk_filepath):
@@ -194,7 +195,9 @@ class TokensLoader(BaseItemLoader):
         if os.path.exists(chunk_filepath) and os.stat(chunk_filepath).st_size > 0:
             self._load_chunk(chunk_index, chunk_filepath)
 
-    def load_item_from_chunk(self, index: int, chunk_index: int, chunk_filepath: str, begin: int, chunk_bytes: int) -> torch.Tensor:
+    def load_item_from_chunk(
+        self, index: int, chunk_index: int, chunk_filepath: str, begin: int, chunk_bytes: int
+    ) -> torch.Tensor:
         if chunk_filepath in self._chunk_filepaths and not os.path.isfile(chunk_filepath):
             del self._chunk_filepaths[chunk_filepath]
 
