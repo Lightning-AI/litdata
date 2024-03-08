@@ -1191,3 +1191,17 @@ def test_streaming_dataset_in_map(tmpdir):
     )
 
     assert sorted(os.listdir(output_dir)) == sorted([f"{i}.txt" for i in range(107)])
+
+
+def test_data_chunk_recipe():
+    data_recipe = DataChunkRecipe()
+    assert data_recipe.chunk_bytes == 67108864
+    assert data_recipe.chunk_size is None
+
+    data_recipe = DataChunkRecipe(chunk_bytes=256)
+    assert data_recipe.chunk_bytes == 256
+    assert data_recipe.chunk_size is None
+
+    data_recipe = DataChunkRecipe(chunk_size=2)
+    assert data_recipe.chunk_bytes is None
+    assert data_recipe.chunk_size == 2
