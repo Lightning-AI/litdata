@@ -695,7 +695,7 @@ class DataChunkRecipe(DataRecipe):
             raise ValueError("Either one of the `chunk_size` or the `chunk_bytes` need to be provided.")
 
         self.chunk_size = chunk_size
-        self.chunk_bytes = 1 << 26 if chunk_bytes is None else chunk_bytes
+        self.chunk_bytes = 1 << 26 if chunk_size is None and chunk_bytes is None else chunk_bytes
         self.compression = compression
 
     @abstractmethod
