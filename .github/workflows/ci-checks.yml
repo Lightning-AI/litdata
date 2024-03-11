@@ -16,9 +16,9 @@ jobs:
 
   check-typing:
     # TODO: switch to main after fix lends
-    uses: Lightning-AI/utilities/.github/workflows/check-typing.yml@ci/mypy-dir
+    uses: Lightning-AI/utilities/.github/workflows/check-typing.yml@main
     with:
-      actions-ref: ci/mypy-dir
+      actions-ref: main
       source-dir: ""
 
   check-schema:

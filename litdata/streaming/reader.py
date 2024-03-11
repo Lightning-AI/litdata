@@ -249,7 +249,9 @@ class BinaryReader:
 
         # Fetch the element
         chunk_filepath, begin, chunk_bytes = self.config[index]
-        item = self._item_loader.load_item_from_chunk(index.index, index.chunk_index, chunk_filepath, begin, chunk_bytes)
+        item = self._item_loader.load_item_from_chunk(
+            index.index, index.chunk_index, chunk_filepath, begin, chunk_bytes
+        )
 
         # We need to request deletion after the latest element has been loaded.
         # Otherwise, this could trigger segmentation fault error depending on the item loader used.

@@ -363,22 +363,24 @@ class FloatSerializer(NumericSerializer, Serializer):
         return isinstance(data, float)
 
 
-_SERIALIZERS = OrderedDict(**{
-    "str": StringSerializer(),
-    "int": IntegerSerializer(),
-    "float": FloatSerializer(),
-    "video": VideoSerializer(),
-    "tif": FileSerializer(),
-    "file": FileSerializer(),
-    "pil": PILSerializer(),
-    "jpeg": JPEGSerializer(),
-    "bytes": BytesSerializer(),
-    "no_header_numpy": NoHeaderNumpySerializer(),
-    "numpy": NumpySerializer(),
-    "no_header_tensor": NoHeaderTensorSerializer(),
-    "tensor": TensorSerializer(),
-    "pickle": PickleSerializer(),
-})
+_SERIALIZERS = OrderedDict(
+    **{
+        "str": StringSerializer(),
+        "int": IntegerSerializer(),
+        "float": FloatSerializer(),
+        "video": VideoSerializer(),
+        "tif": FileSerializer(),
+        "file": FileSerializer(),
+        "pil": PILSerializer(),
+        "jpeg": JPEGSerializer(),
+        "bytes": BytesSerializer(),
+        "no_header_numpy": NoHeaderNumpySerializer(),
+        "numpy": NumpySerializer(),
+        "no_header_tensor": NoHeaderTensorSerializer(),
+        "tensor": TensorSerializer(),
+        "pickle": PickleSerializer(),
+    }
+)
 
 
 def _get_serializers(serializers: Optional[Dict[str, Serializer]]) -> Dict[str, Serializer]:
