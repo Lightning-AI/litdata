@@ -976,12 +976,9 @@ class DataProcessor:
             if current_total == num_items:
                 break
 
-            if _IS_IN_STUDIO:
+            if _IS_IN_STUDIO and node_rank == 0:
                 with open("status.json", "w") as f:
-                    json.dump({
-                        "progress": str(100 * current_total * num_nodes / total_num_items) + "%"}
-                        , f
-                    )
+                    json.dump({"progress": str(100 * current_total * num_nodes / total_num_items) + "%"}, f)
 
             # Exit early if all the workers are done.
             # This means there were some kinda of errors.
