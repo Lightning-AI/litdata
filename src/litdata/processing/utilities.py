@@ -153,3 +153,15 @@ def _optimize_dns(enable: bool) -> None:
     with open("/etc/resolv.conf", "w") as f:
         for line in write_lines:
             f.write(line)
+
+
+def _get_work_dir():
+    # Provides the storage path associated to the current Lightning Work.
+    bucket_name = os.getenv("LIGHTNING_BUCKET_NAME")
+    project_id = os.getenv("LIGHTNING_CLOUD_PROJECT_ID")
+    app_id = os.getenv("LIGHTNING_CLOUD_APP_ID")
+    work_id = os.getenv("LIGHTNING_CLOUD_WORK_ID")
+    assert bucket_name is not None
+    assert project_id is not None
+    assert work_id is not None
+    return f"s3://{bucket_name}/projects/{project_id}/lightningapps/{app_id}/artifacts/{work_id}/content/"
