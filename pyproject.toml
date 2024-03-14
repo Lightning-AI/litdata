@@ -112,7 +112,7 @@ max-complexity = 10
 
 [tool.mypy]
 files = [
-    "litdata",
+    "src",
 ]
 # This section is for folders with "-" as they are not valid python modules
 exclude = [
