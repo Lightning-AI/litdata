@@ -5,14 +5,15 @@ from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
 
 from pkg_resources import parse_requirements
-from setuptools import setup
+from setuptools import find_packages, setup
 
 _PATH_ROOT = os.path.dirname(__file__)
-_PATH_REQUIRES = os.path.join(_PATH_ROOT, "requirements")
+_PATH_SOURCE = os.path.join(_PATH_ROOT, "src")
+_PATH_REQUIRES = os.path.join(_PATH_ROOT, "_requirements")
 
 
 def _load_py_module(fname, pkg="litdata"):
-    spec = spec_from_file_location(os.path.join(pkg, fname), os.path.join(_PATH_ROOT, pkg, fname))
+    spec = spec_from_file_location(os.path.join(pkg, fname), os.path.join(_PATH_SOURCE, pkg, fname))
     py = module_from_spec(spec)
     spec.loader.exec_module(py)
     return py
@@ -60,6 +61,8 @@ setup(
     download_url="https://github.com/Lightning-AI/litdata",
     license=about.__license__,
     long_description=readme,
+    packages=find_packages(where="src"),
+    package_dir={"": "src"},
     long_description_content_type="text/markdown",
     include_package_data=True,
     zip_safe=False,

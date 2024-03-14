@@ -954,6 +954,8 @@ class DataProcessor:
             dynamic_ncols=True,
         )
 
+        total_num_items = len(user_items)
+
         while True:
             try:
                 error = self.error_queue.get(timeout=0.001)
@@ -972,6 +974,13 @@ class DataProcessor:
             current_total = new_total
             if current_total == num_items:
                 break
+
+            if _IS_IN_STUDIO:
+                with open("status.json", "w") as f:
+                    json.dump({
+                        "progress": str(100 * current_total * num_nodes / toal_num_items) + "%"}
+                        , f
+                    )
 
             # Exit early if all the workers are done.
             # This means there were some kinda of errors.
