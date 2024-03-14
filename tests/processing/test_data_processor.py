@@ -11,7 +11,6 @@ import pytest
 import torch
 from lightning import seed_everything
 from lightning_utilities.core.imports import RequirementCache
-
 from litdata.constants import _TORCH_AUDIO_AVAILABLE, _ZSTD_AVAILABLE
 from litdata.processing import data_processor as data_processor_module
 from litdata.processing import functions
@@ -1077,8 +1076,7 @@ def create_synthetic_audio_bytes(index) -> dict:
         torchaudio.save(f, data, 16000, format="wav")
         data = f.getvalue()
 
-    data = {"content": data}
-    return data
+    return {"content": data}
 
 
 @pytest.mark.skipif(condition=not _TORCH_AUDIO_AVAILABLE or not _ZSTD_AVAILABLE, reason="Requires: ['torchaudio']")

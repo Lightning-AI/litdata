@@ -23,14 +23,13 @@ from lightning.fabric import Fabric
 from lightning.pytorch.demos.boring_classes import RandomDataset
 from lightning_utilities.core.imports import RequirementCache
 from lightning_utilities.test.warning import no_warning_call
-from torch.utils.data import Dataset
-
 from litdata.streaming import Cache
 from litdata.streaming.dataloader import CacheDataLoader
 from litdata.streaming.dataset import StreamingDataset
 from litdata.streaming.item_loader import TokensLoader
 from litdata.streaming.serializers import Serializer
 from litdata.utilities.env import _DistributedEnv
+from torch.utils.data import Dataset
 
 _PIL_AVAILABLE = RequirementCache("PIL")
 _TORCH_VISION_AVAILABLE = RequirementCache("torchvision")
@@ -219,8 +218,8 @@ def test_cache_with_auto_wrapping(tmpdir):
     os.makedirs(os.path.join(tmpdir, "cache_2"), exist_ok=True)
     dataset = RandomDatasetAtRuntime(64, 64)
     dataloader = CacheDataLoader(dataset, cache_dir=os.path.join(tmpdir, "cache_2"), chunk_bytes=2 << 12)
-    with pytest.raises(ValueError, match="Your dataset items aren't deterministic"):
-        for batch in dataloader:
+    with pytest.raises(ValueError, match="Your dataset items aren't deterministic"):  # noqa: PT012
+        for _ in dataloader:
             pass
 
 

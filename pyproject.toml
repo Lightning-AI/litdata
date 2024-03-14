@@ -79,29 +79,14 @@ lint.ignore-init-module-imports = true
 [tool.ruff.lint.per-file-ignores]
 ".actions/*" = ["S101", "S310"]
 "setup.py" = ["S101", "SIM115"]
-"examples/**" = [
-    "S101",  # Use of `assert` detected
-    "S113",  # todo: Probable use of requests call without
-    "S104",  # Possible binding to all interface
-    "F821",  # Undefined name `...`
-    "S311",  # Standard pseudo-random generators are not suitable for cryptographic purposes
-    "S501",  # Probable use of `requests` call with `verify=False` disabling SSL certificate checks
-    "S108",  # Probable insecure usage of temporary file or directory: "/tmp/data/MNIST"
-]
 "src/**" = [
     "S101",  # todo: Use of `assert` detected
-    "S105", "S106", "S107",  # todo: Possible hardcoded password: ...
-    "S113",  # todo: Probable use of requests call without timeout
-    "S301",  # todo: `pickle` and modules that wrap it can be unsafe when used to deserialize untrusted data, possible security issue
-    "S324",  # todo: Probable use of insecure hash functions in `hashlib`
     "S403",  # todo: `pickle`, `cPickle`, `dill`, and `shelve` modules are possibly insecure
     "S404",  # todo: `subprocess` module is possibly insecure
     "S602",  # todo: `subprocess` call with `shell=True` identified, security issue
     "S603",  # todo: `subprocess` call: check for execution of untrusted input
     "S605",  # todo: Starting a process with a shell: seems safe, but may be changed in the future; consider rewriting without `shell`
     "S607",  # todo: Starting a process with a partial executable path
-    "RET504",  # todo:Unnecessary variable assignment before `return` statement
-    "RET503",
     "S310",  # todo: Audit URL open for permitted schemes. Allowing use of `file:` or custom schemes is often unexpected.
 ]
 "tests/**" = [
@@ -118,11 +103,6 @@ lint.ignore-init-module-imports = true
     "S603",  # todo: `subprocess` call: check for execution of untrusted input
     "S605",  # todo: Starting a process with a shell: seems safe, but may be changed in the future; consider rewriting without `shell`
     "S607",  # todo: Starting a process with a partial executable path
-    "RET504",  # todo:Unnecessary variable assignment before `return` statement
-    "PT004",  # todo: Fixture `tmpdir_unittest_fixture` does not return anything, add leading underscore
-    "PT011",  # todo: `pytest.raises(ValueError)` is too broad, set the `match` parameter or use a more specific exception
-    "PT012",  # todo: `pytest.raises()` block should contain a single simple statement
-    "PT019",  # todo: Fixture `_` without value is injected as parameter, use `@pytest.mark.usefixtures` instead
 ]
 
 [tool.ruff.lint.mccabe]

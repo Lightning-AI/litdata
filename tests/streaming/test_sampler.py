@@ -2,7 +2,6 @@ from unittest import mock
 
 import pytest
 from lightning import seed_everything
-
 from litdata.streaming.sampler import CacheBatchSampler
 
 

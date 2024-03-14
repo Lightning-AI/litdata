@@ -21,7 +21,6 @@ import pytest
 import torch
 from lightning import seed_everything
 from lightning_utilities.core.imports import RequirementCache
-
 from litdata.streaming.serializers import (
     _AV_AVAILABLE,
     _NUMPY_DTYPES_MAPPING,

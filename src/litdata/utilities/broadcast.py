@@ -134,7 +134,7 @@ class _ImmutableDistributedMap:
 
         if resp.status_code != 200:
             raise RuntimeError(f"Failed to broadcast the following {key=} {value=}.")
-        return pickle.loads(bytes(resp.json()["value"], "utf-8"))
+        return pickle.loads(bytes(resp.json()["value"], "utf-8"))  # noqa: S301
 
 
 def broadcast_object(key: str, obj: Any) -> Any:
@@ -151,7 +151,7 @@ def _get_token() -> Optional[str]:
 
     payload = {"apiKey": os.getenv("LIGHTNING_API_KEY"), "username": os.getenv("LIGHTNING_USERNAME")}
     url_login = os.getenv("LIGHTNING_CLOUD_URL", "") + "/v1/auth/login"
-    res = requests.post(url_login, data=json.dumps(payload))
+    res = requests.post(url_login, data=json.dumps(payload))  # noqa: S113
     if "token" not in res.json():
         raise RuntimeError(
             f"You haven't properly setup your environment variables with {url_login} and data: \n{payload}"

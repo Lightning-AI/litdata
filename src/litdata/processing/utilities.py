@@ -95,7 +95,7 @@ def catch(func: Callable) -> Callable:
 def make_request(
     url: str,
     timeout: int = 10,
-    user_agent_token: str = "pytorch-lightning",
+    user_agent_token: str = "pytorch-lightning",  # noqa: S107
 ) -> io.BytesIO:
     """Download an image with urllib."""
     user_agent_string = "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:72.0) Gecko/20100101 Firefox/72.0"
@@ -105,8 +105,7 @@ def make_request(
     with urllib.request.urlopen(
         urllib.request.Request(url, data=None, headers={"User-Agent": user_agent_string}), timeout=timeout
     ) as r:
-        img_stream = io.BytesIO(r.read())
-    return img_stream
+        return io.BytesIO(r.read())
 
 
 @contextmanager

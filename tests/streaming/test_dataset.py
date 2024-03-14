@@ -20,8 +20,6 @@ import numpy as np
 import pytest
 import torch
 from lightning import seed_everything
-from torch.utils.data import DataLoader
-
 from litdata.processing import functions
 from litdata.streaming import Cache
 from litdata.streaming import dataset as dataset_module
@@ -39,6 +37,7 @@ from litdata.streaming.dataset import (
 from litdata.streaming.item_loader import TokensLoader
 from litdata.streaming.shuffle import FullShuffle, NoShuffle
 from litdata.utilities.env import _DistributedEnv, _WorkerEnv
+from torch.utils.data import DataLoader
 
 
 def test_streaming_dataset(tmpdir, monkeypatch):

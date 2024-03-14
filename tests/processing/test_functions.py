@@ -3,7 +3,6 @@ import sys
 from unittest import mock
 
 import pytest
-
 from litdata import walk
 from litdata.processing.functions import _get_input_dir
 

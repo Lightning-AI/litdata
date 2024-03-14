@@ -130,14 +130,13 @@ class BinaryWriter:
 
     def get_config(self) -> Dict[str, Any]:
         """Returns the config of the writer."""
-        out = {
+        return {
             "compression": self._compression,
             "chunk_size": self._chunk_size,
             "chunk_bytes": self._chunk_bytes,
             "data_format": self._data_format,
             "data_spec": treespec_dumps(self._data_spec) if self._data_spec else None,
         }
-        return out
 
     def serialize(self, items: Any) -> Tuple[bytes, Optional[int]]:
         """Serialize a dictionary into its binary format."""
@@ -291,12 +290,13 @@ class BinaryWriter:
             dim=dim,
         )
 
-        if self._should_write():
-            filepath = os.path.join(self._cache_dir, self.get_chunk_filename())
-            self.write_chunk()
-            self._min_index = None
-            self._max_index = None
-            return filepath
+        if not self._should_write():
+            return None
+        filepath = os.path.join(self._cache_dir, self.get_chunk_filename())
+        self.write_chunk()
+        self._min_index = None
+        self._max_index = None
+        return filepath
 
     def _should_write(self) -> bool:
         # TODO: Misleading method name, it modifies `self._min_index` and `self._max_index`!

@@ -319,7 +319,7 @@ class StreamingDataset(IterableDataset):
             self._state_dict["num_samples_yielded"] = num_samples_yielded
             return self._state_dict
 
-        state = {
+        return {
             "num_samples_yielded": num_samples_yielded,
             "num_workers": num_workers,
             "batch_size": batch_size,
@@ -332,8 +332,6 @@ class StreamingDataset(IterableDataset):
             "world_size": self.distributed_env.world_size,
             "shuffle": self.shuffle,
         }
-
-        return state
 
     def load_state_dict(self, state_dict: Dict[str, Any]) -> None:
         if state_dict:
@@ -402,7 +400,7 @@ class StreamingDataset(IterableDataset):
 
 
 def _try_create_cache_dir(input_dir: Optional[str]) -> Optional[str]:
-    hash_object = hashlib.md5((input_dir or "").encode())
+    hash_object = hashlib.md5((input_dir or "").encode())  # noqa: S324
     if "LIGHTNING_CLUSTER_ID" not in os.environ or "LIGHTNING_CLOUD_PROJECT_ID" not in os.environ:
         cache_dir = os.path.join(_DEFAULT_CACHE_DIR, hash_object.hexdigest())
         os.makedirs(cache_dir, exist_ok=True)
