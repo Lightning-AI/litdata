@@ -953,6 +953,9 @@ class DataProcessor:
             leave=True,
             dynamic_ncols=True,
         )
+        num_nodes = _get_num_nodes()
+        node_rank = _get_node_rank()
+        total_num_items = len(user_items)
 
         while True:
             try:
@@ -973,6 +976,10 @@ class DataProcessor:
             if current_total == num_items:
                 break
 
+            if _IS_IN_STUDIO and node_rank == 0:
+                with open("status.json", "w") as f:
+                    json.dump({"progress": str(100 * current_total * num_nodes / total_num_items) + "%"}, f)
+
             # Exit early if all the workers are done.
             # This means there were some kinda of errors.
             if all(not w.is_alive() for w in self.workers):
@@ -981,8 +988,6 @@ class DataProcessor:
 
         pbar.close()
 
-        num_nodes = _get_num_nodes()
-        node_rank = _get_node_rank()
         # TODO: Understand why it hangs.
         if num_nodes == 1:
             for w in self.workers:
