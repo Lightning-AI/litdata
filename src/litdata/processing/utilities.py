@@ -156,6 +156,7 @@ def _optimize_dns(enable: bool) -> None:
 
 
 def _get_output_dir():
+    # Provides the storage path associated to the current Lightning Work.
     bucket_name = os.getenv("LIGHTNING_BUCKET_NAME")
     project_id = os.getenv("LIGHTNING_CLOUD_PROJECT_ID")
     app_id = os.getenv("LIGHTNING_CLOUD_APP_ID")
