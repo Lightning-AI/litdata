@@ -944,7 +944,6 @@ class DataProcessor:
         print("Workers are ready ! Starting data processing...")
 
         current_total = 0
-        has_failed = False
         pbar = _tqdm(
             desc="Progress",
             total=num_items,
@@ -984,8 +983,7 @@ class DataProcessor:
             # Exit early if all the workers are done.
             # This means there were some kinda of errors.
             if all(not w.is_alive() for w in self.workers):
-                has_failed = True
-                break
+                raise RuntimeError("One of the worker has failed")
 
         pbar.close()
 
@@ -1015,10 +1013,6 @@ class DataProcessor:
             )
 
         print("Finished data processing!")
-
-        # # TODO: Understand why it is required to avoid long shutdown.
-        # if _get_num_nodes() > 1:
-        #     os._exit(int(has_failed))
 
     def _exit_on_error(self, error: str) -> None:
         for w in self.workers:
@@ -1078,6 +1072,3 @@ class DataProcessor:
             shutil.rmtree(cache_data_dir, ignore_errors=True)
 
         os.makedirs(cache_data_dir, exist_ok=True)
-
-
-get_output_dir()
