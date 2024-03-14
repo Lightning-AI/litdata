@@ -15,9 +15,10 @@ import json
 import os
 import pickle
 from logging import Logger
+from time import sleep
 from typing import Any, Callable, Dict, Optional
 from urllib.parse import urljoin
-from time import sleep
+
 import requests
 import urllib3
 
