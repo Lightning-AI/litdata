@@ -17,7 +17,7 @@ import pickle
 from logging import Logger
 from typing import Any, Callable, Dict, Optional
 from urllib.parse import urljoin
-
+from time import sleep
 import requests
 import urllib3
 
@@ -122,8 +122,11 @@ class _ImmutableDistributedMap:
 
         self.private_client: _HTTPClient = _HTTPClient(lightning_app_state_url, auth_token=token, use_retry=False)
 
-    def set_and_get(self, key: str, value: Any) -> Any:
+    def set_and_get(self, key: str, value: Any, rank: Optional[int] = None) -> Any:
         payload = {"key": key, "value": pickle.dumps(value, 0).decode()}
+
+        if rank is not None:
+            payload["rank"] = rank
 
         # Try the public address first
         try:
@@ -134,13 +137,22 @@ class _ImmutableDistributedMap:
 
         if resp.status_code != 200:
             raise RuntimeError(f"Failed to broadcast the following {key=} {value=}.")
-        return pickle.loads(bytes(resp.json()["value"], "utf-8"))  # noqa: S301
+
+        value = resp.json()["value"]
+        if value is None:
+            return value
+        return pickle.loads(bytes(value, "utf-8"))  # noqa: S301
 
 
-def broadcast_object(key: str, obj: Any) -> Any:
+def broadcast_object(key: str, obj: Any, rank: Optional[int] = None) -> Any:
     """This function enables to broadcast object across machines."""
     if os.getenv("LIGHTNING_APP_EXTERNAL_URL") is not None:
-        return _ImmutableDistributedMap().set_and_get(key, obj)
+        value = None
+        while value is None:
+            value = _ImmutableDistributedMap().set_and_get(key, obj, rank)
+            if value is None:
+                sleep(3)
+        return value
     return obj
 
 

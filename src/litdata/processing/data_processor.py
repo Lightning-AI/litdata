@@ -851,6 +851,7 @@ class DataProcessor:
         """
         self.input_dir = _resolve_dir(input_dir)
         self.output_dir = _resolve_dir(output_dir)
+
         self.num_workers = num_workers or (1 if fast_dev_run else (os.cpu_count() or 1) * 4)
         self.num_downloaders = num_downloaders or 2
         self.num_uploaders = num_uploaders or 5
@@ -873,8 +874,8 @@ class DataProcessor:
 
         if self.output_dir:
             # Ensure the output dir is the same across all nodes
-            self.output_dir = broadcast_object("output_dir", self.output_dir)
-            print(f"Storing the files under {self.output_dir.path}")
+            self.output_dir = broadcast_object("output_dir", self.output_dir, rank=_get_node_rank())
+            print(f"Storing the files under {self.output_dir.path if self.output_dir.path else self.output_dir.url}")
 
         self.random_seed = random_seed
 
@@ -996,7 +997,7 @@ class DataProcessor:
         print("Workers are finished.")
         result = data_recipe._done(len(user_items), self.delete_cached_files, self.output_dir)
 
-        if num_nodes == node_rank + 1 and self.output_dir.url and _IS_IN_STUDIO:
+        if num_nodes == node_rank + 1 and self.output_dir.url and _IS_IN_STUDIO and self.input_dir.path:
             assert self.output_dir.path
             _create_dataset(
                 input_dir=self.input_dir.path,
@@ -1015,9 +1016,9 @@ class DataProcessor:
 
         print("Finished data processing!")
 
-        # TODO: Understand why it is required to avoid long shutdown.
-        if _get_num_nodes() > 1:
-            os._exit(int(has_failed))
+        # # TODO: Understand why it is required to avoid long shutdown.
+        # if _get_num_nodes() > 1:
+        #     os._exit(int(has_failed))
 
     def _exit_on_error(self, error: str) -> None:
         for w in self.workers:
@@ -1077,3 +1078,6 @@ class DataProcessor:
             shutil.rmtree(cache_data_dir, ignore_errors=True)
 
         os.makedirs(cache_data_dir, exist_ok=True)
+
+
+get_output_dir()
