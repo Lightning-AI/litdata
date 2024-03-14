@@ -12,7 +12,7 @@ concurrency:
 
 jobs:
   check-precommit:
-    uses: Lightning-AI/utilities/.github/workflows/check-precommit.yml@v0.10.1
+    uses: Lightning-AI/utilities/.github/workflows/check-precommit.yml@main
 
   check-typing:
     # TODO: switch to main after fix lends
@@ -22,12 +22,12 @@ jobs:
       source-dir: "src/litdata"
 
   check-schema:
-    uses: Lightning-AI/utilities/.github/workflows/check-schema.yml@v0.10.1
+    uses: Lightning-AI/utilities/.github/workflows/check-schema.yml@main
     with:
       azure-dir: ""
 
   check-package:
-    uses: Lightning-AI/utilities/.github/workflows/check-package.yml@v0.10.1
+    uses: Lightning-AI/utilities/.github/workflows/check-package.yml@main
     with:
       actions-ref: v0.10.1
       import-name: "litdata"
