@@ -931,7 +931,10 @@ class DataProcessor:
 
         self._cleanup_cache()
 
-        print(f"Starting {self.num_workers} workers with {num_items} items.")
+        print(
+            f"Starting {self.num_workers} workers with {num_items} items."
+            f" The progress bar is only updated when a worker finishes."
+        )
 
         if self.input_dir is None and self.src_resolver is not None and self.input_dir:
             self.input_dir = self.src_resolver(self.input_dir)
