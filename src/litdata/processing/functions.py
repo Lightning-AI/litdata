@@ -42,17 +42,21 @@ if _TORCH_GREATER_EQUAL_2_1_0:
 def _get_indexed_paths(data: Any) -> Dict[int, str]:
     flattened_item, _ = tree_flatten(data)
 
-    return {
+    indexed_paths = {
         index: element
         for index, element in enumerate(flattened_item)
         if isinstance(element, str) and os.path.exists(element)
     }
+
+    return indexed_paths
 
 
 def _get_input_dir(inputs: Sequence[Any]) -> Optional[str]:
     indexed_paths = _get_indexed_paths(inputs[0])
 
     if len(indexed_paths) == 0:
+        if len(inputs) < 2:
+            return None
         # Check whether the second element has any input_path
         indexed_paths = _get_indexed_paths(inputs[1])
         if len(indexed_paths) == 0:
