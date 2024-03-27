@@ -1051,10 +1051,11 @@ def no_op(index):
     pass
 
 
-def test_empty_optimize(tmpdir):
+@pytest.mark.parametrize("inputs", ([1], [1, 2], [1, 2, 3]))
+def test_empty_optimize(tmpdir, inputs):
     optimize(
         no_op,
-        list(range(10)),
+        inputs,
         output_dir=str(tmpdir),
         chunk_bytes="64MB",
         num_workers=1,
