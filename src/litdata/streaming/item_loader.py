@@ -126,6 +126,7 @@ class PyTreeLoader(BaseItemLoader):
         for size, data_format in zip(sizes, self._config["data_format"]):
             serializer = self._serializers[self._data_format_to_key(data_format)]
             data_bytes = raw_item_data[idx : idx + size]
+            serializer.setup(data_format)
             data.append(serializer.deserialize(data_bytes))
             idx += size
         return tree_unflatten(data, self._config["data_spec"])
