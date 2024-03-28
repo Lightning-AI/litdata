@@ -1,0 +1,1190 @@
+
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <!-- Google Tag Manager -->
+  <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+  new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+  j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+  'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+  })(window,document,'script','dataLayer','GTM-PQBQ3CV');
+  </script>
+  <!-- End Google Tag Manager -->
+
+  <meta charset="utf-8">
+  <meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="google-site-verification" content="okUst94cAlWSsUsGZTB4xSS4UKTtRV8Nu5XZ9pdd3Aw" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>⚡ Welcome to LitData &mdash; litdata 0.2.2 documentation</title>
+  
+
+  
+  
+  
+  
+    <link rel="canonical" href="https://github.com/Lightning-AI/lit-data/readme.html"/>
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!-- <link rel="stylesheet" href="_static/pygments.css" type="text/css" /> -->
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/sphinx_paramlinks.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="lit-data" href="index.html" />
+  <!-- Google Analytics -->
+  
+  <!-- End Google Analytics -->
+  
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+  <!-- Preload the theme fonts -->
+
+<link rel="preload" href="_static/fonts/FreightSans/freight-sans-book.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="_static/fonts/FreightSans/freight-sans-medium.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="_static/fonts/IBMPlexMono/IBMPlexMono-Medium.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="_static/fonts/FreightSans/freight-sans-bold.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="_static/fonts/FreightSans/freight-sans-medium-italic.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="_static/fonts/IBMPlexMono/IBMPlexMono-SemiBold.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="_static/fonts/UCity/UCity-Light.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="_static/fonts/UCity/UCity-Regular.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="_static/fonts/UCity/UCity-Semibold.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="_static/fonts/Inconsolata/Inconsolata.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+
+<!-- Preload the katex fonts -->
+
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/katex@0.10.0/dist/fonts/KaTeX_Math-Italic.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/katex@0.10.0/dist/fonts/KaTeX_Main-Regular.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/katex@0.10.0/dist/fonts/KaTeX_Main-Bold.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/katex@0.10.0/dist/fonts/KaTeX_Size1-Regular.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/katex@0.10.0/dist/fonts/KaTeX_Size4-Regular.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/katex@0.10.0/dist/fonts/KaTeX_Size2-Regular.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/katex@0.10.0/dist/fonts/KaTeX_Size3-Regular.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/katex@0.10.0/dist/fonts/KaTeX_Caligraphic-Regular.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+  <script defer src="https://use.fontawesome.com/releases/v6.1.1/js/all.js" integrity="sha384-xBXmu0dk1bEoiwd71wOonQLyH+VpgR1XcDH3rtxrLww5ajNTuMvBdL5SOiFZnNdp" crossorigin="anonymous"></script>
+
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+  <script src="_static/js/react/react.jsx" type="text/babel"></script>
+</head>
+
+<div class="container-fluid header-holder tutorials-header" id="header-holder">
+  <div class="container">
+    <div class="header-container">
+      <a class="header-logo" href="https://lightning-ai.github.io/lit-data/" aria-label="PyTorch Lightning">
+      <!--  <img class="call-to-action-img" src="_static/images/logo-lightning-icon.png"/> -->
+      </a>
+
+      <div class="main-menu">
+        <ul>
+          <li>
+            <a href="https://lightning.ai">Get Started</a>
+          </li>
+
+          <li>
+            <a href="https://www.Lightning.ai/blog">Blog</a>
+          </li>
+
+          <li>
+            <div id="resourcesDropdownButton" data-toggle="resources-dropdown" class="resources-dropdown">
+              <a class="resource-option with-down-orange-arrow">
+                Docs
+              </a>
+              <div class="resources-dropdown-menu">
+                <a class="doc-dropdown-option nav-dropdown-item" href="https://lightning.ai/docs/pytorch/stable/">
+                  <span class="dropdown-title">PyTorch Lightning</span>
+                </a>
+                <a class="doc-dropdown-option nav-dropdown-item" href="https://lightning.ai/docs/fabric/stable/">
+                  <span class="dropdown-title">Lightning Fabric</span>
+                </a>
+                <a class="doc-dropdown-option nav-dropdown-item" href="https://torchmetrics.readthedocs.io/en/stable/">
+                  <span class="dropdown-title">TorchMetrics</span>
+                </a>
+                <a class="doc-dropdown-option nav-dropdown-item" href="https://lightning-flash.readthedocs.io/en/stable/">
+                  <span class="dropdown-title">Lightning Flash</span>
+                </a>
+                <a class="doc-dropdown-option nav-dropdown-item" href="https://lightning-bolts.readthedocs.io/en/stable/">
+                  <span class="dropdown-title">Lightning Bolts</span>
+                </a>
+            </div>
+          </li>
+
+          <!--<li>
+            <div id="resourcesDropdownButton" data-toggle="resources-dropdown" class="resources-dropdown">
+              <a class="resource-option with-down-arrow">
+                Resources
+              </a>
+              <div class="resources-dropdown-menu">
+                <a class="nav-dropdown-item" href="">
+                  <span class="dropdown-title">Community</span>
+                  <p>Join the PyTorch developer community to contribute, learn, and get your questions answered.</p>
+                </a>
+                <a class="nav-dropdown-item" href="https://lightning.ai">
+                  <span class="dropdown-title">Developer Resources</span>
+                  <p>Find resources and get questions answered</p>
+                </a>
+                <a class="nav-dropdown-item" href="" target="_blank">
+                  <span class="dropdown-title">Forums</span>
+                  <p>A place to discuss PyTorch code, issues, install, research</p>
+                </a>
+                <a class="nav-dropdown-item" href="">
+                  <span class="dropdown-title">Models (Beta)</span>
+                  <p>Discover, publish, and reuse pre-trained models</p>
+                </a>
+              </div>
+            </div>
+          </li>-->
+
+          
+
+          <li>
+            <a href="https://github.com/Lightning-AI/lit-data">GitHub</a>
+          </li>
+
+          <li>
+            <a href="https://www.lightning.ai/">Lightning AI</a>
+          </li>
+
+        </ul>
+      </div>
+
+      <a class="main-menu-open-button" href="#" data-behavior="open-mobile-menu"></a>
+    </div>
+  </div>
+</div>
+
+<body class="pytorch-body">
+
+   
+
+    
+
+    <div class="table-of-contents-link-wrapper">
+      <span>Table of Contents</span>
+      <a href="#" class="toggle-table-of-contents" data-behavior="toggle-table-of-contents"></a>
+    </div>
+
+    <nav data-toggle="wy-nav-shift" class="pytorch-left-menu" id="pytorch-left-menu">
+      <div class="pytorch-side-scroll">
+        <div class="pytorch-menu pytorch-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          <div class="pytorch-left-menu-search">
+            
+
+            
+              
+              
+                <div class="version">
+                  0.2.2
+                </div>
+              
+            
+
+            
+
+
+  
+
+
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search Docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+            
+          </div>
+
+          
+            
+            
+              
+            
+            
+              <p class="caption" role="heading"><span class="caption-text">Start here</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">⚡ Welcome to LitData</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#store-random-images-into-the-data-chunks">Store random images into the data chunks</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <div class="pytorch-container">
+      <div class="pytorch-page-level-bar" id="pytorch-page-level-bar">
+        <div class="pytorch-breadcrumbs-wrapper">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="pytorch-breadcrumbs">
+    
+      <li>
+        <a href="index.html">
+          
+            Docs
+          
+        </a> &gt;
+      </li>
+
+        
+      <li>⚡ Welcome to LitData</li>
+    
+    
+      <li class="pytorch-breadcrumbs-aside">
+        
+            
+            <a href="_sources/readme.md.txt" rel="nofollow"><img src="_static/images/view-page-source-icon.svg"></a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+</div>
+        </div>
+
+        <div class="pytorch-shortcuts-wrapper" id="pytorch-shortcuts-wrapper">
+          Shortcuts
+        </div>
+      </div>
+
+      <section data-toggle="wy-nav-shift" id="pytorch-content-wrap" class="pytorch-content-wrap">
+        <div class="pytorch-content-left">
+
+        
+          
+          <div class="rst-content">
+          
+            <div role="main" class="main-content" itemscope="itemscope" itemtype="http://schema.org/Article">
+             <article itemprop="articleBody" id="pytorch-article" class="pytorch-article">
+              
+  <p>.. container::</p>
+<p>.. rubric:: Blazingly fast, distributed streaming of training data
+from any cloud storage
+:name: blazingly-fast-distributed-streaming-of-training-data-from-any-cloud-storage</p>
+<section id="welcome-to-litdata">
+<h1>⚡ Welcome to LitData<a class="headerlink" href="#welcome-to-litdata" title="Permalink to this heading">¶</a></h1>
+<p>With LitData, users can transform and optimize their data in cloud
+storage environments efficiently and intuitively, at any scale.</p>
+<p>Once optimized, efficient distributed training becomes practical
+regardless of where the data is located, enabling users to seamlessly
+stream data of any size to one or multiple machines.</p>
+<p>LitData supports <strong>images, text, video, audio, geo-spatial, and
+multimodal data</strong> types, is already adopted by frameworks such as
+<code class="docutils literal notranslate"><span class="pre">Lit-GPT</span> <span class="pre">&lt;https://github.com/Lightning-AI/lit-gpt/blob/main/pretrain/tinyllama.py&gt;</span></code>__
+to pretrain LLMs and integrates smoothly with <code class="docutils literal notranslate"><span class="pre">PyTorch</span> <span class="pre">Lightning</span> <span class="pre">&lt;https://lightning.ai/docs/pytorch/stable/&gt;</span></code><strong>, <code class="docutils literal notranslate"><span class="pre">Lightning</span> <span class="pre">Fabric</span> <span class="pre">&lt;https://lightning.ai/docs/fabric/stable/&gt;</span></code></strong>, and
+<code class="docutils literal notranslate"><span class="pre">PyTorch</span> <span class="pre">&lt;https://pytorch.org/docs/stable/index.html&gt;</span></code>__.</p>
+<p><code class="docutils literal notranslate"><span class="pre">Runnable</span> <span class="pre">templates</span> <span class="pre">&lt;#runnable-templates&gt;</span></code>__ published on the
+<code class="docutils literal notranslate"><span class="pre">Lightning.AI</span> <span class="pre">Platform</span> <span class="pre">&lt;https://lightning.ai&gt;</span></code>__ are available at the
+end, <strong>reproducible in 1-click</strong>.</p>
+<p>Table of Contents</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>
+-  `Getting started &lt;#getting-started&gt;`__
+
+   -  `Installation &lt;#installation&gt;`__
+   -  `Quick Start &lt;#quick-start&gt;`__
+
+      -  `1. Prepare Your Data &lt;#1-prepare-your-data&gt;`__
+      -  `2. Upload Your Data to Cloud
+         Storage &lt;#2-upload-your-data-to-cloud-storage&gt;`__
+      -  `3. Use StreamingDataset &lt;#3-use-streamingdataset&gt;`__
+
+-  `Key Features &lt;#key-features&gt;`__
+-  `Benchmarks &lt;#benchmarks&gt;`__
+-  `Runnable Templates &lt;#runnable-templates&gt;`__
+-  `Infinite cloud data processing &lt;#infinite-cloud-data-processing&gt;`__
+-  `Contributors &lt;#-contributors&gt;`__
+
+Getting Started
+===============
+
+Installation
+------------
+
+Install **LitData** with ``pip``
+
+.. code:: bash
+
+   pip install litdata
+
+Quick Start
+-----------
+
+1. Prepare Your Data
+</pre></div>
+</div>
+<p>Convert your raw dataset into <strong>LitData Optimized Streaming Format</strong>
+using the <code class="docutils literal notranslate"><span class="pre">optimize</span></code> operator.</p>
+<p>Here is an example with some random images.</p>
+<p>.. code:: python</p>
+<p>import numpy as np
+from litdata import optimize
+from PIL import Image</p>
+</section>
+<section id="store-random-images-into-the-data-chunks">
+<h1>Store random images into the data chunks<a class="headerlink" href="#store-random-images-into-the-data-chunks" title="Permalink to this heading">¶</a></h1>
+<p>def random_images(index):
+data = {
+“index”: index, # int data type
+“image”: Image.fromarray(np.random.randint(0, 256, (32, 32, 3), np.uint8)), # PIL image data type
+“class”: np.random.randint(10), # numpy array data type
+}
+# The data is serialized into bytes and stored into data chunks by the optimize operator.
+return data # The data is serialized into bytes and stored into data chunks by the optimize operator.</p>
+<p>if <strong>name</strong> == “<strong>main</strong>”:
+optimize(
+fn=random_images,  # The function applied over each input.
+inputs=list(range(1000)),  # Provide any inputs. The fn is applied on each item.
+output_dir=”my_optimized_dataset”,  # The directory where the optimized data are stored.
+num_workers=4,  # The number of workers. The inputs are distributed among them.
+chunk_bytes=”64MB”  # The maximum number of bytes to write into a data chunk.
+)</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">optimize</span></code> operator supports any data structures and types.
+Serialize whatever you want. The optimized data is stored under the
+output directory <code class="docutils literal notranslate"><span class="pre">my_optimized_dataset</span></code>.</p>
+<ol class="arabic simple" start="2">
+<li><p>Upload your Data to Cloud Storage</p></li>
+</ol>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>
+Cloud providers such as
+`AWS &lt;https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html&gt;`__,
+`Google
+Cloud &lt;https://cloud.google.com/storage/docs/uploading-objects?hl=en#upload-object-cli&gt;`__,
+`Azure &lt;https://learn.microsoft.com/en-us/azure/import-export/storage-import-export-data-to-files?tabs=azure-portal-preview&gt;`__
+provide command line clients to upload your data to their storage
+solutions.
+
+Here is how to upload the optimized dataset using the `AWS
+CLI &lt;https://aws.amazon.com/s3&gt;`__ to `AWS
+S3 &lt;https://aws.amazon.com/s3/&gt;`__.
+
+.. code:: bash
+
+   ⚡ aws s3 cp --recursive my_optimized_dataset s3://my-bucket/my_optimized_dataset
+
+3. Use StreamingDataset
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Then, the Streaming Dataset can read the data directly from `AWS
+S3 &lt;https://aws.amazon.com/s3/&gt;`__.
+
+.. code:: python
+
+   from litdata import StreamingDataset
+   from torch.utils.data import DataLoader
+
+   # Remote path where full dataset is stored
+   input_dir = &#39;s3://my-bucket/my_optimized_dataset&#39;
+
+   # Create the Streaming Dataset
+   dataset = StreamingDataset(input_dir, shuffle=True)
+
+   # Access any elements of the dataset
+   sample = dataset[50]
+   img = sample[&#39;image&#39;]
+   cls = sample[&#39;class&#39;]
+
+   # Create PyTorch DataLoader and iterate over it to train your AI models.
+   dataloader = DataLoader(dataset)
+
+Key Features
+============
+
+-  `Multi-GPU / Multi-Node Support &lt;#multi-gpu--multi-node-support&gt;`__
+-  `Access any item &lt;#access-any-item&gt;`__
+-  `Use any data transforms &lt;#use-any-data-transforms&gt;`__
+-  `The Map Operator &lt;#the-map-operator&gt;`__
+-  `Easy Data Mixing with the Combined Streaming
+   Dataset &lt;#easy-data-mixing-with-the-combined-streaming-dataset&gt;`__
+-  `Pause &amp; Resume Made simple &lt;#pause--resume-made-simple&gt;`__
+-  `Support Profiling &lt;#support-profiling&gt;`__
+-  `Reduce your memory footprint &lt;#reduce-your-memory-footprint&gt;`__
+-  `Configure Cache Size Limit &lt;#configure-cache-size-limit&gt;`__
+-  `On-Prem Optimizations &lt;#on-prem-optimizations&gt;`__
+
+Multi-GPU / Multi-Node Support
+------------------------------
+
+The ``StreamingDataset`` and ``StreamingDataLoader`` automatically make
+sure each rank receives the same quantity of varied batches of data, so
+it works out of the box with your favorite frameworks (`PyTorch
+Lightning &lt;https://lightning.ai/docs/pytorch/stable/&gt;`__, `Lightning
+Fabric &lt;https://lightning.ai/docs/fabric/stable/&gt;`__, or
+`PyTorch &lt;https://pytorch.org/docs/stable/index.html&gt;`__) to do
+distributed training.
+
+Here you can see an illustration showing how the Streaming Dataset works
+with multi node / multi gpu under the hood.
+
+Access any item
+---------------
+
+Access the data you need, whenever you need it, regardless of where it
+is stored.
+
+.. code:: python
+
+   from litdata import StreamingDataset
+
+   dataset = StreamingDataset(&quot;s3://my-bucket/my-data&quot;) # data are stored in the cloud
+
+   print(len(dataset)) # display the length of your data
+
+   print(dataset[42]) # show the 42th element of the dataset
+
+Use any data transforms
+-----------------------
+
+Subclass the ``StreamingDataset`` and override its ``__getitem__``
+method to add any extra data transformations.
+
+.. code:: python
+
+   from litdata import StreamingDataset, StreamingDataLoader
+   import torchvision.transforms.v2.functional as F
+
+   class ImagenetStreamingDataset(StreamingDataset):
+
+       def __getitem__(self, index):
+           image = super().__getitem__(index)
+           return F.resize(image, (224, 224))
+
+   dataset = ImagenetStreamingDataset(...)
+   dataloader = StreamingDataLoader(dataset, batch_size=4)
+
+   for batch in dataloader:
+       print(batch.shape)
+       # Out: (4, 3, 224, 224)
+
+The Map Operator
+----------------
+
+The ``map`` operator can be used to apply a function over a list of
+inputs.
+
+Here is an example where the ``map`` operator is used to apply a
+``resize_image`` function over a folder of large images.
+
+.. code:: python
+
+   from lightning.data import map
+   from PIL import Image
+
+   # Note: Inputs could also refer to files on s3 directly.
+   input_dir = &quot;my_large_images&quot;
+   inputs = [os.path.join(input_dir, f) for f in os.listdir(input_dir)]
+
+   # The resize image takes one of the input (image_path) and the output directory. 
+   # Files written to output_dir are persisted.
+   def resize_image(image_path, output_dir):
+     output_image_path = os.path.join(output_dir, os.path.basename(image_path))
+     Image.open(image_path).resize((224, 224)).save(output_image_path)
+     
+   map(
+       fn=resize_image,
+       inputs=inputs, 
+       output_dir=&quot;s3://my-bucket/my_resized_images&quot;,
+   )
+
+Easy Data Mixing with the Combined Streaming Dataset
+----------------------------------------------------
+
+Easily experiment with dataset mixtures using the
+``CombinedStreamingDataset`` class.
+
+As an example, this mixture of
+`Slimpajama &lt;https://huggingface.co/datasets/cerebras/SlimPajama-627B&gt;`__
+&amp; `StarCoder &lt;https://huggingface.co/datasets/bigcode/starcoderdata&gt;`__
+was used in the `TinyLLAMA &lt;https://github.com/jzhang38/TinyLlama&gt;`__
+project to pretrain a 1.1B Llama model on 3 trillion tokens.
+
+.. code:: python
+
+   from litdata import StreamingDataset, CombinedStreamingDataset
+   from litdata.streaming.item_loader import TokensLoader
+   from tqdm import tqdm
+   import os
+   from torch.utils.data import DataLoader
+
+   train_datasets = [
+       StreamingDataset(
+           input_dir=&quot;s3://tinyllama-template/slimpajama/train/&quot;,
+           item_loader=TokensLoader(block_size=2048 + 1), # Optimized loader for tokens used by LLMs 
+           shuffle=True,
+           drop_last=True,
+       ),
+       StreamingDataset(
+           input_dir=&quot;s3://tinyllama-template/starcoder/&quot;,
+           item_loader=TokensLoader(block_size=2048 + 1), # Optimized loader for tokens used by LLMs 
+           shuffle=True,
+           drop_last=True,
+       ),
+   ]
+
+   # Mix SlimPajama data and Starcoder data with these proportions:
+   weights = (0.693584, 0.306416)
+   combined_dataset = CombinedStreamingDataset(datasets=train_datasets, seed=42, weights=weights)
+
+   train_dataloader = DataLoader(combined_dataset, batch_size=8, pin_memory=True, num_workers=os.cpu_count())
+
+   # Iterate over the combined datasets
+   for batch in tqdm(train_dataloader):
+       pass
+
+Pause &amp; Resume Made Simple
+--------------------------
+
+LitData provides a stateful ``Streaming DataLoader`` e.g. you can
+``pause`` and ``resume`` your training whenever you want.
+
+Info: The ``Streaming DataLoader`` was used by
+`Lit-GPT &lt;https://github.com/Lightning-AI/lit-gpt/blob/main/pretrain/tinyllama.py&gt;`__
+to pretrain LLMs. Restarting from an older checkpoint was critical to
+get to pretrain the full model due to several failures (network, CUDA
+Errors, etc..).
+
+.. code:: python
+
+   import os
+   import torch
+   from litdata import StreamingDataset, StreamingDataLoader
+
+   dataset = StreamingDataset(&quot;s3://my-bucket/my-data&quot;, shuffle=True)
+   dataloader = StreamingDataLoader(dataset, num_workers=os.cpu_count(), batch_size=64)
+
+   # Restore the dataLoader state if it exists
+   if os.path.isfile(&quot;dataloader_state.pt&quot;):
+       state_dict = torch.load(&quot;dataloader_state.pt&quot;)
+       dataloader.load_state_dict(state_dict)
+
+   # Iterate over the data
+   for batch_idx, batch in enumerate(dataloader):
+     
+       # Store the state every 1000 batches
+       if batch_idx % 1000 == 0:
+           torch.save(dataloader.state_dict(), &quot;dataloader_state.pt&quot;)
+
+Support Profiling
+-----------------
+
+The ``StreamingDataLoader`` supports profiling of your data loading
+process. Simply use the ``profile_batches`` argument to specify the
+number of batches you want to profile:
+
+.. code:: python
+
+   from litdata import StreamingDataset, StreamingDataLoader
+
+   StreamingDataLoader(..., profile_batches=5)
+
+This generates a Chrome trace called ``result.json``. Then, visualize
+this trace by opening Chrome browser at the ``chrome://tracing`` URL and
+load the trace inside.
+
+Reduce your memory footprint
+----------------------------
+
+When processing large files like compressed `parquet
+files &lt;https://en.wikipedia.org/wiki/Apache_Parquet&gt;`__, use the Python
+yield keyword to process and store one item at the time, reducing the
+memory footprint of the entire program.
+
+.. code:: python
+
+   from pathlib import Path
+   import pyarrow.parquet as pq
+   from litdata import optimize
+   from tokenizer import Tokenizer
+   from functools import partial
+
+   # 1. Define a function to convert the text within the parquet files into tokens
+   def tokenize_fn(filepath, tokenizer=None):
+       parquet_file = pq.ParquetFile(filepath)
+       # Process per batch to reduce RAM usage
+       for batch in parquet_file.iter_batches(batch_size=8192, columns=[&quot;content&quot;]):
+           for text in batch.to_pandas()[&quot;content&quot;]:
+               yield tokenizer.encode(text, bos=False, eos=True)
+
+   # 2. Generate the inputs
+   input_dir = &quot;/teamspace/s3_connections/tinyllama-template&quot;
+   inputs = [str(file) for file in Path(f&quot;{input_dir}/starcoderdata&quot;).rglob(&quot;*.parquet&quot;)]
+
+   # 3. Store the optimized data wherever you want under &quot;/teamspace/datasets&quot; or &quot;/teamspace/s3_connections&quot;
+   outputs = optimize(
+       fn=partial(tokenize_fn, tokenizer=Tokenizer(f&quot;{input_dir}/checkpoints/Llama-2-7b-hf&quot;)), # Note: Use HF tokenizer or any others
+       inputs=inputs,
+       output_dir=&quot;/teamspace/datasets/starcoderdata&quot;,
+       chunk_size=(2049 * 8012), # Number of tokens to store by chunks. This is roughly 64MB of tokens per chunk.
+   )
+
+Configure Cache Size Limit
+--------------------------
+
+Adapt the local caching limit of the ``StreamingDataset``. This is
+useful to make sure the downloaded data chunks are deleted when used and
+the disk usage stays low.
+
+.. code:: python
+
+   from litdata import StreamingDataset
+
+   dataset = StreamingDataset(..., max_cache_size=&quot;10GB&quot;)
+
+On-Prem Optimizations
+---------------------
+
+On-prem compute nodes can mount and use a network drive. A network drive
+is a shared storage device on a local area network. In order to reduce
+their network overload, the ``StreamingDataset`` supports ``caching``
+the data chunks.
+
+.. code:: python
+
+   from lightning.data import StreamingDataset
+
+   dataset = StreamingDataset(input_dir=&quot;local:/data/shared-drive/some-data&quot;)
+
+Benchmarks
+==========
+
+In order to measure the effectiveness of LitData, we used a commonly
+used dataset for benchmarks:
+`Imagenet-1.2M &lt;https://www.image-net.org/&gt;`__ where the training set
+contains ``1,281,167 images``.
+
+To align with other benchmarks, we measured the streaming speed
+(``images per second``) loaded from `AWS
+S3 &lt;https://aws.amazon.com/s3/&gt;`__ for several frameworks.
+
+Reproduce our benchmark **by running** this
+`Studio &lt;https://lightning.ai/lightning-ai/studios/benchmark-cloud-data-loading-libraries&gt;`__.
+
+Imagenet-1.2M Streaming from AWS S3
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+We can observe LitData is up to 85 % faster than the second best. Higher
+is better in the table below.
+
++-------------+-------------+-------------+-------------+-------------+
+| Framework   | Images /    | Images /    | Images /    | Images /    |
+|             | sec 1st     | sec 2nd     | sec 1st     | sec 2nd     |
+|             | Epoch       | Epoch       | Epoch       | Epoch       |
+|             | (float32)   | (float32)   | (torch16)   | (torch16)   |
++=============+=============+=============+=============+=============+
+| PL Data     | **5800.34** | **6589.98** | **6282.17** | **7221.88** |
++-------------+-------------+-------------+-------------+-------------+
+| Web Dataset | 3134.42     | 3924.95     | 3343.40     | 4424.62     |
++-------------+-------------+-------------+-------------+-------------+
+| Mosaic ML   | 2898.61     | 5099.93     | 2809.69     | 5158.98     |
++-------------+-------------+-------------+-------------+-------------+
+
+Imagenet-1.2M Conversion
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+We measured how fast the 1.2 million images can converted into a
+streamable format. Faster is better in the table below.
+
++-------------+-------------+-------------+-------------+-------------+
+| Framework   | Train       | Val         | Dataset     | # Files     |
+|             | Conversion  | Conversion  | Size        |             |
+|             | Time        | Time        |             |             |
++=============+=============+=============+=============+=============+
+| PL Data     | **10:05     | **00:30     | **143.1     | 2.339       |
+|             | min**       | min**       | GB**        |             |
++-------------+-------------+-------------+-------------+-------------+
+| Web Dataset | 32:36 min   | 01:22 min   | 147.8 GB    | 1.144       |
++-------------+-------------+-------------+-------------+-------------+
+| Mosaic ML   | 49:49 min   | 01:04 min   | **143.1     | 2.298       |
+|             |             |             | GB**        |             |
++-------------+-------------+-------------+-------------+-------------+
+
+Runnable Templates
+==================
+
+Fastest way to learn is with `Studios &lt;https://lightning.ai/studios&gt;`__.
+
+`Studios &lt;https://lightning.ai/studios&gt;`__ are reproducible cloud IDE
+with data, code, dependencies, e.g. so redo everything yourself with
+ease!
+
+We’ve published `public templates &lt;https://lightning.ai/studios&gt;`__ that
+demonstrates how best to use the LitData framework at scale and with
+several data types.
+
+Sign up `here &lt;https://lightning.ai/&gt;`__ and run your first Studio for
+free.
+
++---------------------------------+---+--------------------------------+
+| Studio                          | D | Dataset                        |
+|                                 | a |                                |
+|                                 | t |                                |
+|                                 | a |                                |
+|                                 | t |                                |
+|                                 | y |                                |
+|                                 | p |                                |
+|                                 | e |                                |
++=================================+===+================================+
+| `Use or explore                 | I | `L                             |
+| LAION-400MILLION                | m | AION-400M &lt;https://laion.ai/bl |
+| d                               | a | og/laion-400-open-dataset/&gt;`__ |
+| ataset &lt;https://lightning.ai/li | g |                                |
+| ghtning-ai/studios/use-or-explo | e |                                |
+| re-laion-400million-dataset&gt;`__ | &amp; |                                |
+|                                 | T |                                |
+|                                 | e |                                |
+|                                 | x |                                |
+|                                 | t |                                |
++---------------------------------+---+--------------------------------+
+| `Convert GeoSpatial data to     | I | `Chesapeake Roads Spatial      |
+| Lightning                       | m | Context &lt;https://github.com    |
+| Streami                         | a | /isaaccorley/chesapeakersc&gt;`__ |
+| ng &lt;https://lightning.ai/lightn | g |                                |
+| ing-ai/studios/convert-spatial- | e |                                |
+| data-to-lightning-streaming&gt;`__ | &amp; |                                |
+|                                 | M |                                |
+|                                 | a |                                |
+|                                 | s |                                |
+|                                 | k |                                |
++---------------------------------+---+--------------------------------+
+| `Benchmark cloud data-loading   | I | `Imagenet                      |
+| li                              | m | 1M &lt;https://paperswithcode.    |
+| braries &lt;https://lightning.ai/l | a | com/sota/image-classification- |
+| ightning-ai/studios/benchmark-c | g | on-imagenet?tag_filter=171&gt;`__ |
+| loud-data-loading-libraries&gt;`__ | e |                                |
+|                                 | &amp; |                                |
+|                                 | L |                                |
+|                                 | a |                                |
+|                                 | b |                                |
+|                                 | e |                                |
+|                                 | l |                                |
++---------------------------------+---+--------------------------------+
+| `Prepare the TinyLlama 1T token | T | `SlimPajama &lt;                  |
+| dataset &lt;https://lightning.ai/l | e | https://huggingface.co/dataset |
+| ightning-ai/studios/prepare-the | x | s/cerebras/SlimPajama-627B&gt;`__ |
+| -tinyllama-1t-token-dataset&gt;`__ | t | &amp;                              |
+|                                 |   | `StarCode                      |
+|                                 |   | r &lt;https://huggingface.co/data |
+|                                 |   | sets/bigcode/starcoderdata&gt;`__ |
++---------------------------------+---+--------------------------------+
+| `Tokenize 2M Swedish Wikipedia  | T | `Swedish                       |
+| A                               | e | Wikipedia &lt;https://hugging     |
+| rticles &lt;https://lightning.ai/l | x | face.co/datasets/wikipedia&gt;`__ |
+| ightning-ai/studios/tokenize-2m | t |                                |
+| -swedish-wikipedia-articles&gt;`__ |   |                                |
++---------------------------------+---+--------------------------------+
+| `Embed English Wikipedia under  | T | `English                       |
+| 5                               | e | Wikipedia &lt;https://hugging     |
+| d                               | x | face.co/datasets/wikipedia&gt;`__ |
+| ollars &lt;https://lightning.ai/li | t |                                |
+| ghtning-ai/studios/embed-englis |   |                                |
+| h-wikipedia-under-5-dollars&gt;`__ |   |                                |
++---------------------------------+---+--------------------------------+
+| `Convert parquets to Lightning  | P | Randomly Generated data        |
+| Str                             | a |                                |
+| eaming &lt;https://lightning.ai/li | r |                                |
+| ghtning-ai/studios/convert-parq | q |                                |
+| uets-to-lightning-streaming&gt;`__ | u |                                |
+|                                 | e |                                |
+|                                 | t |                                |
+|                                 | F |                                |
+|                                 | i |                                |
+|                                 | l |                                |
+|                                 | e |                                |
+|                                 | s |                                |
++---------------------------------+---+--------------------------------+
+
+Infinite cloud data processing
+==============================
+
+If you want to scale data processing, you typically need more machines
+and if you do this yourself, this becomes very tedious and can take a
+long time to get there.
+
+Instead, create a free account on the
+`Lightning.ai &lt;https://lightning.ai/&gt;`__ platform and use as many
+machines as you need from code.
+
+On the platform, simply specify the number of nodes and the machine type
+you need as follows:
+
+.. code:: python
+
+   from litdata import map, Machine
+
+   map(
+     ...
+     num_nodes=32,
+     machine=Machine.DATA_PREP, # Select between dozens of optimized machines
+   )
+
+Also, the ``optimize`` operator can do the same to make immense datasets
+streamable as follows:
+
+.. code:: python
+
+   from litdata import optimize, Machine
+
+   optimize(
+     ...
+     num_nodes=32,
+     machine=Machine.DATA_PREP, # Select between dozens of optimized machines
+   )
+
+Within the `LAION 400 MILLION
+Studio &lt;https://lightning.ai/lightning-ai/studios/use-or-explore-laion-400million-dataset&gt;`__,
+we utilized 32 machines, each equipped with 32 CPUs, to execute the
+``optimize`` operator, enabling the download of 400 million images in
+just 2 hours. Below is a screenshot of that job within the
+`Lightning.ai &lt;https://lightning.ai/&gt;`__ platform. You can execute it
+yourself
+`here &lt;https://lightning.ai/lightning-ai/studios/use-or-explore-laion-400million-dataset&gt;`__.
+
+.. container::
+
+⚡ Contributors
+===============
+
+We welcome any contributions, pull requests, or issues. If you use the
+Streaming Dataset for your own project, please reach out to us on
+`Discord &lt;https://discord.com/invite/XncpTy7DSt&gt;`__.
+</pre></div>
+</div>
+</section>
+
+
+             </article>
+             
+            </div>
+            <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+      
+        <a href="index.html" class="btn btn-neutral" title="lit-data" accesskey="p" rel="prev"><img src="_static/images/chevron-right-orange.svg" class="previous-page"> Previous</a>
+      
+    </div>
+  
+
+  
+
+    <hr>
+
+  
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright Copyright (c) 2023-2024, Lightning AI et al...
+
+    </p>
+  </div>
+    
+      <div>
+        Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+      </div>
+     
+
+</footer>
+          </div>
+        </div>
+
+        <div class="pytorch-content-right" id="pytorch-content-right">
+          <div class="pytorch-right-menu" id="pytorch-right-menu">
+            <div class="pytorch-side-scroll" id="pytorch-side-scroll-right">
+              <ul>
+<li><a class="reference internal" href="#">⚡ Welcome to LitData</a></li>
+<li><a class="reference internal" href="#store-random-images-into-the-data-chunks">Store random images into the data chunks</a></li>
+</ul>
+
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+  
+
+  
+
+     
+       <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+         <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+         <script src="_static/doctools.js"></script>
+         <script src="_static/sphinx_highlight.js"></script>
+         <script src="_static/copybutton.js"></script>
+     
+
+  
+
+  <script type="text/javascript" src="_static/js/vendor/popper.min.js"></script>
+  <script type="text/javascript" src="_static/js/vendor/bootstrap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/list.js/1.5.0/list.min.js"></script>
+  <script type="text/javascript" src="_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+  <!-- Begin Footer -->
+
+  <!-- <div class="container-fluid docs-tutorials-resources" id="docs-tutorials-resources"> -->
+    <!-- <div class="container"> -->
+      <!-- <div class="row"> -->
+        <!--
+        <div class="col-md-4 text-center">
+          <h2>Docs</h2>
+          <p>Access comprehensive developer documentation for PyTorch</p>
+          <a class="with-right-arrow" href="https://lightning-ai.github.io/lit-data/">View Docs</a>
+        </div>
+
+        <div class="col-md-4 text-center">
+          <h2>Tutorials</h2>
+          <p>Get in-depth tutorials for beginners and advanced developers</p>
+          <a class="with-right-arrow" href="https://lightning.ai">View Tutorials</a>
+        </div>
+
+        <div class="col-md-4 text-center">
+          <h2>Resources</h2>
+          <p>Find development resources and get your questions answered</p>
+          <a class="with-right-arrow" href="https://lightning.ai">View Resources</a>
+        </div>
+        -->
+      <!-- </div> -->
+    <!-- </div> -->
+  <!-- </div> -->
+
+  <!--
+  <footer class="site-footer">
+    <div class="container footer-container">
+      <div class="footer-logo-wrapper">
+        <a href="https://lightning-ai.github.io/lit-data/" class="footer-logo"></a>
+      </div>
+
+      <div class="footer-links-wrapper">
+        <div class="footer-links-col">
+          <ul>
+            <li class="list-title"><a href="https://lightning-ai.github.io/lit-data/">PyTorch</a></li>
+            <li><a href="https://lightning.ai">Get Started</a></li>
+            <li><a href="https://lightning-ai.github.io/lit-data/">Features</a></li>
+            <li><a href="">Ecosystem</a></li>
+            <li><a href="https://www.Lightning.ai/blog">Blog</a></li>
+            <li><a href="https://github.com/Lightning-AI/lightning/blob/master/CONTRIBUTING.md">Contributing</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-links-col">
+          <ul>
+            <li class="list-title"><a href="https://lightning.ai">Resources</a></li>
+            <li><a href="https://lightning.ai">Tutorials</a></li>
+            <li><a href="https://lightning-ai.github.io/lit-data/">Docs</a></li>
+            <li><a href="https://discord.com/invite/tfXFetEZxv" target="_blank">Discuss</a></li>
+            <li><a href="https://github.com/Lightning-AI/lit-data/issues" target="_blank">Github Issues</a></li>
+            <li><a href="" target="_blank">Brand Guidelines</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-links-col follow-us-col">
+          <ul>
+            <li class="list-title">Stay Connected</li>
+            <li>
+              <div id="mc_embed_signup">
+                <form
+                  action="https://twitter.us14.list-manage.com/subscribe/post?u=75419c71fe0a935e53dfa4a3f&id=91d0dccd39"
+                  method="post"
+                  id="mc-embedded-subscribe-form"
+                  name="mc-embedded-subscribe-form"
+                  class="email-subscribe-form validate"
+                  target="_blank"
+                  novalidate>
+                  <div id="mc_embed_signup_scroll" class="email-subscribe-form-fields-wrapper">
+                    <div class="mc-field-group">
+                      <label for="mce-EMAIL" style="display:none;">Email Address</label>
+                      <input type="email" value="" name="EMAIL" class="required email" id="mce-EMAIL" placeholder="Email Address">
+                    </div>
+
+                    <div id="mce-responses" class="clear">
+                      <div class="response" id="mce-error-response" style="display:none"></div>
+                      <div class="response" id="mce-success-response" style="display:none"></div>
+                    </div>
+
+                    <div style="position: absolute; left: -5000px;" aria-hidden="true"><input type="text" name="b_75419c71fe0a935e53dfa4a3f_91d0dccd39" tabindex="-1" value=""></div>
+
+                    <div class="clear">
+                      <input type="submit" value="" name="subscribe" id="mc-embedded-subscribe" class="button email-subscribe-button">
+                    </div>
+                  </div>
+                </form>
+              </div>
+
+            </li>
+          </ul>
+
+          <div class="footer-social-icons">
+            <a href="" target="_blank" class="facebook"></a>
+            <a href="https://twitter.com/LightningAI" target="_blank" class="twitter"></a>
+            <a href="" target="_blank" class="youtube"></a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </footer>
+  -->
+
+  <div class="cookie-banner-wrapper">
+  <div class="container">
+    <p class="gdpr-notice">To analyze traffic and optimize your experience, we serve cookies on this site. By clicking or navigating, you agree to allow our usage of cookies. Read PyTorch Lightning's <a href="https://pytorchlightning.ai/privacy-policy">Privacy Policy</a>.</p>
+    <img class="close-button" src="_static/images/pytorch-x.svg">
+  </div>
+</div>
+
+  <!-- End Footer -->
+
+  <!-- Begin Mobile Menu -->
+
+  <div class="mobile-main-menu">
+    <div class="container-fluid">
+      <div class="container">
+        <div class="mobile-main-menu-header-container">
+          <a class="header-logo" href="https://lightning-ai.github.io/lit-data/" aria-label="PyTorch Lightning"></a>
+          <a class="main-menu-close-button" href="#" data-behavior="close-mobile-menu"></a>
+        </div>
+      </div>
+    </div>
+
+    <div class="mobile-main-menu-links-container">
+      <div class="main-menu">
+        <ul>
+          <li>
+            <a href="https://lightning.ai">Get Started</a>
+          </li>
+
+          <li>
+            <a href="https://www.Lightning.ai/blog">Blog</a>
+          </li>
+
+          <li class="resources-mobile-menu-title">
+            Ecosystem
+          </li>
+
+          <ul class="resources-mobile-menu-items">
+            <li>
+              <a href="https://lightning.ai/docs/pytorch/stable/">PyTorch Lightning</a>
+            </li>
+
+            <li>
+              <a href="https://lightning.ai/docs/fabric/stable/">Lightning Fabric</a>
+            </li>
+
+            <li>
+              <a href="https://torchmetrics.readthedocs.io/en/stable/">TorchMetrics</a>
+            </li>
+
+            <li>
+              <a href="https://lightning.ai/docs/fabric/stable/">Fabric</a>
+            </li>
+          </ul>
+
+          <!--<li class="resources-mobile-menu-title">
+            Resources
+          </li>
+
+          <ul class="resources-mobile-menu-items">
+            <li>
+              <a href="https://lightning.ai">Developer Resources</a>
+            </li>
+
+            <li>
+              <a href="https://lightning-ai.github.io/lit-data/">About</a>
+            </li>
+
+            <li>
+              <a href="">Models (Beta)</a>
+            </li>
+
+            <li>
+              <a href="">Community</a>
+            </li>
+
+            <li>
+              <a href="">Forums</a>
+            </li>
+          </ul>-->
+
+          <li>
+            <a href="https://github.com/Lightning-AI/lit-data">Github</a>
+          </li>
+
+          <li>
+            <a href="https://www.lightning.ai/">Lightning.ai</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- End Mobile Menu -->
+
+  <script type="text/javascript" src="_static/js/vendor/anchor.min.js"></script>
+
+  <script type="text/javascript">
+    $(document).ready(function() {
+      mobileMenu.bind();
+      mobileTOC.bind();
+      pytorchAnchors.bind();
+      sideMenus.bind();
+      scrollToAnchor.bind();
+      highlightNavigation.bind();
+      mainMenuDropdown.bind();
+      filterTags.bind();
+
+      // Add class to links that have code blocks, since we cannot create links in code blocks
+      $("article.pytorch-article a span.pre").each(function(e) {
+        $(this).closest("a").addClass("has-code");
+      });
+    })
+  </script>
+
+  <!-- Google Tag Manager (noscript) -->
+  <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PQBQ3CV"
+  height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+  <!-- End Google Tag Manager (noscript) -->
+ </body>
+</html>
