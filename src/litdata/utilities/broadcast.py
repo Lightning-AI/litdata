@@ -127,7 +127,7 @@ class _ImmutableDistributedMap:
         payload = {"key": key, "value": pickle.dumps(value, 0).decode()}
 
         if rank is not None:
-            payload["rank"] = rank
+            payload["rank"] = str(rank)
 
         # Try the public address first
         try:
