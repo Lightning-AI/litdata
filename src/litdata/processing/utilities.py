@@ -155,7 +155,7 @@ def _optimize_dns(enable: bool) -> None:
             f.write(line)
 
 
-def _get_work_dir():
+def _get_work_dir() -> str:
     # Provides the storage path associated to the current Lightning Work.
     bucket_name = os.getenv("LIGHTNING_BUCKET_NAME")
     project_id = os.getenv("LIGHTNING_CLOUD_PROJECT_ID")
