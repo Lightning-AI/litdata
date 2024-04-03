@@ -20,6 +20,7 @@ import numpy as np
 import pytest
 import torch
 from lightning import seed_everything
+from litdata.imports import RequirementCache
 from litdata.streaming.serializers import (
     _AV_AVAILABLE,
     _NUMPY_DTYPES_MAPPING,
@@ -36,7 +37,6 @@ from litdata.streaming.serializers import (
     TensorSerializer,
     VideoSerializer,
 )
-from litdata.utilities import RequirementCache
 
 _PIL_AVAILABLE = RequirementCache("PIL")
 

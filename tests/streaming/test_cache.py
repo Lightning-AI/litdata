@@ -22,12 +22,12 @@ from lightning import seed_everything
 from lightning.fabric import Fabric
 from lightning.pytorch.demos.boring_classes import RandomDataset
 from lightning_utilities.test.warning import no_warning_call
+from litdata.imports import RequirementCache
 from litdata.streaming import Cache
 from litdata.streaming.dataloader import CacheDataLoader
 from litdata.streaming.dataset import StreamingDataset
 from litdata.streaming.item_loader import TokensLoader
 from litdata.streaming.serializers import Serializer
-from litdata.utilities import RequirementCache
 from litdata.utilities.env import _DistributedEnv
 from torch.utils.data import Dataset
 

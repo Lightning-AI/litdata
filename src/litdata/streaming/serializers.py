@@ -23,7 +23,7 @@ import numpy as np
 import torch
 
 from litdata.constants import _NUMPY_DTYPES_MAPPING, _TORCH_DTYPES_MAPPING
-from litdata.utilities import RequirementCache
+from litdata.imports import RequirementCache
 
 _PIL_AVAILABLE = RequirementCache("PIL")
 _TORCH_VISION_AVAILABLE = RequirementCache("torchvision")

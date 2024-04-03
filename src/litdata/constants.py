@@ -17,7 +17,7 @@ from pathlib import Path
 import numpy as np
 import torch
 
-from litdata.utilities import RequirementCache
+from litdata.imports import RequirementCache
 
 _INDEX_FILENAME = "index.json"
 _DEFAULT_CHUNK_BYTES = 1 << 26  # 64M B
