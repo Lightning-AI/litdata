@@ -17,7 +17,6 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 from litdata.constants import (
     _INDEX_FILENAME,
-    _LIGHTNING_CLOUD_LATEST,
     _TORCH_GREATER_EQUAL_2_1_0,
 )
 from litdata.streaming.item_loader import BaseItemLoader
@@ -59,12 +58,6 @@ class Cache:
         super().__init__()
         if not _TORCH_GREATER_EQUAL_2_1_0:
             raise ModuleNotFoundError("PyTorch version 2.1 or higher is required to use the cache.")
-
-        if not _LIGHTNING_CLOUD_LATEST:
-            raise ModuleNotFoundError(
-                "The `lightning-cloud` package in your environement is out-dated."
-                " Run: `pip install -U lightning-cloud` to resolve this."
-            )
 
         input_dir = _resolve_dir(input_dir)
         self._cache_dir = input_dir.path

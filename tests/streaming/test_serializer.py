@@ -13,14 +13,14 @@
 
 import io
 import os
+import random
 import sys
 from time import time
 
 import numpy as np
 import pytest
 import torch
-from lightning import seed_everything
-from lightning_utilities.core.imports import RequirementCache
+from litdata.imports import RequirementCache
 from litdata.streaming.serializers import (
     _AV_AVAILABLE,
     _NUMPY_DTYPES_MAPPING,
@@ -37,6 +37,13 @@ from litdata.streaming.serializers import (
     TensorSerializer,
     VideoSerializer,
 )
+
+
+def seed_everything(random_seed):
+    random.seed(random_seed)
+    np.random.seed(random_seed)
+    torch.manual_seed(random_seed)
+
 
 _PIL_AVAILABLE = RequirementCache("PIL")
 

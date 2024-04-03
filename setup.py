@@ -9,7 +9,7 @@ from setuptools import find_packages, setup
 
 _PATH_ROOT = os.path.dirname(__file__)
 _PATH_SOURCE = os.path.join(_PATH_ROOT, "src")
-_PATH_REQUIRES = os.path.join(_PATH_ROOT, "_requirements")
+_PATH_REQUIRES = os.path.join(_PATH_ROOT, "requirements")
 
 
 def _load_py_module(fname, pkg="litdata"):

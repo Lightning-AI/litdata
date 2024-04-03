@@ -12,6 +12,7 @@
 # limitations under the License.
 
 import os
+import random
 import sys
 from time import sleep
 from unittest import mock
@@ -19,7 +20,6 @@ from unittest import mock
 import numpy as np
 import pytest
 import torch
-from lightning import seed_everything
 from litdata.processing import functions
 from litdata.streaming import Cache
 from litdata.streaming import dataset as dataset_module
@@ -38,6 +38,12 @@ from litdata.streaming.item_loader import TokensLoader
 from litdata.streaming.shuffle import FullShuffle, NoShuffle
 from litdata.utilities.env import _DistributedEnv, _WorkerEnv
 from torch.utils.data import DataLoader
+
+
+def seed_everything(random_seed):
+    random.seed(random_seed)
+    np.random.seed(random_seed)
+    torch.manual_seed(random_seed)
 
 
 def test_streaming_dataset(tmpdir, monkeypatch):

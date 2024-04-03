@@ -16,7 +16,8 @@ from pathlib import Path
 
 import numpy as np
 import torch
-from lightning_utilities.core.imports import RequirementCache
+
+from litdata.imports import RequirementCache
 
 _INDEX_FILENAME = "index.json"
 _DEFAULT_CHUNK_BYTES = 1 << 26  # 64M B
@@ -26,7 +27,7 @@ _DEFAULT_CACHE_DIR = os.path.join(Path.home(), ".lightning", "chunks")
 # This is required for full pytree serialization / deserialization support
 _TORCH_GREATER_EQUAL_2_1_0 = RequirementCache("torch>=2.1.0")
 _VIZ_TRACKER_AVAILABLE = RequirementCache("viztracer")
-_LIGHTNING_CLOUD_LATEST = RequirementCache("lightning-cloud>=0.5.64")
+_LIGHTNING_CLOUD_AVAILABLE = RequirementCache("lightning-cloud")
 _BOTO3_AVAILABLE = RequirementCache("boto3")
 _TORCH_AUDIO_AVAILABLE = RequirementCache("torchaudio")
 _ZSTD_AVAILABLE = RequirementCache("zstd")

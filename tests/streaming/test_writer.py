@@ -13,17 +13,25 @@
 
 import json
 import os
+import random
 import sys
 
 import numpy as np
 import pytest
-from lightning import seed_everything
-from lightning_utilities.core.imports import RequirementCache
+import torch
+from litdata.imports import RequirementCache
 from litdata.streaming.compression import _ZSTD_AVAILABLE
 from litdata.streaming.reader import BinaryReader
 from litdata.streaming.sampler import ChunkedIndex
 from litdata.streaming.writer import BinaryWriter
 from litdata.utilities.format import _FORMAT_TO_RATIO
+
+
+def seed_everything(random_seed):
+    random.seed(random_seed)
+    np.random.seed(random_seed)
+    torch.manual_seed(random_seed)
+
 
 _PIL_AVAILABLE = RequirementCache("PIL")
 
