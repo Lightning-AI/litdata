@@ -1,14 +1,33 @@
+# Copyright The Lightning AI team.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import contextlib
 import os
 from abc import ABC, abstractmethod
 from typing import Any, List
 
-from lightning_utilities.core.imports import RequirementCache
-from tqdm import tqdm
-
+from litdata.imports import RequirementCache
 from litdata.streaming.dataloader import StreamingDataLoader
 
 _PYARROW_AVAILABLE = RequirementCache("pyarrow")
+_TQDM_AVAILABLE = RequirementCache("tqdm")
+
+if _TQDM_AVAILABLE:
+    from tqdm.auto import tqdm as _tqdm
+else:
+
+    def _tqdm(iterator: Any) -> Any:
+        yield from iterator
 
 
 class BaseReader(ABC):
@@ -79,7 +98,7 @@ class ParquetReader(BaseReader):
             table = None
             parquet_filename = os.path.basename(filepath)
 
-            for start in tqdm(range(0, num_rows, self.num_rows)):
+            for start in _tqdm(range(0, num_rows, self.num_rows)):
                 end = min(start + self.num_rows, num_rows)
                 chunk_filepath = os.path.join(cache_folder, f"{start}_{end}_{parquet_filename}")
                 new_items.append(chunk_filepath)

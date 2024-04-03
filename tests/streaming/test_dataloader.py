@@ -2,6 +2,7 @@ import os
 
 import pytest
 import torch
+from litdata.constants import _VIZ_TRACKER_AVAILABLE
 from litdata.streaming import CombinedStreamingDataset, StreamingDataLoader
 from litdata.streaming import dataloader as streaming_dataloader_module
 from torch import tensor
@@ -80,6 +81,7 @@ def test_streaming_dataloader():
     }
 
 
+@pytest.mark.skipif(not _VIZ_TRACKER_AVAILABLE, reason="viz tracker required")
 @pytest.mark.parametrize("profile", [2, True])
 def test_dataloader_profiling(profile, tmpdir, monkeypatch):
     monkeypatch.setattr(streaming_dataloader_module, "_VIZ_TRACKER_AVAILABLE", True)
