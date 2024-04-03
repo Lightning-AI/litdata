@@ -9,7 +9,6 @@ from unittest import mock
 import numpy as np
 import pytest
 import torch
-from lightning import seed_everything
 from litdata.constants import _TORCH_AUDIO_AVAILABLE, _ZSTD_AVAILABLE
 from litdata.imports import RequirementCache
 from litdata.processing import data_processor as data_processor_module
@@ -32,6 +31,13 @@ from litdata.processing.data_processor import (
 from litdata.processing.functions import LambdaDataTransformRecipe, map, optimize
 from litdata.streaming import StreamingDataLoader, StreamingDataset, resolver
 from litdata.streaming.cache import Cache, Dir
+
+
+def seed_everything(random_seed):
+    random.seed(random_seed)
+    np.random.seed(random_seed)
+    torch.manual_seed(random_seed)
+
 
 _PIL_AVAILABLE = RequirementCache("PIL")
 

@@ -12,13 +12,13 @@
 # limitations under the License.
 import json
 import os
+import random
 import sys
 from functools import partial
 
 import numpy as np
 import pytest
 import torch
-from lightning import seed_everything
 from lightning.fabric import Fabric
 from lightning.pytorch.demos.boring_classes import RandomDataset
 from lightning_utilities.test.warning import no_warning_call
@@ -30,6 +30,13 @@ from litdata.streaming.item_loader import TokensLoader
 from litdata.streaming.serializers import Serializer
 from litdata.utilities.env import _DistributedEnv
 from torch.utils.data import Dataset
+
+
+def seed_everything(random_seed):
+    random.seed(random_seed)
+    np.random.seed(random_seed)
+    torch.manual_seed(random_seed)
+
 
 _PIL_AVAILABLE = RequirementCache("PIL")
 _TORCH_VISION_AVAILABLE = RequirementCache("torchvision")

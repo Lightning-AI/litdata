@@ -62,7 +62,15 @@ jobs:
           key: ${{ runner.os }}-${{ matrix.python-version }}-${{ matrix.requires }}-pip-${{ hashFiles('requirements.txt') }}
           restore-keys: ${{ runner.os }}-${{ matrix.python-version }}-${{ matrix.requires }}-pip-
 
+      - name: Install package & dependencies on Ubuntu
+        if: matrix.os == "ubuntu-latest"
+        run: |
+          pip --version
+          pip install -e '.[extra]' -r requirements/test.txt -U -q --find-links $TORCH_URL
+          pip list
+
       - name: Install package & dependencies
+        if: matrix.os != "ubuntu-latest"
         run: |
           pip --version
           pip install -e . -r requirements/test.txt -U -q --find-links $TORCH_URL
