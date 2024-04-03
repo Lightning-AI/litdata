@@ -11,7 +11,6 @@ from urllib import parse
 from lightning_cloud.openapi import V1CloudSpace
 from lightning_cloud.rest_client import LightningClient
 
-# To avoid adding lightning_utilities as a dependency for now.
 try:
     import boto3
     import botocore

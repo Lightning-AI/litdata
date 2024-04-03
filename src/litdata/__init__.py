@@ -1,6 +1,5 @@
-from lightning_utilities.core.imports import RequirementCache
-
 from litdata.__about__ import *  # noqa: F403
+from litdata.imports import RequirementCache
 from litdata.processing.functions import map, optimize, walk
 from litdata.streaming.combined import CombinedStreamingDataset
 from litdata.streaming.dataloader import StreamingDataLoader

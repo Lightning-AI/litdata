@@ -18,11 +18,11 @@ import sys
 import numpy as np
 import pytest
 from lightning import seed_everything
-from lightning_utilities.core.imports import RequirementCache
 from litdata.streaming.compression import _ZSTD_AVAILABLE
 from litdata.streaming.reader import BinaryReader
 from litdata.streaming.sampler import ChunkedIndex
 from litdata.streaming.writer import BinaryWriter
+from litdata.utilities import RequirementCache
 from litdata.utilities.format import _FORMAT_TO_RATIO
 
 _PIL_AVAILABLE = RequirementCache("PIL")

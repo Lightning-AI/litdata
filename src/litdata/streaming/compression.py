@@ -14,9 +14,8 @@
 from abc import ABC, abstractmethod
 from typing import Dict, TypeVar
 
-from lightning_utilities.core.imports import requires
-
 from litdata.constants import _ZSTD_AVAILABLE
+from litdata.utilities import requires
 
 if _ZSTD_AVAILABLE:
     import zstd

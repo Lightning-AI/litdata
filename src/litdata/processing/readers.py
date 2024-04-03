@@ -3,12 +3,18 @@ import os
 from abc import ABC, abstractmethod
 from typing import Any, List
 
-from lightning_utilities.core.imports import RequirementCache
-from tqdm import tqdm
-
 from litdata.streaming.dataloader import StreamingDataLoader
+from litdata.utilities import RequirementCache
 
 _PYARROW_AVAILABLE = RequirementCache("pyarrow")
+_TQDM_AVAILABLE = RequirementCache("tqdm")
+
+if _TQDM_AVAILABLE:
+    from tqdm.auto import tqdm as _tqdm
+else:
+
+    def _tqdm(iterator: Any) -> Any:
+        yield from iterator
 
 
 class BaseReader(ABC):
@@ -79,7 +85,7 @@ class ParquetReader(BaseReader):
             table = None
             parquet_filename = os.path.basename(filepath)
 
-            for start in tqdm(range(0, num_rows, self.num_rows)):
+            for start in _tqdm(range(0, num_rows, self.num_rows)):
                 end = min(start + self.num_rows, num_rows)
                 chunk_filepath = os.path.join(cache_folder, f"{start}_{end}_{parquet_filename}")
                 new_items.append(chunk_filepath)

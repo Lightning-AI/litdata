@@ -19,7 +19,6 @@ from urllib import parse
 
 import numpy as np
 import torch
-from tqdm.auto import tqdm as _tqdm
 
 from litdata.constants import (
     _BOTO3_AVAILABLE,
@@ -29,6 +28,7 @@ from litdata.constants import (
     _LIGHTNING_CLOUD_LATEST,
     _TORCH_GREATER_EQUAL_2_1_0,
 )
+from litdata.imports import RequirementCache
 from litdata.processing.readers import BaseReader, StreamingDataLoaderReader
 from litdata.processing.utilities import _create_dataset
 from litdata.streaming import Cache
@@ -38,6 +38,11 @@ from litdata.streaming.dataloader import StreamingDataLoader
 from litdata.streaming.resolver import _resolve_dir
 from litdata.utilities.broadcast import broadcast_object
 from litdata.utilities.packing import _pack_greedily
+
+_TQDM_AVAILABLE = RequirementCache("tqdm")
+
+if _TQDM_AVAILABLE:
+    from tqdm.auto import tqdm as _tqdm
 
 if _TORCH_GREATER_EQUAL_2_1_0:
     from torch.utils._pytree import tree_flatten, tree_unflatten, treespec_loads
@@ -944,15 +949,16 @@ class DataProcessor:
         print("Workers are ready ! Starting data processing...")
 
         current_total = 0
-        pbar = _tqdm(
-            desc="Progress",
-            total=num_items,
-            smoothing=0,
-            position=-1,
-            mininterval=1,
-            leave=True,
-            dynamic_ncols=True,
-        )
+        if _TQDM_AVAILABLE:
+            pbar = _tqdm(
+                desc="Progress",
+                total=num_items,
+                smoothing=0,
+                position=-1,
+                mininterval=1,
+                leave=True,
+                dynamic_ncols=True,
+            )
         num_nodes = _get_num_nodes()
         node_rank = _get_node_rank()
         total_num_items = len(user_items)
@@ -970,7 +976,8 @@ class DataProcessor:
                 self.workers_tracker[index] = counter
                 new_total = sum(self.workers_tracker.values())
 
-            pbar.update(new_total - current_total)
+            if _TQDM_AVAILABLE:
+                pbar.update(new_total - current_total)
 
             current_total = new_total
             if current_total == num_items:
@@ -985,7 +992,8 @@ class DataProcessor:
             if all(not w.is_alive() for w in self.workers):
                 raise RuntimeError("One of the worker has failed")
 
-        pbar.close()
+        if _TQDM_AVAILABLE:
+            pbar.close()
 
         # TODO: Understand why it hangs.
         if num_nodes == 1:
