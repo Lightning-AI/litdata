@@ -43,6 +43,12 @@ Install **LitData** with `pip`
 pip install litdata
 ```
 
+Install **LitData** with the extras
+
+```bash
+pip install 'litdata[extras]'
+```
+
 ## Quick Start
 
 ### 1. Prepare Your Data
