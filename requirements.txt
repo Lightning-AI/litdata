@@ -2,3 +2,4 @@ torch >=2.1.0
 filelock
 numpy
 boto3[crt]
+requests
