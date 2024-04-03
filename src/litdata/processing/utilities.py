@@ -18,12 +18,11 @@ from contextlib import contextmanager
 from subprocess import DEVNULL, Popen
 from typing import Any, Callable, List, Optional, Tuple, Union
 
-from litdata.constants import _IS_IN_STUDIO, _LIGHTNING_CLOUD_LATEST
+from litdata.constants import _IS_IN_STUDIO, _LIGHTNING_CLOUD_AVAILABLE
 
-if _LIGHTNING_CLOUD_LATEST:
+if _LIGHTNING_CLOUD_AVAILABLE:
     from lightning_cloud.openapi import (
         ProjectIdDatasetsBody,
-        V1DatasetType,
     )
     from lightning_cloud.openapi.rest import ApiException
     from lightning_cloud.rest_client import LightningClient
@@ -32,7 +31,7 @@ if _LIGHTNING_CLOUD_LATEST:
 def _create_dataset(
     input_dir: Optional[str],
     storage_dir: str,
-    dataset_type: V1DatasetType,
+    dataset_type: Any,
     empty: Optional[bool] = None,
     size: Optional[int] = None,
     num_bytes: Optional[str] = None,

@@ -18,11 +18,13 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 from time import sleep
-from typing import Optional, Union
+from typing import Any, Optional, Union
 from urllib import parse
 
-from lightning_cloud.openapi import V1CloudSpace
-from lightning_cloud.rest_client import LightningClient
+from litdata.constants import _LIGHTNING_CLOUD_AVAILABLE
+
+if _LIGHTNING_CLOUD_AVAILABLE:
+    from lightning_cloud.rest_client import LightningClient
 
 try:
     import boto3
@@ -93,7 +95,7 @@ def _resolve_dir(dir_path: Optional[Union[str, Dir]]) -> Dir:
     return Dir(path=dir_path_absolute, url=None)
 
 
-def _match_studio(target_id: Optional[str], target_name: Optional[str], cloudspace: V1CloudSpace) -> bool:
+def _match_studio(target_id: Optional[str], target_name: Optional[str], cloudspace: Any) -> bool:
     if cloudspace.name is not None and target_name is not None and cloudspace.name.lower() == target_name.lower():
         return True
 

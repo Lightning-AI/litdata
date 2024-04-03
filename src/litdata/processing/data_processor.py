@@ -38,7 +38,7 @@ from litdata.constants import (
     _DEFAULT_FAST_DEV_RUN_ITEMS,
     _INDEX_FILENAME,
     _IS_IN_STUDIO,
-    _LIGHTNING_CLOUD_LATEST,
+    _LIGHTNING_CLOUD_AVAILABLE,
     _TORCH_GREATER_EQUAL_2_1_0,
 )
 from litdata.imports import RequirementCache
@@ -60,7 +60,7 @@ if _TQDM_AVAILABLE:
 if _TORCH_GREATER_EQUAL_2_1_0:
     from torch.utils._pytree import tree_flatten, tree_unflatten, treespec_loads
 
-if _LIGHTNING_CLOUD_LATEST:
+if _LIGHTNING_CLOUD_AVAILABLE:
     from lightning_cloud.openapi import V1DatasetType
 
 
