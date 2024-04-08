@@ -57,7 +57,16 @@ class _DistributedEnv:
             global_rank = 0
             num_nodes = 1
 
-        if world_size is None or world_size == -1:
+        if os.environ["WORLD_SIZE"] is not None:
+            world_size = os.environ["WORLD_SIZE"]
+
+        if os.environ["GLOBAL_RANK"] is not None:
+            global_rank = os.environ["GLOBAL_RANK"]
+
+        if os.environ["NNODES"] is not None:
+            num_nodes = os.environ["NNODES"]
+
+        if world_size is in [None, -1, 0]:
             world_size = 1
 
         return cls(world_size=world_size, global_rank=global_rank, num_nodes=num_nodes)
