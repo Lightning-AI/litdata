@@ -1,3 +1,16 @@
+# Copyright The Lightning AI team.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import datetime
 import os
 import re
@@ -5,13 +18,14 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 from time import sleep
-from typing import Optional, Union
+from typing import Any, Optional, Union
 from urllib import parse
 
-from lightning_cloud.openapi import V1CloudSpace
-from lightning_cloud.rest_client import LightningClient
+from litdata.constants import _LIGHTNING_CLOUD_AVAILABLE
 
-# To avoid adding lightning_utilities as a dependency for now.
+if _LIGHTNING_CLOUD_AVAILABLE:
+    from lightning_cloud.rest_client import LightningClient
+
 try:
     import boto3
     import botocore
@@ -81,7 +95,7 @@ def _resolve_dir(dir_path: Optional[Union[str, Dir]]) -> Dir:
     return Dir(path=dir_path_absolute, url=None)
 
 
-def _match_studio(target_id: Optional[str], target_name: Optional[str], cloudspace: V1CloudSpace) -> bool:
+def _match_studio(target_id: Optional[str], target_name: Optional[str], cloudspace: Any) -> bool:
     if cloudspace.name is not None and target_name is not None and cloudspace.name.lower() == target_name.lower():
         return True
 

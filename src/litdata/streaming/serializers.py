@@ -21,9 +21,9 @@ from typing import Any, Dict, Optional, Tuple, Union
 
 import numpy as np
 import torch
-from lightning_utilities.core.imports import RequirementCache
 
 from litdata.constants import _NUMPY_DTYPES_MAPPING, _TORCH_DTYPES_MAPPING
+from litdata.imports import RequirementCache
 
 _PIL_AVAILABLE = RequirementCache("PIL")
 _TORCH_VISION_AVAILABLE = RequirementCache("torchvision")
@@ -36,9 +36,19 @@ if _PIL_AVAILABLE:
     from PIL.PngImagePlugin import PngImageFile
     from PIL.WebPImagePlugin import WebPImageFile
 else:
-    Image = None
-    JpegImageFile = None
-    PngImageFile = None
+
+    class Image:  # type: ignore
+        Image = None
+
+    class JpegImageFile:  # type: ignore
+        pass
+
+    class PngImageFile:  # type: ignore
+        pass
+
+    class WebPImageFile:  # type: ignore
+        pass
+
 
 if _TORCH_VISION_AVAILABLE:
     from torchvision.io import decode_jpeg
@@ -71,7 +81,7 @@ class Serializer(ABC):
 class PILSerializer(Serializer):
     """The PILSerializer serialize and deserialize PIL Image to and from bytes."""
 
-    def serialize(self, item: Image) -> Tuple[bytes, Optional[str]]:
+    def serialize(self, item: Any) -> Tuple[bytes, Optional[str]]:
         mode = item.mode.encode("utf-8")
         width, height = item.size
         raw = item.tobytes()
@@ -95,7 +105,7 @@ class PILSerializer(Serializer):
 class JPEGSerializer(Serializer):
     """The JPEGSerializer serialize and deserialize JPEG image to and from bytes."""
 
-    def serialize(self, item: Image) -> Tuple[bytes, Optional[str]]:
+    def serialize(self, item: Any) -> Tuple[bytes, Optional[str]]:
         if isinstance(item, JpegImageFile):
             if not hasattr(item, "filename"):
                 raise ValueError(

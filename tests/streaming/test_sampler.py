@@ -1,8 +1,16 @@
+import random
 from unittest import mock
 
+import numpy as np
 import pytest
-from lightning import seed_everything
+import torch
 from litdata.streaming.sampler import CacheBatchSampler
+
+
+def seed_everything(random_seed):
+    random.seed(random_seed)
+    np.random.seed(random_seed)
+    torch.manual_seed(random_seed)
 
 
 @pytest.mark.parametrize(

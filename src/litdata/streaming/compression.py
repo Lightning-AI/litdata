@@ -14,14 +14,12 @@
 from abc import ABC, abstractmethod
 from typing import Dict, TypeVar
 
-from lightning_utilities.core.imports import requires
-
 from litdata.constants import _ZSTD_AVAILABLE
+
+TCompressor = TypeVar("TCompressor", bound="Compressor")
 
 if _ZSTD_AVAILABLE:
     import zstd
-
-TCompressor = TypeVar("TCompressor", bound="Compressor")
 
 
 class Compressor(ABC):
@@ -44,9 +42,10 @@ class Compressor(ABC):
 class ZSTDCompressor(Compressor):
     """Compressor for the zstd package."""
 
-    @requires("zstd")
     def __init__(self, level: int) -> None:
         super().__init__()
+        if not _ZSTD_AVAILABLE:
+            raise ModuleNotFoundError()
         self.level = level
         self.extension = "zstd"
 

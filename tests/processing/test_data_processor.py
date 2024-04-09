@@ -9,9 +9,8 @@ from unittest import mock
 import numpy as np
 import pytest
 import torch
-from lightning import seed_everything
-from lightning_utilities.core.imports import RequirementCache
 from litdata.constants import _TORCH_AUDIO_AVAILABLE, _ZSTD_AVAILABLE
+from litdata.imports import RequirementCache
 from litdata.processing import data_processor as data_processor_module
 from litdata.processing import functions
 from litdata.processing.data_processor import (
@@ -32,6 +31,13 @@ from litdata.processing.data_processor import (
 from litdata.processing.functions import LambdaDataTransformRecipe, map, optimize
 from litdata.streaming import StreamingDataLoader, StreamingDataset, resolver
 from litdata.streaming.cache import Cache, Dir
+
+
+def seed_everything(random_seed):
+    random.seed(random_seed)
+    np.random.seed(random_seed)
+    torch.manual_seed(random_seed)
+
 
 _PIL_AVAILABLE = RequirementCache("PIL")
 
@@ -1051,10 +1057,11 @@ def no_op(index):
     pass
 
 
-def test_empty_optimize(tmpdir):
+@pytest.mark.parametrize("inputs", [[1], [1, 2], [1, 2, 3]])
+def test_empty_optimize(tmpdir, inputs):
     optimize(
         no_op,
-        list(range(10)),
+        inputs,
         output_dir=str(tmpdir),
         chunk_bytes="64MB",
         num_workers=1,

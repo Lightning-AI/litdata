@@ -12,17 +12,16 @@
 # limitations under the License.
 import json
 import os
+import random
 import sys
 from functools import partial
 
 import numpy as np
 import pytest
 import torch
-from lightning import seed_everything
-from lightning.fabric import Fabric
 from lightning.pytorch.demos.boring_classes import RandomDataset
-from lightning_utilities.core.imports import RequirementCache
 from lightning_utilities.test.warning import no_warning_call
+from litdata.imports import RequirementCache
 from litdata.streaming import Cache
 from litdata.streaming.dataloader import CacheDataLoader
 from litdata.streaming.dataset import StreamingDataset
@@ -31,8 +30,16 @@ from litdata.streaming.serializers import Serializer
 from litdata.utilities.env import _DistributedEnv
 from torch.utils.data import Dataset
 
+
+def seed_everything(random_seed):
+    random.seed(random_seed)
+    np.random.seed(random_seed)
+    torch.manual_seed(random_seed)
+
+
 _PIL_AVAILABLE = RequirementCache("PIL")
 _TORCH_VISION_AVAILABLE = RequirementCache("torchvision")
+_LIGHTNING_AVAILABLE = RequirementCache("lightning")
 
 
 class ImageDataset(Dataset):
@@ -145,13 +152,15 @@ def _fabric_cache_for_image_dataset(fabric, num_workers, tmpdir):
 
 
 @pytest.mark.skipif(
-    condition=not _PIL_AVAILABLE or not _TORCH_VISION_AVAILABLE or sys.platform == "win32",
+    condition=not _PIL_AVAILABLE or not _TORCH_VISION_AVAILABLE or sys.platform == "win32" or not _LIGHTNING_AVAILABLE,
     reason="Requires: ['pil', 'torchvision']",
 )
 @pytest.mark.parametrize("num_workers", [2])
 def test_cache_for_image_dataset_distributed(num_workers, tmpdir):
     cache_dir = os.path.join(tmpdir, "cache")
     os.makedirs(cache_dir)
+
+    from lightning.fabric import Fabric
 
     fabric = Fabric(accelerator="cpu", devices=2, strategy="ddp_spawn")
     fabric.launch(partial(_fabric_cache_for_image_dataset, num_workers=num_workers, tmpdir=tmpdir))

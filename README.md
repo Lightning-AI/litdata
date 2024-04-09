@@ -15,7 +15,7 @@ With LitData, users can transform and optimize their data in cloud storage envir
 
 Once optimized, efficient distributed training becomes practical regardless of where the data is located, enabling users to seamlessly stream data of any size to one or multiple machines.
 
-LitData supports **images, text, video, audio, geo-spatial, and multimodal data** types, is already adopted by frameworks such as [Lit-GPT](https://github.com/Lightning-AI/lit-gpt/blob/main/pretrain/tinyllama.py) to pretrain LLMs and integrates smoothly with [PyTorch Lightning](https://lightning.ai/docs/pytorch/stable/), [Lightning Fabric](https://lightning.ai/docs/fabric/stable/), and [PyTorch](https://pytorch.org/docs/stable/index.html).
+LitData supports **images, text, video, audio, geo-spatial, and multimodal data** types, is already adopted by frameworks such as [LitGPT](https://github.com/Lightning-AI/litgpt/blob/main/litgpt/data/lit_data.py) to pretrain LLMs and integrates smoothly with [PyTorch Lightning](https://lightning.ai/docs/pytorch/stable/), [Lightning Fabric](https://lightning.ai/docs/fabric/stable/), and [PyTorch](https://pytorch.org/docs/stable/index.html).
 
 [Runnable templates](#runnable-templates) published on the [Lightning.AI Platform](https://lightning.ai) are available at the end, **reproducible in 1-click**.
 
@@ -41,6 +41,12 @@ Install **LitData** with `pip`
 
 ```bash
 pip install litdata
+```
+
+Install **LitData** with the extras
+
+```bash
+pip install 'litdata[extras]'
 ```
 
 ## Quick Start
