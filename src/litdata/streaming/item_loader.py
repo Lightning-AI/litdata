@@ -38,6 +38,20 @@ class BaseItemLoader(ABC):
         self._chunks = chunks
         self._serializers = serializers
 
+        # setup the serializers on restart
+        for data_format in self._config["data_format"]:
+            serializer = self._serializers[self._data_format_to_key(data_format)]
+            serializer.setup(data_format)
+
+    @functools.lru_cache(maxsize=128)
+    def _data_format_to_key(self, data_format: str) -> str:
+        if ":" in data_format:
+            serialier, serializer_sub_type = data_format.split(":")
+            if serializer_sub_type in self._serializers:
+                return serializer_sub_type
+            return serialier
+        return data_format
+
     def state_dict(self) -> Dict:
         return {}
 
@@ -108,15 +122,6 @@ class PyTreeLoader(BaseItemLoader):
             data = fp.read(end - begin)
 
         return self.deserialize(data)
-
-    @functools.lru_cache(maxsize=128)
-    def _data_format_to_key(self, data_format: str) -> str:
-        if ":" in data_format:
-            serialier, serializer_sub_type = data_format.split(":")
-            if serializer_sub_type in self._serializers:
-                return serializer_sub_type
-            return serialier
-        return data_format
 
     def deserialize(self, raw_item_data: bytes) -> "PyTree":
         """Deserialize the raw bytes into their python equivalent."""
