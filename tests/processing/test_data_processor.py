@@ -921,6 +921,7 @@ def test_data_processing_map_without_input_dir_local(monkeypatch, tmpdir):
     assert sorted(os.listdir(output_dir)) == ["0.JPEG", "1.JPEG", "2.JPEG", "3.JPEG", "4.JPEG"]
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="Windows not supported")
 def test_data_processing_map_without_input_dir_remote(monkeypatch, tmpdir):
     cache_dir = os.path.join(tmpdir, "cache")
     output_dir = os.path.join("/teamspace", "datasets", "target_dir")
