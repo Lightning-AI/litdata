@@ -5,7 +5,7 @@ from functools import partial
 from pathlib import Path
 from typing import Any, List
 from unittest import mock
-from unittest.mock import Mock, ANY
+from unittest.mock import ANY, Mock
 
 import numpy as np
 import pytest
@@ -947,9 +947,16 @@ def test_data_processing_map_without_input_dir_remote(monkeypatch, tmpdir):
     )
 
     create_dataset_mock.assert_called_with(
-        input_dir=None, storage_dir=str(tmpdir / "output"),
-        dataset_type=ANY, empty=ANY, size=ANY, num_bytes=ANY, data_format=ANY, compression=ANY,
-        num_chunks=ANY, num_bytes_per_chunk=ANY
+        input_dir=None,
+        storage_dir=str(tmpdir / "output"),
+        dataset_type=ANY,
+        empty=ANY,
+        size=ANY,
+        num_bytes=ANY,
+        data_format=ANY,
+        compression=ANY,
+        num_chunks=ANY,
+        num_bytes_per_chunk=ANY,
     )
 
 
