@@ -37,6 +37,22 @@ class BaseItemLoader(ABC):
         self._config = config
         self._chunks = chunks
         self._serializers = serializers
+        self._data_format = self._config["data_format"]
+        self._shift_idx = len(self._data_format) * 4
+
+        # setup the serializers on restart
+        for data_format in self._data_format:
+            serializer = self._serializers[self._data_format_to_key(data_format)]
+            serializer.setup(data_format)
+
+    @functools.lru_cache(maxsize=128)
+    def _data_format_to_key(self, data_format: str) -> str:
+        if ":" in data_format:
+            serialier, serializer_sub_type = data_format.split(":")
+            if serializer_sub_type in self._serializers:
+                return serializer_sub_type
+            return serialier
+        return data_format
 
     def state_dict(self) -> Dict:
         return {}
@@ -109,21 +125,12 @@ class PyTreeLoader(BaseItemLoader):
 
         return self.deserialize(data)
 
-    @functools.lru_cache(maxsize=128)
-    def _data_format_to_key(self, data_format: str) -> str:
-        if ":" in data_format:
-            serialier, serializer_sub_type = data_format.split(":")
-            if serializer_sub_type in self._serializers:
-                return serializer_sub_type
-            return serialier
-        return data_format
-
     def deserialize(self, raw_item_data: bytes) -> "PyTree":
         """Deserialize the raw bytes into their python equivalent."""
-        idx = len(self._config["data_format"]) * 4
+        idx = self._shift_idx
         sizes = np.frombuffer(raw_item_data[:idx], np.uint32)
         data = []
-        for size, data_format in zip(sizes, self._config["data_format"]):
+        for size, data_format in zip(sizes, self._data_format):
             serializer = self._serializers[self._data_format_to_key(data_format)]
             data_bytes = raw_item_data[idx : idx + size]
             data.append(serializer.deserialize(data_bytes))
