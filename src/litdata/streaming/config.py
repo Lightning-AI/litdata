@@ -83,7 +83,7 @@ class ChunksConfig:
             return
 
         if self._downloader is None:
-            raise RuntimeError("The downloader should be defined.")
+            return
 
         self._downloader.download_chunk_from_index(chunk_index)
 
@@ -101,7 +101,9 @@ class ChunksConfig:
         with open(local_chunkpath, "rb") as f:
             data = f.read()
 
-        os.remove(local_chunkpath)
+        # delete the files only if they were downloaded
+        if self._downloader is not None:
+            os.remove(local_chunkpath)
 
         data = self._compressor.decompress(data)
 
