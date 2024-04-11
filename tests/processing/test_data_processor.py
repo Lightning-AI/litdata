@@ -900,11 +900,13 @@ def map_fn_index(index, output_dir):
         f.write("Hello")
 
 
+@pytest.mark.parametrize("local", [True, False])
 @pytest.mark.skipif(condition=not _PIL_AVAILABLE or sys.platform == "win32", reason="Requires: ['pil']")
-def test_data_processing_map_without_input_dir(monkeypatch, tmpdir):
+def test_data_processing_map_without_input_dir(local, monkeypatch, tmpdir):
     cache_dir = os.path.join(tmpdir, "cache")
-    output_dir = os.path.join(tmpdir, "target_dir")
-    os.makedirs(output_dir, exist_ok=True)
+    output_dir = os.path.join(tmpdir, "target_dir") if local else os.path.join("/teamspace", "datasets", "target_dir")
+    if local:
+        os.makedirs(output_dir, exist_ok=True)
     monkeypatch.setenv("DATA_OPTIMIZER_CACHE_FOLDER", cache_dir)
     monkeypatch.setenv("DATA_OPTIMIZER_DATA_CACHE_FOLDER", cache_dir)
 
