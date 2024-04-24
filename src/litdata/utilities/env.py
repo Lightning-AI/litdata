@@ -57,17 +57,12 @@ class _DistributedEnv:
             global_rank = 0
             num_nodes = 1
 
-        if os.environ.get("WORLD_SIZE") is not None:
-            world_size = int(os.environ.get("WORLD_SIZE"))
-
-        if os.environ.get("GLOBAL_RANK") is not None:
-            global_rank = int(os.environ.get("GLOBAL_RANK"))
-
-        if os.environ.get("NNODES") is not None:
-            num_nodes = int(os.environ.get("NNODES"))
-
-        if world_size in (None, -1, 0):
+        if world_size is None or world_size == -1:
             world_size = 1
+
+        world_size = int(os.environ.get("WORLD_SIZE", world_size))
+        global_rank = int(os.environ.get("GLOBAL_RANK", global_rank))
+        num_nodes = int(os.environ.get("NNODES", num_nodes))
 
         return cls(world_size=world_size, global_rank=global_rank, num_nodes=num_nodes)
 
