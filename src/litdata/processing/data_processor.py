@@ -51,14 +51,12 @@ from litdata.streaming.dataloader import StreamingDataLoader
 from litdata.streaming.resolver import _resolve_dir
 from litdata.utilities.broadcast import broadcast_object
 from litdata.utilities.packing import _pack_greedily
+from litdata.utilities._pytree import tree_flatten, tree_unflatten, treespec_loads
 
 _TQDM_AVAILABLE = RequirementCache("tqdm")
 
 if _TQDM_AVAILABLE:
     from tqdm.auto import tqdm as _tqdm
-
-if _TORCH_GREATER_EQUAL_2_1_0:
-    from torch.utils._pytree import tree_flatten, tree_unflatten, treespec_loads
 
 if _LIGHTNING_CLOUD_AVAILABLE:
     from lightning_cloud.openapi import V1DatasetType

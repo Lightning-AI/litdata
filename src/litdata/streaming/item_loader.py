@@ -25,9 +25,7 @@ from litdata.constants import (
     _TORCH_GREATER_EQUAL_2_1_0,
 )
 from litdata.streaming.serializers import Serializer
-
-if _TORCH_GREATER_EQUAL_2_1_0:
-    from torch.utils._pytree import PyTree, tree_unflatten
+from litdata.utilities._pytree import PyTree, tree_unflatten
 
 
 class BaseItemLoader(ABC):

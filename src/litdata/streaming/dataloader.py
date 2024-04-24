@@ -43,9 +43,7 @@ from litdata.streaming.combined import (
 from litdata.streaming.dataset import StreamingDataset
 from litdata.streaming.sampler import CacheBatchSampler
 from litdata.utilities.env import _DistributedEnv
-
-if _TORCH_GREATER_EQUAL_2_1_0:
-    from torch.utils._pytree import tree_flatten
+from litdata.utilities._pytree import tree_unflatten
 
 logger = logging.Logger(__name__)
 

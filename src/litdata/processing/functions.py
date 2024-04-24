@@ -34,9 +34,7 @@ from litdata.streaming.resolver import (
     _execute,
     _resolve_dir,
 )
-
-if _TORCH_GREATER_EQUAL_2_1_0:
-    from torch.utils._pytree import tree_flatten
+from litdata.utilities._pytree import tree_flatten
 
 
 def _get_indexed_paths(data: Any) -> Dict[int, str]:
