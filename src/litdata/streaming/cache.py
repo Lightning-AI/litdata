@@ -17,7 +17,6 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 from litdata.constants import (
     _INDEX_FILENAME,
-    _TORCH_GREATER_EQUAL_2_1_0,
 )
 from litdata.streaming.item_loader import BaseItemLoader
 from litdata.streaming.reader import BinaryReader

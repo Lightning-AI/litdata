@@ -33,7 +33,7 @@ from torch.utils.data.dataloader import (
 )
 from torch.utils.data.sampler import BatchSampler, Sampler
 
-from litdata.constants import _DEFAULT_CHUNK_BYTES, _TORCH_GREATER_EQUAL_2_1_0, _VIZ_TRACKER_AVAILABLE
+from litdata.constants import _DEFAULT_CHUNK_BYTES, _VIZ_TRACKER_AVAILABLE
 from litdata.streaming import Cache
 from litdata.streaming.combined import (
     __NUM_SAMPLES_YIELDED_KEY__,
@@ -42,8 +42,8 @@ from litdata.streaming.combined import (
 )
 from litdata.streaming.dataset import StreamingDataset
 from litdata.streaming.sampler import CacheBatchSampler
+from litdata.utilities._pytree import tree_flatten
 from litdata.utilities.env import _DistributedEnv
-from litdata.utilities._pytree import tree_unflatten
 
 logger = logging.Logger(__name__)
 

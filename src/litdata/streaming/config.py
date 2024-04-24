@@ -15,7 +15,7 @@ import json
 import os
 from typing import Any, Dict, List, Optional, Tuple
 
-from litdata.constants import _INDEX_FILENAME, _TORCH_GREATER_EQUAL_2_1_0
+from litdata.constants import _INDEX_FILENAME
 from litdata.streaming.compression import _COMPRESSORS, Compressor
 from litdata.streaming.downloader import get_downloader_cls
 from litdata.streaming.item_loader import BaseItemLoader, PyTreeLoader, TokensLoader

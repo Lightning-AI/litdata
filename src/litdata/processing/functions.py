@@ -22,7 +22,7 @@ from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 import torch
 
-from litdata.constants import _IS_IN_STUDIO, _TORCH_GREATER_EQUAL_2_1_0
+from litdata.constants import _IS_IN_STUDIO
 from litdata.processing.data_processor import DataChunkRecipe, DataProcessor, DataTransformRecipe
 from litdata.processing.readers import BaseReader
 from litdata.processing.utilities import optimize_dns_context

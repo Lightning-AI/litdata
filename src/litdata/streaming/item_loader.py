@@ -22,7 +22,6 @@ import torch
 
 from litdata.constants import (
     _TORCH_DTYPES_MAPPING,
-    _TORCH_GREATER_EQUAL_2_1_0,
 )
 from litdata.streaming.serializers import Serializer
 from litdata.utilities._pytree import PyTree, tree_unflatten
