@@ -72,7 +72,8 @@ lint.ignore = [
 exclude = [
     ".git",
     "docs",
-    "_notebooks"
+    "_notebooks",
+    "src/litdata/utilities/_pytree.py",
 ]
 lint.ignore-init-module-imports = true
 

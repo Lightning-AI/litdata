@@ -22,7 +22,7 @@ from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 import torch
 
-from litdata.constants import _IS_IN_STUDIO, _TORCH_GREATER_EQUAL_2_1_0
+from litdata.constants import _IS_IN_STUDIO
 from litdata.processing.data_processor import DataChunkRecipe, DataProcessor, DataTransformRecipe
 from litdata.processing.readers import BaseReader
 from litdata.processing.utilities import optimize_dns_context
@@ -34,9 +34,7 @@ from litdata.streaming.resolver import (
     _execute,
     _resolve_dir,
 )
-
-if _TORCH_GREATER_EQUAL_2_1_0:
-    from torch.utils._pytree import tree_flatten
+from litdata.utilities._pytree import tree_flatten
 
 
 def _get_indexed_paths(data: Any) -> Dict[int, str]:

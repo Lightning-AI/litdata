@@ -15,15 +15,13 @@ import json
 import os
 from typing import Any, Dict, List, Optional, Tuple
 
-from litdata.constants import _INDEX_FILENAME, _TORCH_GREATER_EQUAL_2_1_0
+from litdata.constants import _INDEX_FILENAME
 from litdata.streaming.compression import _COMPRESSORS, Compressor
 from litdata.streaming.downloader import get_downloader_cls
 from litdata.streaming.item_loader import BaseItemLoader, PyTreeLoader, TokensLoader
 from litdata.streaming.sampler import ChunkedIndex
 from litdata.streaming.serializers import Serializer
-
-if _TORCH_GREATER_EQUAL_2_1_0:
-    from torch.utils._pytree import tree_unflatten, treespec_loads
+from litdata.utilities._pytree import tree_unflatten, treespec_loads
 
 
 class ChunksConfig:
