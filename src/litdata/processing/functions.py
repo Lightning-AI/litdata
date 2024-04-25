@@ -135,10 +135,7 @@ class LambdaDataChunkRecipe(DataChunkRecipe):
         return self._inputs
 
     def prepare_item(self, item_metadata: Any) -> Any:
-        if isinstance(self._fn, partial):
-            yield from self._fn(item_metadata)
-
-        elif isinstance(self._fn, FunctionType):
+        if isinstance(self._fn, (FunctionType, partial)):
             if inspect.isgeneratorfunction(self._fn):
                 yield from self._fn(item_metadata)
             else:
