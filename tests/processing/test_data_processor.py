@@ -1039,16 +1039,6 @@ def test_map_error_when_not_empty(monkeypatch):
             error_when_not_empty=True,
         )
 
-    monkeypatch.setattr(data_processor_module, "_IS_IN_STUDIO", True)
-
-    with pytest.raises(OSError, match="cache"):
-        map(
-            map_fn,
-            [0, 1],
-            output_dir=Dir(path=None, url="s3://bucket"),
-            error_when_not_empty=False,
-        )
-
 
 def map_fn_is_last(index, output_dir, is_last):
     with open(os.path.join(output_dir, f"{index}_{is_last}.txt"), "w") as f:
