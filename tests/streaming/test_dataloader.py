@@ -49,7 +49,10 @@ class TestCombinedStreamingDataset(CombinedStreamingDataset):
 
 def test_streaming_dataloader():
     dataset = TestCombinedStreamingDataset(
-        [TestStatefulDataset(10, 1), TestStatefulDataset(10, -1)], 42, weights=(0.5, 0.5)
+        [TestStatefulDataset(10, 1), TestStatefulDataset(10, -1)],
+        42,
+        weights=(0.5, 0.5),
+        iterate_over_all=False,
     )
     dataloader = StreamingDataLoader(dataset, batch_size=2)
     dataloader_iter = iter(dataloader)
@@ -87,7 +90,10 @@ def test_dataloader_profiling(profile, tmpdir, monkeypatch):
     monkeypatch.setattr(streaming_dataloader_module, "_VIZ_TRACKER_AVAILABLE", True)
 
     dataset = TestCombinedStreamingDataset(
-        [TestStatefulDataset(10, 1), TestStatefulDataset(10, -1)], 42, weights=(0.5, 0.5)
+        [TestStatefulDataset(10, 1), TestStatefulDataset(10, -1)],
+        42,
+        weights=(0.5, 0.5),
+        iterate_over_all=False,
     )
     dataloader = StreamingDataLoader(
         dataset, batch_size=2, profile_batches=profile, profile_dir=str(tmpdir), num_workers=1
@@ -102,7 +108,7 @@ def test_dataloader_profiling(profile, tmpdir, monkeypatch):
 
 def test_dataloader_shuffle():
     dataset = TestCombinedStreamingDataset(
-        [TestStatefulDataset(10, 1), TestStatefulDataset(10, -1)], 42, weights=(0.5, 0.5)
+        [TestStatefulDataset(10, 1), TestStatefulDataset(10, -1)], 42, weights=(0.5, 0.5), iterate_over_all=False
     )
     assert dataset._datasets[0].shuffle is None
     assert dataset._datasets[1].shuffle is None
