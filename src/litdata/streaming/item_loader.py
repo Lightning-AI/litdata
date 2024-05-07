@@ -23,7 +23,7 @@ import torch
 from litdata.constants import (
     _TORCH_DTYPES_MAPPING,
 )
-from litdata.streaming.serializers import Serializer, NoHeaderTensorSerializer
+from litdata.streaming.serializers import NoHeaderTensorSerializer, Serializer
 from litdata.utilities._pytree import PyTree, tree_unflatten
 
 
