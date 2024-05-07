@@ -17,6 +17,7 @@ import pickle
 import tempfile
 from abc import ABC, abstractmethod
 from collections import OrderedDict
+from copy import deepcopy
 from typing import Any, Dict, Optional, Tuple, Union
 
 import numpy as np
@@ -394,9 +395,7 @@ _SERIALIZERS = OrderedDict(
 
 
 def _get_serializers(serializers: Optional[Dict[str, Serializer]]) -> Dict[str, Serializer]:
+    _serializers = deepcopy(_SERIALIZERS)
     if serializers:
-        serializers = OrderedDict(**serializers)
-        serializers.update(_SERIALIZERS)
-    else:
-        serializers = _SERIALIZERS
-    return serializers
+        _serializers.update(serializers)
+    return _serializers
