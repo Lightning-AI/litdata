@@ -23,7 +23,7 @@ import torch
 from litdata.constants import (
     _TORCH_DTYPES_MAPPING,
 )
-from litdata.streaming.serializers import Serializer
+from litdata.streaming.serializers import Serializer, NoHeaderTensorSerializer
 from litdata.utilities._pytree import PyTree, tree_unflatten
 
 
@@ -130,6 +130,8 @@ class PyTreeLoader(BaseItemLoader):
         for size, data_format in zip(sizes, self._data_format):
             serializer = self._serializers[self._data_format_to_key(data_format)]
             data_bytes = raw_item_data[idx : idx + size]
+            if isinstance(serializer, NoHeaderTensorSerializer):
+                serializer.setup(data_format)
             data.append(serializer.deserialize(data_bytes))
             idx += size
         return tree_unflatten(data, self._config["data_spec"])
