@@ -142,7 +142,9 @@ class BinaryWriter:
         # Flatten the items provided by the users
         flattened, data_spec = tree_flatten(items)
 
-        is_single_tensor = len(flattened) == 1 and isinstance(flattened[0], torch.Tensor) and len(flattened[0].shape) == 1
+        is_single_tensor = (
+            len(flattened) == 1 and isinstance(flattened[0], torch.Tensor) and len(flattened[0].shape) == 1
+        )
 
         # Collect the sizes and associated bytes for each item
         sizes: List[int] = []

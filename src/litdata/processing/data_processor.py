@@ -20,7 +20,6 @@ import shutil
 import signal
 import tempfile
 import traceback
-import types
 from abc import abstractmethod
 from dataclasses import dataclass
 from multiprocessing import Process, Queue
