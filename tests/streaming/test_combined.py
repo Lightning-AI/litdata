@@ -40,6 +40,13 @@ def test_combined_dataset_num_samples_yield():
     assert dataset._iterator._num_samples_yielded == [2, 4]
 
 
+def test_combined_dataset_num_samples_yield_iterate_over_all():
+    dataset = TestCombinedStreamingDataset([range(10), range(0, -10, -1)], 42, iterate_over_all=True)
+    assert len(dataset) == 20
+    dataset_iter = iter(dataset)
+    assert len(e for e in dataset_iter) == 20
+
+
 class TestStatefulDataset:
     def __init__(self, size, step):
         self.size = size
@@ -454,7 +461,7 @@ def test_combined_dataset_with_dataloader_2_epochs(tmpdir):
         {
             "dataset": {
                 "0": {
-                    "num_samples_yielded": 9,
+                    "num_samples_yielded": 8,
                     "num_workers": 3,
                     "batch_size": 2,
                     "current_epoch": 1,
@@ -482,12 +489,12 @@ def test_combined_dataset_with_dataloader_2_epochs(tmpdir):
             },
             "current_epoch": 0,
             "latest_worker_idx": 2,
-            "num_samples_yielded": {0: [3, 1], 1: [3, 1], 2: [3, 1]},
+            "num_samples_yielded": {0: [3, 1], 1: [3, 1], 2: [2, 1]},
         },
         {
             "dataset": {
                 "0": {
-                    "num_samples_yielded": 11,
+                    "num_samples_yielded": 9,
                     "num_workers": 3,
                     "batch_size": 2,
                     "current_epoch": 1,
@@ -515,12 +522,12 @@ def test_combined_dataset_with_dataloader_2_epochs(tmpdir):
             },
             "current_epoch": 0,
             "latest_worker_idx": 0,
-            "num_samples_yielded": {0: [5, 1], 1: [3, 1], 2: [3, 1]},
+            "num_samples_yielded": {0: [4, 1], 1: [3, 1], 2: [2, 1]},
         },
         {
             "dataset": {
                 "0": {
-                    "num_samples_yielded": 13,
+                    "num_samples_yielded": 10,
                     "num_workers": 3,
                     "batch_size": 2,
                     "current_epoch": 1,
@@ -548,7 +555,7 @@ def test_combined_dataset_with_dataloader_2_epochs(tmpdir):
             },
             "current_epoch": 0,
             "latest_worker_idx": 1,
-            "num_samples_yielded": {0: [5, 1], 1: [5, 1], 2: [3, 1]},
+            "num_samples_yielded": {0: [4, 1], 1: [4, 1], 2: [2, 1]},
         },
     ]
 
@@ -721,7 +728,7 @@ def test_combined_dataset_with_dataloader_2_epochs(tmpdir):
         {
             "dataset": {
                 "0": {
-                    "num_samples_yielded": 9,
+                    "num_samples_yielded": 8,
                     "num_workers": 3,
                     "batch_size": 2,
                     "current_epoch": 2,
@@ -749,12 +756,12 @@ def test_combined_dataset_with_dataloader_2_epochs(tmpdir):
             },
             "current_epoch": 1,
             "latest_worker_idx": 2,
-            "num_samples_yielded": {0: [3, 1], 1: [3, 1], 2: [3, 1]},
+            "num_samples_yielded": {0: [3, 1], 1: [3, 1], 2: [2, 1]},
         },
         {
             "dataset": {
                 "0": {
-                    "num_samples_yielded": 11,
+                    "num_samples_yielded": 9,
                     "num_workers": 3,
                     "batch_size": 2,
                     "current_epoch": 2,
@@ -782,12 +789,12 @@ def test_combined_dataset_with_dataloader_2_epochs(tmpdir):
             },
             "current_epoch": 1,
             "latest_worker_idx": 0,
-            "num_samples_yielded": {0: [5, 1], 1: [3, 1], 2: [3, 1]},
+            "num_samples_yielded": {0: [4, 1], 1: [3, 1], 2: [2, 1]},
         },
         {
             "dataset": {
                 "0": {
-                    "num_samples_yielded": 13,
+                    "num_samples_yielded": 10,
                     "num_workers": 3,
                     "batch_size": 2,
                     "current_epoch": 2,
@@ -815,7 +822,7 @@ def test_combined_dataset_with_dataloader_2_epochs(tmpdir):
             },
             "current_epoch": 1,
             "latest_worker_idx": 1,
-            "num_samples_yielded": {0: [5, 1], 1: [5, 1], 2: [3, 1]},
+            "num_samples_yielded": {0: [4, 1], 1: [4, 1], 2: [2, 1]},
         },
     ]
 
