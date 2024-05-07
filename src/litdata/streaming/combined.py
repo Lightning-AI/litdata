@@ -12,8 +12,10 @@
 # limitations under the License.
 
 import random
+from copy import deepcopy
 from typing import Any, Dict, Iterator, List, Optional, Sequence
 
+import numpy as np
 from torch.utils.data import IterableDataset
 
 from litdata.streaming.dataset import StreamingDataset
@@ -36,14 +38,37 @@ class CombinedStreamingDataset(IterableDataset):
     """
 
     def __init__(
-        self, datasets: List[StreamingDataset], seed: int = 42, weights: Optional[Sequence[float]] = None
+        self,
+        datasets: List[StreamingDataset],
+        seed: int = 42,
+        weights: Optional[Sequence[float]] = None,
+        iterate_over_all: bool = True,
     ) -> None:
+        """ "
+        Arguments:
+            datasets: The list of the StreamingDataset to use.
+            seed: The random seed to initialize the sampler
+            weights: The sampling ratio for the datasets
+            iterate_over_all: When iterate_over_all is True, the combined dataset iterates over all the datasets.
+                Otherwise, it stops as soon as one raises a StopIteration.
+        """
+
         self._check_datasets(datasets)
 
         self._seed = seed
         self._datasets = datasets
         self._weights = weights
+        self._iterate_over_all = iterate_over_all
+
         num_datasets = len(datasets)
+
+        if iterate_over_all and weights:
+            raise ValueError(
+                "When `iterate_over_all` is set to True, the weights argument shouldn't be provided.",
+                " Instead, it will be computed from the inverse of the dataset length.",
+            )
+
+        self._iterate_over_all = iterate_over_all
 
         if weights is None:
             # Inversely weighted based on length
@@ -55,6 +80,15 @@ class CombinedStreamingDataset(IterableDataset):
         self._use_streaming_dataloader = False
         self._num_samples_yielded: Optional[List[int]] = None
         self._current_epoch = 0
+
+    def __len__(self) -> Optional[int]:
+        if self._iterate_over_all:
+            return self._get_total_length()
+        return None
+
+    # total length of the datasets
+    def _get_total_length(self) -> int:
+        return sum(len(d) for d in self._datasets)
 
     def set_epoch(self, current_epoch: int) -> None:
         """Set the current epoch to the datasets on epoch starts.
@@ -95,6 +129,7 @@ class CombinedStreamingDataset(IterableDataset):
             self._weights,
             self._use_streaming_dataloader,
             num_samples_yielded,
+            self._iterate_over_all,
         )
         return self._iterator
 
@@ -132,14 +167,18 @@ class _CombinedDatasetIterator(Iterator):
         seed: int,
         weights: Sequence[float],
         use_streaming_dataloader: bool,
-        num_samples_yielded: Optional[Any] = None,
+        num_samples_yielded: Any,
+        iterate_over_all: bool = False,
     ) -> None:
         self._datasets = datasets
         self._dataset_iters = [iter(dataset) for dataset in datasets]
         self._dataset_indexes = list(range(len(datasets)))
-        self._num_samples_yielded = [0 for _ in range(len(datasets))]
-        self._weights = weights
+        self._num_samples_yielded = num_samples_yielded or [0 for _ in range(len(datasets))]
+        self._original_weights = deepcopy(weights)
+        self._weights = deepcopy(weights)
         self._rng = random.Random(seed)
+        self._iterate_over_all = iterate_over_all
+        self._is_done = False
 
         if num_samples_yielded is not None:
             self._num_samples_yielded = num_samples_yielded
@@ -147,15 +186,41 @@ class _CombinedDatasetIterator(Iterator):
                 self._rng.choices(self._dataset_indexes, weights=self._weights, k=1)
 
         self._use_streaming_dataloader = use_streaming_dataloader
+        self._is_done = False
 
     def __next__(self) -> Any:
+        if self._iterate_over_all:
+            while True:
+                try:
+                    if len(self._dataset_indexes) > 1:
+                        dataset_index = self._get_dataset_index()
+                    elif len(self._dataset_indexes) == 1:
+                        dataset_index = self._dataset_indexes[0]
+                    return self._get_sample(dataset_index)
+                except StopIteration as e:
+                    if len(self._dataset_indexes) == 1:
+                        self._dataset_indexes = list(range(len(self._datasets)))
+                        self._weights = deepcopy(self._original_weights)
+                        raise e
+
+                    self._dataset_indexes.pop(dataset_index)
+                    self._weights.pop(dataset_index)
+                    self._weights /= np.sum(self._weights)
+
+        # stop on the first iteration
+        return self._get_sample(self._get_dataset_index())
+
+    def _get_dataset_index(self) -> int:
         # randomly select a dataset index
         (dataset_index,) = self._rng.choices(self._dataset_indexes, weights=self._weights, k=1)
+        return dataset_index
+
+    def _get_sample(self, dataset_index: int) -> Any:
+        # get the sample
+        sample = next(self._dataset_iters[dataset_index])
 
         # keep track the sample was fetched
         self._num_samples_yielded[dataset_index] += 1
-
-        sample = next(self._dataset_iters[dataset_index])
 
         # return a new sample
         if self._use_streaming_dataloader:
