@@ -80,7 +80,7 @@ def test_streaming_dataloader():
         "dataset": {"0": {"counter": 10}, "1": {"counter": 9}},
         "current_epoch": 0,
         "latest_worker_idx": 0,
-        "num_samples_yielded": {0: [11, 9]},
+        "num_samples_yielded": {0: [10, 9]},
     }
 
 
