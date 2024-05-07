@@ -136,27 +136,25 @@ class LambdaDataChunkRecipe(DataChunkRecipe):
 
         self.prepare_item = self._prepare_item_generator if self.is_generator else self._prepare_item
 
-    def check_fn(self):
-        if isinstance(self._fn, partial):
-            self.is_generator = True
-        
-        elif isinstance(self._fn, FunctionType) and inspect.isgeneratorfunction(self._fn):
-            self.is_generator = True
-
-        elif callable(self._fn) and inspect.isgeneratorfunction(self._fn.__call__):
+    def check_fn(self) -> None:
+        if (
+            isinstance(self._fn, (partial, FunctionType))
+            and inspect.isgeneratorfunction(self._fn)
+            or (callable(self._fn) and inspect.isgeneratorfunction(self._fn.__call__))
+        ):
             self.is_generator = True
 
     def _prepare_item(self, item_metadata) -> Any:
         return self._fn(item_metadata)
 
     def _prepare_item_generator(self, item_metadata) -> Any:
-       yield from self._fn(item_metadata)
+        yield from self._fn(item_metadata)
 
     def prepare_structure(self, input_dir: Optional[str]) -> Any:
         return self._inputs
 
     def prepare_item(self, item_metadata: Any) -> Any:
-        """This method is overriden dynamically"""
+        """This method is overriden dynamically."""
 
 
 def map(
