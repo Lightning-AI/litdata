@@ -117,6 +117,7 @@ files = [
 ]
 # This section is for folders with "-" as they are not valid python modules
 exclude = [
+    "src/litdata/utilities/_pytree.py",
 ]
 install_types = "True"
 non_interactive = "True"

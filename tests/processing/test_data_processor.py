@@ -362,6 +362,8 @@ def test_map_items_to_workers_sequentially(monkeypatch):
 
 
 class CustomDataChunkRecipe(DataChunkRecipe):
+    is_generator = False
+
     def prepare_structure(self, input_dir: str) -> List[Any]:
         filepaths = [os.path.join(input_dir, f) for f in os.listdir(input_dir)]
         assert len(filepaths) == 30
@@ -553,6 +555,8 @@ def test_data_processsor_distributed(fast_dev_run, delete_cached_files, tmpdir, 
 
 
 class TextTokenizeRecipe(DataChunkRecipe):
+    is_generator = True
+
     def prepare_structure(self, input_dir: str) -> List[Any]:
         return [os.path.join(input_dir, "dummy.txt")]
 

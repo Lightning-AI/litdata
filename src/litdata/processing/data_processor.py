@@ -20,7 +20,6 @@ import shutil
 import signal
 import tempfile
 import traceback
-import types
 from abc import abstractmethod
 from dataclasses import dataclass
 from multiprocessing import Process, Queue
@@ -625,7 +624,7 @@ class BaseWorker:
         try:
             current_item = self.items[index] if self.reader is None else self.reader.read(self.items[index])
             item_data_or_generator = self.data_recipe.prepare_item(current_item)
-            if isinstance(item_data_or_generator, types.GeneratorType):
+            if self.data_recipe.is_generator:
                 for item_data in item_data_or_generator:
                     if item_data is not None:
                         chunk_filepath = self.cache._add_item(self._index_counter, item_data)
