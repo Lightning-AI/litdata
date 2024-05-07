@@ -12,6 +12,7 @@
 # limitations under the License.
 
 import random
+from copy import deepcopy
 from typing import Any, Dict, Iterator, List, Optional, Sequence
 
 import numpy as np
@@ -41,7 +42,7 @@ class CombinedStreamingDataset(IterableDataset):
         datasets: List[StreamingDataset],
         seed: int = 42,
         weights: Optional[Sequence[float]] = None,
-        iterate_over_all: bool = False,
+        iterate_over_all: bool = True,
     ) -> None:
         """ "
         Arguments:
@@ -173,7 +174,8 @@ class _CombinedDatasetIterator(Iterator):
         self._dataset_iters = [iter(dataset) for dataset in datasets]
         self._dataset_indexes = list(range(len(datasets)))
         self._num_samples_yielded = num_samples_yielded or [0 for _ in range(len(datasets))]
-        self._weights = weights
+        self._original_weights = deepcopy(weights)
+        self._weights = deepcopy(weights)
         self._rng = random.Random(seed)
         self._iterate_over_all = iterate_over_all
         self._is_done = False
@@ -197,6 +199,8 @@ class _CombinedDatasetIterator(Iterator):
                     return self._get_sample(dataset_index)
                 except StopIteration as e:
                     if len(self._dataset_indexes) == 1:
+                        self._dataset_indexes = list(range(len(self._datasets)))
+                        self._weights = deepcopy(self._original_weights)
                         raise e
 
                     self._dataset_indexes.pop(dataset_index)
