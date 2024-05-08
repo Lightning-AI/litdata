@@ -1,10 +1,10 @@
 from unittest.mock import MagicMock
-import torch
 
+import torch
 from litdata.constants import _TORCH_DTYPES_MAPPING
 from litdata.streaming import Cache
-from litdata.streaming.item_loader import PyTreeLoader
 from litdata.streaming.dataset import StreamingDataset
+from litdata.streaming.item_loader import PyTreeLoader
 
 
 def test_serializer_setup():
