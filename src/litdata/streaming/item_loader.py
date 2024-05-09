@@ -14,6 +14,7 @@
 import functools
 import os
 from abc import ABC, abstractmethod
+from copy import deepcopy
 from time import sleep
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -33,14 +34,15 @@ class BaseItemLoader(ABC):
     def setup(self, config: Dict, chunks: List, serializers: Dict[str, Serializer]) -> None:
         self._config = config
         self._chunks = chunks
-        self._serializers = serializers
+        self._serializers = {**serializers}
         self._data_format = self._config["data_format"]
         self._shift_idx = len(self._data_format) * 4
 
         # setup the serializers on restart
         for data_format in self._data_format:
-            serializer = self._serializers[self._data_format_to_key(data_format)]
+            serializer = deepcopy(self._serializers[self._data_format_to_key(data_format)])
             serializer.setup(data_format)
+            self._serializers[data_format] = serializer
 
     @functools.lru_cache(maxsize=128)
     def _data_format_to_key(self, data_format: str) -> str:
@@ -128,7 +130,7 @@ class PyTreeLoader(BaseItemLoader):
         sizes = np.frombuffer(raw_item_data[:idx], np.uint32)
         data = []
         for size, data_format in zip(sizes, self._data_format):
-            serializer = self._serializers[self._data_format_to_key(data_format)]
+            serializer = self._serializers[data_format]
             data_bytes = raw_item_data[idx : idx + size]
             data.append(serializer.deserialize(data_bytes))
             idx += size
