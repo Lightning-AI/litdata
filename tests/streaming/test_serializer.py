@@ -23,7 +23,6 @@ import torch
 from litdata.imports import RequirementCache
 from litdata.streaming.serializers import (
     _AV_AVAILABLE,
-    _get_serializers,
     _NUMPY_DTYPES_MAPPING,
     _SERIALIZERS,
     _TORCH_DTYPES_MAPPING,
@@ -37,6 +36,7 @@ from litdata.streaming.serializers import (
     PILSerializer,
     TensorSerializer,
     VideoSerializer,
+    _get_serializers,
 )
 
 

@@ -404,4 +404,3 @@ def _get_serializers(serializers: Optional[Dict[str, Serializer]]) -> Dict[str, 
             serializers[key] = deepcopy(value)
 
     return serializers
-
