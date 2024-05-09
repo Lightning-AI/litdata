@@ -14,6 +14,7 @@
 import functools
 import os
 from abc import ABC, abstractmethod
+from copy import deepcopy
 from time import sleep
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -23,7 +24,7 @@ import torch
 from litdata.constants import (
     _TORCH_DTYPES_MAPPING,
 )
-from litdata.streaming.serializers import NoHeaderTensorSerializer, Serializer
+from litdata.streaming.serializers import Serializer
 from litdata.utilities._pytree import PyTree, tree_unflatten
 
 
@@ -39,8 +40,9 @@ class BaseItemLoader(ABC):
 
         # setup the serializers on restart
         for data_format in self._data_format:
-            serializer = self._serializers[self._data_format_to_key(data_format)]
+            serializer = deepcopy(self._serializers[self._data_format_to_key(data_format)])
             serializer.setup(data_format)
+            self._serializers[data_format] = serializer
 
     @functools.lru_cache(maxsize=128)
     def _data_format_to_key(self, data_format: str) -> str:
@@ -128,10 +130,8 @@ class PyTreeLoader(BaseItemLoader):
         sizes = np.frombuffer(raw_item_data[:idx], np.uint32)
         data = []
         for size, data_format in zip(sizes, self._data_format):
-            serializer = self._serializers[self._data_format_to_key(data_format)]
+            serializer = self._serializers[data_format]
             data_bytes = raw_item_data[idx : idx + size]
-            if isinstance(serializer, NoHeaderTensorSerializer):
-                serializer.setup(data_format)
             data.append(serializer.deserialize(data_bytes))
             idx += size
         return tree_unflatten(data, self._config["data_spec"])

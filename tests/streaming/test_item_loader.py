@@ -13,7 +13,8 @@ def test_serializer_setup():
     serializer_mock = MagicMock()
     item_loader = PyTreeLoader()
     item_loader.setup(config_mock, [], {"fake": serializer_mock})
-    serializer_mock.setup._mock_mock_calls[0].args[0] == "fake:12"
+    assert len(item_loader._serializers) == 2
+    assert item_loader._serializers["fake:12"]
 
 
 def test_pytreeloader_with_no_header_tensor_serializer(tmpdir):
