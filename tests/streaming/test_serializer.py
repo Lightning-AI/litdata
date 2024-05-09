@@ -23,6 +23,7 @@ import torch
 from litdata.imports import RequirementCache
 from litdata.streaming.serializers import (
     _AV_AVAILABLE,
+    _get_serializers,
     _NUMPY_DTYPES_MAPPING,
     _SERIALIZERS,
     _TORCH_DTYPES_MAPPING,
@@ -233,3 +234,13 @@ def test_wav_deserialization(tmpdir):
     assert vframes.shape == torch.Size([301, 512, 512, 3])
     assert aframes.shape == torch.Size([1, 0])
     assert info == {"video_fps": 25.0}
+
+
+def test_get_serializers():
+    class CustomSerializer(NoHeaderTensorSerializer):
+        pass
+
+    serializers = _get_serializers({"no_header_tensor": CustomSerializer(), "custom": CustomSerializer()})
+
+    assert isinstance(serializers["no_header_tensor"], CustomSerializer)
+    assert isinstance(serializers["custom"], CustomSerializer)
