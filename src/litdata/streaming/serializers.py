@@ -395,7 +395,13 @@ _SERIALIZERS = OrderedDict(
 
 
 def _get_serializers(serializers: Optional[Dict[str, Serializer]]) -> Dict[str, Serializer]:
-    _serializers = deepcopy(_SERIALIZERS)
-    if serializers:
-        _serializers.update(serializers)
-    return _serializers
+    if serializers is None:
+        serializers = {}
+    serializers = OrderedDict(serializers)
+
+    for key, value in _SERIALIZERS.items():
+        if key not in serializers:
+            serializers[key] = deepcopy(value)
+
+    return serializers
+
