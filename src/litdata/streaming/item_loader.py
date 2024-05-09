@@ -34,7 +34,7 @@ class BaseItemLoader(ABC):
     def setup(self, config: Dict, chunks: List, serializers: Dict[str, Serializer]) -> None:
         self._config = config
         self._chunks = chunks
-        self._serializers = serializers
+        self._serializers = deepcopy(serializers)
         self._data_format = self._config["data_format"]
         self._shift_idx = len(self._data_format) * 4
 
