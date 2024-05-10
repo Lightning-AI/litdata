@@ -255,7 +255,11 @@ class BinaryReader:
 
         # We need to request deletion after the latest element has been loaded.
         # Otherwise, this could trigger segmentation fault error depending on the item loader used.
-        if self._config and self._config._remote_dir and index.chunk_index != self._last_chunk_index:
+        if (
+            self._config
+            and (self._config._remote_dir or self._config._compressor)
+            and index.chunk_index != self._last_chunk_index
+        ):
             assert self._prepare_thread
             assert self._last_chunk_index is not None
 
