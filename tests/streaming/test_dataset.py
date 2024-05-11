@@ -20,6 +20,7 @@ from unittest import mock
 import numpy as np
 import pytest
 import torch
+from litdata.constants import _ZSTD_AVAILABLE
 from litdata.processing import functions
 from litdata.streaming import Cache
 from litdata.streaming import dataset as dataset_module
@@ -46,7 +47,15 @@ def seed_everything(random_seed):
     torch.manual_seed(random_seed)
 
 
-def test_streaming_dataset(tmpdir, monkeypatch):
+@pytest.mark.parametrize(
+    "compression",
+    [
+        pytest.param(None),
+        pytest.param("zstd", marks=pytest.mark.skipif(condition=not _ZSTD_AVAILABLE, reason="Requires: ['zstd']")),
+    ],
+)
+@pytest.mark.timeout(15)
+def test_streaming_dataset(tmpdir, monkeypatch, compression):
     seed_everything(42)
 
     dataset = StreamingDataset(input_dir=str(tmpdir))
@@ -56,22 +65,27 @@ def test_streaming_dataset(tmpdir, monkeypatch):
     with pytest.raises(ValueError, match="The provided dataset"):
         _ = dataset[0]
 
-    cache = Cache(str(tmpdir), chunk_size=10)
-    for i in range(12):
+    cache = Cache(str(tmpdir), chunk_size=10, compression=compression)
+    for i in range(60):
         cache[i] = i
     cache.done()
     cache.merge()
 
     dataset = StreamingDataset(input_dir=str(tmpdir))
 
-    assert len(dataset) == 12
+    assert len(dataset) == 60
+    for i in range(60):
+        assert dataset[i] == i
+
     dataset_iter = iter(dataset)
-    assert len(dataset_iter) == 12
+    assert len(dataset_iter) == 60
+    for i in range(60):
+        assert next(dataset_iter) == i
 
     dataloader = DataLoader(dataset, num_workers=2, batch_size=1)
-    assert len(dataloader) == 12
+    assert len(dataloader) == 60
     dataloader = DataLoader(dataset, num_workers=2, batch_size=2)
-    assert len(dataloader) == 6
+    assert len(dataloader) == 30
 
 
 def test_should_replace_path():
@@ -85,10 +99,18 @@ def test_should_replace_path():
 
 
 @pytest.mark.parametrize("drop_last", [False, True])
-def test_streaming_dataset_distributed_no_shuffle(drop_last, tmpdir):
+@pytest.mark.parametrize(
+    "compression",
+    [
+        pytest.param(None),
+        pytest.param("zstd", marks=pytest.mark.skipif(condition=not _ZSTD_AVAILABLE, reason="Requires: ['zstd']")),
+    ],
+)
+@pytest.mark.timeout(30)
+def test_streaming_dataset_distributed_no_shuffle(drop_last, tmpdir, compression):
     seed_everything(42)
 
-    cache = Cache(str(tmpdir), chunk_size=10)
+    cache = Cache(str(tmpdir), chunk_size=10, compression=compression)
     for i in range(101):
         cache[i] = i
 
@@ -181,10 +203,18 @@ def test_streaming_dataset_distributed_no_shuffle(drop_last, tmpdir):
 
 
 @pytest.mark.parametrize("drop_last", [False, True])
-def test_streaming_dataset_distributed_full_shuffle_odd(drop_last, tmpdir):
+@pytest.mark.parametrize(
+    "compression",
+    [
+        pytest.param(None),
+        pytest.param("zstd", marks=pytest.mark.skipif(condition=not _ZSTD_AVAILABLE, reason="Requires: ['zstd']")),
+    ],
+)
+@pytest.mark.timeout(30)
+def test_streaming_dataset_distributed_full_shuffle_odd(drop_last, tmpdir, compression):
     seed_everything(42)
 
-    cache = Cache(input_dir=str(tmpdir), chunk_size=10)
+    cache = Cache(input_dir=str(tmpdir), chunk_size=10, compression=compression)
     for i in range(1097):
         cache[i] = i
 
@@ -221,10 +251,18 @@ def test_streaming_dataset_distributed_full_shuffle_odd(drop_last, tmpdir):
 
 
 @pytest.mark.parametrize("drop_last", [False, True])
-def test_streaming_dataset_distributed_full_shuffle_even(drop_last, tmpdir):
+@pytest.mark.parametrize(
+    "compression",
+    [
+        pytest.param(None),
+        pytest.param("zstd", marks=pytest.mark.skipif(condition=not _ZSTD_AVAILABLE, reason="Requires: ['zstd']")),
+    ],
+)
+@pytest.mark.timeout(30)
+def test_streaming_dataset_distributed_full_shuffle_even(drop_last, tmpdir, compression):
     seed_everything(42)
 
-    cache = Cache(str(tmpdir), chunk_size=10)
+    cache = Cache(str(tmpdir), chunk_size=10, compression=compression)
     for i in range(1222):
         cache[i] = i
 
@@ -261,10 +299,18 @@ def test_streaming_dataset_distributed_full_shuffle_even(drop_last, tmpdir):
 
 
 @pytest.mark.parametrize("drop_last", [False, True])
-def test_streaming_dataset_distributed_full_shuffle_even_multi_nodes(drop_last, tmpdir):
+@pytest.mark.parametrize(
+    "compression",
+    [
+        pytest.param(None),
+        pytest.param("zstd", marks=pytest.mark.skipif(condition=not _ZSTD_AVAILABLE, reason="Requires: ['zstd']")),
+    ],
+)
+@pytest.mark.timeout(60)
+def test_streaming_dataset_distributed_full_shuffle_even_multi_nodes(drop_last, tmpdir, compression):
     seed_everything(42)
 
-    cache = Cache(str(tmpdir), chunk_size=10)
+    cache = Cache(str(tmpdir), chunk_size=10, compression=compression)
     for i in range(1222):
         cache[i] = i
 
