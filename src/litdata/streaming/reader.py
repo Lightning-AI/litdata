@@ -12,12 +12,11 @@
 # limitations under the License.
 
 import contextlib
-import multiprocessing
 import os
 import warnings
 from logging import Logger
-from queue import Empty
-from threading import Thread
+from queue import Empty, Queue
+from threading import Event, Thread
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 from litdata.constants import _TORCH_GREATER_EQUAL_2_1_0
@@ -65,8 +64,9 @@ class PrepareChunksThread(Thread):
         self._chunks_index_to_be_deleted: List[int] = []
         self._max_cache_size = max_cache_size
         self._parent_cache_dir = os.path.dirname(self._config._cache_dir)
-        self._to_download_queue: multiprocessing.Queue = multiprocessing.Queue()
-        self._to_delete_queue: multiprocessing.Queue = multiprocessing.Queue()
+        self._to_download_queue: Queue = Queue()
+        self._to_delete_queue: Queue = Queue()
+        self._stop_event = Event()
 
         # Check whether a dataset slice fits on the node
         num_bytes_per_nodes = self._config.num_bytes // self._distributed_env.num_nodes
@@ -90,7 +90,8 @@ class PrepareChunksThread(Thread):
 
     def stop(self) -> None:
         """Receive the list of the chunk indices to download for the current epoch."""
-        self._to_download_queue.put(_END_TOKEN)
+        # self._to_download_queue.put(_END_TOKEN)
+        self._stop_event.set()
 
     def _maybe_delete_chunks(self) -> None:
         reached_pre_download = self._pre_download_counter == self._max_pre_download
@@ -124,12 +125,11 @@ class PrepareChunksThread(Thread):
 
     def run(self) -> None:
         while True:
+            if self._stop_event.is_set():
+                self._has_exited = True
+                return
             if self._pre_download_counter < self._max_pre_download:
                 chunk_index = _get_from_queue(self._to_download_queue)
-                if chunk_index == _END_TOKEN:
-                    self._has_exited = True
-                    return
-
                 if chunk_index is not None:
                     self._config.download_chunk_from_index(chunk_index)
 
@@ -295,6 +295,11 @@ class BinaryReader:
         state["_prepare_thread"] = None
         return state
 
+    def __del__(self) -> None:
+        if self._prepare_thread and not self._prepare_thread._has_exited:
+            self._prepare_thread.stop()
+            self._prepare_thread = None
+
 
 def _get_folder_size(path: str) -> int:
     """Collect the size of each files within a folder.
@@ -310,7 +315,7 @@ def _get_folder_size(path: str) -> int:
     return size
 
 
-def _get_from_queue(queue: multiprocessing.Queue, timeout: float = _DEFAULT_TIMEOUT) -> Optional[Any]:
+def _get_from_queue(queue: Queue, timeout: float = _DEFAULT_TIMEOUT) -> Optional[Any]:
     try:
         return queue.get(timeout=timeout)
     except Empty:
