@@ -35,6 +35,8 @@ if _TORCH_GREATER_EQUAL_2_1_0:
 logger = Logger(__name__)
 
 
+_END_TOKEN = "END"  # noqa: S105
+
 # Note: The timeout here should not be too short. We need to prevent the caller from aggressively
 # querying the queue and consuming too many CPU cycles.
 _DEFAULT_TIMEOUT = 0.1
@@ -64,7 +66,7 @@ class PrepareChunksThread(Thread):
         self._parent_cache_dir = os.path.dirname(self._config._cache_dir)
         self._to_download_queue: Queue = Queue()
         self._to_delete_queue: Queue = Queue()
-        self._stop_event = Event()
+        self._force_stop_event = Event()
 
         # Check whether a dataset slice fits on the node
         num_bytes_per_nodes = self._config.num_bytes // self._distributed_env.num_nodes
@@ -88,8 +90,10 @@ class PrepareChunksThread(Thread):
 
     def stop(self) -> None:
         """Receive the list of the chunk indices to download for the current epoch."""
-        # self._to_download_queue.put(_END_TOKEN)
-        self._stop_event.set()
+        self._to_download_queue.put(_END_TOKEN)
+
+    def force_stop(self) -> None:
+        self._force_stop_event.set()
 
     def _maybe_delete_chunks(self) -> None:
         reached_pre_download = self._pre_download_counter == self._max_pre_download
@@ -123,11 +127,15 @@ class PrepareChunksThread(Thread):
 
     def run(self) -> None:
         while True:
-            if self._stop_event.is_set():
+            if self._force_stop_event.is_set():
                 self._has_exited = True
                 return
             if self._pre_download_counter < self._max_pre_download:
                 chunk_index = _get_from_queue(self._to_download_queue)
+                if chunk_index == _END_TOKEN:
+                    self._has_exited = True
+                    return
+
                 if chunk_index is not None:
                     self._config.download_chunk_from_index(chunk_index)
 
@@ -295,7 +303,7 @@ class BinaryReader:
 
     def __del__(self) -> None:
         if self._prepare_thread and not self._prepare_thread._has_exited:
-            self._prepare_thread.stop()
+            self._prepare_thread.force_stop()
             self._prepare_thread = None
 
 
