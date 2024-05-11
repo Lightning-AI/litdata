@@ -20,10 +20,10 @@ from unittest import mock
 import numpy as np
 import pytest
 import torch
+from litdata.constants import _ZSTD_AVAILABLE
 from litdata.processing import functions
 from litdata.streaming import Cache
 from litdata.streaming import dataset as dataset_module
-from litdata.constants import _ZSTD_AVAILABLE
 from litdata.streaming.dataloader import StreamingDataLoader
 from litdata.streaming.dataset import (
     _INDEX_FILENAME,
