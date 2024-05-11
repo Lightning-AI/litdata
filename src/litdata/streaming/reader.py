@@ -35,8 +35,6 @@ if _TORCH_GREATER_EQUAL_2_1_0:
 logger = Logger(__name__)
 
 
-_END_TOKEN = "END"  # noqa: S105
-
 # Note: The timeout here should not be too short. We need to prevent the caller from aggressively
 # querying the queue and consuming too many CPU cycles.
 _DEFAULT_TIMEOUT = 0.1
