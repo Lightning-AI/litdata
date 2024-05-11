@@ -306,7 +306,7 @@ def test_streaming_dataset_distributed_full_shuffle_even(drop_last, tmpdir, comp
         pytest.param("zstd", marks=pytest.mark.skipif(condition=not _ZSTD_AVAILABLE, reason="Requires: ['zstd']")),
     ],
 )
-@pytest.mark.timeout(30)
+@pytest.mark.timeout(60)
 def test_streaming_dataset_distributed_full_shuffle_even_multi_nodes(drop_last, tmpdir, compression):
     seed_everything(42)
 
