@@ -203,10 +203,18 @@ def test_streaming_dataset_distributed_no_shuffle(drop_last, tmpdir, compression
 
 
 @pytest.mark.parametrize("drop_last", [False, True])
-def test_streaming_dataset_distributed_full_shuffle_odd(drop_last, tmpdir):
+@pytest.mark.parametrize(
+    "compression",
+    [
+        pytest.param(None),
+        pytest.param("zstd", marks=pytest.mark.skipif(condition=not _ZSTD_AVAILABLE, reason="Requires: ['zstd']")),
+    ],
+)
+@pytest.mark.timeout(30)
+def test_streaming_dataset_distributed_full_shuffle_odd(drop_last, tmpdir, compression):
     seed_everything(42)
 
-    cache = Cache(input_dir=str(tmpdir), chunk_size=10)
+    cache = Cache(input_dir=str(tmpdir), chunk_size=10, compression=compression)
     for i in range(1097):
         cache[i] = i
 
@@ -243,10 +251,18 @@ def test_streaming_dataset_distributed_full_shuffle_odd(drop_last, tmpdir):
 
 
 @pytest.mark.parametrize("drop_last", [False, True])
-def test_streaming_dataset_distributed_full_shuffle_even(drop_last, tmpdir):
+@pytest.mark.parametrize(
+    "compression",
+    [
+        pytest.param(None),
+        pytest.param("zstd", marks=pytest.mark.skipif(condition=not _ZSTD_AVAILABLE, reason="Requires: ['zstd']")),
+    ],
+)
+@pytest.mark.timeout(30)
+def test_streaming_dataset_distributed_full_shuffle_even(drop_last, tmpdir, compression):
     seed_everything(42)
 
-    cache = Cache(str(tmpdir), chunk_size=10)
+    cache = Cache(str(tmpdir), chunk_size=10, compression=compression)
     for i in range(1222):
         cache[i] = i
 
@@ -283,10 +299,18 @@ def test_streaming_dataset_distributed_full_shuffle_even(drop_last, tmpdir):
 
 
 @pytest.mark.parametrize("drop_last", [False, True])
-def test_streaming_dataset_distributed_full_shuffle_even_multi_nodes(drop_last, tmpdir):
+@pytest.mark.parametrize(
+    "compression",
+    [
+        pytest.param(None),
+        pytest.param("zstd", marks=pytest.mark.skipif(condition=not _ZSTD_AVAILABLE, reason="Requires: ['zstd']")),
+    ],
+)
+@pytest.mark.timeout(30)
+def test_streaming_dataset_distributed_full_shuffle_even_multi_nodes(drop_last, tmpdir, compression):
     seed_everything(42)
 
-    cache = Cache(str(tmpdir), chunk_size=10)
+    cache = Cache(str(tmpdir), chunk_size=10, compression=compression)
     for i in range(1222):
         cache[i] = i
 
