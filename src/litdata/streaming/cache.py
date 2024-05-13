@@ -17,7 +17,6 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 from litdata.constants import (
     _INDEX_FILENAME,
-    _TORCH_GREATER_EQUAL_2_1_0,
 )
 from litdata.streaming.item_loader import BaseItemLoader
 from litdata.streaming.reader import BinaryReader
@@ -56,9 +55,6 @@ class Cache:
 
         """
         super().__init__()
-        if not _TORCH_GREATER_EQUAL_2_1_0:
-            raise ModuleNotFoundError("PyTorch version 2.1 or higher is required to use the cache.")
-
         input_dir = _resolve_dir(input_dir)
         self._cache_dir = input_dir.path
         assert self._cache_dir

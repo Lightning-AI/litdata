@@ -20,7 +20,6 @@ import shutil
 import signal
 import tempfile
 import traceback
-import types
 from abc import abstractmethod
 from dataclasses import dataclass
 from multiprocessing import Process, Queue
@@ -39,7 +38,6 @@ from litdata.constants import (
     _INDEX_FILENAME,
     _IS_IN_STUDIO,
     _LIGHTNING_CLOUD_AVAILABLE,
-    _TORCH_GREATER_EQUAL_2_1_0,
 )
 from litdata.imports import RequirementCache
 from litdata.processing.readers import BaseReader, StreamingDataLoaderReader
@@ -49,6 +47,7 @@ from litdata.streaming.cache import Dir
 from litdata.streaming.client import S3Client
 from litdata.streaming.dataloader import StreamingDataLoader
 from litdata.streaming.resolver import _resolve_dir
+from litdata.utilities._pytree import tree_flatten, tree_unflatten, treespec_loads
 from litdata.utilities.broadcast import broadcast_object
 from litdata.utilities.packing import _pack_greedily
 
@@ -56,9 +55,6 @@ _TQDM_AVAILABLE = RequirementCache("tqdm")
 
 if _TQDM_AVAILABLE:
     from tqdm.auto import tqdm as _tqdm
-
-if _TORCH_GREATER_EQUAL_2_1_0:
-    from torch.utils._pytree import tree_flatten, tree_unflatten, treespec_loads
 
 if _LIGHTNING_CLOUD_AVAILABLE:
     from lightning_cloud.openapi import V1DatasetType
@@ -628,7 +624,7 @@ class BaseWorker:
         try:
             current_item = self.items[index] if self.reader is None else self.reader.read(self.items[index])
             item_data_or_generator = self.data_recipe.prepare_item(current_item)
-            if isinstance(item_data_or_generator, types.GeneratorType):
+            if self.data_recipe.is_generator:
                 for item_data in item_data_or_generator:
                     if item_data is not None:
                         chunk_filepath = self.cache._add_item(self._index_counter, item_data)

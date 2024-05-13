@@ -22,7 +22,7 @@ from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 import torch
 
-from litdata.constants import _IS_IN_STUDIO, _TORCH_GREATER_EQUAL_2_1_0
+from litdata.constants import _IS_IN_STUDIO
 from litdata.processing.data_processor import DataChunkRecipe, DataProcessor, DataTransformRecipe
 from litdata.processing.readers import BaseReader
 from litdata.processing.utilities import optimize_dns_context
@@ -34,9 +34,7 @@ from litdata.streaming.resolver import (
     _execute,
     _resolve_dir,
 )
-
-if _TORCH_GREATER_EQUAL_2_1_0:
-    from torch.utils._pytree import tree_flatten
+from litdata.utilities._pytree import tree_flatten
 
 
 def _get_indexed_paths(data: Any) -> Dict[int, str]:
@@ -132,26 +130,31 @@ class LambdaDataChunkRecipe(DataChunkRecipe):
         super().__init__(chunk_size=chunk_size, chunk_bytes=chunk_bytes, compression=compression)
         self._fn = fn
         self._inputs = inputs
+        self.is_generator = False
+
+        self.check_fn()
+
+        self.prepare_item = self._prepare_item_generator if self.is_generator else self._prepare_item  # type: ignore
+
+    def check_fn(self) -> None:
+        if (
+            isinstance(self._fn, (partial, FunctionType))
+            and inspect.isgeneratorfunction(self._fn)
+            or (callable(self._fn) and inspect.isgeneratorfunction(self._fn.__call__))  # type: ignore
+        ):
+            self.is_generator = True
+
+    def _prepare_item(self, item_metadata: Any) -> Any:
+        return self._fn(item_metadata)
+
+    def _prepare_item_generator(self, item_metadata: Any) -> Any:
+        yield from self._fn(item_metadata)  # type: ignore
 
     def prepare_structure(self, input_dir: Optional[str]) -> Any:
         return self._inputs
 
     def prepare_item(self, item_metadata: Any) -> Any:
-        if isinstance(self._fn, partial):
-            yield from self._fn(item_metadata)
-
-        elif isinstance(self._fn, FunctionType):
-            if inspect.isgeneratorfunction(self._fn):
-                yield from self._fn(item_metadata)
-            else:
-                yield self._fn(item_metadata)
-        elif callable(self._fn):
-            if inspect.isgeneratorfunction(self._fn.__call__):  # type: ignore
-                yield from self._fn.__call__(item_metadata)  # type: ignore
-            else:
-                yield self._fn.__call__(item_metadata)  # type: ignore
-        else:
-            raise ValueError(f"The provided {self._fn} isn't supported.")
+        """This method is overriden dynamically."""
 
 
 def map(

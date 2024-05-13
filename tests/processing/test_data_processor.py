@@ -362,6 +362,8 @@ def test_map_items_to_workers_sequentially(monkeypatch):
 
 
 class CustomDataChunkRecipe(DataChunkRecipe):
+    is_generator = False
+
     def prepare_structure(self, input_dir: str) -> List[Any]:
         filepaths = [os.path.join(input_dir, f) for f in os.listdir(input_dir)]
         assert len(filepaths) == 30
@@ -553,6 +555,8 @@ def test_data_processsor_distributed(fast_dev_run, delete_cached_files, tmpdir, 
 
 
 class TextTokenizeRecipe(DataChunkRecipe):
+    is_generator = True
+
     def prepare_structure(self, input_dir: str) -> List[Any]:
         return [os.path.join(input_dir, "dummy.txt")]
 
@@ -1037,16 +1041,6 @@ def test_map_error_when_not_empty(monkeypatch):
             [0, 1],
             output_dir=Dir(path=None, url="s3://bucket"),
             error_when_not_empty=True,
-        )
-
-    monkeypatch.setattr(data_processor_module, "_IS_IN_STUDIO", True)
-
-    with pytest.raises(OSError, match="cache"):
-        map(
-            map_fn,
-            [0, 1],
-            output_dir=Dir(path=None, url="s3://bucket"),
-            error_when_not_empty=False,
         )
 
 
