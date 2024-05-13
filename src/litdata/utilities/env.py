@@ -60,6 +60,10 @@ class _DistributedEnv:
         if world_size is None or world_size == -1:
             world_size = 1
 
+        world_size = int(os.environ.get("WORLD_SIZE", world_size))
+        global_rank = int(os.environ.get("GLOBAL_RANK", global_rank))
+        num_nodes = int(os.environ.get("NNODES", num_nodes))
+
         return cls(world_size=world_size, global_rank=global_rank, num_nodes=num_nodes)
 
     @classmethod
