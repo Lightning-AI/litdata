@@ -244,3 +244,31 @@ def test_get_serializers():
 
     assert isinstance(serializers["no_header_tensor"], CustomSerializer)
     assert isinstance(serializers["custom"], CustomSerializer)
+
+
+def test_deserialize_empty_tensor():
+    serializer = TensorSerializer()
+    t = torch.ones((0, 3)).int()
+    data, name = serializer.serialize(t)
+    new_t = serializer.deserialize(data)
+    assert torch.equal(t, new_t)
+
+    t = torch.ones((0, 3)).float()
+    data, name = serializer.serialize(t)
+    new_t = serializer.deserialize(data)
+    assert torch.equal(t, new_t)
+
+
+def test_deserialize_empty_no_header_tensor():
+    serializer = NoHeaderTensorSerializer()
+    t = torch.ones((0, )).int()
+    data, name = serializer.serialize(t)
+    serializer.setup(name)
+    new_t = serializer.deserialize(data)
+    assert torch.equal(t, new_t)
+
+    t = torch.ones((0, )).float()
+    data, name = serializer.serialize(t)
+    serializer.setup(name)
+    new_t = serializer.deserialize(data)
+    assert torch.equal(t, new_t)
