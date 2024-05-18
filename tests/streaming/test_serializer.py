@@ -261,13 +261,13 @@ def test_deserialize_empty_tensor():
 
 def test_deserialize_empty_no_header_tensor():
     serializer = NoHeaderTensorSerializer()
-    t = torch.ones((0, )).int()
+    t = torch.ones((0,)).int()
     data, name = serializer.serialize(t)
     serializer.setup(name)
     new_t = serializer.deserialize(data)
     assert torch.equal(t, new_t)
 
-    t = torch.ones((0, )).float()
+    t = torch.ones((0,)).float()
     data, name = serializer.serialize(t)
     serializer.setup(name)
     new_t = serializer.deserialize(data)

@@ -187,7 +187,7 @@ class TensorSerializer(Serializer):
         idx_start = 8 + 4 * (shape_idx + 1)
         idx_end = len(data)
         if idx_end > idx_start:
-            tensor = torch.frombuffer(data[idx_start : idx_end], dtype=dtype)
+            tensor = torch.frombuffer(data[idx_start:idx_end], dtype=dtype)
         else:
             assert idx_start == idx_end, "The starting index should never be greater than end ending index."
             tensor = torch.empty(shape, dtype=dtype)
