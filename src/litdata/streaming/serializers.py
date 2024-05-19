@@ -184,7 +184,13 @@ class TensorSerializer(Serializer):
         shape = []
         for shape_idx in range(shape_size):
             shape.append(np.frombuffer(data[8 + 4 * shape_idx : 8 + 4 * (shape_idx + 1)], np.uint32).item())
-        tensor = torch.frombuffer(data[8 + 4 * (shape_idx + 1) : len(data)], dtype=dtype)
+        idx_start = 8 + 4 * (shape_idx + 1)
+        idx_end = len(data)
+        if idx_end > idx_start:
+            tensor = torch.frombuffer(data[idx_start:idx_end], dtype=dtype)
+        else:
+            assert idx_start == idx_end, "The starting index should never be greater than end ending index."
+            tensor = torch.empty(shape, dtype=dtype)
         shape = torch.Size(shape)
         if tensor.shape == shape:
             return tensor
@@ -211,7 +217,11 @@ class NoHeaderTensorSerializer(Serializer):
 
     def deserialize(self, data: bytes) -> torch.Tensor:
         assert self._dtype
-        return torch.frombuffer(data, dtype=self._dtype)
+        if len(data) > 0:
+            tensor = torch.frombuffer(data, dtype=self._dtype)
+        else:
+            tensor = torch.empty((0,), dtype=self._dtype)
+        return tensor
 
     def can_serialize(self, item: torch.Tensor) -> bool:
         return isinstance(item, torch.Tensor) and type(item) == torch.Tensor and len(item.shape) == 1
