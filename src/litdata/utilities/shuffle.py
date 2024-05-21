@@ -93,8 +93,6 @@ def _associate_chunks_and_internals_to_ranks(
 
 
 def _find_rank_actions_for_shared_chunks(chunks_per_ranks: List[List[int]], intervals_per_ranks: List[Any]):
-    num_ranks = len(chunks_per_ranks)
-
     shared_chunks_map = {}
     for rank, chunks in enumerate(chunks_per_ranks):
         intervals = intervals_per_ranks[rank]
@@ -117,7 +115,7 @@ def _find_rank_actions_for_shared_chunks(chunks_per_ranks: List[List[int]], inte
         start_using = [v[1] for v in associations]
         stop_using = [v[2] for v in associations]
 
-        # find the min(s)
+        # find the min(s)
         min_start_using = np.min(start_using)
         for v in associations:
             if v[1] == min_start_using:
@@ -126,13 +124,11 @@ def _find_rank_actions_for_shared_chunks(chunks_per_ranks: List[List[int]], inte
                 else:
                     rank_actions_download[v[0]].append(chunk_index)
 
-
         max_stop_using = np.max(stop_using)
         for v in associations:
             if v[2] == max_stop_using:
                 rank_actions_delete[v[0]] = [chunk_index]
                 break
-
 
     for chunk_index, associations in shared_chunks_map.items():
         if len(associations) == 1:
