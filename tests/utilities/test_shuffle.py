@@ -76,18 +76,5 @@ def test_associate_chunks_and_internals_to_ranks():
         [(14, 27), [0, 50], [0, 1]],
     ]
 
-    shared_chunks_map, rank_actions_disable_download, rank_actions_disable_delete = (
-        _find_chunks_per_ranks_on_which_to_skip_deletion(1, 1, chunks_per_ranks, intervals_per_ranks)
-    )
-    assert shared_chunks_map == {
-        0: [[0, 0, 5]],
-        1: [[0, 5, 64], [1, 0, 64], [2, 0, 27]],
-        2: [[2, 27, 34]],
-        3: [[2, 34, 46]],
-        4: [[2, 46, 50]],
-        5: [[2, 50, 64], [3, 0, 13]],
-        6: [[3, 13, 63]],
-        7: [[3, 63, 64]],
-    }
-    assert rank_actions_disable_download == {0: [1]}
-    assert rank_actions_disable_delete == {1: [1], 3: [5]}
+    disable_deletion_ranks = _find_chunks_per_ranks_on_which_to_skip_deletion(1, chunks_per_ranks, intervals_per_ranks)
+    assert disable_deletion_ranks == {1: [1], 2: [1], 3: [5]}

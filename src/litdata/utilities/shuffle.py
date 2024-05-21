@@ -93,8 +93,10 @@ def _associate_chunks_and_internals_to_ranks(
 
 
 def _find_chunks_per_ranks_on_which_to_skip_deletion(
-    num_workers: int, batch_size: int, chunks_per_ranks: List[List[int]], intervals_per_ranks: List[Any]
+    num_workers: int, chunks_per_ranks: List[List[int]], intervals_per_ranks: List[Any]
 ):
+    # TODO: Add support for the real batch size
+    batch_size = 1
     shared_chunks = {}
     for rank, chunks in enumerate(chunks_per_ranks):
         for c in chunks:

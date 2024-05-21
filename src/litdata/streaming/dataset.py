@@ -192,7 +192,7 @@ class StreamingDataset(IterableDataset):
             )
 
             chunks_indexes_skip_deletion = _find_chunks_per_ranks_on_which_to_skip_deletion(
-                self.worker_env.world_size, 1, chunks_per_replica, intervals_per_replica
+                self.worker_env.world_size, chunks_per_replica, intervals_per_replica
             )
             if self.distributed_env.global_rank in chunks_indexes_skip_deletion:
                 self.cache._reader.config.skip_chunk_indexes_deletion = chunks_indexes_skip_deletion[
