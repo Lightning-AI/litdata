@@ -115,8 +115,8 @@ def _find_chunks_per_ranks_on_which_to_skip_deletion(
             chunks = chunks_per_ranks[rank]
             intervals = [interval[1] - interval[0] for interval in intervals_per_ranks[rank]]
 
-            workers_chunks = [[] for _ in range(num_workers)]
-            workers_intervals = [[] for _ in range(num_workers)]
+            workers_chunks: Any = [[] for _ in range(num_workers)]
+            workers_intervals: Any = [[] for _ in range(num_workers)]
             for interval_idx, (c, i) in enumerate(zip(chunks, intervals)):
                 workers_chunks[interval_idx % num_workers].append(c)
                 workers_intervals[interval_idx % num_workers].append(i)

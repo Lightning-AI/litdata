@@ -71,7 +71,7 @@ class ChunksConfig:
         if self._compressor_name in _COMPRESSORS:
             self._compressor = _COMPRESSORS[self._compressor_name]
 
-        self._skip_chunk_indexes_deletion = None
+        self._skip_chunk_indexes_deletion: Optional[List[int]] = None
 
     def can_delete(self, chunk_index: int) -> bool:
         if self._skip_chunk_indexes_deletion is None:
