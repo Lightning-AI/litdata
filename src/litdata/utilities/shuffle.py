@@ -92,61 +92,62 @@ def _associate_chunks_and_internals_to_ranks(
     return chunks_per_ranks, intervals_per_ranks
 
 
-def _find_rank_actions_for_shared_chunks(chunks_per_ranks: List[List[int]], intervals_per_ranks: List[Any]):
-    shared_chunks_map = {}
+def _find_chunks_per_ranks_on_which_to_skip_deletion(
+    num_workers: int, batch_size: int, chunks_per_ranks: List[List[int]], intervals_per_ranks: List[Any]
+):
+    shared_chunks = {}
     for rank, chunks in enumerate(chunks_per_ranks):
-        intervals = intervals_per_ranks[rank]
-        cum_intervals = np.cumsum([0] + [interval[1] - interval[0] for interval in intervals])
-        for chunk_index, chunk in enumerate(chunks):
-            if chunk not in shared_chunks_map:
-                shared_chunks_map[chunk] = []
-            shared_chunks_map[chunk].append([rank, cum_intervals[chunk_index], cum_intervals[chunk_index + 1]])
+        for c in chunks:
+            if c not in shared_chunks:
+                shared_chunks[c] = [rank]
+            else:
+                shared_chunks[c].append(rank)
 
-    rank_actions_download = {}
-    rank_actions_delete = {}
+    shared_chunks = {c: ranks for c, ranks in shared_chunks.items() if len(ranks) > 1}
 
-    rank_actions_disable_download = {}
-    rank_actions_disable_delete = {}
+    disable_deletion_ranks = {}
 
-    for chunk_index, associations in shared_chunks_map.items():
-        if len(associations) == 1:
-            continue
-
-        start_using = [v[1] for v in associations]
-        stop_using = [v[2] for v in associations]
-
-        # find the min(s)
-        min_start_using = np.min(start_using)
-        for v in associations:
-            if v[1] == min_start_using:
-                if v[0] not in rank_actions_download:
-                    rank_actions_download[v[0]] = [chunk_index]
-                else:
-                    rank_actions_download[v[0]].append(chunk_index)
-
-        max_stop_using = np.max(stop_using)
-        for v in associations:
-            if v[2] == max_stop_using:
-                rank_actions_delete[v[0]] = [chunk_index]
-                break
-
-    for chunk_index, associations in shared_chunks_map.items():
-        if len(associations) == 1:
-            continue
-
-        ranks = [v[0] for v in associations]
-
+    for shared_chunk, ranks in shared_chunks.items():
+        counters = []
         for rank in ranks:
-            if rank not in rank_actions_download:
-                if rank not in rank_actions_disable_download:
-                    rank_actions_disable_download[rank] = [chunk_index]
-                else:
-                    rank_actions_disable_download[rank].push(chunk_index)
+            chunks = chunks_per_ranks[rank]
+            intervals = [interval[1] - interval[0] for interval in intervals_per_ranks[rank]]
 
-            if rank not in rank_actions_delete:
-                if rank not in rank_actions_disable_delete:
-                    rank_actions_disable_delete[rank] = [chunk_index]
-                else:
-                    rank_actions_disable_delete[rank].push(chunk_index)
+            workers_chunks = [[] for _ in range(num_workers)]
+            workers_intervals = [[] for _ in range(num_workers)]
+            for interval_idx, (c, i) in enumerate(zip(chunks, intervals)):
+                workers_chunks[interval_idx % num_workers].append(c)
+                workers_intervals[interval_idx % num_workers].append(i)
 
-    return shared_chunks_map, rank_actions_disable_download, rank_actions_disable_delete
+            counter = 0
+            worker_idx = 0  # reset the worker_idx
+            while True:
+                current_chunks = workers_chunks[worker_idx]
+                current_intervals = workers_intervals[worker_idx]
+
+                if len(current_intervals) == 0:
+                    break
+
+                if current_intervals[0] > batch_size:
+                    current_intervals[0] -= batch_size
+                    counter += batch_size
+                    worker_idx = (worker_idx + 1) % num_workers
+                else:
+                    counter += current_intervals[0]
+                    current_intervals.pop(0)
+                    current_chunk = current_chunks.pop(0)
+                    worker_idx = (worker_idx + 1) % num_workers
+
+                    if current_chunk == shared_chunk:
+                        break
+
+            counters.append(counter)
+
+        max_counter = np.argmax(counters)
+        disable_ranks = [rank for rank in ranks if rank != ranks[max_counter]]
+        for rank in disable_ranks:
+            if rank not in disable_deletion_ranks:
+                disable_deletion_ranks[rank] = [shared_chunk]
+            else:
+                disable_deletion_ranks[rank].append(shared_chunk)
+    return disable_deletion_ranks
