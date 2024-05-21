@@ -191,6 +191,9 @@ class StreamingDataset(IterableDataset):
                 self.distributed_env, self.current_epoch
             )
 
+            # Find the chunks shared across multiple ranks.
+            # For each shared chunk, find the rank to use the chunk last and prevent deletion
+            # for the other ranks.
             chunks_indexes_skip_deletion = _find_chunks_per_ranks_on_which_to_skip_deletion(
                 self.worker_env.world_size, chunks_per_replica, intervals_per_replica
             )
