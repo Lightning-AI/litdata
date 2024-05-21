@@ -1,5 +1,5 @@
 from litdata.utilities.env import _DistributedEnv
-from litdata.utilities.shuffle import _associate_chunks_and_internals_to_ranks, _intra_node_chunk_shuffle
+from litdata.utilities.shuffle import _associate_chunks_and_internals_to_ranks, _intra_node_chunk_shuffle, _find_rank_actions_for_shared_chunks
 
 
 def test_intra_node_chunk_shuffle():
@@ -71,3 +71,9 @@ def test_associate_chunks_and_internals_to_ranks():
         [(123, 150), [0, 7], [0, 12], [0, 4], [0, 14]],
         [(14, 27), [0, 50], [0, 1]],
     ]
+
+
+    shared_chunks_map, rank_actions_disable_download, rank_actions_disable_delete = _find_rank_actions_for_shared_chunks(chunks_per_ranks, intervals_per_ranks)
+    assert shared_chunks_map == {0: [[0, 0, 5]], 1: [[0, 5, 64], [1, 0, 64], [2, 0, 27]], 2: [[2, 27, 34]], 3: [[2, 34, 46]], 4: [[2, 46, 50]], 5: [[2, 50, 64], [3, 0, 13]], 6: [[3, 13, 63]], 7: [[3, 63, 64]]}
+    assert rank_actions_disable_download == {0: [1]}
+    assert rank_actions_disable_delete == {1: [1], 3: [5]}

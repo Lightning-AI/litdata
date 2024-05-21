@@ -90,3 +90,67 @@ def _associate_chunks_and_internals_to_ranks(
                 break
 
     return chunks_per_ranks, intervals_per_ranks
+
+
+def _find_rank_actions_for_shared_chunks(chunks_per_ranks: List[List[int]], intervals_per_ranks: List[Any]):
+    num_ranks = len(chunks_per_ranks)
+
+    shared_chunks_map = {}
+    for rank, chunks in enumerate(chunks_per_ranks):
+        intervals = intervals_per_ranks[rank]
+        cum_intervals = np.cumsum([0] + [interval[1] - interval[0] for interval in intervals])
+        for chunk_index, chunk in enumerate(chunks):
+            if chunk not in shared_chunks_map:
+                shared_chunks_map[chunk] = []
+            shared_chunks_map[chunk].append([rank, cum_intervals[chunk_index], cum_intervals[chunk_index + 1]])
+
+    rank_actions_download = {}
+    rank_actions_delete = {}
+
+    rank_actions_disable_download = {}
+    rank_actions_disable_delete = {}
+
+    for chunk_index, associations in shared_chunks_map.items():
+        if len(associations) == 1:
+            continue
+
+        start_using = [v[1] for v in associations]
+        stop_using = [v[2] for v in associations]
+
+        # find the min(s)
+        min_start_using = np.min(start_using)
+        for v in associations:
+            if v[1] == min_start_using:
+                if v[0] not in rank_actions_download:
+                    rank_actions_download[v[0]] = [chunk_index]
+                else:
+                    rank_actions_download[v[0]].append(chunk_index)
+
+
+        max_stop_using = np.max(stop_using)
+        for v in associations:
+            if v[2] == max_stop_using:
+                rank_actions_delete[v[0]] = [chunk_index]
+                break
+
+
+    for chunk_index, associations in shared_chunks_map.items():
+        if len(associations) == 1:
+            continue
+
+        ranks = [v[0] for v in associations]
+
+        for rank in ranks:
+            if rank not in rank_actions_download:
+                if rank not in rank_actions_disable_download:
+                    rank_actions_disable_download[rank] = [chunk_index]
+                else:
+                    rank_actions_disable_download[rank].push(chunk_index)
+
+            if rank not in rank_actions_delete:
+                if rank not in rank_actions_disable_delete:
+                    rank_actions_disable_delete[rank] = [chunk_index]
+                else:
+                    rank_actions_disable_delete[rank].push(chunk_index)
+
+    return shared_chunks_map, rank_actions_disable_download, rank_actions_disable_delete
