@@ -31,6 +31,7 @@ from litdata.streaming.sampler import ChunkedIndex
 from litdata.streaming.serializers import Serializer
 from litdata.streaming.shuffle import FullShuffle, NoShuffle, Shuffle
 from litdata.utilities.env import _DistributedEnv, _is_in_dataloader_worker, _WorkerEnv
+from litdata.utilities.shuffle import _find_chunks_per_ranks_on_which_to_skip_deletion
 
 logger = Logger(__name__)
 
@@ -189,22 +190,28 @@ class StreamingDataset(IterableDataset):
             chunks_per_replica, intervals_per_replica = self.shuffler.get_chunks_and_intervals_per_ranks(
                 self.distributed_env, self.current_epoch
             )
-            chunks_replica = chunks_per_replica[self.distributed_env.global_rank % self.distributed_env.world_size]
-            intervals_replica = intervals_per_replica[
-                self.distributed_env.global_rank % self.distributed_env.world_size
-            ]
 
-            self.worker_chunks = []
-            self.worker_intervals = []
+            # Find the chunks shared across multiple ranks.
+            # For each shared chunk, find the rank to use the chunk last and prevent deletion
+            # for the other ranks.
+            chunks_indexes_skip_deletion = _find_chunks_per_ranks_on_which_to_skip_deletion(
+                self.worker_env.world_size, chunks_per_replica, intervals_per_replica
+            )
+            if self.distributed_env.global_rank in chunks_indexes_skip_deletion:
+                self.cache._reader.config.skip_chunk_indexes_deletion = chunks_indexes_skip_deletion[
+                    self.distributed_env.global_rank
+                ]
 
-            for i, (chunk_index, chunk_interval) in enumerate(zip(chunks_replica, intervals_replica)):
-                if i % self.worker_env.world_size != self.worker_env.rank:
-                    continue
-                self.worker_chunks.append(chunk_index)
-                self.worker_intervals.append(chunk_interval)
+            workers_chunks, workers_intervals = _associate_chunks_to_workers(
+                self.worker_env,
+                chunks_per_replica[self.distributed_env.global_rank],
+                intervals_per_replica[self.distributed_env.global_rank],
+            )
+
+            self.worker_chunks = workers_chunks[self.worker_env.rank]
+            self.worker_intervals = workers_intervals[self.worker_env.rank]
 
             self.num_chunks = len(self.worker_chunks)
-
             self.current_indexes = []
             self.chunk_index = 0
             self.global_index = 0
@@ -230,7 +237,7 @@ class StreamingDataset(IterableDataset):
 
         # replay sampling from each worker / chunks using the batch size
         workers_chunks, workers_intervals = _associate_chunks_to_workers(
-            num_workers, self.worker_env, chunks_replica, intervals_replica
+            self.worker_env, chunks_replica, intervals_replica
         )
         indexes = _replay_sampling(num_samples_yielded, batch_size, num_workers)
         chunks_index, indexes = _replay_chunks_sampling(workers_intervals, indexes)
@@ -427,12 +434,12 @@ def is_integer(value: str) -> bool:
 
 
 def _associate_chunks_to_workers(
-    num_workers: int, worker_env: _WorkerEnv, chunks_replica: List[int], intervals_replica: List[Any]
+    worker_env: _WorkerEnv, chunks_replica: List[int], intervals_replica: List[Any]
 ) -> Any:
     workers_chunks = {}
     workers_intervals = {}
 
-    for worker_idx in range(num_workers):
+    for worker_idx in range(worker_env.world_size):
         worker_chunks = []
         worker_intervals = []
         for i, (chunk_index, chunk_interval) in enumerate(zip(chunks_replica, intervals_replica)):

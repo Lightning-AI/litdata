@@ -249,12 +249,12 @@ def test_get_serializers():
 def test_deserialize_empty_tensor():
     serializer = TensorSerializer()
     t = torch.ones((0, 3)).int()
-    data, name = serializer.serialize(t)
+    data, _ = serializer.serialize(t)
     new_t = serializer.deserialize(data)
     assert torch.equal(t, new_t)
 
     t = torch.ones((0, 3)).float()
-    data, name = serializer.serialize(t)
+    data, _ = serializer.serialize(t)
     new_t = serializer.deserialize(data)
     assert torch.equal(t, new_t)
 
