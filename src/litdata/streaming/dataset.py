@@ -185,7 +185,7 @@ class StreamingDataset(IterableDataset):
             self.current_epoch = state["current_epoch"]
 
         chunks_per_replica, intervals_per_replica = self.shuffler.get_chunks_and_intervals_per_ranks(
-            self.distributed_env, self.worker_env.world_size, self.batch_size, self.current_epoch
+            self.distributed_env, self.worker_env.world_size, self.batch_size or 1, self.current_epoch
         )
         chunks_replica = chunks_per_replica[self.distributed_env.global_rank % self.distributed_env.world_size]
         intervals_replica = intervals_per_replica[self.distributed_env.global_rank % self.distributed_env.world_size]
@@ -195,7 +195,7 @@ class StreamingDataset(IterableDataset):
             self._resume(chunks_replica, intervals_replica)
         else:
             chunks_per_replica, intervals_per_replica = self.shuffler.get_chunks_and_intervals_per_ranks(
-                self.distributed_env, self.worker_env.world_size, self.batch_size, self.current_epoch
+                self.distributed_env, self.worker_env.world_size, self.batch_size or 1, self.current_epoch
             )
             chunks_replica = chunks_per_replica[self.distributed_env.global_rank % self.distributed_env.world_size]
             intervals_replica = intervals_per_replica[

@@ -171,7 +171,7 @@ def test_streaming_dataset_distributed_no_shuffle(drop_last, tmpdir, compression
     assert len(process_2_2) == 50 + int(not drop_last)
 
     _, intervals_per_ranks = dataset.shuffler.get_chunks_and_intervals_per_ranks(
-        dataset.distributed_env, dataset.current_epoch
+        dataset.distributed_env, 1, 1, dataset.current_epoch
     )
 
     assert process_1_1 == process_1_2
