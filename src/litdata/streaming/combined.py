@@ -95,7 +95,12 @@ class CombinedStreamingDataset(IterableDataset):
 
     # total length of the datasets
     def _get_total_length(self) -> int:
-        return sum(d.get_len(self.num_workers, self.batch_size) for d in self._datasets)
+        return sum(self._get_len(d) for d in self._datasets)
+
+    def _get_len(self, d: Any) -> int:
+        if isinstance(d, StreamingDataset):
+            return d.get_len(self.num_workers, self.batch_size)
+        return len(d)
 
     def set_epoch(self, current_epoch: int) -> None:
         """Set the current epoch to the datasets on epoch starts.
