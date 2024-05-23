@@ -71,6 +71,21 @@ class ChunksConfig:
         if self._compressor_name in _COMPRESSORS:
             self._compressor = _COMPRESSORS[self._compressor_name]
 
+        self._skip_chunk_indexes_deletion: Optional[List[int]] = None
+
+    def can_delete(self, chunk_index: int) -> bool:
+        if self._skip_chunk_indexes_deletion is None:
+            return True
+        return chunk_index not in self._skip_chunk_indexes_deletion
+
+    @property
+    def skip_chunk_indexes_deletion(self) -> Optional[List[int]]:
+        return self._skip_chunk_indexes_deletion
+
+    @skip_chunk_indexes_deletion.setter
+    def skip_chunk_indexes_deletion(self, skip_chunk_indexes_deletion: List[int]) -> None:
+        self._skip_chunk_indexes_deletion = skip_chunk_indexes_deletion
+
     def download_chunk_from_index(self, chunk_index: int) -> None:
         chunk_filename = self._chunks[chunk_index]["filename"]
 

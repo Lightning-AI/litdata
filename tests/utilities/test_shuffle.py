@@ -1,5 +1,9 @@
 from litdata.utilities.env import _DistributedEnv
-from litdata.utilities.shuffle import _associate_chunks_and_internals_to_ranks, _intra_node_chunk_shuffle
+from litdata.utilities.shuffle import (
+    _associate_chunks_and_internals_to_ranks,
+    _find_chunks_per_ranks_on_which_to_skip_deletion,
+    _intra_node_chunk_shuffle,
+)
 
 
 def test_intra_node_chunk_shuffle():
@@ -71,3 +75,6 @@ def test_associate_chunks_and_internals_to_ranks():
         [(123, 150), [0, 7], [0, 12], [0, 4], [0, 14]],
         [(14, 27), [0, 50], [0, 1]],
     ]
+
+    disable_deletion_ranks = _find_chunks_per_ranks_on_which_to_skip_deletion(1, chunks_per_ranks, intervals_per_ranks)
+    assert disable_deletion_ranks == {1: [1], 2: [1], 3: [5]}

@@ -929,7 +929,7 @@ def test_replay_chunks_sampling():
     chunks_replica = range(10)
     intervals_replica = [(i, i + 5) for i in range(0, 50, 5)]
     workers_chunks, workers_intervals = _associate_chunks_to_workers(
-        2, _WorkerEnv(2, 0), chunks_replica, intervals_replica
+        _WorkerEnv(2, 0), chunks_replica, intervals_replica
     )
     assert workers_chunks == {0: [0, 2, 4, 6, 8], 1: [1, 3, 5, 7, 9]}
     assert workers_intervals == {
