@@ -46,8 +46,8 @@ def _associate_chunks_and_internals_to_ranks(
     indexes: Any,
     chunk_intervals: Any,
     drop_last: bool,
-    num_workers: int,
-    batch_size: int,
+    num_workers: int = 1,
+    batch_size: int = 1,
 ) -> Tuple[List[List[int]], List[Any]]:
     num_items = sum([(interval[-1] - interval[0]) for interval in chunk_intervals])
     num_items_per_ranks: List[int] = [

@@ -211,8 +211,6 @@ class StreamingDataset(IterableDataset):
                 self.worker_chunks.append(chunk_index)
                 self.worker_intervals.append(chunk_interval)
 
-            print(self.worker_env.rank, sum([interval[1] - interval[0] for interval in self.worker_intervals]))
-
             self.num_chunks = len(self.worker_chunks)
 
             self.current_indexes = []
@@ -279,9 +277,7 @@ class StreamingDataset(IterableDataset):
 
     def __next__(self) -> Any:
         # Prevent to create more batch on a given process
-        print(self.worker_env.rank, self.global_index)
         if self.global_index >= len(self):
-            print("StopIteration 1")
             self.current_epoch += 1
             raise StopIteration
 
@@ -289,7 +285,6 @@ class StreamingDataset(IterableDataset):
         if len(self.current_indexes) == 0:
             if self.chunk_index == self.num_chunks:
                 self.current_epoch += 1
-                print("StopIteration 2")
                 raise StopIteration
 
             # reset index
