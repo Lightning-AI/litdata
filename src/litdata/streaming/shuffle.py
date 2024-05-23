@@ -31,7 +31,7 @@ class Shuffle(ABC):
         self.drop_last = drop_last
 
     @lru_cache(maxsize=10)
-    def get_len(self, distributed_env: _DistributedEnv, num_workers, batch_size: int, current_epoch: int) -> int:
+    def get_len(self, distributed_env: _DistributedEnv, num_workers: int, batch_size: int, current_epoch: int) -> int:
         _, intervals_per_ranks = self.get_chunks_and_intervals_per_ranks(
             distributed_env, num_workers, batch_size, current_epoch
         )
@@ -64,7 +64,7 @@ class NoShuffle(Shuffle):
 
     @lru_cache(maxsize=10)
     def get_chunks_and_intervals_per_ranks(
-        self, distributed_env: _DistributedEnv, num_workers: int, batch_size: int, current_epoch
+        self, distributed_env: _DistributedEnv, num_workers: int, batch_size: int, current_epoch: int
     ) -> Any:
         # 1. Get the intervals
         chunk_intervals = self.cache.get_chunk_intervals()

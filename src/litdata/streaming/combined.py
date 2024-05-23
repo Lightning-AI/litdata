@@ -83,9 +83,9 @@ class CombinedStreamingDataset(IterableDataset):
         self.num_workers = 1
         self.batch_size = 1
 
-    def get_len(self, num_workers: int, batch_size: int) -> int:
+    def get_len(self, num_workers: int, batch_size: int) -> Optional[int]:
         self.num_workers = num_workers
-        self.batch_size = 1
+        self.batch_size = batch_size
         if self._iterate_over_all:
             return self._get_total_length()
         return None

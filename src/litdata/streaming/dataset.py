@@ -107,8 +107,8 @@ class StreamingDataset(IterableDataset):
         self.shuffler: Optional[Shuffle] = None
         self.serializers = serializers
         self._state_dict: Optional[Dict[str, Any]] = None
-        self.num_workers = None
-        self.batch_size = None
+        self.num_workers: Optional[int] = None
+        self.batch_size: Optional[int] = None
 
     def set_shuffle(self, shuffle: bool) -> None:
         self.shuffle = shuffle
