@@ -80,15 +80,22 @@ class CombinedStreamingDataset(IterableDataset):
         self._use_streaming_dataloader = False
         self._num_samples_yielded: Optional[List[int]] = None
         self._current_epoch = 0
+        self.num_workers = 1
+        self.batch_size = 1
 
-    def __len__(self) -> Optional[int]:
+    def get_len(self, num_workers: int, batch_size: int) -> int:
+        self.num_workers = num_workers
+        self.batch_size = 1
         if self._iterate_over_all:
             return self._get_total_length()
         return None
 
+    def __len__(self) -> Optional[int]:
+        return self.get_len(1, 1)
+
     # total length of the datasets
     def _get_total_length(self) -> int:
-        return sum(len(d) for d in self._datasets)
+        return sum(d.get_len(self.num_workers, self.batch_size) for d in self._datasets)
 
     def set_epoch(self, current_epoch: int) -> None:
         """Set the current epoch to the datasets on epoch starts.

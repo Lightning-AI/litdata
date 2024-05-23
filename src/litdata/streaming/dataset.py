@@ -195,10 +195,6 @@ class StreamingDataset(IterableDataset):
         if self._state_dict:
             self._resume(chunks_replica, intervals_replica)
         else:
-            chunks_per_replica, intervals_per_replica = self.shuffler.get_chunks_and_intervals_per_ranks(
-                self.distributed_env, self.worker_env.world_size, self.batch_size or 1, self.current_epoch
-            )
-
             # Find the chunks shared across multiple ranks.
             # For each shared chunk, find the rank to use the chunk last and prevent deletion
             # for the other ranks.
