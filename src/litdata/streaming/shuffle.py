@@ -31,8 +31,10 @@ class Shuffle(ABC):
         self.drop_last = drop_last
 
     @lru_cache(maxsize=10)
-    def get_len(self, distributed_env: _DistributedEnv, current_epoch: int) -> int:
-        _, intervals_per_ranks = self.get_chunks_and_intervals_per_ranks(distributed_env, current_epoch)
+    def get_len(self, distributed_env: _DistributedEnv, num_workers: int, batch_size: int, current_epoch: int) -> int:
+        _, intervals_per_ranks = self.get_chunks_and_intervals_per_ranks(
+            distributed_env, num_workers, batch_size, current_epoch
+        )
 
         if self.drop_last:
             items_per_process = [
@@ -46,7 +48,9 @@ class Shuffle(ABC):
         return sum((interval[-1] - interval[0]) for interval in intervals_per_ranks[distributed_env.global_rank])
 
     @abstractmethod
-    def get_chunks_and_intervals_per_ranks(self, distributed_env: _DistributedEnv, current_epoch: int) -> Any:
+    def get_chunks_and_intervals_per_ranks(
+        self, distributed_env: _DistributedEnv, num_workers: int, batch_size: int, current_epoch: int
+    ) -> Any:
         pass
 
     @abstractmethod
@@ -59,14 +63,16 @@ class NoShuffle(Shuffle):
     is True."""
 
     @lru_cache(maxsize=10)
-    def get_chunks_and_intervals_per_ranks(self, distributed_env: _DistributedEnv, current_epoch: int) -> Any:
+    def get_chunks_and_intervals_per_ranks(
+        self, distributed_env: _DistributedEnv, num_workers: int, batch_size: int, current_epoch: int
+    ) -> Any:
         # 1. Get the intervals
         chunk_intervals = self.cache.get_chunk_intervals()
         indexes = range(len(chunk_intervals))
 
         # 2. Compute the items budget of each rank
         chunks_per_ranks, intervals_per_ranks = _associate_chunks_and_internals_to_ranks(
-            distributed_env, indexes, chunk_intervals, self.drop_last
+            distributed_env, indexes, chunk_intervals, self.drop_last, num_workers, batch_size
         )
 
         return chunks_per_ranks, intervals_per_ranks
@@ -94,7 +100,9 @@ class FullShuffle(Shuffle):
     """
 
     @lru_cache(maxsize=10)
-    def get_chunks_and_intervals_per_ranks(self, distributed_env: _DistributedEnv, current_epoch: int) -> Any:
+    def get_chunks_and_intervals_per_ranks(
+        self, distributed_env: _DistributedEnv, num_workers: int, batch_size: int, current_epoch: int
+    ) -> Any:
         # 1. Get the intervals
         chunk_intervals = self.cache.get_chunk_intervals()
 
@@ -113,7 +121,7 @@ class FullShuffle(Shuffle):
 
         # 3. Compute the items budget of each rank
         chunks_per_ranks, intervals_per_ranks = _associate_chunks_and_internals_to_ranks(
-            distributed_env, shuffled_indexes, shuffled_chunk_intervals, self.drop_last
+            distributed_env, shuffled_indexes, shuffled_chunk_intervals, self.drop_last, num_workers, batch_size
         )
 
         # For the first epoch, no need of further shuffling
@@ -126,7 +134,7 @@ class FullShuffle(Shuffle):
         shuffled_chunk_intervals = np.asarray(chunk_intervals)[shuffled_indexes].tolist()
 
         chunks_per_ranks, intervals_per_ranks = _associate_chunks_and_internals_to_ranks(
-            distributed_env, shuffled_indexes, shuffled_chunk_intervals, self.drop_last
+            distributed_env, shuffled_indexes, shuffled_chunk_intervals, self.drop_last, num_workers, batch_size
         )
 
         return chunks_per_ranks, intervals_per_ranks

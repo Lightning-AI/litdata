@@ -107,6 +107,8 @@ class StreamingDataset(IterableDataset):
         self.shuffler: Optional[Shuffle] = None
         self.serializers = serializers
         self._state_dict: Optional[Dict[str, Any]] = None
+        self.num_workers: Optional[int] = None
+        self.batch_size: Optional[int] = None
 
     def set_shuffle(self, shuffle: bool) -> None:
         self.shuffle = shuffle
@@ -157,10 +159,16 @@ class StreamingDataset(IterableDataset):
         return FullShuffle(cache, seed, drop_last) if self.shuffle else NoShuffle(cache, seed, drop_last)
 
     def __len__(self) -> int:
+        return self.get_len(1, 1)
+
+    def get_len(self, num_workers: int, batch_size: int) -> int:
+        self.num_workers = num_workers
+        self.batch_size = batch_size
+        worker_env = _WorkerEnv.detect()
         if self.shuffler is None:
-            cache = self._create_cache(worker_env=_WorkerEnv.detect())
+            cache = self._create_cache(worker_env=worker_env)
             self.shuffler = self._create_shuffler(cache)
-        return self.shuffler.get_len(self.distributed_env, self.current_epoch)
+        return self.shuffler.get_len(self.distributed_env, num_workers, batch_size, self.current_epoch)
 
     def __iter__(self) -> "StreamingDataset":
         # When the StreamingDataset is used within map or optimize, let's refetch the distributed env.
@@ -178,7 +186,7 @@ class StreamingDataset(IterableDataset):
             self.current_epoch = state["current_epoch"]
 
         chunks_per_replica, intervals_per_replica = self.shuffler.get_chunks_and_intervals_per_ranks(
-            self.distributed_env, self.current_epoch
+            self.distributed_env, self.worker_env.world_size, self.batch_size or 1, self.current_epoch
         )
         chunks_replica = chunks_per_replica[self.distributed_env.global_rank % self.distributed_env.world_size]
         intervals_replica = intervals_per_replica[self.distributed_env.global_rank % self.distributed_env.world_size]
@@ -187,10 +195,6 @@ class StreamingDataset(IterableDataset):
         if self._state_dict:
             self._resume(chunks_replica, intervals_replica)
         else:
-            chunks_per_replica, intervals_per_replica = self.shuffler.get_chunks_and_intervals_per_ranks(
-                self.distributed_env, self.current_epoch
-            )
-
             # Find the chunks shared across multiple ranks.
             # For each shared chunk, find the rank to use the chunk last and prevent deletion
             # for the other ranks.
