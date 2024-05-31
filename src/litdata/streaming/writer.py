@@ -294,19 +294,16 @@ class BinaryWriter:
             dim=dim,
         )
         if self._min_index is None:
+            # When processing the first item for the current chunk
             indexes = list(self._serialized_items.keys())
-            self._min_index = index = indexes[0] if len(indexes) == 1 else min(*indexes)
-            self._max_index = self._min_index
-            self._per_sample_num_bytes = 0
-            self._per_sample_num_items = 0
+            self._max_index = self._min_index = indexes[0] if len(indexes) == 1 else min(*indexes)
+            self._per_sample_num_items = self._per_sample_num_bytes = 0
             if not self._should_write():
                 return None
         elif index < self._min_index:
             # reset the "temp" chunk
-            self._min_index = index
-            self._max_index = index
-            self._per_sample_num_bytes = 0
-            self._per_sample_num_items = 0
+            self._max_index = self._min_index = index
+            self._per_sample_num_items = self._per_sample_num_bytes = 0
             if not self._should_write():
                 return None
         elif index == self._max_index:
@@ -331,6 +328,9 @@ class BinaryWriter:
         # TODO: Misleading method name, it modifies `self._min_index` and `self._max_index`!
         if not self._serialized_items:
             return False
+
+        # We have already validated index from `min_index` to `max_index`` are in `_serialized_items``.
+        # Resetting the num_bytes and  num_items back the values.
         num_bytes = self._per_sample_num_bytes
         num_items = self._per_sample_num_items
         index = self._max_index
