@@ -99,6 +99,9 @@ class BinaryWriter:
         self._distributed_env = _DistributedEnv.detect()
         self._follow_tensor_dimension = follow_tensor_dimension
 
+        self._per_sample_num_bytes = 0
+        self._per_sample_num_items = 0
+
     @property
     def filled(self) -> bool:
         """Returns whether the caching phase is done."""
@@ -277,8 +280,12 @@ class BinaryWriter:
         self.add_item(index, items)
 
     def add_item(self, index: int, items: Any) -> Optional[str]:
-        # Track the minimum index provided to the writer
-        # Serialize the items and store an Item object.
+        """
+        Given an index and items will serialize the items and store an Item object 
+        to the growing `_serialized_items`. Received indices are assumed to be 
+        in order.
+        """
+
         if index in self._serialized_items:
             raise ValueError(f"The provided index {index} already exists in the cache.")
 
@@ -289,14 +296,35 @@ class BinaryWriter:
             bytes=len(data),
             dim=dim,
         )
-
-        if not self._should_write():
+        if self._min_index is None:
+            self._min_index = index
+        if not self._should_write_per_item(index):
             return None
+        
         filepath = os.path.join(self._cache_dir, self.get_chunk_filename())
+        
         self.write_chunk()
-        self._min_index = None
+        self._per_sample_num_bytes = self._serialized_items[index].bytes
+        self._per_sample_num_items = self._serialized_items[index].dim if self._serialized_items[index].dim else 1
+        self._min_index = index
         self._max_index = None
+        
         return filepath
+
+    def _should_write_per_item(self, index: int) -> bool:
+        """
+        A modified version of `_should_write` which performs only a single item addition and check.
+        """
+        item = self._serialized_items.get(index, None)
+        if item:
+            self._per_sample_num_bytes += item.bytes
+            self._per_sample_num_items += item.dim if item.dim else 1
+            if (self._chunk_bytes and self._chunk_bytes < self._per_sample_num_bytes) or (
+                    self._chunk_size and self._per_sample_num_items > self._chunk_size
+                ):
+                self._max_index = index
+                return True
+        return False
 
     def _should_write(self) -> bool:
         # TODO: Misleading method name, it modifies `self._min_index` and `self._max_index`!
