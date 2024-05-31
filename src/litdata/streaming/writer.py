@@ -294,6 +294,7 @@ class BinaryWriter:
             dim=dim,
         )
         if self._min_index is None:
+            # When processing the first item for the current chunk
             indexes = list(self._serialized_items.keys())
             self._min_index = index = indexes[0] if len(indexes) == 1 else min(*indexes)
             self._max_index = self._min_index
