@@ -282,8 +282,7 @@ class BinaryWriter:
     def add_item(self, index: int, items: Any) -> Optional[str]:
         """
         Given an index and items will serialize the items and store an Item object 
-        to the growing `_serialized_items`. Received indices are assumed to be 
-        in order.
+        to the growing `_serialized_items`.
         """
 
         if index in self._serialized_items:
@@ -297,43 +296,46 @@ class BinaryWriter:
             dim=dim,
         )
         if self._min_index is None:
+            indexes = list(self._serialized_items.keys())
+            self._min_index = index = indexes[0] if len(indexes) == 1 else min(*indexes)
+            self._max_index = self._min_index
+            self._per_sample_num_bytes = 0
+            self._per_sample_num_items = 0
+            if not self._should_write():
+                return None
+        elif index < self._min_index:
+            # reset the "temp" chunk
             self._min_index = index
-        if not self._should_write_per_item(index):
+            self._max_index = index
+            self._per_sample_num_bytes = 0
+            self._per_sample_num_items = 0
+            if not self._should_write():
+                return None
+        elif index == self._max_index:
+            if not self._should_write():
+                return None
+        else:
             return None
         
         filepath = os.path.join(self._cache_dir, self.get_chunk_filename())
-        
+
         self.write_chunk()
-        self._per_sample_num_bytes = self._serialized_items[index].bytes
-        self._per_sample_num_items = self._serialized_items[index].dim if self._serialized_items[index].dim else 1
-        self._min_index = index
+        
+        # now to reset
+        self._min_index = None
         self._max_index = None
+        self._per_sample_num_bytes = 0
+        self._per_sample_num_items = 0
         
         return filepath
-
-    def _should_write_per_item(self, index: int) -> bool:
-        """
-        A modified version of `_should_write` which performs only a single item addition and check.
-        """
-        item = self._serialized_items.get(index, None)
-        if item:
-            self._per_sample_num_bytes += item.bytes
-            self._per_sample_num_items += item.dim if item.dim else 1
-            if (self._chunk_bytes and self._chunk_bytes < self._per_sample_num_bytes) or (
-                    self._chunk_size and self._per_sample_num_items > self._chunk_size
-                ):
-                self._max_index = index
-                return True
-        return False
 
     def _should_write(self) -> bool:
         # TODO: Misleading method name, it modifies `self._min_index` and `self._max_index`!
         if not self._serialized_items:
             return False
-        indexes = list(self._serialized_items.keys())
-        self._min_index = index = indexes[0] if len(indexes) == 1 else min(*indexes)
-        num_bytes = 0
-        num_items = 0
+        num_bytes = self._per_sample_num_bytes
+        num_items = self._per_sample_num_items
+        index = self._max_index
         while True:
             item = self._serialized_items.get(index, None)
             if item:
@@ -346,6 +348,9 @@ class BinaryWriter:
                     self._max_index = index - 1
                     return True
             else:
+                self._per_sample_num_bytes = num_bytes
+                self._per_sample_num_items = num_items
+                self._max_index = index
                 return False
 
     def write_chunk_to_file(
