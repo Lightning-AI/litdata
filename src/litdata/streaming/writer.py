@@ -99,6 +99,9 @@ class BinaryWriter:
         self._distributed_env = _DistributedEnv.detect()
         self._follow_tensor_dimension = follow_tensor_dimension
 
+        self._per_sample_num_bytes = 0
+        self._per_sample_num_items = 0
+
     @property
     def filled(self) -> bool:
         """Returns whether the caching phase is done."""
@@ -277,8 +280,9 @@ class BinaryWriter:
         self.add_item(index, items)
 
     def add_item(self, index: int, items: Any) -> Optional[str]:
-        # Track the minimum index provided to the writer
-        # Serialize the items and store an Item object.
+        """Given an index and items will serialize the items and store an Item object to the growing
+        `_serialized_items`."""
+
         if index in self._serialized_items:
             raise ValueError(f"The provided index {index} already exists in the cache.")
 
@@ -289,23 +293,50 @@ class BinaryWriter:
             bytes=len(data),
             dim=dim,
         )
-
-        if not self._should_write():
+        if self._min_index is None:
+            # When processing the first item for the current chunk
+            indexes = list(self._serialized_items.keys())
+            self._max_index = self._min_index = indexes[0] if len(indexes) == 1 else min(*indexes)
+            self._per_sample_num_items = self._per_sample_num_bytes = 0
+            if not self._should_write():
+                return None
+        elif index < self._min_index:
+            # reset the "temp" chunk
+            self._max_index = self._min_index = index
+            self._per_sample_num_items = self._per_sample_num_bytes = 0
+            if not self._should_write():
+                return None
+        elif index == self._max_index:
+            if not self._should_write():
+                return None
+        else:
             return None
+
         filepath = os.path.join(self._cache_dir, self.get_chunk_filename())
+
         self.write_chunk()
+
+        # now to reset
         self._min_index = None
         self._max_index = None
+        self._per_sample_num_bytes = 0
+        self._per_sample_num_items = 0
+
         return filepath
 
     def _should_write(self) -> bool:
         # TODO: Misleading method name, it modifies `self._min_index` and `self._max_index`!
         if not self._serialized_items:
             return False
-        indexes = list(self._serialized_items.keys())
-        self._min_index = index = indexes[0] if len(indexes) == 1 else min(*indexes)
-        num_bytes = 0
-        num_items = 0
+
+        if not isinstance(self._max_index, int):
+            return False
+
+        # We have already validated the indexes from the interval `min_index` to `max_index`` are in `_serialized_items`
+        # Resetting the num_bytes and  num_items back the values.
+        num_bytes = self._per_sample_num_bytes
+        num_items = self._per_sample_num_items
+        index = self._max_index
         while True:
             item = self._serialized_items.get(index, None)
             if item:
@@ -318,6 +349,9 @@ class BinaryWriter:
                     self._max_index = index - 1
                     return True
             else:
+                self._per_sample_num_bytes = num_bytes
+                self._per_sample_num_items = num_items
+                self._max_index = index
                 return False
 
     def write_chunk_to_file(

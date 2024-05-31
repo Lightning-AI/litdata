@@ -226,3 +226,29 @@ def test_writer_human_format(tmpdir):
 
     binary_writer = BinaryWriter(tmpdir, chunk_bytes="64MB")
     assert binary_writer._chunk_bytes == 64000000
+
+
+def test_writer_unordered_indexes(tmpdir):
+    cache_dir = os.path.join(tmpdir, "chunks")
+    os.makedirs(cache_dir, exist_ok=True)
+
+    binary_writer = BinaryWriter(cache_dir, chunk_size=5)
+
+    arr = [2, 3, 1, 4, 6, 5, 7, 8, 11, 9, 10, 12]
+
+    for i in arr:
+        binary_writer[i] = i - 1
+
+    binary_writer.done()
+    binary_writer.merge()
+
+    reader = BinaryReader(cache_dir)
+    for i in range(12):
+        assert i == reader.read(ChunkedIndex(i, chunk_index=i // 5))
+
+    with open(os.path.join(cache_dir, "index.json")) as f:
+        data = json.load(f)
+
+    assert data["chunks"][0]["chunk_size"] == 5
+    assert data["chunks"][1]["chunk_size"] == 5
+    assert data["chunks"][2]["chunk_size"] == 2
