@@ -183,7 +183,7 @@ The `map` operator can be used to apply a function over a list of inputs.
 Here is an example where the `map` operator is used to apply a `resize_image` function over a folder of large images.
 
 ```python
-from lightning.data import map
+from litdata import map
 from PIL import Image
 
 # Note: Inputs could also refer to files on s3 directly.
@@ -328,7 +328,7 @@ dataset = StreamingDataset(..., max_cache_size="10GB")
 On-prem compute nodes can mount and use a network drive. A network drive is a shared storage device on a local area network. In order to reduce their network overload, the `StreamingDataset` supports `caching` the data chunks.
 
 ```python
-from lightning.data import StreamingDataset
+from litdata import StreamingDataset
 
 dataset = StreamingDataset(input_dir="local:/data/shared-drive/some-data")
 ```
