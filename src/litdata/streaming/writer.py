@@ -331,7 +331,7 @@ class BinaryWriter:
 
         assert isinstance(self._max_index, int)
 
-        # We have already validated index from `min_index` to `max_index`` are in `_serialized_items``.
+        # We have already validated the indexes from the interval `min_index` to `max_index`` are in `_serialized_items`
         # Resetting the num_bytes and  num_items back the values.
         num_bytes = self._per_sample_num_bytes
         num_items = self._per_sample_num_items
