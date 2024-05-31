@@ -29,9 +29,6 @@ from time import sleep, time
 from typing import Any, Dict, List, Optional, Tuple, TypeVar, Union
 from urllib import parse
 
-from viztracer import get_tracer
-
-
 import numpy as np
 import torch
 
@@ -440,7 +437,6 @@ class BaseWorker:
 
     def _loop(self) -> None:
         num_downloader_finished = 0
-        
 
         while True:
             index = self.ready_to_process_queue.get()

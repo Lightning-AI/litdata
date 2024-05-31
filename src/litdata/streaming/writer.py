@@ -280,10 +280,8 @@ class BinaryWriter:
         self.add_item(index, items)
 
     def add_item(self, index: int, items: Any) -> Optional[str]:
-        """
-        Given an index and items will serialize the items and store an Item object 
-        to the growing `_serialized_items`.
-        """
+        """Given an index and items will serialize the items and store an Item object to the growing
+        `_serialized_items`."""
 
         if index in self._serialized_items:
             raise ValueError(f"The provided index {index} already exists in the cache.")
@@ -316,17 +314,17 @@ class BinaryWriter:
                 return None
         else:
             return None
-        
+
         filepath = os.path.join(self._cache_dir, self.get_chunk_filename())
 
         self.write_chunk()
-        
+
         # now to reset
         self._min_index = None
         self._max_index = None
         self._per_sample_num_bytes = 0
         self._per_sample_num_items = 0
-        
+
         return filepath
 
     def _should_write(self) -> bool:
