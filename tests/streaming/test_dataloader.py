@@ -14,6 +14,7 @@ class TestStatefulDataset:
         self.step = step
         self.counter = 0
         self.shuffle = None
+        self.drop_last = None
 
     def set_shuffle(self, shuffle):
         self.shuffle = shuffle
@@ -40,6 +41,9 @@ class TestStatefulDataset:
 
     def set_epoch(self, current_epoch):
         pass
+
+    def set_drop_last(self, drop_last):
+        self.drop_last = drop_last
 
 
 class TestCombinedStreamingDataset(CombinedStreamingDataset):

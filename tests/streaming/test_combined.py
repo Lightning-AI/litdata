@@ -190,6 +190,12 @@ class SimpleDataset(IterableDataset):
     def set_epoch(self, current_epoch):
         pass
 
+    def set_shuffle(self, _):
+        pass
+
+    def set_drop_last(self, _):
+        pass
+
 
 def test_combined_dataset():
     dataset1 = SimpleDataset(0, 10)
