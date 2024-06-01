@@ -540,6 +540,7 @@ class StreamingDataLoader(DataLoader):
         profile_dir: Optional[str] = None,
         prefetch_factor: Optional[int] = None,
         shuffle: Optional[bool] = None,
+        drop_last: Optional[bool] = False,
         **kwargs: Any,
     ) -> None:  # pyright: ignore
         if not isinstance(dataset, (StreamingDataset, CombinedStreamingDataset)):
@@ -550,6 +551,9 @@ class StreamingDataLoader(DataLoader):
 
         if shuffle is not None:
             dataset.set_shuffle(shuffle)
+
+        if drop_last is not None:
+            dataset.set_drop_last(drop_last)
 
         shuffle = None
 

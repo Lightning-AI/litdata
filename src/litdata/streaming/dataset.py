@@ -113,6 +113,9 @@ class StreamingDataset(IterableDataset):
     def set_shuffle(self, shuffle: bool) -> None:
         self.shuffle = shuffle
 
+    def set_drop_last(self, drop_last: bool) -> None:
+        self.drop_last = drop_last
+
     def set_epoch(self, current_epoch: int) -> None:
         """Set the current epoch to the dataset on epoch starts.
 

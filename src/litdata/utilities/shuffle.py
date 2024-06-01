@@ -56,9 +56,11 @@ def _associate_chunks_and_internals_to_ranks(
         else num_items // distributed_env.world_size
         for rank in range(distributed_env.world_size)
     ]
+    print("HERE", drop_last, num_items_per_ranks)
     if drop_last:
         ratio = num_workers * batch_size
         num_items_per_ranks = [ratio * int(item // ratio) for item in num_items_per_ranks]
+        print("BBB", num_items_per_ranks)
 
     chunks_per_ranks: List[List[int]] = [[] for _ in range(distributed_env.world_size)]
     intervals_per_ranks: List[List[List[int]]] = [[] for _ in range(distributed_env.world_size)]
