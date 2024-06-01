@@ -82,7 +82,7 @@ def _get_fast_dev_run() -> int:
 
 
 def _get_default_cache() -> str:
-    return "/cache" if _IS_IN_STUDIO else tempfile.gettempdir()
+    return "/system/litdata_cache" if _IS_IN_STUDIO else tempfile.gettempdir()
 
 
 def _get_cache_dir(name: Optional[str] = None) -> str:

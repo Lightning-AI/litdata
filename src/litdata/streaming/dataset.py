@@ -419,7 +419,7 @@ def _try_create_cache_dir(input_dir: Optional[str]) -> Optional[str]:
         cache_dir = os.path.join(_DEFAULT_CACHE_DIR, hash_object.hexdigest())
         os.makedirs(cache_dir, exist_ok=True)
         return cache_dir
-    cache_dir = os.path.join("/cache", "chunks", hash_object.hexdigest())
+    cache_dir = os.path.join("/system/litdata_cache", "chunks", hash_object.hexdigest())
     os.makedirs(cache_dir, exist_ok=True)
     return cache_dir
 
