@@ -1,6 +1,6 @@
 import os
 import sys
-from unittest.mock import ANY
+from unittest.mock import ANY, MagicMock
 
 import pytest
 import torch
@@ -51,6 +51,19 @@ def test_combined_dataset_num_samples_yield_iterate_over_all():
     assert len(dataset) == 20
     samples = list(dataset)
     assert len(samples) == 20
+
+
+def test_drop_last_and_shuffle():
+    dataset_mock_1 = MagicMock()
+    dataset_mock_2 = MagicMock()
+
+    dataset = TestCombinedStreamingDataset([dataset_mock_1, dataset_mock_2], 42, iterate_over_all=True)
+    StreamingDataLoader(dataset, shuffle=True, drop_last=True)
+
+    dataset_mock_1.set_shuffle.assert_called()
+    dataset_mock_2.set_shuffle.assert_called()
+    dataset_mock_1.set_drop_last.assert_called()
+    dataset_mock_2.set_drop_last.assert_called()
 
 
 class TestStatefulDataset:
