@@ -3,4 +3,3 @@ filelock
 numpy
 boto3[crt]
 requests
-google-cloud-storage
