@@ -67,7 +67,7 @@ def _resolve_dir(dir_path: Optional[Union[str, Dir]]) -> Dir:
 
     assert isinstance(dir_path, str)
 
-    if dir_path.startswith("s3://"):
+    if dir_path.startswith("s3://") or dir_path.startswith("gs://"):
         return Dir(path=None, url=dir_path)
 
     if dir_path.startswith("local:"):
