@@ -19,10 +19,16 @@ from typing import Any, Dict, List
 from urllib import parse
 
 from filelock import FileLock, Timeout
-from google.cloud import storage
 
-from litdata.constants import _INDEX_FILENAME
+from litdata.constants import _GOOGLE_STORAGE_AVAILABLE, _INDEX_FILENAME
 from litdata.streaming.client import S3Client
+
+if _GOOGLE_STORAGE_AVAILABLE:
+    from google.cloud import storage
+else:
+
+    class storage:
+        Client = None
 
 
 class Downloader(ABC):

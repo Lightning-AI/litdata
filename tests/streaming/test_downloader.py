@@ -6,7 +6,6 @@ from litdata.streaming.downloader import (
     LocalDownloaderWithCache,
     S3Downloader,
     shutil,
-    storage,
     subprocess,
 )
 
@@ -21,6 +20,8 @@ def test_s3_downloader_fast(tmpdir, monkeypatch):
 
 
 def test_gcp_downloader(tmpdir, monkeypatch):
+    from litdata.streaming.downloader import storage
+
     # Create mock objects
     mock_client = MagicMock()
     mock_bucket = MagicMock()
