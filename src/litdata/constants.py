@@ -31,6 +31,8 @@ _LIGHTNING_CLOUD_AVAILABLE = RequirementCache("lightning-cloud")
 _BOTO3_AVAILABLE = RequirementCache("boto3")
 _TORCH_AUDIO_AVAILABLE = RequirementCache("torchaudio")
 _ZSTD_AVAILABLE = RequirementCache("zstd")
+_GOOGLE_STORAGE_AVAILABLE = RequirementCache("google.cloud.storage")
+
 
 # DON'T CHANGE ORDER
 _TORCH_DTYPES_MAPPING = {

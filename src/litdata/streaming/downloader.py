@@ -20,8 +20,15 @@ from urllib import parse
 
 from filelock import FileLock, Timeout
 
-from litdata.constants import _INDEX_FILENAME
+from litdata.constants import _GOOGLE_STORAGE_AVAILABLE, _INDEX_FILENAME
 from litdata.streaming.client import S3Client
+
+if _GOOGLE_STORAGE_AVAILABLE:
+    from google.cloud import storage
+else:
+
+    class storage:  # type: ignore
+        Client = None
 
 
 class Downloader(ABC):
@@ -87,6 +94,36 @@ class S3Downloader(Downloader):
             pass
 
 
+class GCPDownloader(Downloader):
+    def __init__(self, remote_dir: str, cache_dir: str, chunks: List[Dict[str, Any]]):
+        super().__init__(remote_dir, cache_dir, chunks)
+
+    def download_file(self, remote_filepath: str, local_filepath: str) -> None:
+        obj = parse.urlparse(remote_filepath)
+
+        if obj.scheme != "gs":
+            raise ValueError(f"Expected obj.scheme to be `gs`, instead, got {obj.scheme} for remote={remote_filepath}")
+
+        if os.path.exists(local_filepath):
+            return
+
+        try:
+            with FileLock(local_filepath + ".lock", timeout=3 if obj.path.endswith(_INDEX_FILENAME) else 0):
+                bucket_name = obj.netloc
+                key = obj.path
+                # Remove the leading "/":
+                if key[0] == "/":
+                    key = key[1:]
+
+                client = storage.Client()
+                bucket = client.bucket(bucket_name)
+                blob = bucket.blob(key)
+                blob.download_to_filename(local_filepath)
+        except Timeout:
+            # another process is responsible to download that file, continue
+            pass
+
+
 class LocalDownloader(Downloader):
     def download_file(self, remote_filepath: str, local_filepath: str) -> None:
         if not os.path.exists(remote_filepath):
@@ -102,7 +139,7 @@ class LocalDownloaderWithCache(LocalDownloader):
         super().download_file(remote_filepath, local_filepath)
 
 
-_DOWNLOADERS = {"s3://": S3Downloader, "local:": LocalDownloaderWithCache, "": LocalDownloader}
+_DOWNLOADERS = {"s3://": S3Downloader, "gs://": GCPDownloader, "local:": LocalDownloaderWithCache, "": LocalDownloader}
 
 
 def get_downloader_cls(remote_dir: str, cache_dir: str, chunks: List[Dict[str, Any]]) -> Downloader:
