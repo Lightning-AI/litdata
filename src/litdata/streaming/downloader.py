@@ -27,7 +27,7 @@ if _GOOGLE_STORAGE_AVAILABLE:
     from google.cloud import storage
 else:
 
-    class storage:
+    class storage:  # type: ignore
         Client = None
 
 
