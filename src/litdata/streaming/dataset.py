@@ -279,6 +279,12 @@ class StreamingDataset(IterableDataset):
             self.shuffler = self._create_shuffler(self.cache)
         if isinstance(index, int):
             index = ChunkedIndex(index, self.cache._get_chunk_index_from_index(index))
+        if isinstance(index, slice):
+            start, stop, step = index.indices(len(self))
+            _my_indices = list(range(start, stop, step))
+            _my_cache_indices = [ChunkedIndex(
+                idx, self.cache._get_chunk_index_from_index(idx)) for idx in _my_indices]
+            return [self.cache[chnk_idx] for chnk_idx in _my_cache_indices]
         return self.cache[index]
 
     def __next__(self) -> Any:
