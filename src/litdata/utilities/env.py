@@ -56,7 +56,7 @@ class _DistributedEnv:
 
             # If you are using multiple nodes, we assume you are using all the GPUs.
             # On single node, a user can be using only a few GPUs of the node.
-            if torch.cuda.is_available() and num_nodes >= 1 and world_size % torch.cuda.device_count() != 0:
+            if torch.cuda.is_available() and num_nodes > 1 and world_size % torch.cuda.device_count() != 0:
                 raise RuntimeError("The world size should be divisible by the number of GPUs.")
         else:
             world_size = None
