@@ -258,7 +258,7 @@ def test_streaming_dataset_distributed_full_shuffle_odd(drop_last, tmpdir, compr
         pytest.param(
             "zstd",
             marks=pytest.mark.skipif(
-                condition=not _ZSTD_AVAILABLE and sys.platform == "darwing", reason="Requires: ['zstd']"
+                condition=not _ZSTD_AVAILABLE or sys.platform == "darwing", reason="Requires: ['zstd']"
             ),
         ),
     ],
