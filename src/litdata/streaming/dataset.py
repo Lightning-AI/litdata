@@ -441,64 +441,14 @@ class StreamingDataset(IterableDataset):
             new_end_idx = start_idx + int(diff * frac_end)
             self.subsample_interval[i]= (new_start_idx, new_end_idx)
     
-    
-    @classmethod
-    def splitter(
-        cls,
-        input_dir: Union[str, "Dir"],
-        splits: List[float],
-        item_loader: Optional[BaseItemLoader] = None,
-        shuffle: bool = False,
-        drop_last: Optional[bool] = None,
-        seed: int = 42,
-        serializers: Optional[Dict[str, Serializer]] = None,
-        max_cache_size: Union[int, str] = "100GB",
-    ) -> List['StreamingDataset']:
-        """Splitter classmethod of streaming dataset can be used to create multiple splits (train, test, val, etc).
-
-        Arguments:
-            input_dir: Path to the folder where the input data is stored.
-            splits: List of floats representing the proportion of data to be allocated to each split
-                (e.g., [0.8, 0.1, 0.1] for train, test, and validation).
-                They don't need to sum up to 1. Use this as splitting + subsampling.
-            item_loader: The logic to load an item from a chunk.
-            shuffle: Whether to shuffle the data.
-            drop_last: If `True`, drops the last items to ensure that
-                all processes/workers return the same amount of data.
-                The argument `drop_last` is set to `True` in a distributed setting
-                and `False` otherwise.
-            seed: Random seed for shuffling.
-            serializers: The serializers used to serialize and deserialize the chunks.
-            max_cache_size: The maximum cache size used by the StreamingDataset.
-
-        """
-        if any([not isinstance(split, float) for split in splits]) or not (all([_f>0 and _f<=1 for _f in splits ]) and sum(splits)<=1) :
-            raise ValueError(f"Split should be float with each value in [0,1] and max sum can be 1.")
-
-        my_ds = cls(input_dir=input_dir, item_loader=item_loader,shuffle=shuffle, drop_last=drop_last, seed=seed, serializers=serializers, max_cache_size=max_cache_size)
-
-        my_datasets = [deepcopy(my_ds) for _ in splits]
-
-        frac_start = 0
-        frac_end = 0
-        for i in range(len(splits)):
-            frac_end += splits[i]
-            my_datasets[i]._modify_subsample_interval(frac_start, frac_end)
-            frac_start += splits[i]
-
-        return my_datasets
-
-
         
 def _generate_subsample_intervals(my_chunk_arr, subsample=1, seed: Optional[int]=None) -> List[Tuple[int, int]]:
     intervals = []
     begin = 0
     end = 0
-    sampled_chunk_size = None
     for chunk in my_chunk_arr:
         end += chunk["chunk_size"]
-        if sampled_chunk_size is None:
-            sampled_chunk_size = int((end-begin)*subsample)
+        sampled_chunk_size = int((end-begin)*subsample)
             
         if seed:
             random.seed(seed)
