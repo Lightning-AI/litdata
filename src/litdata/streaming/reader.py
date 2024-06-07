@@ -165,6 +165,7 @@ class BinaryReader:
         compression: Optional[str] = None,
         item_loader: Optional[BaseItemLoader] = None,
         serializers: Optional[Dict[str, Serializer]] = None,
+        subsample_interval: Optional[List[Tuple[int, int]]]=None
     ) -> None:
         """The BinaryReader enables to read chunked dataset in an efficient way.
 
@@ -189,7 +190,7 @@ class BinaryReader:
 
         self._compression = compression
         self._intervals: Optional[List[str]] = None
-
+        self.subsample_interval = subsample_interval
         self._serializers: Dict[str, Serializer] = _get_serializers(serializers)
         self._distributed_env = _DistributedEnv.detect()
         self._rank: Optional[int] = None
@@ -208,7 +209,7 @@ class BinaryReader:
 
     def _try_load_config(self) -> Optional[ChunksConfig]:
         """Try to load the chunks config if the index files are available."""
-        self._config = ChunksConfig.load(self._cache_dir, self._serializers, self._remote_input_dir, self._item_loader)
+        self._config = ChunksConfig.load(self._cache_dir, self._serializers, self._remote_input_dir, self._item_loader, self.subsample_interval)
         return self._config
 
     @property

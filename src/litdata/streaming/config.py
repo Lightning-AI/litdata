@@ -31,6 +31,7 @@ class ChunksConfig:
         serializers: Dict[str, Serializer],
         remote_dir: Optional[str],
         item_loader: Optional[BaseItemLoader] = None,
+        subsample_interval: Optional[List[Tuple[int, int]]]=None,
     ) -> None:
         """The ChunksConfig reads the index files associated a chunked dataset and enables to map an index to its
         chunk.
@@ -48,6 +49,7 @@ class ChunksConfig:
         self._chunks = []
         self._remote_dir = remote_dir
         self._item_loader = item_loader or PyTreeLoader()
+        self.subsample_interval = subsample_interval
 
         with open(os.path.join(self._cache_dir, _INDEX_FILENAME)) as f:
             data = json.load(f)
@@ -58,7 +60,7 @@ class ChunksConfig:
         self._config["data_spec"] = treespec_loads(self._config["data_spec"])
 
         self._item_loader.setup(self._config, self._chunks, serializers)
-        self._intervals = self._item_loader.generate_intervals()
+        self._intervals = self._item_loader.generate_intervals(self.subsample_interval)
         self._length = self._intervals[-1][-1]
         self._downloader = None
 
@@ -200,6 +202,7 @@ class ChunksConfig:
         serializers: Dict[str, Serializer],
         remote_dir: Optional[str] = None,
         item_loader: Optional[BaseItemLoader] = None,
+        subsample_interval: Optional[List[Tuple[int, int]]]=None,
     ) -> Optional["ChunksConfig"]:
         cache_index_filepath = os.path.join(cache_dir, _INDEX_FILENAME)
 
@@ -210,7 +213,7 @@ class ChunksConfig:
         if not os.path.exists(cache_index_filepath):
             return None
 
-        return ChunksConfig(cache_dir, serializers, remote_dir, item_loader)
+        return ChunksConfig(cache_dir, serializers, remote_dir, item_loader, subsample_interval)
 
     def __len__(self) -> int:
         return self._length
