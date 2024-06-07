@@ -12,9 +12,9 @@
 # limitations under the License.
 
 import hashlib
+import json
 import os
-import random, json
-from copy import deepcopy
+import random
 from logging import Logger
 from time import time
 from typing import Any, Dict, List, Optional, Tuple, Union
@@ -50,7 +50,7 @@ class StreamingDataset(IterableDataset):
         seed: int = 42,
         serializers: Optional[Dict[str, Serializer]] = None,
         max_cache_size: Union[int, str] = "100GB",
-        subsample: float = 1.0
+        subsample: float = 1.0,
     ) -> None:
         """The streaming dataset can be used once your data have been optimised using the DatasetOptimiser class.
 
@@ -65,21 +65,21 @@ class StreamingDataset(IterableDataset):
             seed: Random seed for shuffling.
             serializers: The serializers used to serialize and deserialize the chunks.
             max_cache_size: The maximum cache size used by the StreamingDataset.
-            subsample: A float representing the fraction of the dataset to be randomly sampled (e.g., 0.1 for 10% of the dataset). 
+            subsample: A float representing the fraction of the dataset to be randomly sampled (e.g., 0.1 for 10% of the dataset).
 
         """
         super().__init__()
         if not isinstance(shuffle, bool):
             raise ValueError(f"Shuffle should be a boolean. Found {shuffle}")
-        
+
         if not isinstance(subsample, float) or subsample < 0 or subsample > 1:
             raise ValueError("subsample must be a float with value between 0 & 1.")
-        
+
         # create a chunk_start and chunk_end list that will indicate our subsample from where to read and upto which index.
         with open(os.path.join(input_dir, _INDEX_FILENAME)) as f:
             data = json.load(f)
             # self._chunks.extend(data["chunks"])
-            self.subsample_interval = _generate_subsample_intervals(data["chunks"],subsample, seed)
+            self.subsample_interval = _generate_subsample_intervals(data["chunks"], subsample, seed)
             # print(f"{self.subsample_interval=}")
 
         input_dir = _resolve_dir(input_dir)
@@ -155,7 +155,7 @@ class StreamingDataset(IterableDataset):
             chunk_bytes=1,
             serializers=self.serializers,
             max_cache_size=self.max_cache_size,
-            subsample_interval = self.subsample_interval,
+            subsample_interval=self.subsample_interval,
         )
         cache._reader._try_load_config()
 
@@ -365,7 +365,7 @@ class StreamingDataset(IterableDataset):
             "seed": self.seed,
             "world_size": self.distributed_env.world_size,
             "shuffle": self.shuffle,
-            "subsample_interval":self.subsample_interval
+            "subsample_interval": self.subsample_interval,
         }
 
     def load_state_dict(self, state_dict: Dict[str, Any]) -> None:
@@ -433,26 +433,25 @@ class StreamingDataset(IterableDataset):
                 f"Found `{self.drop_last}` instead of `{state['drop_last']}`."
             )
 
-    
-    def _modify_subsample_interval(self, frac_start:float, frac_end:float):
+    def _modify_subsample_interval(self, frac_start: float, frac_end: float):
         for i, (start_idx, end_idx) in enumerate(self.subsample_interval):
-            diff = (end_idx-start_idx)
+            diff = end_idx - start_idx
             new_start_idx = start_idx + int(diff * frac_start)
             new_end_idx = start_idx + int(diff * frac_end)
-            self.subsample_interval[i]= (new_start_idx, new_end_idx)
-    
-        
-def _generate_subsample_intervals(my_chunk_arr, subsample=1, seed: Optional[int]=None) -> List[Tuple[int, int]]:
+            self.subsample_interval[i] = (new_start_idx, new_end_idx)
+
+
+def _generate_subsample_intervals(my_chunk_arr, subsample=1, seed: Optional[int] = None) -> List[Tuple[int, int]]:
     intervals = []
     begin = 0
     end = 0
     for chunk in my_chunk_arr:
         end += chunk["chunk_size"]
-        sampled_chunk_size = int((end-begin)*subsample)
-            
+        sampled_chunk_size = int((end - begin) * subsample)
+
         if seed:
             random.seed(seed)
-        start_idx = random.randrange(begin,end-sampled_chunk_size+1)
+        start_idx = random.randrange(begin, end - sampled_chunk_size + 1)
         end_idx = start_idx + sampled_chunk_size
         intervals.append((start_idx, end_idx))
         begin += chunk["chunk_size"]

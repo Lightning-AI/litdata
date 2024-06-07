@@ -40,7 +40,7 @@ class Cache:
         item_loader: Optional[BaseItemLoader] = None,
         max_cache_size: Union[int, str] = "100GB",
         serializers: Optional[Dict[str, Serializer]] = None,
-        subsample_interval: Optional[List[Tuple[int, int]]]=None,
+        subsample_interval: Optional[List[Tuple[int, int]]] = None,
     ):
         """The Cache enables to optimise dataset format for cloud training. This is done by grouping several elements
         together in order to accelerate fetching.
@@ -73,7 +73,7 @@ class Cache:
             compression=compression,
             item_loader=item_loader,
             serializers=serializers,
-            subsample_interval = subsample_interval
+            subsample_interval=subsample_interval,
         )
         self._is_done = False
         self._distributed_env = _DistributedEnv.detect()

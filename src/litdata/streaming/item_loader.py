@@ -57,7 +57,9 @@ class BaseItemLoader(ABC):
         return {}
 
     @abstractmethod
-    def generate_intervals(self, subsample_interval: Optional[List[Tuple[int, int]]]=None) -> List[Tuple[int, int, int, int]]:
+    def generate_intervals(
+        self, subsample_interval: Optional[List[Tuple[int, int]]] = None
+    ) -> List[Tuple[int, int, int, int]]:
         """Returns a list of tuple describing the indexes intervals of the chunks."""
         pass
 
@@ -85,7 +87,10 @@ class PyTreeLoader(BaseItemLoader):
     def __init__(self) -> None:
         self._chunk_filepaths: Dict[str, bool] = {}
 
-    def generate_intervals(self, subsample_interval: Optional[List[Tuple[int, int]]]=None,) -> List[Tuple[int, int, int, int]]:
+    def generate_intervals(
+        self,
+        subsample_interval: Optional[List[Tuple[int, int]]] = None,
+    ) -> List[Tuple[int, int, int, int]]:
         intervals = []
         begin = 0
         end = 0
@@ -172,7 +177,9 @@ class TokensLoader(BaseItemLoader):
         if all(chunk["dim"] is None for chunk in self._chunks):
             raise ValueError("The provided chunks isn't properly setup.")
 
-    def generate_intervals(self, subsample_interval: Optional[List[Tuple[int, int]]]=None) -> List[Tuple[int, int, int, int]]:
+    def generate_intervals(
+        self, subsample_interval: Optional[List[Tuple[int, int]]] = None
+    ) -> List[Tuple[int, int, int, int]]:
         intervals = []
         begin = 0
         end = 0
