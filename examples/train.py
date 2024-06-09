@@ -25,7 +25,7 @@ def lightning_training(model_dir: str, hyperparameters: dict) -> object:
         model: The trained model.
 
     """
-    logger.debug("hyperparameters: {}, {}".format(hyperparameters, type(hyperparameters)))
+    logger.debug(f"hyperparameters: {hyperparameters}, {type(hyperparameters)}")
     os.makedirs("lightning_logs", exist_ok=True)
     data_module = MixedDataModule(hyperparameters=hyperparameters)
     number_classes = hyperparameters["num_classes"]
