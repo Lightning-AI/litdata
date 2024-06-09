@@ -255,7 +255,12 @@ def test_streaming_dataset_distributed_full_shuffle_odd(drop_last, tmpdir, compr
     "compression",
     [
         pytest.param(None),
-        pytest.param("zstd", marks=pytest.mark.skipif(condition=not _ZSTD_AVAILABLE, reason="Requires: ['zstd']")),
+        pytest.param(
+            "zstd",
+            marks=pytest.mark.skipif(
+                condition=not _ZSTD_AVAILABLE or sys.platform == "darwin", reason="Requires: ['zstd']"
+            ),
+        ),
     ],
 )
 @pytest.mark.timeout(30)
