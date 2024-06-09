@@ -1,0 +1,11 @@
+fpdf
+pdf2image
+names
+pyarrow
+pandas
+transformers
+litdata
+lightning
+joblib
+torchvision
+scikit-learn
