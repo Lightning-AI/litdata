@@ -1,5 +1,5 @@
-from sklearn.preprocessing import LabelEncoder
 import joblib
+from sklearn.preprocessing import LabelEncoder
 
 if __name__ == "__main__":
     data = ["Cancelation", "IBAN Change", "Damage Report"]

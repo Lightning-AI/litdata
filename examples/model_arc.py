@@ -1,13 +1,13 @@
-""" Architecure Bert & Resnet lightning """
+"""Architecure Bert & Resnet lightning."""
+
+import logging
 import os
 
 import torch
 from lightning import seed_everything
-from torch import Tensor, nn
+from torch import nn
 from torchvision.models import resnet18
-from transformers import AdamW, BertConfig, BertModel
-
-import logging
+from transformers import BertModel
 
 logger = logging.getLogger(__name__)
 
@@ -16,10 +16,10 @@ seed = seed_everything(21, workers=True)
 
 
 class ResNet18(nn.Module):
-    """ResNet 18 cut of the last layer for latent space representation"""
+    """ResNet 18 cut of the last layer for latent space representation."""
 
     def __init__(self, num_classes: int, hyperparameters: dict, endpoint_mode: bool):
-        super(ResNet18, self).__init__()
+        super().__init__()
         self.model = resnet18(weights=None)
         logger.info(hyperparameters)
         logger.info(num_classes)
@@ -27,25 +27,27 @@ class ResNet18(nn.Module):
         self.model.fc = nn.Identity()
 
     def forward(self, x):
-        """forward step for resnet18"""
+        """Forward step for resnet18."""
         return self.model(x)
 
 
 class BertClassifier(nn.Module):
-    """Bert Classifier Model"""
+    """Bert Classifier Model."""
 
     def __init__(self, bert_model):
-        super(BertClassifier, self).__init__()
+        super().__init__()
         self.bert = bert_model
 
     def forward(self, input_ids: torch.Tensor, attention_mask: torch.Tensor):
-        """
-        Forward path, calculate the computational graph in the forward direction. Used for train, test and val.
+        """Forward path, calculate the computational graph in the forward direction.
+
+        Used for train, test and val.
         Args:
             input_ids
             attention_mask
         Returns:
             computional graph
+
         """
         outputs = self.bert(input_ids=input_ids, attention_mask=attention_mask)
         cls_output = outputs.last_hidden_state[:, 0, :]
@@ -53,10 +55,10 @@ class BertClassifier(nn.Module):
 
 
 class BertResNetClassifier(nn.Module):
-    """Bert Resnet Classifier Model"""
+    """Bert Resnet Classifier Model."""
 
     def __init__(self, endpoint_mode: bool, hyperparameters: dict):
-        super(BertResNetClassifier, self).__init__()
+        super().__init__()
         self.endpoint_mode = endpoint_mode
         self.hyperparameters = hyperparameters
         self.num_classes = self.hyperparameters["num_classes"]
@@ -77,8 +79,8 @@ class BertResNetClassifier(nn.Module):
         Returns: model
         """
         prefix = self.hyperparameters.get("artefact_location_path", os.getcwd())
-        #config = BertConfig.from_json_file(os.path.join(prefix, self.hyperparameters["model_config_name"]))
-        #model = BertModel.from_pretrained(os.path.join(prefix, self.hyperparameters["model_path_name"]), config=config)
+        # config = BertConfig.from_json_file(os.path.join(prefix, self.hyperparameters["model_config_name"]))
+        # model = BertModel.from_pretrained(os.path.join(prefix, self.hyperparameters["model_path_name"]), config=config)
         model = BertModel.from_pretrained("bert-base-cased")
         text_classification_model = BertClassifier(model)
         return text_classification_model
@@ -89,17 +91,17 @@ class BertResNetClassifier(nn.Module):
         y: torch.Tensor,
         z: torch.Tensor,
     ) -> torch.Tensor:
-        """
-        Forward pass to calculate the computational graph. This method is used during training, 
-        testing, and validation.
-        
+        """Forward pass to calculate the computational graph. This method is used during training, testing, and
+        validation.
+
         Args:
             x (torch.Tensor): Tensor with id tokesn
             y (torch.Tensor): Tensor with attention tokens.
             z (torch.Tensor): Tensor with iamge.
-        
+
         Returns:
             torch.Tensor: The output tensor representing the computational graph.
+
         """
         text_y = self.text_module(x, y)
         img = self.feature_extractor(z)

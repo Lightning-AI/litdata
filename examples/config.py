@@ -1,6 +1,4 @@
-"""
-Config file with the Hyperparameter dict
-"""
+"""Config file with the Hyperparameter dict."""
 
 import datetime
 import logging
@@ -10,13 +8,13 @@ timestamp = current_time.strftime("%Y_%m_%d_%H_%M_%S")
 logger = logging.getLogger(__name__)
 
 # here is the model targz stored
-OUT_URI = f"output/"
+OUT_URI = "output/"
 
 
 HYPERPARAMETERS = {
     "train_shards": "lightning_data/version_0",
     "val_shards": "lightning_data/version_0",
-    "test_shards": "lightning_data/version_0",#"/teamspace/datasets/lightning_data/version_0"
+    "test_shards": "lightning_data/version_0",  # "/teamspace/datasets/lightning_data/version_0"
     "max_cache_size": "1GB",
     "devices": -1,
     "profiler": "advanced",

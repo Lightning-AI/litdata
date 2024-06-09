@@ -1,17 +1,17 @@
-""" Train, validate and test loop using the lightning framework """
+"""Train, validate and test loop using the lightning framework."""
+
 import logging
 import os
-import shutil
-from typing import Any, Dict, List, Sequence, Union
+from typing import Any, Dict, Sequence, Union
 
-import joblib
 import lightning as pl
 import pandas as pd
 import torch
+from dataloader import EncoderAndTokenizer
 from lightning import seed_everything
 from lightning.pytorch.callbacks import EarlyStopping, ModelCheckpoint
+from model_arc import BertResNetClassifier
 from sklearn.metrics import classification_report, confusion_matrix
-from sklearn.preprocessing import LabelEncoder
 from torch import nn
 from torch.optim.lr_scheduler import StepLR
 from torchmetrics import MetricCollection
@@ -23,8 +23,6 @@ from torchmetrics.classification import (
 )
 from transformers import AdamW
 
-from model_arc import BertResNetClassifier
-from dataloader import EncoderAndTokenizer
 logger = logging.getLogger()
 
 os.environ["TOKENIZERS_PARALLELISM"] = "true"
@@ -33,13 +31,11 @@ seed = seed_everything(21, workers=True)
 
 
 class LitModel(pl.LightningModule):
-    """
-    lightning model for classification
-    """
+    """Lightning model for classification."""
 
     def __init__(
-            self,
-            hyperparameters: dict,
+        self,
+        hyperparameters: dict,
     ):
         super().__init__()
         self.hyperparameters = hyperparameters
@@ -55,30 +51,34 @@ class LitModel(pl.LightningModule):
         )
         # Classification
         self.criterion = nn.CrossEntropyLoss()
-        metrics = MetricCollection([
-            MulticlassAccuracy(self.num_classes),
-            MulticlassPrecision(self.num_classes),
-            MulticlassRecall(self.num_classes),
-            MulticlassF1Score(self.num_classes),
-        ])
-        self.train_metrics = metrics.clone(prefix='train_')
-        self.val_metrics = metrics.clone(prefix='val_')
-        self.test_metrics = metrics.clone(prefix='test_')
+        metrics = MetricCollection(
+            [
+                MulticlassAccuracy(self.num_classes),
+                MulticlassPrecision(self.num_classes),
+                MulticlassRecall(self.num_classes),
+                MulticlassF1Score(self.num_classes),
+            ]
+        )
+        self.train_metrics = metrics.clone(prefix="train_")
+        self.val_metrics = metrics.clone(prefix="val_")
+        self.test_metrics = metrics.clone(prefix="test_")
         self.pred_dict_list = []
         self.save_hyperparameters()
 
     def forward(
-            self,
-            x: torch.Tensor,
-            y: torch.Tensor,
-            z: torch.Tensor,
+        self,
+        x: torch.Tensor,
+        y: torch.Tensor,
+        z: torch.Tensor,
     ) -> torch.Tensor:
-        """
-        Forward path, calculate the computational graph in the forward direction. Used for train, test and val.
+        """Forward path, calculate the computational graph in the forward direction.
+
+        Used for train, test and val.
         Args:
             y: tensor with text data as tokens
         Returns:
             computional graph
+
         """
         ret = self.module(x, y, z)
         return ret
@@ -118,14 +118,14 @@ class LitModel(pl.LightningModule):
         return ret
 
     def _shared_eval_step(self, batch: Dict[str, torch.Tensor], mode: str) -> Dict:
-        """
-        Calculate the desired metrics.
+        """Calculate the desired metrics.
 
         Args:
             batch: tensor
             mode: train, test or val
         Returns:
             dict with loss, outputs and ground_truth
+
         """
         ids = batch["ID"]
         atts = batch["Att"]
@@ -150,9 +150,7 @@ class LitModel(pl.LightningModule):
         return {"outputs": out, "loss": loss, "ground_truth": ground_truth, "numerical_id": numerical_id}
 
     def on_test_end(self) -> None:
-        """
-        Keep the test batches for reporting metrics, like prediction table and classification report
-        """
+        """Keep the test batches for reporting metrics, like prediction table and classification report."""
         output_list = []
         ground_truths_list = []
         numerical_ids_list = []
@@ -187,14 +185,13 @@ class LitModel(pl.LightningModule):
             self.test_metrics.reset()
 
     def _sklearn_metrics(
-            self,
-            output: torch.Tensor,
-            ground_truths: torch.Tensor,
-            mode: str,
-            numerical_ids: torch.Tensor,
+        self,
+        output: torch.Tensor,
+        ground_truths: torch.Tensor,
+        mode: str,
+        numerical_ids: torch.Tensor,
     ):
-        """
-        Calculate classification report, confusion matrix and the scores for the test data
+        """Calculate classification report, confusion matrix and the scores for the test data.
 
         Args:
             output:
@@ -202,6 +199,7 @@ class LitModel(pl.LightningModule):
             mode:
         Returns:
             None
+
         """
         logger.info(("output shape", output.shape))
         logger.info(("ground_truths shape", ground_truths.shape))
@@ -222,8 +220,7 @@ class LitModel(pl.LightningModule):
         self.save_test_evaluations(model_dir, mode, y_pred, y_true, confis, numerical_id_)
 
     def save_reports(self, model_dir, mode, report_confusion_matrix, report):
-        """
-        Save classification report and confusion matrix to csv file.
+        """Save classification report and confusion matrix to csv file.
 
         Args:
             model_dir: path
@@ -231,6 +228,7 @@ class LitModel(pl.LightningModule):
             report_confusion_matrix: sklearn confusion matrix
             report: sklear classification report
         Returns:
+
         """
         df_cm = pd.DataFrame(report_confusion_matrix)
         df_cr = pd.DataFrame(report).transpose()
@@ -258,15 +256,14 @@ class LitModel(pl.LightningModule):
         df_test.to_csv(f"{model_dir}/{mode}_labels_predictions.csv", sep=";")
         logger.info("The label predictions are saved.")
 
-
     def predict(self, batch: Dict[str, torch.Tensor], batch_idx: int = 0, dataloader_idx: int = 0) -> torch.Tensor:
-        """
-        Model prediction  without softmax and argmax to predict class label
+        """Model prediction  without softmax and argmax to predict class label.
 
         Args:
             outputs:
         Returns:
             None
+
         """
         self.eval()
         with torch.no_grad():
@@ -317,13 +314,14 @@ class LitModel(pl.LightningModule):
         return [optimizer], [{"scheduler": scheduler, "interval": "epoch"}]
 
     def configure_callbacks(self) -> Union[Sequence[pl.pytorch.Callback], pl.pytorch.Callback]:
-        """
-        Configure Early stopping or Model Checkpointing
+        """Configure Early stopping or Model Checkpointing.
 
         Returns:
+
         """
-        early_stop = EarlyStopping(monitor="val_MulticlassAccuracy", patience=self.hyperparameters["patience"],
-                                   mode="max")
+        early_stop = EarlyStopping(
+            monitor="val_MulticlassAccuracy", patience=self.hyperparameters["patience"], mode="max"
+        )
         checkpoint = ModelCheckpoint(
             monitor="val_MulticlassAccuracy",
             mode="max",

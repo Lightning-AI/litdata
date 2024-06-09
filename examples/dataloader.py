@@ -1,18 +1,19 @@
-""" lightning dataloader for text and image data """
+"""Lightning dataloader for text and image data."""
+
 import logging
 import os
 from typing import Any, Union
+
 import joblib
 import lightning as pl
 import numpy as np
 import torch
-from lightning import seed_everything
-from litdata import StreamingDataset, StreamingDataLoader
-from torch.utils.data import DataLoader, Dataset
-from torchvision import transforms
-from tqdm import tqdm
-from transformers import BertTokenizerFast, BertTokenizer
 from config import HYPERPARAMETERS
+from lightning import seed_everything
+from litdata import StreamingDataLoader, StreamingDataset
+from torch.utils.data import DataLoader
+from torchvision import transforms
+from transformers import BertTokenizerFast
 
 pil_transform = transforms.Compose([transforms.PILToTensor()])
 
@@ -24,8 +25,8 @@ os.environ["TOKENIZERS_PARALLELISM"] = "true"
 torch.manual_seed(21)
 seed = seed_everything(21, workers=True)
 
-class EncoderAndTokenizer():
 
+class EncoderAndTokenizer:
     def __init__(self):
         self.hyperparameters = HYPERPARAMETERS
 
@@ -43,16 +44,15 @@ class EncoderAndTokenizer():
         Returns: tokenizer
         """
         # Load Bert tokenizer
-        tokenizer = BertTokenizerFast.from_pretrained('bert-base-cased')
+        tokenizer = BertTokenizerFast.from_pretrained("bert-base-cased")
         return tokenizer
 
+
 class IHDataset(StreamingDataset):
-    """
-    Streaming dataset class
-    """
+    """Streaming dataset class."""
 
     def __init__(self, input_dir: Union[str, "Dir"], hyperparameters: Union[dict, Any] = None) -> None:
-        super().__init__(input_dir, shuffle=True, max_cache_size= hyperparameters["max_cache_size"])
+        super().__init__(input_dir, shuffle=True, max_cache_size=hyperparameters["max_cache_size"])
         self.hyperparameters = hyperparameters
         self.image_transform = transforms.Compose(
             [
@@ -64,7 +64,6 @@ class IHDataset(StreamingDataset):
         EC = EncoderAndTokenizer()
         self.tokenizer = EC.load_tokenizer()
         self.labelencoder = EC.load_labelencoder()
- 
 
     def tokenize_data(self, tokenizer, texts, max_length: int):
         """
@@ -104,7 +103,7 @@ class IHDataset(StreamingDataset):
 
 
 class MixedDataModule(pl.LightningDataModule):
-    """Own DataModule form the pytorch lightning DataModule"""
+    """Own DataModule form the pytorch lightning DataModule."""
 
     def __init__(self, hyperparameters: dict):
         """
@@ -138,7 +137,6 @@ class MixedDataModule(pl.LightningDataModule):
             ]
         )
 
- 
     def train_dataloader(self) -> DataLoader:
         """
         Define the training dataloader
