@@ -31,6 +31,8 @@ class ChunksConfig:
         serializers: Dict[str, Serializer],
         remote_dir: Optional[str],
         item_loader: Optional[BaseItemLoader] = None,
+        chunks: Optional[List[any]]=None,
+        region_of_interest: Optional[List[Tuple[int,int]]]=None,
     ) -> None:
         """The ChunksConfig reads the index files associated a chunked dataset and enables to map an index to its
         chunk.
@@ -40,12 +42,14 @@ class ChunksConfig:
             serializers: The serializers used to serialize and deserialize the chunks.
             remote_dir: The path to a remote folder where the data are located.
                 The scheme needs to be added to the path.
+            chunks: The chunks that were read from `input_dir/index.json` file.
+            region_of_interest: List of tuples of {start,end} of region of interest for each chunk.
 
         """
         self._cache_dir = cache_dir
         self._intervals: List[Tuple[int, int]] = []
         self._config = None
-        self._chunks = []
+        self._chunks = chunks
         self._remote_dir = remote_dir
         self._item_loader = item_loader or PyTreeLoader()
 
@@ -53,11 +57,13 @@ class ChunksConfig:
             data = json.load(f)
             self._config = data["config"]
             self._validate_item_loader()
-            self._chunks.extend(data["chunks"])
+            if chunks is None:
+                self._chunks = data["chunks"]
+        
 
         self._config["data_spec"] = treespec_loads(self._config["data_spec"])
 
-        self._item_loader.setup(self._config, self._chunks, serializers)
+        self._item_loader.setup(self._config, self._chunks, serializers, region_of_interest)
         self._intervals = self._item_loader.generate_intervals()
         self._length = self._intervals[-1][-1]
         self._downloader = None
@@ -124,7 +130,7 @@ class ChunksConfig:
             f.write(data)
 
     @property
-    def intervals(self) -> List[Tuple[int, int]]:
+    def intervals(self) -> List[Tuple[int, int, int, int]]:
         if self._intervals is None:
             raise RuntimeError("The intervals should be defined.")
         return self._intervals
@@ -167,7 +173,7 @@ class ChunksConfig:
 
     def _get_chunk_index_from_index(self, index: int) -> int:
         for chunk_index, internal in enumerate(self._intervals):
-            if internal[0] <= index < internal[1]:
+            if internal[0] <= index < internal[-1]:
                 return chunk_index
         raise ValueError(
             f"The provided index {index} didn't find a match within the chunk intervals {self._intervals}."
@@ -200,6 +206,8 @@ class ChunksConfig:
         serializers: Dict[str, Serializer],
         remote_dir: Optional[str] = None,
         item_loader: Optional[BaseItemLoader] = None,
+        chunks: Optional[List[any]]=None,
+        region_of_interest: Optional[List[Tuple[int,int]]]=None,
     ) -> Optional["ChunksConfig"]:
         cache_index_filepath = os.path.join(cache_dir, _INDEX_FILENAME)
 
@@ -210,7 +218,7 @@ class ChunksConfig:
         if not os.path.exists(cache_index_filepath):
             return None
 
-        return ChunksConfig(cache_dir, serializers, remote_dir, item_loader)
+        return ChunksConfig(cache_dir, serializers, remote_dir, item_loader, chunks, region_of_interest)
 
     def __len__(self) -> int:
         return self._length

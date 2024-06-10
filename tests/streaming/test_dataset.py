@@ -34,6 +34,7 @@ from litdata.streaming.dataset import (
     _replay_sampling,
     _should_replace_path,
     _try_create_cache_dir,
+    _generate_subsample_intervals,
 )
 from litdata.streaming.item_loader import TokensLoader
 from litdata.streaming.shuffle import FullShuffle, NoShuffle
@@ -58,12 +59,8 @@ def seed_everything(random_seed):
 def test_streaming_dataset(tmpdir, monkeypatch, compression):
     seed_everything(42)
 
-    dataset = StreamingDataset(input_dir=str(tmpdir))
     with pytest.raises(ValueError, match="The provided dataset"):
-        iter(dataset)
-    dataset = StreamingDataset(input_dir=str(tmpdir))
-    with pytest.raises(ValueError, match="The provided dataset"):
-        _ = dataset[0]
+        dataset = StreamingDataset(input_dir=str(tmpdir))
 
     cache = Cache(str(tmpdir), chunk_size=10, compression=compression)
     for i in range(60):
@@ -180,7 +177,7 @@ def test_streaming_dataset_distributed_no_shuffle(drop_last, tmpdir, compression
     for i in process_1_1:
         found = False
         for interval in intervals_per_ranks[0]:
-            if interval[0] <= i <= interval[1]:
+            if interval[1] <= i <= interval[2]:
                 found = True
                 break
         found_list.append(found)
@@ -191,7 +188,7 @@ def test_streaming_dataset_distributed_no_shuffle(drop_last, tmpdir, compression
     for i in process_2_1:
         found = False
         for interval in intervals_per_ranks[1]:
-            if interval[0] <= i <= interval[1]:
+            if interval[1] <= i <= interval[2]:
                 found = True
                 break
         found_list.append(found)
@@ -663,7 +660,7 @@ def test_dataset_for_text_tokens_distributed_num_workers_end_to_end(tmpdir, monk
 def test_s3_streaming_dataset():
     dataset = StreamingDataset(input_dir="s3://pl-flash-data/optimized_tiny_imagenet")
     assert dataset.input_dir.url == "s3://pl-flash-data/optimized_tiny_imagenet"
-    assert dataset.input_dir.path is None
+    assert dataset.input_dir.path.startswith("/cache/chunks") # it won't be None, and a cache dir will be created
 
 
 class EmulateS3StreamingDataset(StreamingDataset):
@@ -945,8 +942,14 @@ def test_replay_chunks_sampling():
     assert _replay_chunks_sampling(workers_intervals, {0: 14, 1: 13}) == ({0: 2, 1: 2}, {0: 4, 1: 3})
     assert _replay_chunks_sampling(workers_intervals, {0: 15, 1: 12}) == ({0: 3, 1: 2}, {0: 0, 1: 2})
 
-
-def test_dataset_distributed_drop_last(tmpdir, monkeypatch):
+@pytest.mark.parametrize(
+    "compression",
+    [
+        pytest.param(None),
+        pytest.param("zstd", marks=pytest.mark.skipif(condition=not _ZSTD_AVAILABLE, reason="Requires: ['zstd']")),
+    ],
+)
+def test_dataset_distributed_drop_last(tmpdir, monkeypatch, compression):
     class _DistributedEnvMock:
         def detect(cls):
             return _DistributedEnv(2, 0, 1)
@@ -955,6 +958,12 @@ def test_dataset_distributed_drop_last(tmpdir, monkeypatch):
 
     monkeypatch.setattr(dataset_module, "_DistributedEnv", _DistributedEnvMock())
     monkeypatch.setattr(dataset_module, "logger", logger_mock)
+
+    cache = Cache(str(tmpdir), chunk_size=10, compression=compression)
+    for i in range(60):
+        cache[i] = i
+    cache.done()
+    cache.merge()
 
     dataset = StreamingDataset(str(tmpdir), drop_last=None)
     assert dataset.drop_last
@@ -969,3 +978,14 @@ def test_dataset_distributed_drop_last(tmpdir, monkeypatch):
         " if your system depends on distributed collectives."
     )
     assert expected_warn_msg == warn_msg
+
+def test_generate_subsample_intervals():
+    my_chunks = [{"chunk_size":50}, {"chunk_size":50}, {"chunk_size":50}, {"chunk_size":50}]
+
+    # CASE: complete overlap
+    last_left_subsample_count = 0
+    assert _generate_subsample_intervals(my_chunks, last_left_subsample_count) == [(0,50),(50,100),(100,150),(150,200)]
+
+    # CASE: incomplete overlap
+    last_left_subsample_count = 13
+    assert _generate_subsample_intervals(my_chunks, last_left_subsample_count) == [(0,50),(50,100),(100,150),(150,163)]
