@@ -5,6 +5,7 @@ from litdata import optimize
 from PIL import Image
 from pyarrow.parquet import ParquetFile
 
+
 def convert_parquet_to_lightning_data(parquet_file):
     try:
         df_bytes = parquet_file.read_bytes()
