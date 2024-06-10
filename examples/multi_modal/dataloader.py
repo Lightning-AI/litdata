@@ -92,11 +92,7 @@ class IHDataset(StreamingDataset):
         text_ind, text_att = self.tokenize_data(self.tokenizer, text, 512)
         text_ind = np.squeeze(text_ind, axis=0)
         text_att = np.squeeze(text_att, axis=0)
-        try:
-            img = pil_transform(page.convert("RGB")).float()
-        except:
-            img = page.float()
-
+        img = page.float()
         label = self.labelencoder.transform([label2])
 
         return {"ID": text_ind, "Att": text_att, "NID": numerical_id, "text": text, "GT": label[0], "IMG": img}
