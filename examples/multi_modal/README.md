@@ -75,17 +75,17 @@ To use this code, follow these steps:
 
 1. **Generate Data:**
     ```python
-    python generate.py
+    python examples/multi_modal/generate.py
     ```
 
 2. **Prepare Data:**
     ```python
-    python convert.py
+    python examples/multi_modal/convert.py
     ```
 
 3. **Train Model:**
     ```python
-    python train.py
+    python examples/multi_modal/train.py
     ```
 
 The scripts will handle data generation, preparation, training, and evaluation sequentially.
