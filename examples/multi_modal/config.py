@@ -7,7 +7,6 @@ current_time = datetime.datetime.now()
 timestamp = current_time.strftime("%Y_%m_%d_%H_%M_%S")
 logger = logging.getLogger(__name__)
 
-# here is the model targz stored
 OUT_URI = "output/"
 
 
@@ -20,7 +19,7 @@ HYPERPARAMETERS = {
     "profiler": "advanced",
     "test_mode": "on",
     "val_mode": "on",
-    "limit_batches": 10,
+    "limit_batches": 100,
     "precision": "16-mixed",
     "out_uri": OUT_URI,
     "batch_size": 4,

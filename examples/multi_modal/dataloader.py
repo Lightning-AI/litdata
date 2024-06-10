@@ -8,7 +8,7 @@ import joblib
 import lightning as pl
 import numpy as np
 import torch
-from config import HYPERPARAMETERS
+from examples.multi_modal.config import HYPERPARAMETERS
 from lightning import seed_everything
 from litdata import StreamingDataLoader, StreamingDataset
 from torch.utils.data import DataLoader

@@ -81,6 +81,6 @@ def lightning_training(model_dir: str, hyperparameters: dict) -> object:
 
 if __name__ == "__main__":
     logging.basicConfig(level="INFO")
-    from config import HYPERPARAMETERS
+    from examples.multi_modal.config import HYPERPARAMETERS
 
     lightning_training(model_dir="logs", hyperparameters=HYPERPARAMETERS)

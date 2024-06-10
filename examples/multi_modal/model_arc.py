@@ -79,8 +79,6 @@ class BertResNetClassifier(nn.Module):
         Returns: model
         """
         prefix = self.hyperparameters.get("artefact_location_path", os.getcwd())
-        # config = BertConfig.from_json_file(os.path.join(prefix, self.hyperparameters["model_config_name"]))
-        # model = BertModel.from_pretrained(os.path.join(prefix, self.hyperparameters["model_path_name"]), config=config)
         model = BertModel.from_pretrained("bert-base-cased")
         text_classification_model = BertClassifier(model)
         return text_classification_model

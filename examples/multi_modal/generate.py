@@ -50,7 +50,7 @@ dates = [
 
 
 # Directory to save generated files
-output_dir = "./dataframe_data"
+output_dir = "dataframe_data"
 os.makedirs(output_dir, exist_ok=True)
 
 
