@@ -30,11 +30,11 @@ from litdata.streaming.dataset import (
     Dir,
     StreamingDataset,
     _associate_chunks_to_workers,
+    _generate_subsample_intervals,
     _replay_chunks_sampling,
     _replay_sampling,
     _should_replace_path,
     _try_create_cache_dir,
-    _generate_subsample_intervals,
 )
 from litdata.streaming.item_loader import TokensLoader
 from litdata.streaming.shuffle import FullShuffle, NoShuffle
@@ -660,7 +660,7 @@ def test_dataset_for_text_tokens_distributed_num_workers_end_to_end(tmpdir, monk
 def test_s3_streaming_dataset():
     dataset = StreamingDataset(input_dir="s3://pl-flash-data/optimized_tiny_imagenet")
     assert dataset.input_dir.url == "s3://pl-flash-data/optimized_tiny_imagenet"
-    assert dataset.input_dir.path.startswith("/cache/chunks") # it won't be None, and a cache dir will be created
+    assert dataset.input_dir.path.startswith("/cache/chunks")  # it won't be None, and a cache dir will be created
 
 
 class EmulateS3StreamingDataset(StreamingDataset):
@@ -942,6 +942,7 @@ def test_replay_chunks_sampling():
     assert _replay_chunks_sampling(workers_intervals, {0: 14, 1: 13}) == ({0: 2, 1: 2}, {0: 4, 1: 3})
     assert _replay_chunks_sampling(workers_intervals, {0: 15, 1: 12}) == ({0: 3, 1: 2}, {0: 0, 1: 2})
 
+
 @pytest.mark.parametrize(
     "compression",
     [
@@ -979,13 +980,24 @@ def test_dataset_distributed_drop_last(tmpdir, monkeypatch, compression):
     )
     assert expected_warn_msg == warn_msg
 
+
 def test_generate_subsample_intervals():
-    my_chunks = [{"chunk_size":50}, {"chunk_size":50}, {"chunk_size":50}, {"chunk_size":50}]
+    my_chunks = [{"chunk_size": 50}, {"chunk_size": 50}, {"chunk_size": 50}, {"chunk_size": 50}]
 
     # CASE: complete overlap
     last_left_subsample_count = 0
-    assert _generate_subsample_intervals(my_chunks, last_left_subsample_count) == [(0,50),(50,100),(100,150),(150,200)]
+    assert _generate_subsample_intervals(my_chunks, last_left_subsample_count) == [
+        (0, 50),
+        (50, 100),
+        (100, 150),
+        (150, 200),
+    ]
 
     # CASE: incomplete overlap
     last_left_subsample_count = 13
-    assert _generate_subsample_intervals(my_chunks, last_left_subsample_count) == [(0,50),(50,100),(100,150),(150,163)]
+    assert _generate_subsample_intervals(my_chunks, last_left_subsample_count) == [
+        (0, 50),
+        (50, 100),
+        (100, 150),
+        (150, 163),
+    ]

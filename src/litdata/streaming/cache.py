@@ -34,8 +34,8 @@ class Cache:
     def __init__(
         self,
         input_dir: Optional[Union[str, Dir]],
-        chunks: Optional[List[any]]=None,
-        region_of_interest: Optional[List[Tuple[int,int]]]=None,
+        chunks: Optional[List[any]] = None,
+        region_of_interest: Optional[List[Tuple[int, int]]] = None,
         compression: Optional[str] = None,
         chunk_size: Optional[int] = None,
         chunk_bytes: Optional[Union[int, str]] = None,
@@ -71,8 +71,8 @@ class Cache:
         )
         self._reader = BinaryReader(
             self._cache_dir,
-            chunks = chunks,
-            region_of_interest = region_of_interest,
+            chunks=chunks,
+            region_of_interest=region_of_interest,
             max_cache_size=_convert_bytes_to_int(max_cache_size) if isinstance(max_cache_size, str) else max_cache_size,
             remote_input_dir=input_dir.url,
             compression=compression,

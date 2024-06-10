@@ -31,8 +31,8 @@ class ChunksConfig:
         serializers: Dict[str, Serializer],
         remote_dir: Optional[str],
         item_loader: Optional[BaseItemLoader] = None,
-        chunks: Optional[List[any]]=None,
-        region_of_interest: Optional[List[Tuple[int,int]]]=None,
+        chunks: Optional[List[any]] = None,
+        region_of_interest: Optional[List[Tuple[int, int]]] = None,
     ) -> None:
         """The ChunksConfig reads the index files associated a chunked dataset and enables to map an index to its
         chunk.
@@ -59,7 +59,6 @@ class ChunksConfig:
             self._validate_item_loader()
             if chunks is None:
                 self._chunks = data["chunks"]
-        
 
         self._config["data_spec"] = treespec_loads(self._config["data_spec"])
 
@@ -206,8 +205,8 @@ class ChunksConfig:
         serializers: Dict[str, Serializer],
         remote_dir: Optional[str] = None,
         item_loader: Optional[BaseItemLoader] = None,
-        chunks: Optional[List[any]]=None,
-        region_of_interest: Optional[List[Tuple[int,int]]]=None,
+        chunks: Optional[List[any]] = None,
+        region_of_interest: Optional[List[Tuple[int, int]]] = None,
     ) -> Optional["ChunksConfig"]:
         cache_index_filepath = os.path.join(cache_dir, _INDEX_FILENAME)
 

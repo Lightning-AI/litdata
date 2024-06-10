@@ -160,8 +160,8 @@ class BinaryReader:
     def __init__(
         self,
         cache_dir: str,
-        chunks: Optional[List[any]]=None,
-        region_of_interest: Optional[List[Tuple[int,int]]]=None,
+        chunks: Optional[List[any]] = None,
+        region_of_interest: Optional[List[Tuple[int, int]]] = None,
         max_cache_size: Optional[Union[int, str]] = None,
         remote_input_dir: Optional[str] = None,
         compression: Optional[str] = None,
@@ -213,7 +213,14 @@ class BinaryReader:
 
     def _try_load_config(self) -> Optional[ChunksConfig]:
         """Try to load the chunks config if the index files are available."""
-        self._config = ChunksConfig.load(self._cache_dir, self._serializers, self._remote_input_dir, self._item_loader, self.chunks, self.region_of_interest)
+        self._config = ChunksConfig.load(
+            self._cache_dir,
+            self._serializers,
+            self._remote_input_dir,
+            self._item_loader,
+            self.chunks,
+            self.region_of_interest,
+        )
         return self._config
 
     @property

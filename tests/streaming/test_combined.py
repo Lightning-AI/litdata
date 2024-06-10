@@ -1,7 +1,7 @@
 import os
 import sys
 from unittest.mock import ANY, MagicMock
-import time
+
 import pytest
 import torch
 from litdata.streaming.cache import Cache

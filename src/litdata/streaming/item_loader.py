@@ -31,7 +31,13 @@ from litdata.utilities._pytree import PyTree, tree_unflatten
 class BaseItemLoader(ABC):
     """The base item loader is responsible to decide how the items within a chunk are loaded."""
 
-    def setup(self, config: Dict, chunks: List[any], serializers: Dict[str, Serializer], region_of_interest: Optional[List[Tuple[int,int]]]=None,) -> None:
+    def setup(
+        self,
+        config: Dict,
+        chunks: List[any],
+        serializers: Dict[str, Serializer],
+        region_of_interest: Optional[List[Tuple[int, int]]] = None,
+    ) -> None:
         self._config = config
         self._chunks = chunks
         self._serializers = {**serializers}
@@ -59,11 +65,11 @@ class BaseItemLoader(ABC):
 
     @abstractmethod
     def generate_intervals(self) -> List[Tuple[int, int, int, int]]:
-        """
-        Returns a list of tuple describing the indexes intervals of the chunks.
-        [chunk_start, region_of_interest_start, region_of_interest_end, chunk_end]
+        """Returns a list of tuple describing the indexes intervals of the chunks. [chunk_start,
+        region_of_interest_start, region_of_interest_end, chunk_end]
 
         region_of_interest: indicates indexes a chunk our StreamingDataset is allowed to read.
+
         """
         pass
 
@@ -172,7 +178,13 @@ class TokensLoader(BaseItemLoader):
             "block_size": self._block_size,
         }
 
-    def setup(self, config: Dict, chunks: List, serializers: Dict[str, Serializer], region_of_interest: Optional[List[Tuple[int,int]]]=None,) -> None:
+    def setup(
+        self,
+        config: Dict,
+        chunks: List,
+        serializers: Dict[str, Serializer],
+        region_of_interest: Optional[List[Tuple[int, int]]] = None,
+    ) -> None:
         super().setup(config, chunks, serializers, region_of_interest)
         self._dtype = _TORCH_DTYPES_MAPPING[int(config["data_format"][0].split(":")[1])]
         if all(chunk["dim"] is None for chunk in self._chunks):

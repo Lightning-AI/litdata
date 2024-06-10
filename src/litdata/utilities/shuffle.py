@@ -85,7 +85,9 @@ def _associate_chunks_and_internals_to_ranks(
             if items_in_chunk > items_left_to_assign:
                 chunks_per_ranks[rank].append(chunk_index)
                 begin, end = chunk_interval[1], chunk_interval[2]
-                intervals_per_ranks[rank].append([chunk_interval[0], begin, begin + items_left_to_assign, chunk_interval[3]])
+                intervals_per_ranks[rank].append(
+                    [chunk_interval[0], begin, begin + items_left_to_assign, chunk_interval[3]]
+                )
                 chunk_interval = (chunk_interval[0], begin + items_left_to_assign, end, chunk_interval[3])
                 num_items_per_ranks[rank] = 0
                 rank += 1

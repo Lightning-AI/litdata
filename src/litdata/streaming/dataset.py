@@ -12,8 +12,8 @@
 # limitations under the License.
 
 import hashlib
-import os
 import json
+import os
 import random
 from logging import Logger
 from time import time
@@ -27,15 +27,14 @@ from litdata.constants import (
     _INDEX_FILENAME,
 )
 from litdata.streaming import Cache
-from litdata.streaming.item_loader import TokensLoader
-from litdata.streaming.item_loader import BaseItemLoader
+from litdata.streaming.downloader import get_downloader_cls
+from litdata.streaming.item_loader import BaseItemLoader, TokensLoader
 from litdata.streaming.resolver import Dir, _resolve_dir
 from litdata.streaming.sampler import ChunkedIndex
 from litdata.streaming.serializers import Serializer
 from litdata.streaming.shuffle import FullShuffle, NoShuffle, Shuffle
 from litdata.utilities.env import _DistributedEnv, _is_in_dataloader_worker, _WorkerEnv
 from litdata.utilities.shuffle import _find_chunks_per_ranks_on_which_to_skip_deletion
-from litdata.streaming.downloader import get_downloader_cls
 
 logger = Logger(__name__)
 
@@ -73,10 +72,10 @@ class StreamingDataset(IterableDataset):
         super().__init__()
         if not isinstance(shuffle, bool):
             raise ValueError(f"Shuffle should be a boolean. Found {shuffle}")
-        
+
         if not isinstance(subsample, float) or subsample < 0 or subsample > 1:
             raise ValueError("subsample must be a float with value between 0 & 1.")
-        
+
         input_dir = _resolve_dir(input_dir)
 
         self.input_dir = input_dir
@@ -94,9 +93,9 @@ class StreamingDataset(IterableDataset):
         if not os.path.exists(cache_index_filepath) and isinstance(self.input_dir.url, str):
             downloader = get_downloader_cls(self.input_dir.url, self.input_dir.path, [])
             downloader.download_file(os.path.join(self.input_dir.url, _INDEX_FILENAME), cache_index_filepath)
-        
+
         if os.path.exists(os.path.join(self.input_dir.path, _INDEX_FILENAME)):
-        # create a chunk_start and chunk_end list that will indicate our subsample from where to read and upto which index.
+            # create a chunk_start and chunk_end list that will indicate our subsample from where to read and upto which index.
             with open(os.path.join(self.input_dir.path, _INDEX_FILENAME)) as f:
                 data = json.load(f)
                 self.chunks.extend(data["chunks"])
@@ -105,11 +104,13 @@ class StreamingDataset(IterableDataset):
                 f"The provided dataset `{input_dir.path}` doesn't contain any {_INDEX_FILENAME} file."
                 " HINT: Did you successfully optimize a dataset to the provided `input_dir`?"
             )
-        
+
         assert len(self.chunks) > 0, f"No chunks found in the `{input_dir}/index.json` file"
 
         if isinstance(item_loader, TokensLoader):
-            self.chunks, self.region_of_interest = token_loader_sample_chunk_and_generate_interval(self.chunks, subsample, item_loader._block_size)
+            self.chunks, self.region_of_interest = token_loader_sample_chunk_and_generate_interval(
+                self.chunks, subsample, item_loader._block_size
+            )
         else:
             self.chunks, self.region_of_interest = sample_chunk_and_generate_interval(self.chunks, subsample)
 
@@ -178,8 +179,8 @@ class StreamingDataset(IterableDataset):
 
         cache = Cache(
             input_dir=self.input_dir,
-            chunks = self.chunks,
-            region_of_interest = self.region_of_interest,
+            chunks=self.chunks,
+            region_of_interest=self.region_of_interest,
             item_loader=self.item_loader,
             chunk_bytes=1,
             serializers=self.serializers,
@@ -393,8 +394,8 @@ class StreamingDataset(IterableDataset):
             "seed": self.seed,
             "world_size": self.distributed_env.world_size,
             "shuffle": self.shuffle,
-            "chunks":self.chunks,
-            "region_of_interest":self.region_of_interest,
+            "chunks": self.chunks,
+            "region_of_interest": self.region_of_interest,
         }
 
     def load_state_dict(self, state_dict: Dict[str, Any]) -> None:
@@ -462,15 +463,14 @@ class StreamingDataset(IterableDataset):
                 f"Found `{self.drop_last}` instead of `{state['drop_last']}`."
             )
 
-def _generate_subsample_intervals(my_chunk_arr: List[any], last_left_subsample_count:int) -> List[Tuple[int, int]]:
-    """
-    Generates a list of intervals that the dataset is allowed to read, based on the sizes of chunks.
-    """
+
+def _generate_subsample_intervals(my_chunk_arr: List[any], last_left_subsample_count: int) -> List[Tuple[int, int]]:
+    """Generates a list of intervals that the dataset is allowed to read, based on the sizes of chunks."""
     intervals = []
     begin = 0
     end = 0
     for i, chunk in enumerate(my_chunk_arr):
-        if i == len(my_chunk_arr)-1 and last_left_subsample_count > 0:
+        if i == len(my_chunk_arr) - 1 and last_left_subsample_count > 0:
             end += last_left_subsample_count
         else:
             end += chunk["chunk_size"]
@@ -481,7 +481,9 @@ def _generate_subsample_intervals(my_chunk_arr: List[any], last_left_subsample_c
     return intervals
 
 
-def _generate_subsample_intervals_for_token_loader(chunks: List[any], block_size: int, last_left_subsample_count:int) -> List[Tuple[int, int, int, int]]:
+def _generate_subsample_intervals_for_token_loader(
+    chunks: List[any], block_size: int, last_left_subsample_count: int
+) -> List[Tuple[int, int, int, int]]:
     intervals = []
     begin = 0
     end = 0
@@ -490,14 +492,14 @@ def _generate_subsample_intervals_for_token_loader(chunks: List[any], block_size
         num_blocks = dim // block_size
         end += num_blocks
         start_idx, end_idx = begin, end
-        if idx == len(chunks)-1 and last_left_subsample_count>0:
+        if idx == len(chunks) - 1 and last_left_subsample_count > 0:
             end_idx = last_left_subsample_count
         intervals.append((start_idx, end_idx))
         begin += num_blocks
     return intervals
 
 
-def sample_chunk_and_generate_interval(chunks: List[any], subsample:float):
+def sample_chunk_and_generate_interval(chunks: List[any], subsample: float):
     total_chunk_length = len(chunks) * chunks[0]["chunk_size"]
     new_subsample_length = int(total_chunk_length * subsample)
     complete_subsample_chunk = new_subsample_length // chunks[0]["chunk_size"]
@@ -505,16 +507,16 @@ def sample_chunk_and_generate_interval(chunks: List[any], subsample:float):
 
     chunk_count = complete_subsample_chunk
     if last_left_subsample_count > 0:
-        chunk_count+=1  
+        chunk_count += 1
         # sampled chunks
         chunks = random.sample(chunks, chunk_count)
-        
+
     region_of_interest = _generate_subsample_intervals(chunks, last_left_subsample_count)
-    
+
     return chunks, region_of_interest
 
 
-def token_loader_sample_chunk_and_generate_interval(chunks: List[any], subsample:float, block_size:int):
+def token_loader_sample_chunk_and_generate_interval(chunks: List[any], subsample: float, block_size: int):
     total_chunk_length = len(chunks) * chunks[0]["dim"]
     new_subsample_length = int(total_chunk_length * subsample)
     complete_subsample_chunk = new_subsample_length // chunks[0]["dim"]
@@ -522,12 +524,12 @@ def token_loader_sample_chunk_and_generate_interval(chunks: List[any], subsample
 
     chunk_count = complete_subsample_chunk
     if last_left_subsample_count > 0:
-        chunk_count+=1  
+        chunk_count += 1
         # sampled chunks
         chunks = random.sample(chunks, chunk_count)
-        
+
     region_of_interest = _generate_subsample_intervals_for_token_loader(chunks, block_size, last_left_subsample_count)
-    
+
     return chunks, region_of_interest
 
 
