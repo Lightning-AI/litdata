@@ -29,132 +29,17 @@ os.environ["TOKENIZERS_PARALLELISM"] = "true"
 seed = seed_everything(21, workers=True)
 
 
-class LitModel(pl.LightningModule):
-    """Lightning model for classification."""
-
-    def __init__(
-        self,
-        hyperparameters: dict,
-    ):
+class SklearnMetricsCallback(pl.Callback):
+    def __init__(self, label_encoder, hyperparameters):
         super().__init__()
+        self.label_encoder = label_encoder
         self.hyperparameters = hyperparameters
-        EC = EncoderAndTokenizer()
-        self.tokenizer = EC.load_tokenizer()
-        self.label_encoder = EC.load_labelencoder()
-        self.learning_rate = self.hyperparameters["learning_rate"]
-        self.batch_size = self.hyperparameters["batch_size"]
-        self.num_classes = len(self.label_encoder.classes_)
-        self.hyperparameters["num_classes"] = self.num_classes
-        self.module = BertResNetClassifier(
-            endpoint_mode=self.hyperparameters["endpoint_mode"], hyperparameters=self.hyperparameters
-        )
-        # Classification
-        self.criterion = nn.CrossEntropyLoss()
-        metrics = MetricCollection(
-            [
-                MulticlassAccuracy(self.num_classes),
-                MulticlassPrecision(self.num_classes),
-                MulticlassRecall(self.num_classes),
-                MulticlassF1Score(self.num_classes),
-            ]
-        )
-        self.train_metrics = metrics.clone(prefix="train_")
-        self.val_metrics = metrics.clone(prefix="val_")
-        self.test_metrics = metrics.clone(prefix="test_")
-        self.pred_dict_list = []
-        self.save_hyperparameters()
 
-    def forward(
-        self,
-        x: torch.Tensor,
-        y: torch.Tensor,
-        z: torch.Tensor,
-    ) -> torch.Tensor:
-        """Forward path, calculate the computational graph in the forward direction.
-
-        Used for train, test and val.
-        Args:
-            y: tensor with text data as tokens
-        Returns:
-            computional graph
-
-        """
-        return self.module(x, y, z)
-
-    def training_step(self, batch: Dict[str, torch.Tensor]) -> Dict:
-        """
-        Call the eval share for training
-        Args:
-            batch: tensor
-        Returns:
-            dict with loss, outputs and ground_truth
-        """
-        return self._shared_eval_step(batch, "train")
-
-    def validation_step(self, batch: Dict[str, torch.Tensor], batch_idx: int) -> Dict:
-        """
-        Call the eval share for validation
-        Args:
-            batch:
-            batch_idx:
-        Returns:
-            dict with loss, outputs and ground_truth
-        """
-        return self._shared_eval_step(batch, "val")
-
-    def test_step(self, batch: Dict[str, torch.Tensor], batch_idx: int) -> Dict:
-        """
-        Call the eval share for test
-        Args:
-            batch:
-            batch_idx:
-        Returns:
-            dict with loss, outputs and ground_truth
-        """
-        ret = self._shared_eval_step(batch, "test")
-        self.pred_dict_list.append(ret)
-        return ret
-
-    def _shared_eval_step(self, batch: Dict[str, torch.Tensor], mode: str) -> Dict:
-        """Calculate the desired metrics.
-
-        Args:
-            batch: tensor
-            mode: train, test or val
-        Returns:
-            dict with loss, outputs and ground_truth
-
-        """
-        ids = batch["ID"]
-        atts = batch["Att"]
-        ground_truth = batch["GT"]
-        numerical_id = batch["NID"]
-        img = batch["IMG"]
-        out = self.forward(ids, atts, img)
-        if mode == "train":
-            loss = self.criterion(out, ground_truth)
-            output = self.train_metrics(out, ground_truth)
-            self.log_dict(output)
-            self.train_metrics.update(out, ground_truth)
-        elif mode == "val":
-            loss = self.criterion(out, ground_truth)
-            output = self.val_metrics(out, ground_truth)
-            self.val_metrics.update(out, ground_truth)
-        elif mode == "test":
-            loss = self.criterion(out, ground_truth)
-            output = self.test_metrics(out, ground_truth)
-            self.test_metrics.update(out, ground_truth)
-            # reset predict list
-            self.pred_dict_list = []
-
-        return {"outputs": out, "loss": loss, "ground_truth": ground_truth, "numerical_id": numerical_id}
-
-    def on_test_end(self) -> None:
-        """Keep the test batches for reporting metrics, like prediction table and classification report."""
+    def on_test_epoch_end(self, trainer, pl_module):
         output_list = []
         ground_truths_list = []
         numerical_ids_list = []
-        for batch_item in self.pred_dict_list:
+        for batch_item in pl_module.pred_list:
             output_list.append(batch_item["outputs"])
             ground_truths_list.append(batch_item["ground_truth"])
             numerical_ids_list.append(batch_item["numerical_id"])
@@ -163,44 +48,8 @@ class LitModel(pl.LightningModule):
         numerical_ids_tensor = torch.concat(numerical_ids_list, dim=0)
         self._sklearn_metrics(output_tensor, ground_truths_tensor, "test", numerical_ids_tensor)
 
-    def _epoch_end(self, mode: str):
-        """
-        Calculate loss and metricies at end of epoch
-        Args:
-            mode:
-        Returns:
-            None
-        """
-        if mode == "val":
-            output = self.val_metrics.compute()
-            self.log_dict(output)
-            self.val_metrics.reset()
-        if mode == "train":
-            output = self.train_metrics.compute()
-            self.log_dict(output)
-            self.train_metrics.reset()
-        if mode == "test":
-            output = self.test_metrics.compute()
-            self.log_dict(output)
-            self.test_metrics.reset()
-
-    def _sklearn_metrics(
-        self,
-        output: torch.Tensor,
-        ground_truths: torch.Tensor,
-        mode: str,
-        numerical_ids: torch.Tensor,
-    ):
-        """Calculate classification report, confusion matrix and the scores for the test data.
-
-        Args:
-            output:
-            ground_truths:
-            mode:
-        Returns:
-            None
-
-        """
+    def _sklearn_metrics(self, output: torch.Tensor, ground_truths: torch.Tensor, mode: str,
+                         numerical_ids: torch.Tensor):
         logger.info(("output shape", output.shape))
         logger.info(("ground_truths shape", ground_truths.shape))
         logger.info(("numerical_ids shape", numerical_ids.shape))
@@ -255,6 +104,148 @@ class LitModel(pl.LightningModule):
         df_test["numerical_id"] = numerical_id_
         df_test.to_csv(f"{model_dir}/{mode}_labels_predictions.csv", sep=";")
         logger.info("The label predictions are saved.")
+
+class LitModel(pl.LightningModule):
+    """Lightning model for classification."""
+
+    def __init__(
+        self,
+        hyperparameters: dict,
+    ):
+        super().__init__()
+        self.hyperparameters = hyperparameters
+        EC = EncoderAndTokenizer()
+        self.tokenizer = EC.load_tokenizer()
+        self.label_encoder = EC.load_labelencoder()
+        self.learning_rate = self.hyperparameters["learning_rate"]
+        self.batch_size = self.hyperparameters["batch_size"]
+        self.num_classes = len(self.label_encoder.classes_)
+        self.hyperparameters["num_classes"] = self.num_classes
+        self.module = BertResNetClassifier(
+            endpoint_mode=self.hyperparameters["endpoint_mode"], hyperparameters=self.hyperparameters
+        )
+        # Classification
+        self.criterion = nn.CrossEntropyLoss()
+        metrics = MetricCollection(
+            [
+                MulticlassAccuracy(self.num_classes),
+                MulticlassPrecision(self.num_classes),
+                MulticlassRecall(self.num_classes),
+                MulticlassF1Score(self.num_classes),
+            ]
+        )
+        self.train_metrics = metrics.clone(prefix="train_")
+        self.val_metrics = metrics.clone(prefix="val_")
+        self.test_metrics = metrics.clone(prefix="test_")
+        self.pred_list = []
+        self.save_hyperparameters()
+
+    def forward(
+        self,
+        x: torch.Tensor,
+        y: torch.Tensor,
+        z: torch.Tensor,
+    ) -> torch.Tensor:
+        """Forward path, calculate the computational graph in the forward direction.
+
+        Used for train, test and val.
+        Args:
+            y: tensor with text data as tokens
+        Returns:
+            computional graph
+
+        """
+        return self.module(x, y, z)
+
+    def training_step(self, batch: Dict[str, torch.Tensor]) -> Dict:
+        """
+        Call the eval share for training
+        Args:
+            batch: tensor
+        Returns:
+            dict with loss, outputs and ground_truth
+        """
+        return self._shared_eval_step(batch, "train")
+
+    def validation_step(self, batch: Dict[str, torch.Tensor], batch_idx: int) -> Dict:
+        """
+        Call the eval share for validation
+        Args:
+            batch:
+            batch_idx:
+        Returns:
+            dict with loss, outputs and ground_truth
+        """
+        return self._shared_eval_step(batch, "val")
+
+    def test_step(self, batch: Dict[str, torch.Tensor], batch_idx: int) -> Dict:
+        """
+        Call the eval share for test
+        Args:
+            batch:
+            batch_idx:
+        Returns:
+            dict with loss, outputs and ground_truth
+        """
+        ret = self._shared_eval_step(batch, "test")
+        self.pred_list.append(ret)
+        return ret
+
+    def _shared_eval_step(self, batch: Dict[str, torch.Tensor], mode: str) -> Dict:
+        """Calculate the desired metrics.
+
+        Args:
+            batch: tensor
+            mode: train, test or val
+        Returns:
+            dict with loss, outputs and ground_truth
+
+        """
+        ids = batch["ID"]
+        atts = batch["Att"]
+        ground_truth = batch["GT"]
+        numerical_id = batch["NID"]
+        img = batch["IMG"]
+        out = self.forward(ids, atts, img)
+        if mode == "train":
+            loss = self.criterion(out, ground_truth)
+            output = self.train_metrics(out, ground_truth)
+            self.log_dict(output)
+            self.train_metrics.update(out, ground_truth)
+        elif mode == "val":
+            loss = self.criterion(out, ground_truth)
+            output = self.val_metrics(out, ground_truth)
+            self.val_metrics.update(out, ground_truth)
+        elif mode == "test":
+            loss = self.criterion(out, ground_truth)
+            output = self.test_metrics(out, ground_truth)
+            self.test_metrics.update(out, ground_truth)
+            # reset predict list
+            self.pred_list = []
+
+        return {"outputs": out, "loss": loss, "ground_truth": ground_truth, "numerical_id": numerical_id}
+
+
+    def _epoch_end(self, mode: str):
+        """
+        Calculate loss and metricies at end of epoch
+        Args:
+            mode:
+        Returns:
+            None
+        """
+        if mode == "val":
+            output = self.val_metrics.compute()
+            self.log_dict(output)
+            self.val_metrics.reset()
+        if mode == "train":
+            output = self.train_metrics.compute()
+            self.log_dict(output)
+            self.train_metrics.reset()
+        if mode == "test":
+            output = self.test_metrics.compute()
+            self.log_dict(output)
+            self.test_metrics.reset()
 
     def predict(self, batch: Dict[str, torch.Tensor], batch_idx: int = 0, dataloader_idx: int = 0) -> torch.Tensor:
         """Model prediction  without softmax and argmax to predict class label.
@@ -327,7 +318,9 @@ class LitModel(pl.LightningModule):
             dirpath=self.hyperparameters["model_dir"] + "/",
             filename=self.hyperparameters["model_filename"],
         )
-        return [early_stop, checkpoint]
+
+        sklearn = SklearnMetricsCallback(label_encoder= self.label_encoder, hyperparameters= self.hyperparameters)
+        return [early_stop, checkpoint, sklearn]
 
 
 if __name__ == "__main__":
