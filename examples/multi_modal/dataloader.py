@@ -47,7 +47,7 @@ class EncoderAndTokenizer:
         return BertTokenizerFast.from_pretrained("bert-base-cased")
 
 
-class IHDataset(StreamingDataset):
+class DocumentClassificationDataset(StreamingDataset):
     """Streaming dataset class."""
 
     def __init__(self, input_dir: Union[str, Any], hyperparameters: Union[dict, Any] = None) -> None:
@@ -138,7 +138,7 @@ class MixedDataModule(pl.LightningDataModule):
         Returns:
             training dataloader
         """
-        dataset_train = IHDataset(
+        dataset_train = DocumentClassificationDataset(
             hyperparameters=self.hyperparameters,
             input_dir=self.hyperparameters["train_shards"],
         )
@@ -158,11 +158,12 @@ class MixedDataModule(pl.LightningDataModule):
         Returns:
             validation dataloader
         """
-        dataset_val = IHDataset(
+        dataset_val = DocumentClassificationDataset(
             hyperparameters=self.hyperparameters,
             input_dir=self.hyperparameters["val_shards"],
         )
         dataset_val.image_transform = self.transform
+        print(f"Length of the val dataset: {len(dataset_val)}")
         return StreamingDataLoader(
             dataset_val,
             batch_size=self.batch_size,
@@ -176,12 +177,12 @@ class MixedDataModule(pl.LightningDataModule):
         Returns:
             test dataloader
         """
-        dataset_test = IHDataset(
+        dataset_test = DocumentClassificationDataset(
             hyperparameters=self.hyperparameters,
             input_dir=self.hyperparameters["test_shards"],
         )
         dataset_test.image_transform = self.transform
-        print(f"LEN OF DATASET Test: {len(dataset_test)}")
+        print(f"Length of the test dataset: {len(dataset_test)}")
         return StreamingDataLoader(
             dataset_test,
             batch_size=self.batch_size,
