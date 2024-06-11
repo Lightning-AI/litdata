@@ -87,7 +87,7 @@ To use this code, follow these steps:
    python examples/multi_modal/generate.py
    ```
 
-2. **Prepare Data:**
+1. **Prepare Data:**
 
    ```python
    python examples/multi_modal/convert.py
