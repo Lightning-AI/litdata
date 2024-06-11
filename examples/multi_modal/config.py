@@ -44,5 +44,3 @@ HYPERPARAMETERS = {
     "selected_model": "bert_text_img",
     "input_dir": "lightning_data/",
 }
-
-
