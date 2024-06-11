@@ -48,9 +48,6 @@ ignore-words-list = "te, compiletime"
 
 [tool.ruff]
 line-length = 120
-exclude = [
-    "examples/multi_modal/generate.py",
-]
 # Enable Pyflakes `E` and `F` codes by default.
 lint.select = [
     "E", "W",  # see: https://pypi.org/project/pycodestyle
