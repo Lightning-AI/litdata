@@ -1,7 +1,7 @@
-"""
-Main entry point of the script.
+"""Main entry point of the script.
 
 Generates the dataset and saves it to the specified directory.
+
 """
 import os
 import random
