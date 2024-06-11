@@ -188,5 +188,3 @@ class MixedDataModule(pl.LightningDataModule):
             num_workers=self.hyperparameters["num_workers"],
             pin_memory=False,
         )
-
-
