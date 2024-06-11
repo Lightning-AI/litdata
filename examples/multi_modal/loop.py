@@ -48,8 +48,9 @@ class SklearnMetricsCallback(pl.Callback):
         numerical_ids_tensor = torch.concat(numerical_ids_list, dim=0)
         self._sklearn_metrics(output_tensor, ground_truths_tensor, "test", numerical_ids_tensor)
 
-    def _sklearn_metrics(self, output: torch.Tensor, ground_truths: torch.Tensor, mode: str,
-                         numerical_ids: torch.Tensor):
+    def _sklearn_metrics(
+        self, output: torch.Tensor, ground_truths: torch.Tensor, mode: str, numerical_ids: torch.Tensor
+    ):
         logger.info(("output shape", output.shape))
         logger.info(("ground_truths shape", ground_truths.shape))
         logger.info(("numerical_ids shape", numerical_ids.shape))
@@ -104,6 +105,7 @@ class SklearnMetricsCallback(pl.Callback):
         df_test["numerical_id"] = numerical_id_
         df_test.to_csv(f"{model_dir}/{mode}_labels_predictions.csv", sep=";")
         logger.info("The label predictions are saved.")
+
 
 class LitModel(pl.LightningModule):
     """Lightning model for classification."""
@@ -225,7 +227,6 @@ class LitModel(pl.LightningModule):
 
         return {"outputs": out, "loss": loss, "ground_truth": ground_truth, "numerical_id": numerical_id}
 
-
     def _epoch_end(self, mode: str):
         """
         Calculate loss and metricies at end of epoch
@@ -319,7 +320,7 @@ class LitModel(pl.LightningModule):
             filename=self.hyperparameters["model_filename"],
         )
 
-        sklearn = SklearnMetricsCallback(label_encoder= self.label_encoder, hyperparameters= self.hyperparameters)
+        sklearn = SklearnMetricsCallback(label_encoder=self.label_encoder, hyperparameters=self.hyperparameters)
         return [early_stop, checkpoint, sklearn]
 
 
