@@ -80,8 +80,7 @@ class LitModel(pl.LightningModule):
             computional graph
 
         """
-        ret = self.module(x, y, z)
-        return ret
+        return self.module(x, y, z)
 
     def training_step(self, batch: Dict[str, torch.Tensor]) -> Dict:
         """
@@ -270,8 +269,7 @@ class LitModel(pl.LightningModule):
             ids = batch["ID"]
             atts = batch["Att"]
             img = batch["IMG"]
-            out = self.forward(ids, atts, img)
-        return out
+            return self.forward(ids, atts, img)
 
     def on_test_epoch_end(self) -> None:
         """

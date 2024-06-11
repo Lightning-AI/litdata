@@ -29,14 +29,6 @@ def lightning_training(model_dir: str, hyperparameters: dict) -> object:
     os.makedirs("lightning_logs", exist_ok=True)
     data_module = MixedDataModule(hyperparameters=hyperparameters)
     number_classes = hyperparameters["num_classes"]
-    if type(hyperparameters["limit_batches"]) == str:
-        hyperparameters.update({"limit_batches": None})
-    else:
-        hyperparameters.update({"limit_batches": int(hyperparameters["limit_batches"])})
-    if type(hyperparameters["profiler"]) == str:
-        hyperparameters.update({"profiler": None})
-    else:
-        pass
     logger.info("Limit batches %s" % hyperparameters["limit_batches"])
     logger.debug("num_classes %s" % number_classes)
 

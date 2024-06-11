@@ -7,13 +7,7 @@ from pyarrow.parquet import ParquetFile
 
 
 def convert_parquet_to_lightning_data(parquet_file):
-    try:
-        df_bytes = parquet_file.read_bytes()
-        str_df_bytes = io.BytesIO(df_bytes)
-        parquet_file = ParquetFile(str_df_bytes)
-    except:
-        parquet_file = ParquetFile(parquet_file)
-
+    parquet_file = ParquetFile(parquet_file)
     for batch in parquet_file.iter_batches(batch_size=32):
         df = batch.to_pandas()
         df["page"] = df["page"].apply(lambda x: Image.open(io.BytesIO(x)))

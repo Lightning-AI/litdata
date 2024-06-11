@@ -36,8 +36,7 @@ class EncoderAndTokenizer:
         Function to load the label encoder from s3
         Returns:
         """
-        labelencoder = joblib.load(self.hyperparameters["label_encoder_name"])
-        return labelencoder
+        return joblib.load(self.hyperparameters["label_encoder_name"])
 
     def load_tokenizer(self):
         """
@@ -45,14 +44,13 @@ class EncoderAndTokenizer:
         Returns: tokenizer
         """
         # Load Bert tokenizer
-        tokenizer = BertTokenizerFast.from_pretrained("bert-base-cased")
-        return tokenizer
+        return BertTokenizerFast.from_pretrained("bert-base-cased")
 
 
 class IHDataset(StreamingDataset):
     """Streaming dataset class."""
 
-    def __init__(self, input_dir: Union[str, "Dir"], hyperparameters: Union[dict, Any] = None) -> None:
+    def __init__(self, input_dir: Union[str, Any], hyperparameters: Union[dict, Any] = None) -> None:
         super().__init__(input_dir, shuffle=True, max_cache_size=hyperparameters["max_cache_size"])
         self.hyperparameters = hyperparameters
         self.image_transform = transforms.Compose(

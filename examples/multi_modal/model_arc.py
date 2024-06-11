@@ -50,8 +50,7 @@ class BertClassifier(nn.Module):
 
         """
         outputs = self.bert(input_ids=input_ids, attention_mask=attention_mask)
-        cls_output = outputs.last_hidden_state[:, 0, :]
-        return cls_output
+        return outputs.last_hidden_state[:, 0, :]
 
 
 class BertResNetClassifier(nn.Module):
@@ -78,10 +77,8 @@ class BertResNetClassifier(nn.Module):
         Load the pre trained bert model weigths
         Returns: model
         """
-        prefix = self.hyperparameters.get("artefact_location_path", os.getcwd())
         model = BertModel.from_pretrained("bert-base-cased")
-        text_classification_model = BertClassifier(model)
-        return text_classification_model
+        return BertClassifier(model)
 
     def forward(
         self,
@@ -106,5 +103,4 @@ class BertResNetClassifier(nn.Module):
         ret = self.projection(img)
         ret = text_y + ret
         ret = self.dropout(ret)
-        ret = self.classifier(ret)
-        return ret
+        return self.classifier(ret)
