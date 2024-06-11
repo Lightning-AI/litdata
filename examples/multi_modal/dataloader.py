@@ -144,7 +144,7 @@ class MixedDataModule(pl.LightningDataModule):
         )
 
         dataset_train.image_transform = self.augmentation
-        print(f"LEN OF DATASET Train: {len(dataset_train)}")
+        print(f"Length of the train dataset: {len(dataset_train)}")
         return StreamingDataLoader(
             dataset_train,
             batch_size=self.batch_size,
