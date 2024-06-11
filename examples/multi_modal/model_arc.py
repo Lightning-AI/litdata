@@ -1,7 +1,6 @@
 """Architecure Bert & Resnet lightning."""
 
 import logging
-import os
 
 import torch
 from lightning import seed_everything
