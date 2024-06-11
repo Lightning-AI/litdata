@@ -190,5 +190,3 @@ class MixedDataModule(pl.LightningDataModule):
         )
 
 
-if __name__ == "__main__":
-    logging.basicConfig(level="INFO")
