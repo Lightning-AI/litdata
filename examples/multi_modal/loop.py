@@ -323,6 +323,3 @@ class LitModel(pl.LightningModule):
         sklearn = SklearnMetricsCallback(label_encoder=self.label_encoder, hyperparameters=self.hyperparameters)
         return [early_stop, checkpoint, sklearn]
 
-
-if __name__ == "__main__":
-    logging.basicConfig(level="INFO")
