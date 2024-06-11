@@ -46,7 +46,7 @@ The script includes a data generation module that simulates the creation of docu
 
 ## Data Preparation
 
-Data is processed and converted using `litdata`, which structures the data in a format suitable for training our deep learning model.
+Data is processed and converted using `litdata`, which structures the data in a format suitable for training deep learning model in the cloud.
 
 ## Model Training
 
