@@ -1,7 +1,13 @@
 import joblib
 from sklearn.preprocessing import LabelEncoder
 
-if __name__ == "__main__":
+
+def create_labelencoder():
+    """
+    Create a label encoder
+    Returns:
+
+    """
     data = ["Cancelation", "IBAN Change", "Damage Report"]
     # Create an instance of LabelEncoder
     label_encoder = LabelEncoder()
@@ -14,3 +20,7 @@ if __name__ == "__main__":
     joblib_file = "labelencoder.joblib"
     joblib.dump(label_encoder, joblib_file)
     print(f"Label encoder saved to {joblib_file}")
+
+
+if __name__ == "__main__":
+    create_labelencoder()

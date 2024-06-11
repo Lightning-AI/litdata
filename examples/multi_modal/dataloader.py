@@ -23,7 +23,6 @@ logger = logging.getLogger()
 
 
 os.environ["TOKENIZERS_PARALLELISM"] = "true"
-torch.manual_seed(21)
 seed = seed_everything(21, workers=True)
 
 

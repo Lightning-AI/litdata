@@ -4,7 +4,9 @@ import os
 from litdata import optimize
 from PIL import Image
 from pyarrow.parquet import ParquetFile
+import  logging
 
+logger = logging.getLogger(__name__)
 
 def convert_parquet_to_lightning_data(parquet_file):
     parquet_file = ParquetFile(parquet_file)
@@ -20,7 +22,6 @@ def convert_parquet_to_lightning_data(parquet_file):
 
 def pl_optimize(input_dir, output_dir):
     parquet_files = sorted([os.path.join(input_dir, f) for f in os.listdir(input_dir) if f.endswith(".parquet")])
-    print(parquet_files)
     optimize(
         convert_parquet_to_lightning_data, parquet_files, output_dir, num_workers=os.cpu_count(), chunk_bytes="64MB"
     )
@@ -35,4 +36,6 @@ if __name__ == "__main__":
     else:
         input_dir = "/teamspace/studios/this_studio/dataframe_data"
         output_dir = "/teamspace/datasets/lightning_data/version_0"
+    logger.info("Start converting parquet files")
     pl_optimize(input_dir, output_dir)
+    logger.info("Finished converting parquet files")

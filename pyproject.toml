@@ -74,7 +74,7 @@ exclude = [
     "docs",
     "_notebooks",
     "src/litdata/utilities/_pytree.py",
-    "examples/multi_modal/generate.py",
+    "examples",
 ]
 lint.ignore-init-module-imports = true
 

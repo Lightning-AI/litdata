@@ -1,11 +1,19 @@
+"""
+Main entry point of the script.
+
+Generates the dataset and saves it to the specified directory.
+"""
 import os
 import random
 from multiprocessing import Pool, cpu_count
-
+from create_labelencoder import create_labelencoder
 import names
 import pandas as pd
 from fpdf import FPDF
 from pdf2image import convert_from_path
+import  logging
+
+logger = logging.getLogger(__name__)
 
 # Templates for each class
 templates = {
@@ -169,13 +177,9 @@ def generate_data_set(output_dir: str, num_pds: int = 10, num_entries=10):
 
 
 if __name__ == "__main__":
-    """Main entry point of the script.
-
-    Generates the dataset and saves it to the specified directory.
-
-    """
-    print("Generating dataset...")
-    print(first_names)
+    logger.info("Generating dataset...")
     generate_data_set(output_dir, num_pds=10, num_entries=1000)
-    print("Data generation completed.")
-    os.system("python create_labelencoder.py")
+    logger.info("Data generation completed.")
+    logger.info("Create label_encoder started.")
+    create_labelencoder()
+    logger.info("Create label_encoder completed.")
