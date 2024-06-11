@@ -144,6 +144,8 @@ class LitModel(pl.LightningModule):
             loss = self.criterion(out, ground_truth)
             output = self.test_metrics(out, ground_truth)
             self.test_metrics.update(out, ground_truth)
+            # reset predict list
+            self.pred_dict_list = []
 
         return {"outputs": out, "loss": loss, "ground_truth": ground_truth, "numerical_id": numerical_id}
 
