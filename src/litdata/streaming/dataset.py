@@ -66,7 +66,7 @@ class StreamingDataset(IterableDataset):
             seed: Random seed for shuffling.
             serializers: The serializers used to serialize and deserialize the chunks.
             max_cache_size: The maximum cache size used by the StreamingDataset.
-            subsample: A float representing the fraction of the dataset to be randomly sampled (e.g., 0.1 for 10% of the dataset).
+            subsample: Float representing fraction of the dataset to be randomly sampled (e.g., 0.1 => 10% of dataset).
 
         """
         super().__init__()
@@ -95,7 +95,7 @@ class StreamingDataset(IterableDataset):
             downloader.download_file(os.path.join(self.input_dir.url, _INDEX_FILENAME), cache_index_filepath)
 
         if os.path.exists(os.path.join(self.input_dir.path, _INDEX_FILENAME)):
-            # create a chunk_start and chunk_end list that will indicate our subsample from where to read and upto which index.
+            # create a {chunk_start, chunk_end} list to indicate our subsample from where we can read.
             with open(os.path.join(self.input_dir.path, _INDEX_FILENAME)) as f:
                 data = json.load(f)
                 self.chunks.extend(data["chunks"])

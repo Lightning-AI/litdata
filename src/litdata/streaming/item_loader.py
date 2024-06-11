@@ -34,7 +34,7 @@ class BaseItemLoader(ABC):
     def setup(
         self,
         config: Dict,
-        chunks: List[any],
+        chunks: List,
         serializers: Dict[str, Serializer],
         region_of_interest: Optional[List[Tuple[int, int]]] = None,
     ) -> None:

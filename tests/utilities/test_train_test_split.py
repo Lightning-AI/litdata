@@ -20,11 +20,11 @@ def test_is_dataset_subsample():
 
     # when roi is complete overlap
     region_of_interest = [(0, 50), (50, 100), (100, 150), (150, 182)]
-    assert is_dataset_subsample(chunks, region_of_interest) == False
+    assert not is_dataset_subsample(chunks, region_of_interest)
 
     # when roi is a subsample
     region_of_interest = [(0, 50), (50, 100), (100, 150), (150, 162)]
-    assert is_dataset_subsample(chunks, region_of_interest) == True
+    assert is_dataset_subsample(chunks, region_of_interest)
 
 
 def test_sample_k_times():
@@ -34,7 +34,7 @@ def test_sample_k_times():
     my_samples, my_remaining_list = sample_k_times(my_list, my_n_list)
 
     # random samples should be of specified length
-    assert all([len(my_samples[i]) == n for i, n in enumerate(my_n_list)])
+    assert all(len(my_samples[i]) == n for i, n in enumerate(my_n_list))
 
     # remaining list length should also be correct
     assert len(my_remaining_list) == len(my_list) - sum(my_n_list)
