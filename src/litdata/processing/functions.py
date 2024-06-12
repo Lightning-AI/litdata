@@ -38,7 +38,7 @@ from litdata.streaming.resolver import (
 from litdata.utilities._pytree import tree_flatten
 
 
-def _is_remote_file(path: str):
+def _is_remote_file(path: str) -> bool:
     obj = parse.urlparse(path)
     return obj.scheme in ["s3", "gcs"]
 
@@ -49,7 +49,7 @@ def _get_indexed_paths(data: Any) -> Dict[int, str]:
     return {
         index: element
         for index, element in enumerate(flattened_item)
-        if isinstance(element, str) and os.path.exists(element) or _is_remote_file(element)
+        if isinstance(element, str) and (os.path.exists(element) or _is_remote_file(element))
     }
 
 
@@ -243,15 +243,16 @@ def map(
             _assert_dir_is_empty(_output_dir)
 
         if not isinstance(inputs, StreamingDataLoader):
-            input_dir = _resolve_dir(input_dir or _get_input_dir(inputs))
+            input_dir = input_dir or _get_input_dir(inputs)
+            resolved_dir = _resolve_dir(input_dir)
 
             if isinstance(batch_size, int) and batch_size > 1:
                 inputs = [inputs[pos : pos + batch_size] for pos in range(0, len(inputs), batch_size)]
         else:
-            input_dir = Dir()
+            resolved_dir = Dir()
 
         data_processor = DataProcessor(
-            input_dir=input_dir,
+            input_dir=resolved_dir,
             output_dir=_output_dir,
             num_workers=num_workers or _get_default_num_workers(),
             fast_dev_run=fast_dev_run,
@@ -352,15 +353,15 @@ def optimize(
         _assert_dir_has_index_file(_output_dir)
 
         if not isinstance(inputs, StreamingDataLoader):
-            input_dir = _resolve_dir(input_dir or _get_input_dir(inputs))
+            resolved_dir = _resolve_dir(input_dir or _get_input_dir(inputs))
 
             if isinstance(batch_size, int) and batch_size > 1:
                 inputs = [inputs[pos : pos + batch_size] for pos in range(0, len(inputs), batch_size)]
         else:
-            input_dir = Dir()
+            resolved_dir = Dir()
 
         data_processor = DataProcessor(
-            input_dir=input_dir,
+            input_dir=resolved_dir,
             output_dir=_output_dir,
             num_workers=num_workers or _get_default_num_workers(),
             fast_dev_run=fast_dev_run,
