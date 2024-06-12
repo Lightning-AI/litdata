@@ -1,10 +1,6 @@
 """Config file with the Hyperparameter dict."""
 
-import datetime
 import logging
-
-current_time = datetime.datetime.now()
-timestamp = current_time.strftime("%Y_%m_%d_%H_%M_%S")
 logger = logging.getLogger(__name__)
 
 OUT_URI = "output/"
