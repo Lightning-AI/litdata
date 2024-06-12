@@ -189,7 +189,6 @@ class _CombinedDatasetIterator(Iterator):
         self._datasets = datasets
         self._dataset_iters = [iter(dataset) for dataset in datasets]
         self._dataset_indexes = list(range(len(datasets)))
-        print(self._dataset_indexes)
         self._num_samples_yielded = num_samples_yielded or [0 for _ in range(len(datasets))]
         self._original_weights = deepcopy(weights)
         self._weights = deepcopy(weights)
