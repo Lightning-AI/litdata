@@ -160,7 +160,7 @@ class BinaryReader:
     def __init__(
         self,
         cache_dir: str,
-        chunks: Optional[List[any]] = None,
+        chunks: Optional[List[Dict[str, Any]]] = None,
         region_of_interest: Optional[List[Tuple[int, int]]] = None,
         max_cache_size: Optional[Union[int, str]] = None,
         remote_input_dir: Optional[str] = None,

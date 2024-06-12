@@ -1,6 +1,6 @@
 import random
 from copy import deepcopy
-from typing import List, Tuple
+from typing import List, Tuple, Dict, Any
 
 from litdata import StreamingDataset
 from litdata.streaming.dataset import _generate_subsample_intervals
@@ -47,7 +47,7 @@ def train_test_split(streaming_dataset: StreamingDataset, splits: List[float]) -
     return my_datasets
 
 
-def is_dataset_subsample(chunks: List[any], region_of_interest: List[Tuple[int, int]]) -> bool:
+def is_dataset_subsample(chunks: List[Dict[str, Any]], region_of_interest: List[Tuple[int, int]]) -> bool:
     for i, roi in enumerate(region_of_interest):
         start, end = roi
         if (end - start) != chunks[i]["chunk_size"]:
@@ -56,7 +56,7 @@ def is_dataset_subsample(chunks: List[any], region_of_interest: List[Tuple[int, 
     return False
 
 
-def sample_k_times(lst: List[any], n_list: List[int]):
+def sample_k_times(lst: List[Dict[str, Any]], n_list: List[int])->Tuple[List[List[Dict[str,Any]]], List[Dict[str,Any]]]:
     all_samples = []
 
     for n in n_list:
@@ -74,7 +74,7 @@ def sample_k_times(lst: List[any], n_list: List[int]):
     return all_samples, lst
 
 
-def split_modify_chunk_and_roi(chunk_list: List[any], splits: List[float]) -> Tuple[List[any], List[Tuple[int, int]]]:
+def split_modify_chunk_and_roi(chunk_list: List[Dict[str, Any]], splits: List[float]) -> Tuple[List[List[Dict[str, Any]]], List[List[Tuple[int, int]]]]:
     chunk_size = chunk_list[0]["chunk_size"]
     total_chunk_length = len(chunk_list) * chunk_size
     each_split_item_count = [int(total_chunk_length * split) for split in splits]
@@ -92,7 +92,7 @@ def split_modify_chunk_and_roi(chunk_list: List[any], splits: List[float]) -> Tu
         while item_count_left_list[i] > 0:
             if len(remaining_chunk_list) == 0:
                 # might be possible if chunks are of uneven size and we are 1-2 item short of exact split count
-                return None
+                break
             first_chunk_in_remaining_list = remaining_chunk_list.pop(0)
             first_chunk_start_idx = remaining_chunk_start_idx.pop(0)
 

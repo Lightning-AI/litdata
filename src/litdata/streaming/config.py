@@ -31,7 +31,7 @@ class ChunksConfig:
         serializers: Dict[str, Serializer],
         remote_dir: Optional[str],
         item_loader: Optional[BaseItemLoader] = None,
-        chunks: Optional[List[any]] = None,
+        chunks: Optional[List[Dict[str, Any]]] = None,
         region_of_interest: Optional[List[Tuple[int, int]]] = None,
     ) -> None:
         """The ChunksConfig reads the index files associated a chunked dataset and enables to map an index to its
@@ -47,7 +47,7 @@ class ChunksConfig:
 
         """
         self._cache_dir = cache_dir
-        self._intervals: List[Tuple[int, int]] = []
+        self._intervals: List[Tuple[int, int, int, int]] = []
         self._config = None
         self._chunks = chunks
         self._remote_dir = remote_dir
@@ -62,6 +62,7 @@ class ChunksConfig:
 
         self._config["data_spec"] = treespec_loads(self._config["data_spec"])
 
+        assert self._chunks is not None
         self._item_loader.setup(self._config, self._chunks, serializers, region_of_interest)
         self._intervals = self._item_loader.generate_intervals()
         self._length = self._intervals[-1][-1]
@@ -92,6 +93,7 @@ class ChunksConfig:
         self._skip_chunk_indexes_deletion = skip_chunk_indexes_deletion
 
     def download_chunk_from_index(self, chunk_index: int) -> None:
+        assert self._chunks is not None
         chunk_filename = self._chunks[chunk_index]["filename"]
 
         local_chunkpath = os.path.join(self._cache_dir, chunk_filename)
@@ -138,6 +140,7 @@ class ChunksConfig:
     def num_bytes(self) -> int:
         if self._config is None:
             raise RuntimeError("The config should be defined.")
+        assert self._chunks is not None
         return sum(c["chunk_bytes"] for c in self._chunks)
 
     @property
@@ -180,6 +183,7 @@ class ChunksConfig:
 
     def __getitem__(self, index: ChunkedIndex) -> Tuple[str, int, int]:
         """Find the associated chunk metadata."""
+        assert self._chunks is not None
         chunk = self._chunks[index.chunk_index]
 
         local_chunkpath = os.path.join(self._cache_dir, chunk["filename"])
@@ -193,6 +197,7 @@ class ChunksConfig:
 
     def _get_chunk_index_from_filename(self, chunk_filename: str) -> int:
         """Retrieves the associated chunk_index for a given chunk filename."""
+        assert self._chunks is not None
         for chunk_index, chunk in enumerate(self._chunks):
             if chunk["filename"] == chunk_filename:
                 return chunk_index
@@ -205,7 +210,7 @@ class ChunksConfig:
         serializers: Dict[str, Serializer],
         remote_dir: Optional[str] = None,
         item_loader: Optional[BaseItemLoader] = None,
-        chunks: Optional[List[any]] = None,
+        chunks: Optional[List[Any]] = None,
         region_of_interest: Optional[List[Tuple[int, int]]] = None,
     ) -> Optional["ChunksConfig"]:
         cache_index_filepath = os.path.join(cache_dir, _INDEX_FILENAME)

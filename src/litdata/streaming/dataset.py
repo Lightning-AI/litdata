@@ -79,7 +79,7 @@ class StreamingDataset(IterableDataset):
         input_dir = _resolve_dir(input_dir)
 
         self.input_dir = input_dir
-        self.chunks = []
+        self.chunks: List[Dict[str,Any]] = []
 
         if _should_replace_path(self.input_dir.path):
             cache_path = _try_create_cache_dir(
@@ -88,9 +88,12 @@ class StreamingDataset(IterableDataset):
             if cache_path is not None:
                 self.input_dir.path = cache_path
 
+        assert self.input_dir.path is not None
+
         cache_index_filepath = os.path.join(self.input_dir.path, _INDEX_FILENAME)
 
         if not os.path.exists(cache_index_filepath) and isinstance(self.input_dir.url, str):
+            assert self.input_dir.url is not None
             downloader = get_downloader_cls(self.input_dir.url, self.input_dir.path, [])
             downloader.download_file(os.path.join(self.input_dir.url, _INDEX_FILENAME), cache_index_filepath)
 
@@ -464,7 +467,7 @@ class StreamingDataset(IterableDataset):
             )
 
 
-def _generate_subsample_intervals(my_chunk_arr: List[any], last_left_subsample_count: int) -> List[Tuple[int, int]]:
+def _generate_subsample_intervals(my_chunk_arr: List[Dict[str, Any]], last_left_subsample_count: int) -> List[Tuple[int, int]]:
     """Generates a list of intervals that the dataset is allowed to read, based on the sizes of chunks."""
     intervals = []
     begin = 0
@@ -482,8 +485,8 @@ def _generate_subsample_intervals(my_chunk_arr: List[any], last_left_subsample_c
 
 
 def _generate_subsample_intervals_for_token_loader(
-    chunks: List[any], block_size: int, last_left_subsample_count: int
-) -> List[Tuple[int, int, int, int]]:
+    chunks: List[Dict[str, Any]], block_size: int, last_left_subsample_count: int
+) -> List[Tuple[int, int]]:
     intervals = []
     begin = 0
     end = 0
@@ -499,7 +502,7 @@ def _generate_subsample_intervals_for_token_loader(
     return intervals
 
 
-def sample_chunk_and_generate_interval(chunks: List[any], subsample: float):
+def sample_chunk_and_generate_interval(chunks: List[Dict[str, Any]], subsample: float)->Tuple[List[Dict[str,Any]],List[Tuple[int,int]]]:
     total_chunk_length = len(chunks) * chunks[0]["chunk_size"]
     new_subsample_length = int(total_chunk_length * subsample)
     complete_subsample_chunk = new_subsample_length // chunks[0]["chunk_size"]
@@ -516,7 +519,7 @@ def sample_chunk_and_generate_interval(chunks: List[any], subsample: float):
     return chunks, region_of_interest
 
 
-def token_loader_sample_chunk_and_generate_interval(chunks: List[any], subsample: float, block_size: int):
+def token_loader_sample_chunk_and_generate_interval(chunks: List[Dict[str, Any]], subsample: float, block_size: int)->Tuple[List[Dict[str,Any]],List[Tuple[int,int]]]:
     total_chunk_length = len(chunks) * chunks[0]["dim"]
     new_subsample_length = int(total_chunk_length * subsample)
     complete_subsample_chunk = new_subsample_length // chunks[0]["dim"]

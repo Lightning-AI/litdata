@@ -34,7 +34,7 @@ class Cache:
     def __init__(
         self,
         input_dir: Optional[Union[str, Dir]],
-        chunks: Optional[List[any]] = None,
+        chunks: Optional[List[Dict[str, Any]]] = None,
         region_of_interest: Optional[List[Tuple[int, int]]] = None,
         compression: Optional[str] = None,
         chunk_size: Optional[int] = None,
@@ -144,7 +144,7 @@ class Cache:
     def __len__(self) -> int:
         return self._reader.get_length()
 
-    def get_chunk_intervals(self) -> List[Tuple[int, int]]:
+    def get_chunk_intervals(self) -> List[Tuple[int, int, int, int]]:
         return self._reader.get_chunk_intervals()
 
     def _get_chunk_index_from_index(self, index: int) -> int:
