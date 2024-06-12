@@ -15,7 +15,6 @@ import random
 from copy import deepcopy
 from typing import Any, Dict, Iterator, List, Optional, Sequence
 
-import numpy as np
 from torch.utils.data import IterableDataset
 
 from litdata.streaming.dataset import StreamingDataset
@@ -190,6 +189,7 @@ class _CombinedDatasetIterator(Iterator):
         self._datasets = datasets
         self._dataset_iters = [iter(dataset) for dataset in datasets]
         self._dataset_indexes = list(range(len(datasets)))
+        print(self._dataset_indexes)
         self._num_samples_yielded = num_samples_yielded or [0 for _ in range(len(datasets))]
         self._original_weights = deepcopy(weights)
         self._weights = deepcopy(weights)
@@ -209,27 +209,31 @@ class _CombinedDatasetIterator(Iterator):
         if self._iterate_over_all:
             while True:
                 try:
-                    if len(self._dataset_indexes) > 1:
+                    indexes_left = [index for index in self._dataset_indexes if index is not None]
+                    if len(indexes_left) > 1:
                         dataset_index = self._get_dataset_index()
-                    elif len(self._dataset_indexes) == 1:
-                        dataset_index = self._dataset_indexes[0]
+                    elif len(indexes_left) == 1:
+                        dataset_index = indexes_left[0]
                     return self._get_sample(dataset_index)
                 except StopIteration as e:
-                    if len(self._dataset_indexes) == 1:
+                    if len(indexes_left) == 1:
                         self._dataset_indexes = list(range(len(self._datasets)))
                         self._weights = deepcopy(self._original_weights)
                         raise e
 
-                    self._dataset_indexes.pop(dataset_index)
-                    self._weights.pop(dataset_index)
-                    self._weights /= np.sum(self._weights)
+                    self._dataset_indexes[dataset_index] = None
+                    self._weights[dataset_index] = None
+                    new_sum = sum([w for w in self._weights if w is not None])
+                    self._weights = [None if w is None else w / new_sum for w in self._weights]
 
         # stop on the first iteration
         return self._get_sample(self._get_dataset_index())
 
     def _get_dataset_index(self) -> int:
         # randomly select a dataset index
-        (dataset_index,) = self._rng.choices(self._dataset_indexes, weights=self._weights, k=1)
+        indexes = [index for index in self._dataset_indexes if index is not None]
+        weights = [w for w in self._weights if w is not None]
+        (dataset_index,) = self._rng.choices(indexes, weights=weights, k=1)
         return dataset_index
 
     def _get_sample(self, dataset_index: int) -> Any:
