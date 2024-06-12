@@ -101,8 +101,7 @@ Here is how to upload the optimized dataset using the [AWS CLI](https://aws.amaz
 Then, the Streaming Dataset can read the data directly from [AWS S3](https://aws.amazon.com/s3/).
 
 ```python
-from litdata import StreamingDataset
-from torch.utils.data import DataLoader
+from litdata import StreamingDataset, StreamingDataLoader
 
 # Remote path where full dataset is stored
 input_dir = 's3://my-bucket/my_optimized_dataset'
@@ -115,8 +114,8 @@ sample = dataset[50]
 img = sample['image']
 cls = sample['class']
 
-# Create PyTorch DataLoader and iterate over it to train your AI models.
-dataloader = DataLoader(dataset)
+# Create dataLoader and iterate over it to train your AI models.
+dataloader = StreamingDataLoader(dataset)
 ```
 
 # Key Features
@@ -210,11 +209,10 @@ Easily experiment with dataset mixtures using the `CombinedStreamingDataset` cla
 As an example, this mixture of [Slimpajama](https://huggingface.co/datasets/cerebras/SlimPajama-627B) & [StarCoder](https://huggingface.co/datasets/bigcode/starcoderdata) was used in the [TinyLLAMA](https://github.com/jzhang38/TinyLlama) project to pretrain a 1.1B Llama model on 3 trillion tokens. 
 
 ```python
-from litdata import StreamingDataset, CombinedStreamingDataset
+from litdata import StreamingDataset, CombinedStreamingDataset, StreamingDataLoader
 from litdata.streaming.item_loader import TokensLoader
 from tqdm import tqdm
 import os
-from torch.utils.data import DataLoader
 
 train_datasets = [
     StreamingDataset(
@@ -235,7 +233,7 @@ train_datasets = [
 weights = (0.693584, 0.306416)
 combined_dataset = CombinedStreamingDataset(datasets=train_datasets, seed=42, weights=weights)
 
-train_dataloader = DataLoader(combined_dataset, batch_size=8, pin_memory=True, num_workers=os.cpu_count())
+train_dataloader = StreamingDataLoader(combined_dataset, batch_size=8, pin_memory=True, num_workers=os.cpu_count())
 
 # Iterate over the combined datasets
 for batch in tqdm(train_dataloader):
