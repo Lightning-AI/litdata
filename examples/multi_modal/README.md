@@ -2,7 +2,7 @@
 
 # Installation Guide:
 
-```bash
+````bash
 sudo apt install libpoppler-cpp-dev
 pip install python-poppler
 sudo apt install libpoppler-cpp-dev poppler-utils
@@ -86,7 +86,7 @@ To use this code, follow these steps:
 
    ```python
    python examples/multi_modal/generate.py
-   ```
+````
 
 1. **Prepare Data:**
 
