@@ -28,13 +28,8 @@ def pl_optimize(input_dir, output_dir):
 
 
 if __name__ == "__main__":
-    mod = "local"
-    if mod == "local":
-        input_dir = "dataframe_data"
-        output_dir = "lightning_data/version_0"
-    else:
-        input_dir = "/teamspace/studios/this_studio/dataframe_data"
-        output_dir = "/teamspace/datasets/lightning_data/version_0"
+    input_dir = "dataframe_data"
+    output_dir = "lightning_data/version_0"
     logger.info("Start converting parquet files")
     pl_optimize(input_dir, output_dir)
     logger.info("Finished converting parquet files")
