@@ -119,3 +119,31 @@ def test_dataloader_shuffle():
     StreamingDataLoader(dataset, batch_size=2, num_workers=1, shuffle=True)
     assert dataset._datasets[0].shuffle
     assert dataset._datasets[1].shuffle
+
+
+class TestStatefulDatasetDict(TestStatefulDataset):
+    def __next__(self):
+        return {"value": super().__next__()}
+
+
+def custom_collate_fn(samples):
+    assert len(samples) == 2
+    assert "value" in samples[0]
+    return "received"
+
+
+def test_custom_collate():
+    dataset = TestCombinedStreamingDataset(
+        [TestStatefulDatasetDict(10, 1), TestStatefulDatasetDict(10, -1)],
+        42,
+        weights=(0.5, 0.5),
+        iterate_over_all=False,
+    )
+    assert dataset._datasets[0].shuffle is None
+    assert dataset._datasets[1].shuffle is None
+    dataloader = StreamingDataLoader(dataset, batch_size=2, num_workers=0, shuffle=True, collate_fn=custom_collate_fn)
+    assert dataset._datasets[0].shuffle
+    assert dataset._datasets[1].shuffle
+    dataloader_iter = iter(dataloader)
+    assert next(dataloader_iter) == "received"
+    assert dataloader._num_samples_yielded_combined[0] == [2]
