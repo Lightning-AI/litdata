@@ -2,6 +2,7 @@
 
 # Installation Guide:
 
+```bash
 sudo apt install libpoppler-cpp-dev
 pip install python-poppler
 sudo apt install libpoppler-cpp-dev poppler-utils
