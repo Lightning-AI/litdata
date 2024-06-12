@@ -32,7 +32,6 @@ if __name__ == "__main__":
     if mod == "local":
         input_dir = "dataframe_data"
         output_dir = "lightning_data/version_0"
-        pass
     else:
         input_dir = "/teamspace/studios/this_studio/dataframe_data"
         output_dir = "/teamspace/datasets/lightning_data/version_0"
