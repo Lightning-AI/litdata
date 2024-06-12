@@ -39,7 +39,6 @@ def lightning_training(model_dir: str, hyperparameters: dict) -> object:
         max_epochs=hyperparameters["max_epochs"],
         accelerator="gpu",
         devices=hyperparameters["devices"],
-        deterministic=True,
         default_root_dir=model_dir,
         # strategy=DDPStrategy(find_unused_parameters=True),
         precision=hyperparameters["precision"],
