@@ -35,3 +35,7 @@ def test_walk(tmpdir):
     walks_os = sorted(os.walk(tmpdir))
     walks_function = sorted(walk(tmpdir))
     assert walks_os == walks_function
+
+
+def test_get_input_dir_with_s3_path():
+    assert _get_input_dir(["s3://my_bucket/my_folder/a.txt"]) == "s3://my_bucket/my_folder"
