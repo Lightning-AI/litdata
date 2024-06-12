@@ -485,7 +485,7 @@ class StreamingDataLoaderCollateFn:
             batch = self.collate_fn([item[__SAMPLES_KEY__] for item in items])
             return {
                 __SAMPLES_KEY__: batch,
-                __NUM_SAMPLES_YIELDED_KEY__: [[torch.tensor(item[__NUM_SAMPLES_YIELDED_KEY__]) for item in items][-1]]
+                __NUM_SAMPLES_YIELDED_KEY__: [[torch.tensor(item[__NUM_SAMPLES_YIELDED_KEY__]) for item in items][-1]],
             }
 
         return self.collate_fn(items)
