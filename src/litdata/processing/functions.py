@@ -274,7 +274,7 @@ def optimize(
     fn: Callable[[Any], Any],
     inputs: Sequence[Any],
     output_dir: str,
-    input_dir: Optional[str],
+    input_dir: Optional[str] = None,
     weights: Optional[List[int]] = None,
     chunk_size: Optional[int] = None,
     chunk_bytes: Optional[Union[int, str]] = None,
