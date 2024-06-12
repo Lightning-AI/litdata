@@ -1,6 +1,6 @@
 import random
 from copy import deepcopy
-from typing import List, Tuple, Dict, Any
+from typing import Any, Dict, List, Tuple
 
 from litdata import StreamingDataset
 from litdata.streaming.dataset import _generate_subsample_intervals
@@ -56,7 +56,9 @@ def is_dataset_subsample(chunks: List[Dict[str, Any]], region_of_interest: List[
     return False
 
 
-def sample_k_times(lst: List[Dict[str, Any]], n_list: List[int])->Tuple[List[List[Dict[str,Any]]], List[Dict[str,Any]]]:
+def sample_k_times(
+    lst: List[Dict[str, Any]], n_list: List[int]
+) -> Tuple[List[List[Dict[str, Any]]], List[Dict[str, Any]]]:
     all_samples = []
 
     for n in n_list:
@@ -74,7 +76,9 @@ def sample_k_times(lst: List[Dict[str, Any]], n_list: List[int])->Tuple[List[Lis
     return all_samples, lst
 
 
-def split_modify_chunk_and_roi(chunk_list: List[Dict[str, Any]], splits: List[float]) -> Tuple[List[List[Dict[str, Any]]], List[List[Tuple[int, int]]]]:
+def split_modify_chunk_and_roi(
+    chunk_list: List[Dict[str, Any]], splits: List[float]
+) -> Tuple[List[List[Dict[str, Any]]], List[List[Tuple[int, int]]]]:
     chunk_size = chunk_list[0]["chunk_size"]
     total_chunk_length = len(chunk_list) * chunk_size
     each_split_item_count = [int(total_chunk_length * split) for split in splits]

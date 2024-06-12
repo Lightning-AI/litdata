@@ -79,7 +79,7 @@ class StreamingDataset(IterableDataset):
         input_dir = _resolve_dir(input_dir)
 
         self.input_dir = input_dir
-        self.chunks: List[Dict[str,Any]] = []
+        self.chunks: List[Dict[str, Any]] = []
 
         if _should_replace_path(self.input_dir.path):
             cache_path = _try_create_cache_dir(
@@ -467,7 +467,9 @@ class StreamingDataset(IterableDataset):
             )
 
 
-def _generate_subsample_intervals(my_chunk_arr: List[Dict[str, Any]], last_left_subsample_count: int) -> List[Tuple[int, int]]:
+def _generate_subsample_intervals(
+    my_chunk_arr: List[Dict[str, Any]], last_left_subsample_count: int
+) -> List[Tuple[int, int]]:
     """Generates a list of intervals that the dataset is allowed to read, based on the sizes of chunks."""
     intervals = []
     begin = 0
@@ -502,7 +504,9 @@ def _generate_subsample_intervals_for_token_loader(
     return intervals
 
 
-def sample_chunk_and_generate_interval(chunks: List[Dict[str, Any]], subsample: float)->Tuple[List[Dict[str,Any]],List[Tuple[int,int]]]:
+def sample_chunk_and_generate_interval(
+    chunks: List[Dict[str, Any]], subsample: float
+) -> Tuple[List[Dict[str, Any]], List[Tuple[int, int]]]:
     total_chunk_length = len(chunks) * chunks[0]["chunk_size"]
     new_subsample_length = int(total_chunk_length * subsample)
     complete_subsample_chunk = new_subsample_length // chunks[0]["chunk_size"]
@@ -519,7 +523,9 @@ def sample_chunk_and_generate_interval(chunks: List[Dict[str, Any]], subsample: 
     return chunks, region_of_interest
 
 
-def token_loader_sample_chunk_and_generate_interval(chunks: List[Dict[str, Any]], subsample: float, block_size: int)->Tuple[List[Dict[str,Any]],List[Tuple[int,int]]]:
+def token_loader_sample_chunk_and_generate_interval(
+    chunks: List[Dict[str, Any]], subsample: float, block_size: int
+) -> Tuple[List[Dict[str, Any]], List[Tuple[int, int]]]:
     total_chunk_length = len(chunks) * chunks[0]["dim"]
     new_subsample_length = int(total_chunk_length * subsample)
     complete_subsample_chunk = new_subsample_length // chunks[0]["dim"]
