@@ -2,6 +2,7 @@ import os
 import sys
 from unittest.mock import ANY, MagicMock
 
+import numpy as np
 import pytest
 import torch
 from litdata.streaming.cache import Cache
@@ -44,6 +45,31 @@ def test_combined_dataset_num_samples_yield():
     assert dataset._iterator._num_samples_yielded == [1, 4]
     assert next(dataset_iter) == 1
     assert dataset._iterator._num_samples_yielded == [2, 4]
+
+
+class Range:
+    def __init__(self, start, end, step=1):
+        self.values = list(range(start, end, step))
+
+    def set_epoch(self, epoch):
+        self.values = np.random.RandomState(42 + epoch).permutation(self.values).tolist()
+
+    def __iter__(self):
+        yield from self.values
+
+
+def test_combined_dataset_iterate_over_all_4_datasets():
+    dataset = TestCombinedStreamingDataset(
+        [Range(0, 10), Range(10, 20), Range(20, 30), Range(30, 40)], 42, iterate_over_all=True
+    )
+    data = []
+    for i in range(2):
+        dataset.set_epoch(i)
+        data.append(list(dataset))
+
+    assert len(data[0]) == 40
+    assert data[0][-3:] == [14, 13, 16]
+    assert data[1][-3:] == [14, 18, 17]
 
 
 def test_combined_dataset_num_samples_yield_iterate_over_all():
