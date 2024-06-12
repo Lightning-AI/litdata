@@ -476,6 +476,21 @@ class _StreamingMultiProcessingDataLoaderIter(_MultiProcessingDataLoaderIter):
             super()._try_put_index()
 
 
+class StreamingDataLoaderCollateFn:
+    def __init__(self, collate_fn: Optional[Callable] = None) -> None:
+        self.collate_fn = collate_fn or default_collate
+
+    def __call__(self, items: List[Any]) -> Any:
+        if len(items) > 0 and isinstance(items[0], dict) and __NUM_SAMPLES_YIELDED_KEY__ in items[0]:
+            batch = self.collate_fn([item[__SAMPLES_KEY__] for item in items])
+            return {
+                __SAMPLES_KEY__: batch,
+                __NUM_SAMPLES_YIELDED_KEY__: [[torch.tensor(item[__NUM_SAMPLES_YIELDED_KEY__]) for item in items][-1]]
+            }
+
+        return self.collate_fn(items)
+
+
 class StreamingDataLoader(DataLoader):
     r"""The StreamingDataLoader combines a dataset and a sampler, and provides an iterable over the given dataset.
 
@@ -540,7 +555,7 @@ class StreamingDataLoader(DataLoader):
         profile_dir: Optional[str] = None,
         prefetch_factor: Optional[int] = None,
         shuffle: Optional[bool] = None,
-        drop_last: Optional[bool] = False,
+        collate_fn: Optional[Callable] = None,
         **kwargs: Any,
     ) -> None:  # pyright: ignore
         if not isinstance(dataset, (StreamingDataset, CombinedStreamingDataset)):
@@ -552,9 +567,6 @@ class StreamingDataLoader(DataLoader):
         if shuffle is not None:
             dataset.set_shuffle(shuffle)
 
-        if drop_last is not None:
-            dataset.set_drop_last(drop_last)
-
         shuffle = None
 
         if profile_batches and not _VIZ_TRACKER_AVAILABLE:
@@ -562,6 +574,9 @@ class StreamingDataLoader(DataLoader):
 
         if profile_batches and num_workers == 0:
             raise ValueError("Profiling is supported only with num_workers >= 1.")
+
+        if collate_fn:
+            collate_fn = StreamingDataLoaderCollateFn(collate_fn)
 
         self.current_epoch = 0
         self.batch_size = batch_size
@@ -581,6 +596,7 @@ class StreamingDataLoader(DataLoader):
             batch_size=batch_size,
             num_workers=num_workers,
             prefetch_factor=(10 if num_workers > 0 else None) if prefetch_factor is None else prefetch_factor,
+            collate_fn=collate_fn,
             **kwargs,
         )  # type: ignore
 
