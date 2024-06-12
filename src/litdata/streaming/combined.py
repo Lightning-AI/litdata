@@ -181,14 +181,14 @@ class _CombinedDatasetIterator(Iterator):
         self,
         datasets: List[StreamingDataset],
         seed: int,
-        weights: Sequence[float],
+        weights: Sequence[Optional[float]],
         use_streaming_dataloader: bool,
         num_samples_yielded: Any,
         iterate_over_all: bool = False,
     ) -> None:
         self._datasets = datasets
         self._dataset_iters = [iter(dataset) for dataset in datasets]
-        self._dataset_indexes = list(range(len(datasets)))
+        self._dataset_indexes: List[Optional[int]] = list(range(len(datasets)))
         self._num_samples_yielded = num_samples_yielded or [0 for _ in range(len(datasets))]
         self._original_weights = deepcopy(weights)
         self._weights = deepcopy(weights)
@@ -199,7 +199,9 @@ class _CombinedDatasetIterator(Iterator):
         if num_samples_yielded is not None:
             self._num_samples_yielded = num_samples_yielded
             for _ in range(sum(num_samples_yielded)):
-                self._rng.choices(self._dataset_indexes, weights=self._weights, k=1)
+                choice_indexes: List[int] = [index for index in self._dataset_indexes if index is not None]
+                choice_weights: List[float] = [w for w in self._weights if w is not None]
+                self._rng.choices(choice_indexes, weights=choice_weights, k=1)
 
         self._use_streaming_dataloader = use_streaming_dataloader
         self._is_done = False
@@ -221,7 +223,7 @@ class _CombinedDatasetIterator(Iterator):
                         raise e
 
                     self._dataset_indexes[dataset_index] = None
-                    self._weights[dataset_index] = None
+                    self._weights[dataset_index] = None  # type: ignore
                     new_sum = sum([w for w in self._weights if w is not None])
                     self._weights = [None if w is None else w / new_sum for w in self._weights]
 
