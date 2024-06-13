@@ -3,5 +3,5 @@ pillow
 viztracer
 pyarrow
 tqdm
-lightning-cloud == 0.5.68 # Must be pinned to ensure compatibility
+lightning-cloud == 0.5.69 # Must be pinned to ensure compatibility
 google-cloud-storage

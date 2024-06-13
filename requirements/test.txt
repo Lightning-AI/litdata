@@ -6,5 +6,5 @@ pytest-rerunfailures ==14.0
 pytest-random-order ==1.1.1
 pandas
 lightning
-lightning-cloud == 0.5.68 # Must be pinned to ensure compatibility
+lightning-cloud == 0.5.69 # Must be pinned to ensure compatibility
 zstd
