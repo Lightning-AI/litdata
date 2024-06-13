@@ -22,7 +22,7 @@ import pytest
 import torch
 from litdata.constants import _ZSTD_AVAILABLE
 from litdata.processing import functions
-from litdata.streaming import Cache
+from litdata.streaming import Cache, client
 from litdata.streaming import dataset as dataset_module
 from litdata.streaming.dataloader import StreamingDataLoader
 from litdata.streaming.dataset import (
@@ -657,7 +657,10 @@ def test_dataset_for_text_tokens_distributed_num_workers_end_to_end(tmpdir, monk
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="Not tested on windows and MacOs")
-def test_s3_streaming_dataset():
+def test_s3_streaming_dataset(monkeypatch):
+    boto3 = mock.MagicMock()
+    monkeypatch.setattr(client, "boto3", boto3)
+
     dataset = StreamingDataset(input_dir="s3://pl-flash-data/optimized_tiny_imagenet")
     assert dataset.input_dir.url == "s3://pl-flash-data/optimized_tiny_imagenet"
     assert dataset.input_dir.path.endswith(
