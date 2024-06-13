@@ -1,6 +1,7 @@
 """Config file with the Hyperparameter dict."""
 
 import logging
+
 logger = logging.getLogger(__name__)
 
 OUT_URI = "output/"

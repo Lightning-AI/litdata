@@ -1,12 +1,13 @@
 import io
+import logging
 import os
 
 from litdata import optimize
 from PIL import Image
 from pyarrow.parquet import ParquetFile
-import  logging
 
 logger = logging.getLogger(__name__)
+
 
 def convert_parquet_to_lightning_data(parquet_file):
     parquet_file = ParquetFile(parquet_file)

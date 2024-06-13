@@ -3,15 +3,17 @@
 Generates the dataset and saves it to the specified directory.
 
 """
+
+import logging
 import os
 import random
 from multiprocessing import Pool, cpu_count
-from create_labelencoder import create_labelencoder
+
 import names
 import pandas as pd
+from create_labelencoder import create_labelencoder
 from fpdf import FPDF
 from pdf2image import convert_from_path
-import  logging
 
 logger = logging.getLogger(__name__)
 
@@ -62,7 +64,7 @@ output_dir = "dataframe_data"
 os.makedirs(output_dir, exist_ok=True)
 
 
-def generate_document(template_name):
+def generate_document(template_name) -> str:
     """Generates a document based on the given template name by filling it with random sample data.
 
     Args:
@@ -73,14 +75,13 @@ def generate_document(template_name):
 
     """
     template = templates[template_name]
-    filled_template = template.format(
+    return template.format(
         prename=random.choice(first_names),
         surname=random.choice(last_names),
         iban=random.choice(ibans) if "IBAN" in template else "",
         car_number=random.choice(car_numbers) if "CAR NUMBER" in template else "",
         date=random.choice(dates),
     )
-    return filled_template
 
 
 def save_as_pdf(text, filename):

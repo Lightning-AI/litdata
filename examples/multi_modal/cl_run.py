@@ -1,9 +1,11 @@
 import os
-from generate import generate_data_set
-from create_labelencoder import create_labelencoder
-from convert import pl_optimize
-from train import lightning_training
+
 from config import HYPERPARAMETERS
+from convert import pl_optimize
+from create_labelencoder import create_labelencoder
+from generate import generate_data_set
+from train import lightning_training
+
 
 def main():
     output_dir = "dataframe_data"
@@ -18,6 +20,7 @@ def main():
     HYPERPARAMETERS.update({"limit_batches": 1})
     HYPERPARAMETERS.update({"batch_size": 1})
     lightning_training(model_dir="logs", hyperparameters=HYPERPARAMETERS)
+
 
 if __name__ == "__main__":
     main()
