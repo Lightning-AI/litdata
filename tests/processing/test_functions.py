@@ -4,7 +4,7 @@ from unittest import mock
 
 import pytest
 from litdata import walk
-from litdata.processing.functions import _get_input_dir
+from litdata.processing.functions import _get_input_dir, _resolve_dir
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="currently not supported for windows.")
@@ -35,3 +35,11 @@ def test_walk(tmpdir):
     walks_os = sorted(os.walk(tmpdir))
     walks_function = sorted(walk(tmpdir))
     assert walks_os == walks_function
+
+
+def test_get_input_dir_with_s3_path():
+    input_dir = _get_input_dir(["s3://my_bucket/my_folder/a.txt"])
+    assert input_dir == "s3://my_bucket/my_folder"
+    input_dir = _resolve_dir(input_dir)
+    assert not input_dir.path
+    assert input_dir.url == "s3://my_bucket/my_folder"
