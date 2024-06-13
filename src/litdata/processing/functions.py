@@ -19,6 +19,7 @@ from functools import partial
 from pathlib import Path
 from types import FunctionType
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
+from urllib import parse
 
 import torch
 
@@ -37,13 +38,18 @@ from litdata.streaming.resolver import (
 from litdata.utilities._pytree import tree_flatten
 
 
+def _is_remote_file(path: str) -> bool:
+    obj = parse.urlparse(path)
+    return obj.scheme in ["s3", "gcs"]
+
+
 def _get_indexed_paths(data: Any) -> Dict[int, str]:
     flattened_item, _ = tree_flatten(data)
 
     return {
         index: element
         for index, element in enumerate(flattened_item)
-        if isinstance(element, str) and os.path.exists(element)
+        if isinstance(element, str) and (os.path.exists(element) or _is_remote_file(element))
     }
 
 
@@ -61,12 +67,16 @@ def _get_input_dir(inputs: Sequence[Any]) -> Optional[str]:
         # Every element should have filepaths if any contains one.
         raise ValueError(f"The provided item {inputs[0]} didn't contain any filepaths.")
 
-    absolute_path = str(Path(list(indexed_paths.values())[0]).resolve())
+    path = list(indexed_paths.values())[0]
+    if _is_remote_file(path):
+        return os.path.dirname(path)
+    absolute_path = str(Path(path).resolve())
 
-    if "/.project" in absolute_path:
-        return "/" + os.path.join(*str(list(indexed_paths.values())[0]).split("/")[:4])
-
-    return "/" + os.path.join(*str(absolute_path).split("/")[:4])
+    if _IS_IN_STUDIO or absolute_path.startswith("/teamspace"):
+        if "/.project" in absolute_path:
+            return "/" + os.path.join(*str(list(indexed_paths.values())[0]).split("/")[:4])
+        return "/" + os.path.join(*str(absolute_path).split("/")[:4])
+    return None
 
 
 def _get_default_num_workers() -> int:
@@ -161,6 +171,7 @@ def map(
     fn: Callable[[str, Any], None],
     inputs: Sequence[Any],
     output_dir: Union[str, Dir],
+    input_dir: Optional[str] = None,
     weights: Optional[List[int]] = None,
     num_workers: Optional[int] = None,
     fast_dev_run: Union[bool, int] = False,
@@ -180,6 +191,8 @@ def map(
         inputs: A sequence of input to be processed by the `fn` function.
             Each input should contain at least a valid filepath.
         output_dir: The folder where the processed data should be stored.
+        input_dir: Provide the path where your files are stored. If the files are on a remote storage,
+            they will be downloaded in the background while processed.
         weights: Provide an associated weight to each input. This is used to balance work among workers.
         num_workers: The number of workers to use during processing
         fast_dev_run: Whether to use process only a sub part of the inputs
@@ -230,15 +243,16 @@ def map(
             _assert_dir_is_empty(_output_dir)
 
         if not isinstance(inputs, StreamingDataLoader):
-            input_dir = _resolve_dir(_get_input_dir(inputs))
+            input_dir = input_dir or _get_input_dir(inputs)
+            resolved_dir = _resolve_dir(input_dir)
 
             if isinstance(batch_size, int) and batch_size > 1:
                 inputs = [inputs[pos : pos + batch_size] for pos in range(0, len(inputs), batch_size)]
         else:
-            input_dir = Dir()
+            resolved_dir = Dir()
 
         data_processor = DataProcessor(
-            input_dir=input_dir,
+            input_dir=resolved_dir,
             output_dir=_output_dir,
             num_workers=num_workers or _get_default_num_workers(),
             fast_dev_run=fast_dev_run,
@@ -261,6 +275,7 @@ def optimize(
     fn: Callable[[Any], Any],
     inputs: Sequence[Any],
     output_dir: str,
+    input_dir: Optional[str] = None,
     weights: Optional[List[int]] = None,
     chunk_size: Optional[int] = None,
     chunk_bytes: Optional[Union[int, str]] = None,
@@ -282,6 +297,8 @@ def optimize(
         inputs: A sequence of input to be processed by the `fn` function.
             Each input should contain at least a valid filepath.
         output_dir: The folder where the processed data should be stored.
+        input_dir: Provide the path where your files are stored. If the files are on a remote storage,
+            they will be downloaded in the background while processed.
         weights: Provide an associated weight to each input. This is used to balance work among workers.
         chunk_size: The maximum number of elements to hold within a chunk.
         chunk_bytes: The maximum number of bytes to hold within a chunk.
@@ -336,15 +353,15 @@ def optimize(
         _assert_dir_has_index_file(_output_dir)
 
         if not isinstance(inputs, StreamingDataLoader):
-            input_dir = _resolve_dir(_get_input_dir(inputs))
+            resolved_dir = _resolve_dir(input_dir or _get_input_dir(inputs))
 
             if isinstance(batch_size, int) and batch_size > 1:
                 inputs = [inputs[pos : pos + batch_size] for pos in range(0, len(inputs), batch_size)]
         else:
-            input_dir = Dir()
+            resolved_dir = Dir()
 
         data_processor = DataProcessor(
-            input_dir=input_dir,
+            input_dir=resolved_dir,
             output_dir=_output_dir,
             num_workers=num_workers or _get_default_num_workers(),
             fast_dev_run=fast_dev_run,

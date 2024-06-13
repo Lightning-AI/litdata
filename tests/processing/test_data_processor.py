@@ -2,7 +2,6 @@ import os
 import random
 import sys
 from functools import partial
-from pathlib import Path
 from typing import Any, List
 from unittest import mock
 from unittest.mock import ANY, Mock
@@ -998,9 +997,6 @@ def test_data_processing_map_without_input_dir_and_folder(monkeypatch, tmpdir):
 
 
 def map_fn_map_non_absolute(path, output_dir):
-    absolute_path = str(Path(path).absolute())
-    assert absolute_path == path, (absolute_path, path)
-
     with open(os.path.join(output_dir, os.path.basename(path)), "w") as f:
         f.write("Hello World")
 
