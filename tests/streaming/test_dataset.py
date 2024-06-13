@@ -660,7 +660,9 @@ def test_dataset_for_text_tokens_distributed_num_workers_end_to_end(tmpdir, monk
 def test_s3_streaming_dataset():
     dataset = StreamingDataset(input_dir="s3://pl-flash-data/optimized_tiny_imagenet")
     assert dataset.input_dir.url == "s3://pl-flash-data/optimized_tiny_imagenet"
-    assert dataset.input_dir.path.startswith("/cache/chunks")  # it won't be None, and a cache dir will be created
+    assert dataset.input_dir.path.endswith(
+        "/chunks/597d6184e3ba942b36c8b6357a890033"
+    )  # it won't be None, and a cache dir will be created
 
 
 class EmulateS3StreamingDataset(StreamingDataset):
