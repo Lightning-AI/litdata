@@ -11,6 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
 import os
 import random
 import sys
@@ -22,7 +23,7 @@ import pytest
 import torch
 from litdata.constants import _ZSTD_AVAILABLE
 from litdata.processing import functions
-from litdata.streaming import Cache, client
+from litdata.streaming import Cache
 from litdata.streaming import dataset as dataset_module
 from litdata.streaming.dataloader import StreamingDataLoader
 from litdata.streaming.dataset import (
@@ -658,8 +659,15 @@ def test_dataset_for_text_tokens_distributed_num_workers_end_to_end(tmpdir, monk
 
 @pytest.mark.skipif(sys.platform == "win32", reason="Not tested on windows and MacOs")
 def test_s3_streaming_dataset(monkeypatch):
-    boto3 = mock.MagicMock()
-    monkeypatch.setattr(client, "boto3", boto3)
+    downloader = mock.MagicMock()
+
+    def fn(remote_chunkpath: str, local_chunkpath: str):
+        with open(local_chunkpath, "w") as f:
+            json.dump({"chunks": [{"chunk_size": 2}]}, f)
+
+    downloader.download_file = fn
+
+    monkeypatch.setattr(dataset_module, "get_downloader_cls", mock.MagicMock(return_value=downloader))
 
     dataset = StreamingDataset(input_dir="s3://pl-flash-data/optimized_tiny_imagenet")
     assert dataset.input_dir.url == "s3://pl-flash-data/optimized_tiny_imagenet"
