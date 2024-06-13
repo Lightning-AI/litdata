@@ -80,6 +80,17 @@ lint.ignore-init-module-imports = true
 [tool.ruff.lint.per-file-ignores]
 ".actions/*" = ["S101", "S310"]
 "setup.py" = ["S101", "SIM115"]
+"examples/**" = [
+    "S101",  # todo: Use of `assert` detected
+    "S403",  # todo: `pickle`, `cPickle`, `dill`, and `shelve` modules are possibly insecure
+    "S404",  # todo: `subprocess` module is possibly insecure
+    "S602",  # todo: `subprocess` call with `shell=True` identified, security issue
+    "S603",  # todo: `subprocess` call: check for execution of untrusted input
+    "S605",  # todo: Starting a process with a shell: seems safe, but may be changed in the future; consider rewriting without `shell`
+    "S607",  # todo: Starting a process with a partial executable path
+    "S310",  # todo: Audit URL open for permitted schemes. Allowing use of `file:` or custom schemes is often unexpected.
+    "S311",  # Standard pseudo-random generators are not suitable for cryptographic purposes
+]
 "src/**" = [
     "S101",  # todo: Use of `assert` detected
     "S403",  # todo: `pickle`, `cPickle`, `dill`, and `shelve` modules are possibly insecure
