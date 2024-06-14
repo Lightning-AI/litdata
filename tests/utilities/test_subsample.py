@@ -12,14 +12,14 @@ def test_shuffle_lists_together():
 
     shuffled_l1, shuffled_l2 = shuffle_lists_together(list1, list2)
 
-    assert all(shuffled_l1[i]**2 == shuffled_l2[i] for i in range(len(list1)))
+    assert all(shuffled_l1[i] ** 2 == shuffled_l2[i] for i in range(len(list1)))
     assert all([shuffled_l1[i] ** 2 == shuffled_l2[i] for i in range(len(list1))])
 
     l1 = [32, 54, 21]
     l2 = ["Apple", "Mango", "Orange", "Lichi"]
     with pytest.raises(ValueError, match="Lists must be of the same size"):
-        shuffle_lists_together(l1,l2, seed=47)
-    
+        shuffle_lists_together(l1, l2, seed=47)
+
         l1 = [32, 54, 21]
         l2 = ["Apple", "Mango", "Orange", "Lichi"]
         shuffle_lists_together(l1, l2, seed=47)
@@ -28,9 +28,7 @@ def test_shuffle_lists_together():
     l2 = ["Apple", "Mango", "Orange", "Lichi"]
     shuffled_l1, shuffled_l2 = shuffle_lists_together(l1, l2, seed=47)
 
-    assert all(l2[l1.index(shuffled_l1[i])] == shuffled_l2[i]
-        for i in range(len(shuffled_l1))
-    )
+    assert all(l2[l1.index(shuffled_l1[i])] == shuffled_l2[i] for i in range(len(shuffled_l1)))
     assert all([l2[l1.index(shuffled_l1[i])] == shuffled_l2[i] for i in range(len(shuffled_l1))])
 
 
