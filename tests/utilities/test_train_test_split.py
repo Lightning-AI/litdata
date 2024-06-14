@@ -3,7 +3,6 @@ from litdata import train_test_split
 from litdata.constants import _ZSTD_AVAILABLE
 from litdata.streaming.cache import Cache
 from litdata.streaming.dataset import StreamingDataset
-from litdata.utilities.train_test_split import train_test_split
 
 
 @pytest.mark.parametrize(

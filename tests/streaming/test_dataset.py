@@ -83,7 +83,6 @@ def test_streaming_dataset(tmpdir, monkeypatch, compression):
     assert len(dataloader) == 30
 
 
-
 @pytest.mark.parametrize("drop_last", [False, True])
 @pytest.mark.parametrize(
     "compression",
@@ -425,7 +424,6 @@ def test_dataset_cache_recreation(tmpdir):
     _ = dataset[1]
     assert dataset.cache is cache  # cache gets reused
     assert dataset.shuffler is shuffler  # shuffler gets reused
-
 
 
 def test_dataset_for_text_tokens(tmpdir):
@@ -991,7 +989,8 @@ def test_subsample_streaming_dataset_with_token_loader(tmpdir, monkeypatch):
 
     block_size = 10
     dataset1 = StreamingDataset(input_dir=str(tmpdir), item_loader=TokensLoader(block_size), shuffle=False)
-    dataset2 = StreamingDataset(input_dir=str(tmpdir), item_loader=TokensLoader(block_size), shuffle=False, subsample=0.4)
+    dataset2 = StreamingDataset(
+        input_dir=str(tmpdir), item_loader=TokensLoader(block_size), shuffle=False, subsample=0.4
+    )
 
-    
-    assert len(dataset2) == int(len(dataset1)*0.4)
+    assert len(dataset2) == int(len(dataset1) * 0.4)

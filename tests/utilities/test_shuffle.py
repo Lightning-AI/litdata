@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+
 from litdata.utilities.env import _DistributedEnv
 from litdata.utilities.shuffle import (
     _associate_chunks_and_internals_to_ranks,
@@ -22,14 +23,13 @@ def test_intra_node_chunk_shuffle():
 
 
 def test_associate_chunks_and_internals_to_ranks():
-
     @dataclass
     class Interval:
         chunk_start: int
         roi_start_idx: int
         roi_end_idx: int
         chunk_end: int
-    
+
         def __getitem__(self, index: int) -> int:
             if not 0 <= index <= 3:
                 raise IndexError("Index must be between 0 and 3")
@@ -40,7 +40,6 @@ def test_associate_chunks_and_internals_to_ranks():
                 self.roi_end_idx,
                 self.chunk_end,
             )[index]
-
 
     indexes = [0, 1, 2, 3, 4, 5, 6, 7]
     chunk_intervals = [

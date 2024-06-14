@@ -11,10 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import hashlib
-import json
 import os
-import random
 from logging import Logger
 from time import time
 from typing import Any, Dict, List, Optional, Tuple, Union
@@ -23,19 +20,17 @@ import numpy as np
 from torch.utils.data import IterableDataset
 
 from litdata.constants import (
-    _DEFAULT_CACHE_DIR,
     _INDEX_FILENAME,
 )
 from litdata.streaming import Cache
-from litdata.streaming.downloader import get_downloader_cls
-from litdata.streaming.item_loader import BaseItemLoader, TokensLoader
+from litdata.streaming.item_loader import BaseItemLoader
 from litdata.streaming.resolver import Dir, _resolve_dir
 from litdata.streaming.sampler import ChunkedIndex
 from litdata.streaming.serializers import Serializer
 from litdata.streaming.shuffle import FullShuffle, NoShuffle, Shuffle
+from litdata.utilities.dataset_utilities import _should_replace_path, _try_create_cache_dir, subsample_streaming_dataset
 from litdata.utilities.env import _DistributedEnv, _is_in_dataloader_worker, _WorkerEnv
 from litdata.utilities.shuffle import _find_chunks_per_ranks_on_which_to_skip_deletion
-from litdata.utilities.dataset_utilities import subsample_streaming_dataset, _should_replace_path, _try_create_cache_dir
 
 logger = Logger(__name__)
 
@@ -82,7 +77,9 @@ class StreamingDataset(IterableDataset):
         self.input_dir = input_dir
         self.chunks: List[Dict[str, Any]] = []
         self.region_of_interest: List[Tuple[int, int]] = []
-        self.subsampled_files, self.region_of_interest = subsample_streaming_dataset(self.input_dir, item_loader, subsample, shuffle, seed)
+        self.subsampled_files, self.region_of_interest = subsample_streaming_dataset(
+            self.input_dir, item_loader, subsample, shuffle, seed
+        )
 
         self.item_loader = item_loader
         self.shuffle: bool = shuffle

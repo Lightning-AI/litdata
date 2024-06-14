@@ -1,11 +1,12 @@
 import os
-import pytest
 from unittest import mock
+
 from litdata.utilities.dataset_utilities import (
     _should_replace_path,
     _try_create_cache_dir,
     generate_roi,
 )
+
 
 def test_should_replace_path():
     assert _should_replace_path(None)
@@ -34,7 +35,12 @@ def test_try_create_cache_dir():
 
 
 def test_generate_roi():
-    my_chunks = [{"chunk_size":30},{"chunk_size":50},{"chunk_size":20},{"chunk_size":10},]
+    my_chunks = [
+        {"chunk_size": 30},
+        {"chunk_size": 50},
+        {"chunk_size": 20},
+        {"chunk_size": 10},
+    ]
     my_roi = generate_roi(my_chunks)
 
-    assert my_roi == [(0,30), (0,50), (0,20), (0,10)]
+    assert my_roi == [(0, 30), (0, 50), (0, 20), (0, 10)]

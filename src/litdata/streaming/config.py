@@ -65,7 +65,6 @@ class ChunksConfig:
                 self._chunks = _original_chunks
             else:
                 self._chunks = load_subsampled_chunks(subsampled_files, _original_chunks)
-                
 
         self._config["data_spec"] = treespec_loads(self._config["data_spec"])
 
@@ -243,10 +242,9 @@ class ChunksConfig:
         ):
             raise ValueError("Please, use Cache(..., item_loader=TokensLoader(block_size=...))")
 
-def load_subsampled_chunks(subsampled_files: List[str], original_chunks: List[Dict[str,Any]])->List[Dict[str,Any]]:
-    """
-    Loads Chunks based on the basis of subsample provided
-    """
+
+def load_subsampled_chunks(subsampled_files: List[str], original_chunks: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Loads Chunks based on the basis of subsample provided."""
     my_subsampled_chunks: List[Dict[str, Any]] = [{}] * len(subsampled_files)
 
     assert len(my_subsampled_chunks) == len(subsampled_files)
@@ -255,14 +253,14 @@ def load_subsampled_chunks(subsampled_files: List[str], original_chunks: List[Di
         if curr_chunk["filename"] in subsampled_files:
             idx = subsampled_files.index(curr_chunk["filename"])
             my_subsampled_chunks[idx] = curr_chunk
-    
-    # if any idx of my_subsampled_chunks is None, means, 
+
+    # if any idx of my_subsampled_chunks is None, means,
     # some elements in subsampled_files were not actually part of chunks
     # raise error
     if any([not _my_subsampled_chunk for _my_subsampled_chunk in my_subsampled_chunks]):
         raise ValueError(
             "Mismatch in subsampled files and the chunks loaded",
-            "Make sure subsampled chunks are actually part of the original chunk"
+            "Make sure subsampled chunks are actually part of the original chunk",
         )
 
     return my_subsampled_chunks
