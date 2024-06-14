@@ -160,7 +160,7 @@ class BinaryReader:
     def __init__(
         self,
         cache_dir: str,
-        chunks: Optional[List[Dict[str, Any]]] = None,
+        subsampled_files: Optional[List[str]] = None,
         region_of_interest: Optional[List[Tuple[int, int]]] = None,
         max_cache_size: Optional[Union[int, str]] = None,
         remote_input_dir: Optional[str] = None,
@@ -172,7 +172,7 @@ class BinaryReader:
 
         Arguments:
             cache_dir: The path to cache folder.
-            chunks: The chunks that were read from `input_dir/index.json` file.
+            subsampled_files: List of subsampled chunk files loaded from `input_dir/index.json` file.
             region_of_interest: List of tuples of {start,end} of region of interest for each chunk.
             remote_input_dir: The path to a remote folder where the data are located.
                 The scheme needs to be added to the path.
@@ -193,7 +193,7 @@ class BinaryReader:
 
         self._compression = compression
         self._intervals: Optional[List[str]] = None
-        self.chunks = chunks
+        self.subsampled_files = subsampled_files
         self.region_of_interest = region_of_interest
         self._serializers: Dict[str, Serializer] = _get_serializers(serializers)
         self._distributed_env = _DistributedEnv.detect()
@@ -218,7 +218,7 @@ class BinaryReader:
             self._serializers,
             self._remote_input_dir,
             self._item_loader,
-            self.chunks,
+            self.subsampled_files,
             self.region_of_interest,
         )
         return self._config

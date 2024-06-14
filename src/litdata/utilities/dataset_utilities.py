@@ -10,7 +10,7 @@ from litdata.streaming.downloader import get_downloader_cls
 from litdata.streaming.item_loader import BaseItemLoader, TokensLoader
 
 
-def subsample_streaming_dataset(input_dir: Dir, item_loader: Optional[BaseItemLoader] = None, subsample: float = 1.0)->Tuple[List[Dict[str, Any]], List[Tuple[int,int]]]:
+def subsample_streaming_dataset(input_dir: Dir, item_loader: Optional[BaseItemLoader] = None, subsample: float = 1.0)->Tuple[List[str], List[Tuple[int,int]]]:
     """
     Subsample streaming dataset.
     
@@ -21,7 +21,7 @@ def subsample_streaming_dataset(input_dir: Dir, item_loader: Optional[BaseItemLo
     - Once download, load chunks from `index.json` file.
     - Once chunks are ready, subsample them on the basis of `item loader` and return (chunks, region_of_interest).
     """
-    my_chunks: List[Dict[str, Any]] = []
+    my_subsampled_files: List[str] = []
     my_roi: List[Tuple[int,int]] = []
 
     # Make sure input_dir contains cache path and remote url
@@ -46,24 +46,24 @@ def subsample_streaming_dataset(input_dir: Dir, item_loader: Optional[BaseItemLo
         # load chunks from `index.json` file
         with open(os.path.join(input_dir.path, _INDEX_FILENAME)) as f:
             data = json.load(f)
-            my_chunks.extend(data["chunks"])
+            original_chunks = data["chunks"]
     else:
         raise ValueError(
             f"The provided dataset `{input_dir.path}` doesn't contain any {_INDEX_FILENAME} file."
             " HINT: Did you successfully optimize a dataset to the provided `input_dir`?"
         )
 
-    assert len(my_chunks) > 0, f"No chunks found in the `{input_dir}/index.json` file"
+    assert len(original_chunks) > 0, f"No chunks found in the `{input_dir}/index.json` file"
 
     # create a (chunk_start, chunk_end) list to indicate our subsample from where we can read.
     if isinstance(item_loader, TokensLoader):
-        my_chunks, my_roi = token_loader_sample_chunk_and_generate_interval(
-            my_chunks, subsample, item_loader._block_size
+        my_subsampled_files, my_roi = token_loader_sample_chunk_and_generate_interval(
+            original_chunks, subsample, item_loader._block_size
         )
     else:
-        my_chunks, my_roi = sample_chunk_and_generate_interval(my_chunks, subsample)
+        my_subsampled_files, my_roi = sample_chunk_and_generate_interval(original_chunks, subsample)
 
-    return my_chunks, my_roi
+    return my_subsampled_files, my_roi
 
 
 def _should_replace_path(path: Optional[str]) -> bool:
@@ -105,7 +105,7 @@ def _generate_subsample_intervals_for_token_loader(
 
 def sample_chunk_and_generate_interval(
     chunks: List[Dict[str, Any]], subsample: float
-) -> Tuple[List[Dict[str, Any]], List[Tuple[int, int]]]:
+) -> Tuple[List[str], List[Tuple[int, int]]]:
     total_chunk_length = len(chunks) * chunks[0]["chunk_size"]
     new_subsample_length = int(total_chunk_length * subsample)
     complete_subsample_chunk = new_subsample_length // chunks[0]["chunk_size"]
@@ -119,12 +119,13 @@ def sample_chunk_and_generate_interval(
 
     region_of_interest = _generate_subsample_intervals(chunks, last_left_subsample_count)
 
-    return chunks, region_of_interest
+    my_subsampled_files = [chunk["filename"] for chunk in chunks]
+    return my_subsampled_files, region_of_interest
 
 
 def token_loader_sample_chunk_and_generate_interval(
     chunks: List[Dict[str, Any]], subsample: float, block_size: int
-) -> Tuple[List[Dict[str, Any]], List[Tuple[int, int]]]:
+) -> Tuple[List[str], List[Tuple[int, int]]]:
     total_chunk_length = len(chunks) * chunks[0]["dim"]
     new_subsample_length = int(total_chunk_length * subsample)
     complete_subsample_chunk = new_subsample_length // chunks[0]["dim"]
@@ -137,8 +138,9 @@ def token_loader_sample_chunk_and_generate_interval(
         chunks = random.sample(chunks, chunk_count)
 
     region_of_interest = _generate_subsample_intervals_for_token_loader(chunks, block_size, last_left_subsample_count)
+    my_subsampled_files = [chunk["filename"] for chunk in chunks]
 
-    return chunks, region_of_interest
+    return my_subsampled_files, region_of_interest
 
 
 def _generate_subsample_intervals(

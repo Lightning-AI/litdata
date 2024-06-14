@@ -42,14 +42,15 @@ def train_test_split(streaming_dataset: StreamingDataset, splits: List[float]) -
     if is_dataset_subsample(streaming_dataset.chunks, streaming_dataset.region_of_interest):
         raise Exception("Splitting subsample dataset is not supported.")
 
-    original_chunk = deepcopy(streaming_dataset.chunks)
+    raise NotImplementedError("Yet to be implemeted")
+    original_chunk = deepcopy(streaming_dataset.subsampled_files) # now we don't have chunks, but subsampled files
 
     my_datasets = [deepcopy(streaming_dataset) for _ in splits]
 
-    my_new_chunk_list, my_new_roi_list = split_modify_chunk_and_roi(original_chunk, splits)
+    my_new_subsampled_files_list, my_new_roi_list = split_modify_chunk_and_roi(original_chunk, splits)
 
     for i, curr_new_dataset in enumerate(my_datasets):
-        curr_new_dataset.chunks = my_new_chunk_list[i]
+        curr_new_dataset.subsampled_files = my_new_subsampled_files_list[i]
         curr_new_dataset.region_of_interest = my_new_roi_list[i]
 
     return my_datasets
@@ -158,7 +159,7 @@ def split_modify_chunk_and_roi(
         splits (List[float]): A list of floats representing the proportion of data to be allocated to each split.
 
     Returns:
-        Tuple[List[List[Dict[str, Any]]], List[List[Tuple[int, int]]]]: A tuple containing the split chunks and ROIs.
+        Tuple[List[str], List[List[Tuple[int, int]]]]: A tuple containing the split subsampled chunk filenames and ROIs.
     """
 
     chunk_size = chunk_list[0]["chunk_size"]
@@ -214,4 +215,5 @@ def split_modify_chunk_and_roi(
                 new_roi_list[i].append((last_roi_idx + first_chunk_start_idx, last_roi_idx + chunk_size))
                 item_count_left_list[i] -= top_can_fulfill
 
-    return new_chunk_list, new_roi_list
+    new_subsampled_files_list = [chunk["filename"] for chunk in new_chunk_list]
+    return new_subsampled_files_list, new_roi_list

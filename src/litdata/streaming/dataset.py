@@ -82,7 +82,7 @@ class StreamingDataset(IterableDataset):
         self.input_dir = input_dir
         self.chunks: List[Dict[str, Any]] = []
         self.region_of_interest: List[Tuple[int, int]] = []
-        self.chunks, self.region_of_interest = subsample_streaming_dataset(self.input_dir, item_loader)
+        self.subsampled_files, self.region_of_interest = subsample_streaming_dataset(self.input_dir, item_loader)
 
         self.item_loader = item_loader
         self.shuffle: bool = shuffle
@@ -149,7 +149,7 @@ class StreamingDataset(IterableDataset):
 
         cache = Cache(
             input_dir=self.input_dir,
-            chunks=self.chunks,
+            subsampled_files=self.subsampled_files,
             region_of_interest=self.region_of_interest,
             item_loader=self.item_loader,
             chunk_bytes=1,

@@ -31,7 +31,7 @@ class ChunksConfig:
         serializers: Dict[str, Serializer],
         remote_dir: Optional[str],
         item_loader: Optional[BaseItemLoader] = None,
-        chunks: Optional[List[Dict[str, Any]]] = None,
+        subsampled_files: Optional[List[str]] = None,
         region_of_interest: Optional[List[Tuple[int, int]]] = None,
     ) -> None:
         """The ChunksConfig reads the index files associated a chunked dataset and enables to map an index to its
@@ -42,14 +42,14 @@ class ChunksConfig:
             serializers: The serializers used to serialize and deserialize the chunks.
             remote_dir: The path to a remote folder where the data are located.
                 The scheme needs to be added to the path.
-            chunks: The chunks that were read from `input_dir/index.json` file.
+            subsampled_files: List of subsampled chunk files loaded from `input_dir/index.json` file.
             region_of_interest: List of tuples of {start,end} of region of interest for each chunk.
 
         """
         self._cache_dir = cache_dir
         self._intervals: List[Tuple[int, int, int, int]] = []
         self._config = None
-        self._chunks = chunks
+        self._chunks = None
         self._remote_dir = remote_dir
         self._item_loader = item_loader or PyTreeLoader()
 
@@ -61,10 +61,10 @@ class ChunksConfig:
 
             assert _original_chunks is not None
 
-            if chunks is None:
+            if subsampled_files is None:
                 self._chunks = _original_chunks
             else:
-                assert self._chunks is not None
+                self._chunks = load_subsampled_chunks(subsampled_files, _original_chunks)
                 
 
         self._config["data_spec"] = treespec_loads(self._config["data_spec"])
@@ -217,7 +217,7 @@ class ChunksConfig:
         serializers: Dict[str, Serializer],
         remote_dir: Optional[str] = None,
         item_loader: Optional[BaseItemLoader] = None,
-        chunks: Optional[List[Any]] = None,
+        subsampled_files: Optional[List[str]] = None,
         region_of_interest: Optional[List[Tuple[int, int]]] = None,
     ) -> Optional["ChunksConfig"]:
         cache_index_filepath = os.path.join(cache_dir, _INDEX_FILENAME)
@@ -229,7 +229,7 @@ class ChunksConfig:
         if not os.path.exists(cache_index_filepath):
             return None
 
-        return ChunksConfig(cache_dir, serializers, remote_dir, item_loader, chunks, region_of_interest)
+        return ChunksConfig(cache_dir, serializers, remote_dir, item_loader, subsampled_files, region_of_interest)
 
     def __len__(self) -> int:
         return self._length
@@ -242,3 +242,27 @@ class ChunksConfig:
             and not isinstance(self._item_loader, TokensLoader)
         ):
             raise ValueError("Please, use Cache(..., item_loader=TokensLoader(block_size=...))")
+
+def load_subsampled_chunks(subsampled_files: List[str], original_chunks: List[Dict[str,Any]])->List[Dict[str,Any]]:
+    """
+    Loads Chunks based on the basis of subsample provided
+    """
+    my_subsampled_chunks: List[Dict[str, Any]] = [{}] * len(subsampled_files)
+
+    assert len(my_subsampled_chunks) == len(subsampled_files)
+
+    for curr_chunk in original_chunks:
+        if curr_chunk["filename"] in subsampled_files:
+            idx = subsampled_files.index(curr_chunk["filename"])
+            my_subsampled_chunks[idx] = curr_chunk
+    
+    # if any idx of my_subsampled_chunks is None, means, 
+    # some elements in subsampled_files were not actually part of chunks
+    # raise error
+    if any([not _my_subsampled_chunk for _my_subsampled_chunk in my_subsampled_chunks]):
+        raise ValueError(
+            "Mismatch in subsampled files and the chunks loaded",
+            "Make sure subsampled chunks are actually part of the original chunk"
+        )
+
+    return my_subsampled_chunks
