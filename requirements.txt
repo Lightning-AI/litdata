@@ -1,5 +1,5 @@
 torch
 filelock
 numpy
-boto3[crt]
+boto3
 requests
