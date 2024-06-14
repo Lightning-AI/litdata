@@ -965,3 +965,33 @@ def test_dataset_distributed_drop_last(tmpdir, monkeypatch, compression):
         " if your system depends on distributed collectives."
     )
     assert expected_warn_msg == warn_msg
+
+
+def test_subsample_streaming_dataset_with_token_loader(tmpdir, monkeypatch):
+    monkeypatch.setattr(functions, "_get_input_dir", lambda x: str(tmpdir))
+
+    seed_everything(42)
+
+    with open(tmpdir / "a.txt", "w") as f:
+        f.write("hello")
+
+    inputs = [(v, str(tmpdir / "a.txt")) for v in range(0, 200, 20)]
+
+    cache_dir = os.path.join(tmpdir, "cache")
+    output_dir = os.path.join(tmpdir, "target_dir")
+    os.makedirs(output_dir, exist_ok=True)
+    monkeypatch.setenv("DATA_OPTIMIZER_CACHE_FOLDER", cache_dir)
+    monkeypatch.setenv("DATA_OPTIMIZER_DATA_CACHE_FOLDER", cache_dir)
+
+    functions.optimize(
+        optimize_fn, inputs, output_dir=str(tmpdir), num_workers=2, chunk_size=2, reorder_files=False, num_downloaders=1
+    )
+
+    assert len([f for f in os.listdir(tmpdir) if f.endswith(".bin")]) == 10
+
+    block_size = 10
+    dataset1 = StreamingDataset(input_dir=str(tmpdir), item_loader=TokensLoader(block_size), shuffle=False)
+    dataset2 = StreamingDataset(input_dir=str(tmpdir), item_loader=TokensLoader(block_size), shuffle=False, subsample=0.4)
+
+    
+    assert len(dataset2) == int(len(dataset1)*0.4)

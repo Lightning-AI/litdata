@@ -1,16 +1,18 @@
 import os
 import json
-import hashlib
+import math
 import random
+import hashlib
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 from litdata.streaming.resolver import Dir
 from litdata.constants import _INDEX_FILENAME, _DEFAULT_CACHE_DIR
 from litdata.streaming.downloader import get_downloader_cls
 from litdata.streaming.item_loader import BaseItemLoader, TokensLoader
+from litdata.utilities.subsample import my_subsampled_filenames_and_roi, shuffle_lists_together
 
 
-def subsample_streaming_dataset(input_dir: Dir, item_loader: Optional[BaseItemLoader] = None, subsample: float = 1.0)->Tuple[List[str], List[Tuple[int,int]]]:
+def subsample_streaming_dataset(input_dir: Dir, item_loader: Optional[BaseItemLoader] = None, subsample: float = 1.0, shuffle: bool = False, seed: int = 42)->Tuple[List[str], List[Tuple[int,int]]]:
     """
     Subsample streaming dataset.
     
@@ -19,7 +21,7 @@ def subsample_streaming_dataset(input_dir: Dir, item_loader: Optional[BaseItemLo
     - Check if `index.json` file exists in cache path.
     - If not, download from remote url. If remote url doesn't contain `index.json` file, raise error.
     - Once download, load chunks from `index.json` file.
-    - Once chunks are ready, subsample them on the basis of `item loader` and return (chunks, region_of_interest).
+    - Once chunks are ready, generate region_of_interest for chunks and compute subsampled (chunk filenames, region_of_interest).
     """
     my_subsampled_files: List[str] = []
     my_roi: List[Tuple[int,int]] = []
@@ -56,12 +58,16 @@ def subsample_streaming_dataset(input_dir: Dir, item_loader: Optional[BaseItemLo
     assert len(original_chunks) > 0, f"No chunks found in the `{input_dir}/index.json` file"
 
     # create a (chunk_start, chunk_end) list to indicate our subsample from where we can read.
-    if isinstance(item_loader, TokensLoader):
-        my_subsampled_files, my_roi = token_loader_sample_chunk_and_generate_interval(
-            original_chunks, subsample, item_loader._block_size
-        )
-    else:
-        my_subsampled_files, my_roi = sample_chunk_and_generate_interval(original_chunks, subsample)
+    my_roi = generate_roi(original_chunks, item_loader)
+
+    # shuffle lists together
+    if shuffle and not math.isclose(subsample, 1.0): 
+        # checking if subsample is 1, as if user wants complete data, then let, shuffler and sampler do the work
+        original_chunks, my_roi = shuffle_lists_together(original_chunks, my_roi, seed)
+
+    target = int(sum([roi[1]-roi[0] for roi in my_roi]) * subsample)
+    
+    my_subsampled_files, my_roi, _, _ = my_subsampled_filenames_and_roi(original_chunks, my_roi, target)
 
     return my_subsampled_files, my_roi
 
@@ -85,78 +91,21 @@ def _try_create_cache_dir(input_dir: Optional[str]) -> Optional[str]:
     return cache_dir
 
 
-def _generate_subsample_intervals_for_token_loader(
-    chunks: List[Dict[str, Any]], block_size: int, last_left_subsample_count: int
-) -> List[Tuple[int, int]]:
-    intervals = []
-    begin = 0
-    end = 0
-    for idx, chunk in enumerate(chunks):
-        dim = chunk["dim"]
-        num_blocks = dim // block_size
-        end += num_blocks
-        start_idx, end_idx = begin, end
-        if idx == len(chunks) - 1 and last_left_subsample_count > 0:
-            end_idx = last_left_subsample_count
-        intervals.append((start_idx, end_idx))
-        begin += num_blocks
-    return intervals
+def generate_roi(chunks: List[Dict[str, Any]], item_loader: Optional[BaseItemLoader] = None)->List[Tuple[int, int]]:
+    "Generates default region_of_interest for chunks."
+    my_roi = []
 
+    if isinstance(item_loader, TokensLoader):
+        for idx, chunk in enumerate(chunks):
+            dim = chunk["dim"]
+            num_blocks = dim // item_loader._block_size
+            end = num_blocks
+            my_roi.append((0, end))
 
-def sample_chunk_and_generate_interval(
-    chunks: List[Dict[str, Any]], subsample: float
-) -> Tuple[List[str], List[Tuple[int, int]]]:
-    total_chunk_length = len(chunks) * chunks[0]["chunk_size"]
-    new_subsample_length = int(total_chunk_length * subsample)
-    complete_subsample_chunk = new_subsample_length // chunks[0]["chunk_size"]
-    last_left_subsample_count = new_subsample_length - (complete_subsample_chunk * chunks[0]["chunk_size"])
+    else:
+        for i, chunk in enumerate(chunks):
+            end = chunk["chunk_size"]
+            my_roi.append((0, end))
 
-    chunk_count = complete_subsample_chunk
-    if last_left_subsample_count > 0:
-        chunk_count += 1
-        # sampled chunks
-        chunks = random.sample(chunks, chunk_count)
-
-    region_of_interest = _generate_subsample_intervals(chunks, last_left_subsample_count)
-
-    my_subsampled_files = [chunk["filename"] for chunk in chunks]
-    return my_subsampled_files, region_of_interest
-
-
-def token_loader_sample_chunk_and_generate_interval(
-    chunks: List[Dict[str, Any]], subsample: float, block_size: int
-) -> Tuple[List[str], List[Tuple[int, int]]]:
-    total_chunk_length = len(chunks) * chunks[0]["dim"]
-    new_subsample_length = int(total_chunk_length * subsample)
-    complete_subsample_chunk = new_subsample_length // chunks[0]["dim"]
-    last_left_subsample_count = new_subsample_length - (complete_subsample_chunk * chunks[0]["dim"])
-
-    chunk_count = complete_subsample_chunk
-    if last_left_subsample_count > 0:
-        chunk_count += 1
-        # sampled chunks
-        chunks = random.sample(chunks, chunk_count)
-
-    region_of_interest = _generate_subsample_intervals_for_token_loader(chunks, block_size, last_left_subsample_count)
-    my_subsampled_files = [chunk["filename"] for chunk in chunks]
-
-    return my_subsampled_files, region_of_interest
-
-
-def _generate_subsample_intervals(
-    my_chunk_arr: List[Dict[str, Any]], last_left_subsample_count: int
-) -> List[Tuple[int, int]]:
-    """Generates a list of intervals that the dataset is allowed to read, based on the sizes of chunks."""
-    intervals = []
-    begin = 0
-    end = 0
-    for i, chunk in enumerate(my_chunk_arr):
-        if i == len(my_chunk_arr) - 1 and last_left_subsample_count > 0:
-            end += last_left_subsample_count
-        else:
-            end += chunk["chunk_size"]
-
-        intervals.append((begin, end))
-        begin += chunk["chunk_size"]
-
-    return intervals
+    
+    return my_roi

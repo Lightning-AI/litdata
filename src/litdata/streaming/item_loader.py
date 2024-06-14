@@ -105,7 +105,8 @@ class PyTreeLoader(BaseItemLoader):
             end += curr_chunk["chunk_size"]
             start_idx, end_idx = begin, end
             if self.region_of_interest is not None:
-                start_idx, end_idx = self.region_of_interest[idx]
+                start_idx = begin + self.region_of_interest[idx][0]
+                end_idx = begin + self.region_of_interest[idx][1]
 
             intervals.append((begin, start_idx, end_idx, end))
             begin += curr_chunk["chunk_size"]
@@ -200,7 +201,8 @@ class TokensLoader(BaseItemLoader):
             end += num_blocks
             start_idx, end_idx = begin, end
             if self.region_of_interest is not None:
-                start_idx, end_idx = self.region_of_interest[idx]
+                start_idx = begin + self.region_of_interest[idx][0]
+                end_idx = begin + self.region_of_interest[idx][1]
             intervals.append((begin, start_idx, end_idx, end))
             begin += num_blocks
         return intervals
