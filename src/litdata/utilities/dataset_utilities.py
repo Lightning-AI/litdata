@@ -25,8 +25,7 @@ def subsample_streaming_dataset(
     - Check if `index.json` file exists in cache path.
     - If not, download from remote url. If remote url doesn't contain `index.json` file, raise error.
     - Once download, load chunks from `index.json` file.
-    - Once chunks are ready, generate region_of_interest for chunks and compute subsampled (chunk filenames, region_of_interest).
-
+    - Once chunks are ready, subsample (chunk filenames, region_of_interest).
     """
     my_subsampled_files: List[str] = []
     my_roi: List[Tuple[int, int]] = []

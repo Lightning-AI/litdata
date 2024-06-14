@@ -257,7 +257,7 @@ def load_subsampled_chunks(subsampled_files: List[str], original_chunks: List[Di
     # if any idx of my_subsampled_chunks is None, means,
     # some elements in subsampled_files were not actually part of chunks
     # raise error
-    if any([not _my_subsampled_chunk for _my_subsampled_chunk in my_subsampled_chunks]):
+    if any(not _my_subsampled_chunk for _my_subsampled_chunk in my_subsampled_chunks):
         raise ValueError(
             "Mismatch in subsampled files and the chunks loaded",
             "Make sure subsampled chunks are actually part of the original chunk",

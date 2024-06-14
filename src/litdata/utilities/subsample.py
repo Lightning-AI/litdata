@@ -123,8 +123,9 @@ def my_subsampled_filenames_and_roi(
 
     complete_roi_lists = target_sum_problem_with_space_optimization(my_roi_list, target)
 
-    # iterate from end, and for the first None value, sum up the complete roi chunks, and then try to accomodate for left
-    i = len(complete_roi_lists) - 1
+    # iterate from end, and for the first non-None value,
+    # sum up the complete roi chunks, and then try to accomodate for left
+    i = len(complete_roi_lists)-1
     while i >= 0 and complete_roi_lists[i] is None:
         i -= 1
 
