@@ -49,7 +49,7 @@ class Cache:
         Arguments:
             input_dir: The path to where the chunks will be or are stored.
             chunks: The chunks that were read from `input_dir/index.json` file.
-            region_of_interest: List of tuples of {start,end} of region of interest for each chunk.
+            region_of_interest: List of tuples of (start,end) of region of interest for each chunk.
             compression: The name of the algorithm to reduce the size of the chunks.
             chunk_bytes: The maximum number of bytes within a chunk.
             chunk_size: The maximum number of items within a chunk.

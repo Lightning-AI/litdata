@@ -3,20 +3,28 @@ from copy import deepcopy
 from typing import Any, Dict, List, Tuple
 
 from litdata import StreamingDataset
-from litdata.streaming.dataset import _generate_subsample_intervals
+from litdata.utilities.dataset_utilities import _generate_subsample_intervals
 
 
 def train_test_split(streaming_dataset: StreamingDataset, splits: List[float]) -> List[StreamingDataset]:
-    """Split a StreamingDataset into multiple subsets for purposes such as training, testing, and validation.
+    """Splits a StreamingDataset into multiple subsets for training, testing, and validation.
 
-    Arguments:
+    This function splits a StreamingDataset into multiple non-overlapping subsets based on the provided proportions. 
+    These subsets can be used for training, testing, and validation purposes.
+
+    Args:
         streaming_dataset (StreamingDataset): An instance of StreamingDataset that needs to be split.
-        splits (List[float]): List of floats representing the proportion of data to be allocated to each split
-                            (e.g., [0.8, 0.1, 0.1] for train, test, and validation).
-    Returns:
-        List[StreamingDataset]: A list of StreamingDataset instances, each corresponding to the proportions specified
-                                in the splits argument.
+        splits (List[float]): A list of floats representing the proportion of data to be allocated to each split 
+                             (e.g., [0.8, 0.1, 0.1] for 80% training, 10% testing, and 10% validation).
 
+    Returns:
+        List[StreamingDataset]: A list of StreamingDataset instances, where each element represents a split of the 
+                                original dataset according to the proportions specified in the 'splits' argument.
+
+    Raises:
+        ValueError: If any element in the 'splits' list is not a float between 0 (inclusive) and 1 (exclusive).
+        ValueError: If the sum of the values in the 'splits' list is greater than 1.
+        Exception: If the provided StreamingDataset is already a subsample (not currently supported).
     """
     if any(not isinstance(split, float) for split in splits):
         raise ValueError("Each split should be a float.")
@@ -48,6 +56,18 @@ def train_test_split(streaming_dataset: StreamingDataset, splits: List[float]) -
 
 
 def is_dataset_subsample(chunks: List[Dict[str, Any]], region_of_interest: List[Tuple[int, int]]) -> bool:
+    """Checks if a StreamingDataset is a subsample of another dataset.
+
+    This function determines if a StreamingDataset is a subsample based on the chunk sizes and region of interest (ROI) information. 
+    A subsample dataset would have chunks with sizes smaller than the corresponding ROI ranges.
+
+    Args:
+        chunks (List[Dict[str, Any]]): A list of dictionaries representing the chunks in the StreamingDataset.
+        region_of_interest (List[Tuple[int, int]]): A list of tuples representing the ROI for each chunk.
+
+    Returns:
+        bool: True if the StreamingDataset is a subsample, False otherwise.
+    """
     for i, roi in enumerate(region_of_interest):
         start, end = roi
         if (end - start) != chunks[i]["chunk_size"]:
@@ -59,6 +79,25 @@ def is_dataset_subsample(chunks: List[Dict[str, Any]], region_of_interest: List[
 def sample_k_times(
     lst: List[Dict[str, Any]], n_list: List[int]
 ) -> Tuple[List[List[Dict[str, Any]]], List[Dict[str, Any]]]:
+    """Samples a list k times with a specified number of elements each time.
+
+    This function samples a list multiple times, where each sample contains a specified number of elements. 
+    It ensures that elements are not sampled more than once and removes them from the original list after being selected.
+
+    Args:
+        lst (List[Dict[str, Any]]): The list to be sampled from.
+        n_list (List[int]): A list of integers representing the number of elements to sample each time.
+
+    Returns:
+        Tuple[List[List[Dict[str, Any]]], List[Dict[str, Any]]]: A tuple containing two elements. 
+            - The first element is a list of lists, where each inner list represents a sample.
+            - The second element is the remaining list after removing the sampled elements.
+
+    Raises:
+        ValueError: If the list does not have enough elements to fulfill all the sampling requests 
+                    specified in the 'n_list' argument.
+    """
+
     all_samples = []
 
     for n in n_list:
@@ -79,6 +118,49 @@ def sample_k_times(
 def split_modify_chunk_and_roi(
     chunk_list: List[Dict[str, Any]], splits: List[float]
 ) -> Tuple[List[List[Dict[str, Any]]], List[List[Tuple[int, int]]]]:
+    """Splits chunks and ROIs based on specified proportions, considering chunk sizes.
+
+    This function splits a list of chunks (dictionaries representing data units) and their corresponding ROIs (regions of interest) 
+    into multiple subsets based on the provided proportions in the 'splits' argument. It prioritizes assigning whole chunks to 
+    each split whenever possible, while still fulfilling the desired data allocation ratios.
+
+    **Process:**
+
+    1. **Analyze Chunk Information:**
+       - Gets the size of each chunk from the 'chunk_size' key in the dictionaries.
+       - Calculates the total length of the data considering all chunks.
+
+    2. **Calculate Split Details:**
+       - Converts the proportions in 'splits' to actual item counts for each split based on the total data length.
+       - Determines the number of whole chunks that can be allocated to each split without exceeding the desired data size.
+       - Calculates the remaining item count required for each split after allocating whole chunks.
+
+    3. **Sample Chunks:**
+       - Uses the `sample_k_times` function to select the required number of whole chunks for each split.
+       - Generates the corresponding ROIs for the sampled chunks using `_generate_subsample_intervals` (assumed to be an internal function).
+
+    4. **Handle Remaining Items:**
+       - Iterates through each split.
+       - While there are still items remaining for a split and there are unallocated chunks:
+           - Selects the first remaining chunk and its starting index within the overall data.
+           - Calculates how many items this chunk can contribute to the split based on its remaining size.
+           - Updates the ROI for the split to include the newly assigned items.
+           - If the chunk contributes all its remaining items, it's removed from the pool of unallocated chunks.
+           - Otherwise, the chunk is added back to the pool with an updated starting index reflecting the used items.
+
+    5. **Return Results:**
+       - Returns a tuple containing two lists:
+           - The first list contains sub-lists of chunks, where each sub-list represents the chunks assigned to a particular split.
+           - The second list contains sub-lists of ROIs, where each sub-list corresponds to the ROIs for the chunks in the respective split.
+
+    Args:
+        chunk_list (List[Dict[str, Any]]): A list of dictionaries representing the chunks in the StreamingDataset.
+        splits (List[float]): A list of floats representing the proportion of data to be allocated to each split.
+
+    Returns:
+        Tuple[List[List[Dict[str, Any]]], List[List[Tuple[int, int]]]]: A tuple containing the split chunks and ROIs.
+    """
+
     chunk_size = chunk_list[0]["chunk_size"]
     total_chunk_length = len(chunk_list) * chunk_size
     each_split_item_count = [int(total_chunk_length * split) for split in splits]

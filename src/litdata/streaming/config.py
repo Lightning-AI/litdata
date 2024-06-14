@@ -55,10 +55,17 @@ class ChunksConfig:
 
         with open(os.path.join(self._cache_dir, _INDEX_FILENAME)) as f:
             data = json.load(f)
+            _original_chunks = data["chunks"]
             self._config = data["config"]
             self._validate_item_loader()
+
+            assert _original_chunks is not None
+
             if chunks is None:
-                self._chunks = data["chunks"]
+                self._chunks = _original_chunks
+            else:
+                assert self._chunks is not None
+                
 
         self._config["data_spec"] = treespec_loads(self._config["data_spec"])
 
