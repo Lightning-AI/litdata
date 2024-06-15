@@ -1,9 +1,11 @@
-import random
-import numpy as np
 from typing import Any, Dict, List, Optional, Tuple
 
+import numpy as np
 
-def shuffle_lists_together(list1: List[Any], list2: List[Any], random_seed_sampler: Optional[np.random.RandomState]=None) -> Tuple[List[Any], List[Any]]:
+
+def shuffle_lists_together(
+    list1: List[Any], list2: List[Any], random_seed_sampler: Optional[np.random.RandomState] = None
+) -> Tuple[List[Any], List[Any]]:
     """Shuffles list1 and applies the same shuffle order to list2.
 
     Args:
@@ -18,7 +20,7 @@ def shuffle_lists_together(list1: List[Any], list2: List[Any], random_seed_sampl
     # Sanity check
     if len(list1) != len(list2):
         raise ValueError("Lists must be of the same size.")
-    
+
     if random_seed_sampler is None:
         random_seed_sampler = np.random.RandomState([42])
 

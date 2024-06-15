@@ -1,9 +1,9 @@
 import json
 import os
-import random
-import numpy as np
 from copy import deepcopy
 from typing import Any, Dict, List
+
+import numpy as np
 
 from litdata import StreamingDataset
 from litdata.constants import _INDEX_FILENAME
@@ -74,8 +74,10 @@ def train_test_split(
 
         random_seed_sampler = np.random.RandomState([seed, i])
 
-        subsampled_chunks, dummy_subsampled_roi = shuffle_lists_together(subsampled_chunks, dummy_subsampled_roi, random_seed_sampler)
-        
+        subsampled_chunks, dummy_subsampled_roi = shuffle_lists_together(
+            subsampled_chunks, dummy_subsampled_roi, random_seed_sampler
+        )
+
         curr_chunk_filename, curr_chunk_roi, left_chunks, left_roi = subsample_filenames_and_roi(
             subsampled_chunks, dummy_subsampled_roi, item_count
         )

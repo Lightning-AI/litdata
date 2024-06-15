@@ -1,9 +1,10 @@
-import os
+import hashlib
 import json
 import math
-import hashlib
-import numpy as np
+import os
 from typing import Any, Dict, List, Optional, Tuple
+
+import numpy as np
 
 from litdata.constants import _DEFAULT_CACHE_DIR, _INDEX_FILENAME
 from litdata.streaming.downloader import get_downloader_cls
@@ -66,7 +67,7 @@ def subsample_streaming_dataset(
 
     if math.isclose(subsample, 1.0):
         subsampled_files = [chnk["filename"] for chnk in original_chunks]
-        
+
         return subsampled_files, roi
 
     # shuffle lists together
