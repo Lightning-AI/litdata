@@ -13,15 +13,11 @@ def test_shuffle_lists_together():
     shuffled_l1, shuffled_l2 = shuffle_lists_together(list1, list2)
 
     assert all(shuffled_l1[i] ** 2 == shuffled_l2[i] for i in range(len(list1)))
-    assert all([shuffled_l1[i] ** 2 == shuffled_l2[i] for i in range(len(list1))])
+    assert all(shuffled_l1[i] ** 2 == shuffled_l2[i] for i in range(len(list1)))
 
     l1 = [32, 54, 21]
     l2 = ["Apple", "Mango", "Orange", "Lichi"]
     with pytest.raises(ValueError, match="Lists must be of the same size"):
-        shuffle_lists_together(l1, l2, seed=47)
-
-        l1 = [32, 54, 21]
-        l2 = ["Apple", "Mango", "Orange", "Lichi"]
         shuffle_lists_together(l1, l2, seed=47)
 
     l1 = [32, 54, 21, 57]
@@ -29,7 +25,7 @@ def test_shuffle_lists_together():
     shuffled_l1, shuffled_l2 = shuffle_lists_together(l1, l2, seed=47)
 
     assert all(l2[l1.index(shuffled_l1[i])] == shuffled_l2[i] for i in range(len(shuffled_l1)))
-    assert all([l2[l1.index(shuffled_l1[i])] == shuffled_l2[i] for i in range(len(shuffled_l1))])
+    assert all(l2[l1.index(shuffled_l1[i])] == shuffled_l2[i] for i in range(len(shuffled_l1)))
 
 
 def test_target_sum_problem_with_space_optimization():
@@ -68,9 +64,6 @@ def test_my_subsampled_filenames_and_roi():
     target = int(total_chunk_roi_length * subsample)
 
     _, my_roi_list, _, left_roi = my_subsampled_filenames_and_roi(my_chunks, my_roi_list, target)
-    my_subsampled_chunk_filenames, my_roi_list, left_chunks, left_roi = my_subsampled_filenames_and_roi(
-        my_chunks, my_roi_list, target
-    )
 
     assert target == sum([roi[1] - roi[0] for roi in my_roi_list])
     assert total_chunk_roi_length - target == sum([roi[1] - roi[0] for roi in left_roi])
