@@ -430,6 +430,32 @@ class StreamingDataset(IterableDataset):
                 "The provided `drop_last` state doesn't match the current one. "
                 f"Found `{self.drop_last}` instead of `{state['drop_last']}`."
             )
+    
+
+    def reset(self)->None:
+        # undo all the properties associated with original dataset
+        default_properties: Dict[str, Any] = {
+            "cache": None,
+            "worker_env": None,
+            "worker_chunks": [],
+            "worker_intervals": [],
+            "current_indexes": [],
+            "chunk_index": 0,
+            "num_chunks": None,
+            "global_index": 0,
+            "index": 0,
+            "has_triggered_download": False,
+            "min_items_per_replica": None,
+            "current_epoch": 1,
+            "random_state": None,
+            "shuffler": None,
+            "_state_dict": None,
+            "num_workers": None,
+            "batch_size": None,
+        }
+
+        for prop, value in default_properties.items():
+            setattr(self, prop, value)
 
 
 def is_integer(value: str) -> bool:

@@ -82,34 +82,14 @@ def train_test_split(
             subsampled_chunks, dummy_subsampled_roi, item_count
         )
 
+        # update subsampled files & region_of_interest
         new_datasets[i].subsampled_files = curr_chunk_filename
         new_datasets[i].region_of_interest = curr_chunk_roi
+
+        # reset dataset
+        new_datasets[i].reset()
+
         subsampled_chunks = left_chunks
         dummy_subsampled_roi = left_roi
-
-    # undo all the properties associated with original dataset
-    default_properties: Dict[str, Any] = {
-        "cache": None,
-        "worker_env": None,
-        "worker_chunks": [],
-        "worker_intervals": [],
-        "current_indexes": [],
-        "chunk_index": 0,
-        "num_chunks": None,
-        "global_index": 0,
-        "index": 0,
-        "has_triggered_download": False,
-        "min_items_per_replica": None,
-        "current_epoch": 1,
-        "random_state": None,
-        "shuffler": None,
-        "_state_dict": None,
-        "num_workers": None,
-        "batch_size": None,
-    }
-
-    for new_dataset in new_datasets:
-        for prop, value in default_properties.items():
-            setattr(new_dataset, prop, value)
 
     return new_datasets
