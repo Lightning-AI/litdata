@@ -31,7 +31,7 @@ def shuffle_lists_together(list1: List[Any], list2: List[Any], seed: int = 42) -
 
 
 def target_sum_problem_with_space_optimization(
-    my_roi_list: List[Tuple[int, int]], target: int
+    roi_list: List[Tuple[int, int]], target: int
 ) -> List[Optional[Tuple[int, ...]]]:
     """Solves the target sum problem with space optimization, finding subsets of minimum items that add up to the
     target.
@@ -40,11 +40,11 @@ def target_sum_problem_with_space_optimization(
     We're not in (0-1) knapsack case, as we can take subset of a chunk.
 
     Args:
-        my_roi_list: A list of tuples, each containing two integers representing a range.
+        roi_list: A list of tuples, each containing two integers representing a range.
         target: An integer representing the target sum.
 
     Returns:
-        A list of optional tuples, each containing the indices of elements from my_roi_list that sum up to the target.
+        A list of optional tuples, each containing the indices of elements from roi_list that sum up to the target.
         If no such subset exists, the entry will be None.
 
     """
@@ -58,14 +58,14 @@ def target_sum_problem_with_space_optimization(
     prev_row[0] = ()
 
     # mark the first element of the list as the only element that can be achieved
-    curr_chunk_size = my_roi_list[0][1] - my_roi_list[0][0]
+    curr_chunk_size = roi_list[0][1] - roi_list[0][0]
     if curr_chunk_size <= target:
         prev_row[curr_chunk_size] = (0,)
 
-    for i in range(1, len(my_roi_list)):
+    for i in range(1, len(roi_list)):
         for j in range(target + 1):
             if prev_row[j] is not None:
-                curr_chunk_size = my_roi_list[i][1] - my_roi_list[i][0]
+                curr_chunk_size = roi_list[i][1] - roi_list[i][0]
                 if curr_chunk_size + j <= target:
                     new_probable_tuple = prev_row[j]
                     assert new_probable_tuple is not None
@@ -100,15 +100,15 @@ def target_sum_problem_with_space_optimization(
     return prev_row
 
 
-def my_subsampled_filenames_and_roi(
-    my_chunks: List[Dict[str, Any]], my_roi_list: List[Tuple[int, int]], target: int
+def subsample_filenames_and_roi(
+    chunks: List[Dict[str, Any]], roi_list: List[Tuple[int, int]], target: int
 ) -> Tuple[List[str], List[Tuple[int, int]], List[Dict[str, Any]], List[Tuple[int, int]]]:
     """Selects a subset of filenames and ROIs that best match the target sum, with the remaining items returned
     separately.
 
     Args:
-        my_chunks: A list of dictionaries, each containing metadata including 'filename'.
-        my_roi_list: A list of tuples, each containing two integers representing a range.
+        chunks: A list of dictionaries, each containing metadata including 'filename'.
+        roi_list: A list of tuples, each containing two integers representing a range.
         target: An integer representing the target sum.
 
     Returns:
@@ -119,9 +119,9 @@ def my_subsampled_filenames_and_roi(
             - List of remaining ROIs not included in the target sum.
 
     """
-    assert len(my_chunks) == len(my_roi_list)
+    assert len(chunks) == len(roi_list)
 
-    complete_roi_lists = target_sum_problem_with_space_optimization(my_roi_list, target)
+    complete_roi_lists = target_sum_problem_with_space_optimization(roi_list, target)
 
     # iterate from end, and for the first non-None value,
     # sum up the complete roi chunks, and then try to accomodate for left
@@ -134,13 +134,13 @@ def my_subsampled_filenames_and_roi(
     complete_roi_list = complete_roi_lists[i]
     assert complete_roi_list is not None
 
-    my_subsampled_chunk_filenames = [my_chunks[i]["filename"] for i in complete_roi_list]
-    my_subsampled_roi = [my_roi_list[i] for i in complete_roi_list]
+    subsampled_chunk_filenames = [chunks[i]["filename"] for i in complete_roi_list]
+    subsampled_roi = [roi_list[i] for i in complete_roi_list]
 
-    left_chunks = [my_chunks[i] for i in range(len(my_chunks)) if i not in complete_roi_list]
-    left_roi = [my_roi_list[i] for i in range(len(my_chunks)) if i not in complete_roi_list]
+    left_chunks = [chunks[i] for i in range(len(chunks)) if i not in complete_roi_list]
+    left_roi = [roi_list[i] for i in range(len(chunks)) if i not in complete_roi_list]
 
-    sum_of_complete_overlap_roi = sum([i[1] - i[0] for i in my_subsampled_roi])
+    sum_of_complete_overlap_roi = sum([i[1] - i[0] for i in subsampled_roi])
     left_item_count = target - sum_of_complete_overlap_roi
 
     while left_item_count > 0:
@@ -149,17 +149,17 @@ def my_subsampled_filenames_and_roi(
         top_left_roi_item_count = top_left_roi[1] - top_left_roi[0]
 
         if top_left_roi_item_count <= left_item_count:
-            my_subsampled_chunk_filenames.append(top_left_chunk["filename"])
-            my_subsampled_roi.append(top_left_roi)
+            subsampled_chunk_filenames.append(top_left_chunk["filename"])
+            subsampled_roi.append(top_left_roi)
             left_item_count -= top_left_roi[1] - top_left_roi[0]
 
         else:
-            my_subsampled_chunk_filenames.append(top_left_chunk["filename"])
+            subsampled_chunk_filenames.append(top_left_chunk["filename"])
             left_chunks.append(
                 top_left_chunk
             )  # it will also be available for other splits, as not all roi is exhausted
-            my_subsampled_roi.append((top_left_roi[0], top_left_roi[0] + left_item_count))
+            subsampled_roi.append((top_left_roi[0], top_left_roi[0] + left_item_count))
             left_roi.append((top_left_roi[0] + left_item_count, top_left_roi[1]))
             left_item_count = 0
 
-    return my_subsampled_chunk_filenames, my_subsampled_roi, left_chunks, left_roi
+    return subsampled_chunk_filenames, subsampled_roi, left_chunks, left_roi

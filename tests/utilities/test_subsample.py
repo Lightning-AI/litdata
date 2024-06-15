@@ -1,6 +1,6 @@
 import pytest
 from litdata.utilities.subsample import (
-    my_subsampled_filenames_and_roi,
+    subsample_filenames_and_roi,
     shuffle_lists_together,
     target_sum_problem_with_space_optimization,
 )
@@ -46,7 +46,7 @@ def test_target_sum_problem_with_space_optimization():
     assert final_table_row[100] == (3, 4)
 
 
-def test_my_subsampled_filenames_and_roi():
+def test_subsample_filenames_and_roi():
     my_chunks = [
         {"filename": "1.txt"},
         {"filename": "2.txt"},
@@ -63,7 +63,7 @@ def test_my_subsampled_filenames_and_roi():
 
     target = int(total_chunk_roi_length * subsample)
 
-    _, my_roi_list, _, left_roi = my_subsampled_filenames_and_roi(my_chunks, my_roi_list, target)
+    _, my_roi_list, _, left_roi = subsample_filenames_and_roi(my_chunks, my_roi_list, target)
 
     assert target == sum([roi[1] - roi[0] for roi in my_roi_list])
     assert total_chunk_roi_length - target == sum([roi[1] - roi[0] for roi in left_roi])

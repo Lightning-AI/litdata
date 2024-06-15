@@ -8,7 +8,7 @@ from litdata.constants import _DEFAULT_CACHE_DIR, _INDEX_FILENAME
 from litdata.streaming.downloader import get_downloader_cls
 from litdata.streaming.item_loader import BaseItemLoader, TokensLoader
 from litdata.streaming.resolver import Dir
-from litdata.utilities.subsample import my_subsampled_filenames_and_roi, shuffle_lists_together
+from litdata.utilities.subsample import subsample_filenames_and_roi, shuffle_lists_together
 
 
 def subsample_streaming_dataset(
@@ -28,8 +28,8 @@ def subsample_streaming_dataset(
     - Once chunks are ready, subsample (chunk filenames, region_of_interest).
 
     """
-    my_subsampled_files: List[str] = []
-    my_roi: List[Tuple[int, int]] = []
+    subsampled_files: List[str] = []
+    roi: List[Tuple[int, int]] = []
 
     # Make sure input_dir contains cache path and remote url
     if _should_replace_path(input_dir.path):
@@ -61,18 +61,18 @@ def subsample_streaming_dataset(
     assert len(original_chunks) > 0, f"No chunks found in the `{input_dir}/index.json` file"
 
     # create a (chunk_start, chunk_end) list to indicate our subsample from where we can read.
-    my_roi = generate_roi(original_chunks, item_loader)
+    roi = generate_roi(original_chunks, item_loader)
 
     # shuffle lists together
     if shuffle and not math.isclose(subsample, 1.0):
         # checking if subsample is 1, as if user wants complete data, then let, shuffler and sampler do the work
-        original_chunks, my_roi = shuffle_lists_together(original_chunks, my_roi, seed)
+        original_chunks, roi = shuffle_lists_together(original_chunks, roi, seed)
 
-    num_items_to_subsample = int(sum([roi[1] - roi[0] for roi in my_roi]) * subsample)
+    num_items_to_subsample = int(sum([roi[1] - roi[0] for roi in roi]) * subsample)
 
-    my_subsampled_files, my_roi, _, _ = my_subsampled_filenames_and_roi(original_chunks, my_roi, target)
+    subsampled_files, roi, _, _ = subsample_filenames_and_roi(original_chunks, roi, num_items_to_subsample)
 
-    return my_subsampled_files, my_roi
+    return subsampled_files, roi
 
 
 def _should_replace_path(path: Optional[str]) -> bool:
@@ -96,18 +96,18 @@ def _try_create_cache_dir(input_dir: Optional[str]) -> Optional[str]:
 
 def generate_roi(chunks: List[Dict[str, Any]], item_loader: Optional[BaseItemLoader] = None) -> List[Tuple[int, int]]:
     "Generates default region_of_interest for chunks."
-    my_roi = []
+    roi = []
 
     if isinstance(item_loader, TokensLoader):
         for idx, chunk in enumerate(chunks):
             dim = chunk["dim"]
             num_blocks = dim // item_loader._block_size
             end = num_blocks
-            my_roi.append((0, end))
+            roi.append((0, end))
 
     else:
         for i, chunk in enumerate(chunks):
             end = chunk["chunk_size"]
-            my_roi.append((0, end))
+            roi.append((0, end))
 
-    return my_roi
+    return roi

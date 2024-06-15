@@ -76,7 +76,7 @@ class StreamingDataset(IterableDataset):
         input_dir = _resolve_dir(input_dir)
 
         self.input_dir = input_dir
-        self.chunks: List[Dict[str, Any]] = []
+        self.subsampled_files: List[str] = []
         self.region_of_interest: List[Tuple[int, int]] = []
         self.subsampled_files, self.region_of_interest = subsample_streaming_dataset(
             self.input_dir, item_loader, subsample, shuffle, seed

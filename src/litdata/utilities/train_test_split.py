@@ -6,7 +6,7 @@ from typing import Any, Dict, List
 
 from litdata import StreamingDataset
 from litdata.constants import _INDEX_FILENAME
-from litdata.utilities.subsample import my_subsampled_filenames_and_roi, shuffle_lists_together
+from litdata.utilities.subsample import subsample_filenames_and_roi, shuffle_lists_together
 
 
 def train_test_split(
@@ -64,7 +64,7 @@ def train_test_split(
     else:
         raise ValueError("Couldn't load original chunk file.")
 
-    my_datasets = [deepcopy(streaming_dataset) for _ in splits]
+    new_datasets = [deepcopy(streaming_dataset) for _ in splits]
 
     dataset_length = sum([my_roi[1] - my_roi[0] for my_roi in dummy_subsampled_roi])
 
@@ -73,13 +73,39 @@ def train_test_split(
 
         random.seed(seed)
         subsampled_chunks, dummy_subsampled_roi = shuffle_lists_together(subsampled_chunks, dummy_subsampled_roi, seed)
-        curr_chunk_filename, curr_chunk_roi, left_chunks, left_roi = my_subsampled_filenames_and_roi(
+        curr_chunk_filename, curr_chunk_roi, left_chunks, left_roi = subsample_filenames_and_roi(
             subsampled_chunks, dummy_subsampled_roi, item_count
         )
 
-        my_datasets[i].subsampled_files = curr_chunk_filename
-        my_datasets[i].region_of_interest = curr_chunk_roi
+        new_datasets[i].subsampled_files = curr_chunk_filename
+        new_datasets[i].region_of_interest = curr_chunk_roi
         subsampled_chunks = left_chunks
         dummy_subsampled_roi = left_roi
+        
+    
+    # undo all the properties associated with original dataset
+    default_properties: Dict[str, Any] = {
+        "cache": None,
+        "worker_env": None,
+        "worker_chunks": [],
+        "worker_intervals": [],
+        "current_indexes": [],
+        "chunk_index": 0,
+        "num_chunks": None,
+        "global_index": 0,
+        "index": 0,
+        "has_triggered_download": False,
+        "min_items_per_replica": None,
+        "current_epoch": 1,
+        "random_state": None,
+        "shuffler": None,
+        "_state_dict": None,
+        "num_workers": None,
+        "batch_size": None,
+    }
 
-    return my_datasets
+    for new_dataset in new_datasets:
+        for prop, value in default_properties.items():
+            setattr(new_dataset, prop, value)
+
+    return new_datasets
