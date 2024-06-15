@@ -90,6 +90,37 @@ The `optimize` operator supports any data structures and types. Serialize whatev
 
 Cloud providers such as [AWS](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html), [Google Cloud](https://cloud.google.com/storage/docs/uploading-objects?hl=en#upload-object-cli), [Azure](https://learn.microsoft.com/en-us/azure/import-export/storage-import-export-data-to-files?tabs=azure-portal-preview) provide command line clients to upload your data to their storage solutions.
 
+If you're using [MinIO](https://min.io/), an S3-compatible object storage server, 
+you can configure the endpoint and credentials either through environment variables or by creating `~/.aws/{credentials,config}` files.
+<details>
+    <summary>Configure</summary>
+    
+#### Using Environment Variables:
+
+```bash
+export AWS_ACCESS_KEY_ID=access_key
+export AWS_SECRET_ACCESS_KEY=secret_key
+export AWS_ENDPOINT_URL=http://localhost:9000  # MinIO endpoint
+```
+
+#### Using `~/.aws/{credentials,config}` File:
+
+```bash
+mkdir -p ~/.aws && \
+cat <<EOL >> ~/.aws/credentials
+[default]
+aws_access_key_id = access_key
+aws_secret_access_key = secret_key
+EOL
+
+cat <<EOL >> ~/.aws/config
+[default]
+endpoint_url = http://localhost:9000  # MinIO endpoint
+EOL
+```
+These configurations allow seamless integration with MinIO for your AWS-compatible applications.
+</details>
+
 Here is how to upload the optimized dataset using the [AWS CLI](https://aws.amazon.com/cli/) to [AWS S3](https://aws.amazon.com/s3/).
 
 ```bash
