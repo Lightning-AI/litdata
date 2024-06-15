@@ -251,6 +251,9 @@ def map(
         else:
             resolved_dir = Dir()
 
+        if num_workers == 0:
+            num_workers = 1
+
         data_processor = DataProcessor(
             input_dir=resolved_dir,
             output_dir=_output_dir,
@@ -359,6 +362,9 @@ def optimize(
                 inputs = [inputs[pos : pos + batch_size] for pos in range(0, len(inputs), batch_size)]
         else:
             resolved_dir = Dir()
+
+        if num_workers == 0:
+            num_workers = 1
 
         data_processor = DataProcessor(
             input_dir=resolved_dir,
