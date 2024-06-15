@@ -70,7 +70,7 @@ class StreamingDataset(IterableDataset):
         if not isinstance(shuffle, bool):
             raise ValueError(f"Shuffle should be a boolean. Found {shuffle}")
 
-        if not isinstance(subsample, float) or subsample < 0 or subsample > 1:
+        if not isinstance(subsample, float) or subsample <= 0 or subsample > 1:
             raise ValueError("subsample must be a float with value between 0 and 1.")
 
         input_dir = _resolve_dir(input_dir)
