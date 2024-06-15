@@ -36,6 +36,7 @@ from litdata.streaming.dataset import (
 )
 from litdata.streaming.item_loader import TokensLoader
 from litdata.streaming.shuffle import FullShuffle, NoShuffle
+from litdata.utilities import dataset_utilities as dataset_utilities_module
 from litdata.utilities.env import _DistributedEnv, _WorkerEnv
 from torch.utils.data import DataLoader
 
@@ -634,11 +635,11 @@ def test_s3_streaming_dataset(monkeypatch):
 
     def fn(remote_chunkpath: str, local_chunkpath: str):
         with open(local_chunkpath, "w") as f:
-            json.dump({"chunks": [{"chunk_size": 2}]}, f)
+            json.dump({"chunks": [{"chunk_size": 2, "filename": "0.bin"}]}, f)
 
     downloader.download_file = fn
 
-    monkeypatch.setattr(dataset_module, "get_downloader_cls", mock.MagicMock(return_value=downloader))
+    monkeypatch.setattr(dataset_utilities_module, "get_downloader_cls", mock.MagicMock(return_value=downloader))
 
     dataset = StreamingDataset(input_dir="s3://pl-flash-data/optimized_tiny_imagenet")
     assert dataset.input_dir.url == "s3://pl-flash-data/optimized_tiny_imagenet"
