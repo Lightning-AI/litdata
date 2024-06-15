@@ -68,7 +68,7 @@ def subsample_streaming_dataset(
         # checking if subsample is 1, as if user wants complete data, then let, shuffler and sampler do the work
         original_chunks, my_roi = shuffle_lists_together(original_chunks, my_roi, seed)
 
-    target = int(sum([roi[1] - roi[0] for roi in my_roi]) * subsample)
+    num_items_to_subsample = int(sum([roi[1] - roi[0] for roi in my_roi]) * subsample)
 
     my_subsampled_files, my_roi, _, _ = my_subsampled_filenames_and_roi(original_chunks, my_roi, target)
 
