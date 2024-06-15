@@ -1,7 +1,8 @@
-import hashlib
+import os
 import json
 import math
-import os
+import hashlib
+import numpy as np
 from typing import Any, Dict, List, Optional, Tuple
 
 from litdata.constants import _DEFAULT_CACHE_DIR, _INDEX_FILENAME
@@ -63,10 +64,16 @@ def subsample_streaming_dataset(
     # create a (chunk_start, chunk_end) list to indicate our subsample from where we can read.
     roi = generate_roi(original_chunks, item_loader)
 
+    if math.isclose(subsample, 1.0):
+        subsampled_files = [chnk["filename"] for chnk in original_chunks]
+        
+        return subsampled_files, roi
+
     # shuffle lists together
-    if shuffle and not math.isclose(subsample, 1.0):
+    if shuffle:
+        random_seed_sampler = np.random.RandomState([seed])
         # checking if subsample is 1, as if user wants complete data, then let, shuffler and sampler do the work
-        original_chunks, roi = shuffle_lists_together(original_chunks, roi, seed)
+        original_chunks, roi = shuffle_lists_together(original_chunks, roi, random_seed_sampler)
 
     num_items_to_subsample = int(sum([roi[1] - roi[0] for roi in roi]) * subsample)
 

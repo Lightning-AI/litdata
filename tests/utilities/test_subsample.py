@@ -1,4 +1,6 @@
 import pytest
+import numpy as np
+
 from litdata.utilities.subsample import (
     shuffle_lists_together,
     subsample_filenames_and_roi,
@@ -18,11 +20,11 @@ def test_shuffle_lists_together():
     l1 = [32, 54, 21]
     l2 = ["Apple", "Mango", "Orange", "Lichi"]
     with pytest.raises(ValueError, match="Lists must be of the same size"):
-        shuffle_lists_together(l1, l2, seed=47)
+        shuffle_lists_together(l1, l2, random_seed_sampler=np.random.RandomState([17]))
 
     l1 = [32, 54, 21, 57]
     l2 = ["Apple", "Mango", "Orange", "Lichi"]
-    shuffled_l1, shuffled_l2 = shuffle_lists_together(l1, l2, seed=47)
+    shuffled_l1, shuffled_l2 = shuffle_lists_together(l1, l2, random_seed_sampler=np.random.RandomState([17, 90, 21]))
 
     assert all(l2[l1.index(shuffled_l1[i])] == shuffled_l2[i] for i in range(len(shuffled_l1)))
     assert all(l2[l1.index(shuffled_l1[i])] == shuffled_l2[i] for i in range(len(shuffled_l1)))

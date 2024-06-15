@@ -30,7 +30,7 @@ def test_train_test_split(tmpdir, compression):
     "compression",
     [
         pytest.param(None),
-        # pytest.param("zstd", marks=pytest.mark.skipif(condition=not _ZSTD_AVAILABLE, reason="Requires: ['zstd']")),
+        pytest.param("zstd", marks=pytest.mark.skipif(condition=not _ZSTD_AVAILABLE, reason="Requires: ['zstd']")),
     ],
 )
 def test_split_a_subsampled_dataset(tmpdir, compression):
