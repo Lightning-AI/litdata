@@ -23,6 +23,7 @@ from litdata.constants import (
     _INDEX_FILENAME,
 )
 from litdata.streaming import Cache
+from litdata.streaming.downloader import get_downloader_cls # noqa: F401
 from litdata.streaming.item_loader import BaseItemLoader
 from litdata.streaming.resolver import Dir, _resolve_dir
 from litdata.streaming.sampler import ChunkedIndex
