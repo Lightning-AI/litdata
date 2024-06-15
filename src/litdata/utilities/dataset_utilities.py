@@ -8,7 +8,7 @@ from litdata.constants import _DEFAULT_CACHE_DIR, _INDEX_FILENAME
 from litdata.streaming.downloader import get_downloader_cls
 from litdata.streaming.item_loader import BaseItemLoader, TokensLoader
 from litdata.streaming.resolver import Dir
-from litdata.utilities.subsample import subsample_filenames_and_roi, shuffle_lists_together
+from litdata.utilities.subsample import shuffle_lists_together, subsample_filenames_and_roi
 
 
 def subsample_streaming_dataset(

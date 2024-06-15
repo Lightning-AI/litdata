@@ -42,10 +42,10 @@ def test_split_a_subsampled_dataset(tmpdir, compression):
 
     _sub_sampled_streaming_dataset = StreamingDataset(input_dir=str(tmpdir), subsample=0.3)
 
-    assert len(_sub_sampled_streaming_dataset) == 300 # 1000 * 0.3
+    assert len(_sub_sampled_streaming_dataset) == 300  # 1000 * 0.3
 
     _split_fraction = [0.2, 0.3, 0.4, 0.1]
 
     split_datasets = train_test_split(_sub_sampled_streaming_dataset, _split_fraction)
 
-    assert all(len(split_datasets[i])==int(300*split) for i, split in enumerate(_split_fraction))
+    assert all(len(split_datasets[i]) == int(300 * split) for i, split in enumerate(_split_fraction))

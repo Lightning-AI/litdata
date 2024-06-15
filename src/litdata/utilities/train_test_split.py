@@ -6,7 +6,7 @@ from typing import Any, Dict, List
 
 from litdata import StreamingDataset
 from litdata.constants import _INDEX_FILENAME
-from litdata.utilities.subsample import subsample_filenames_and_roi, shuffle_lists_together
+from litdata.utilities.subsample import shuffle_lists_together, subsample_filenames_and_roi
 
 
 def train_test_split(
@@ -81,8 +81,7 @@ def train_test_split(
         new_datasets[i].region_of_interest = curr_chunk_roi
         subsampled_chunks = left_chunks
         dummy_subsampled_roi = left_roi
-        
-    
+
     # undo all the properties associated with original dataset
     default_properties: Dict[str, Any] = {
         "cache": None,
