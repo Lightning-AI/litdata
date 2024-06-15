@@ -430,9 +430,8 @@ class StreamingDataset(IterableDataset):
                 "The provided `drop_last` state doesn't match the current one. "
                 f"Found `{self.drop_last}` instead of `{state['drop_last']}`."
             )
-    
 
-    def reset(self)->None:
+    def reset(self) -> None:
         # undo all the properties associated with original dataset
         default_properties: Dict[str, Any] = {
             "cache": None,
