@@ -90,37 +90,6 @@ The `optimize` operator supports any data structures and types. Serialize whatev
 
 Cloud providers such as [AWS](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html), [Google Cloud](https://cloud.google.com/storage/docs/uploading-objects?hl=en#upload-object-cli), [Azure](https://learn.microsoft.com/en-us/azure/import-export/storage-import-export-data-to-files?tabs=azure-portal-preview) provide command line clients to upload your data to their storage solutions.
 
-If you're using [MinIO](https://min.io/), an S3-compatible object storage server, 
-you can configure the endpoint and credentials either through environment variables or by creating `~/.aws/{credentials,config}` files.
-<details>
-    <summary>Configure</summary>
-    
-#### Using Environment Variables:
-
-```bash
-export AWS_ACCESS_KEY_ID=access_key
-export AWS_SECRET_ACCESS_KEY=secret_key
-export AWS_ENDPOINT_URL=http://localhost:9000  # MinIO endpoint
-```
-
-#### Using `~/.aws/{credentials,config}` File:
-
-```bash
-mkdir -p ~/.aws && \
-cat <<EOL >> ~/.aws/credentials
-[default]
-aws_access_key_id = access_key
-aws_secret_access_key = secret_key
-EOL
-
-cat <<EOL >> ~/.aws/config
-[default]
-endpoint_url = http://localhost:9000  # MinIO endpoint
-EOL
-```
-These configurations allow seamless integration with MinIO for your AWS-compatible applications.
-</details>
-
 Here is how to upload the optimized dataset using the [AWS CLI](https://aws.amazon.com/cli/) to [AWS S3](https://aws.amazon.com/s3/).
 
 ```bash
@@ -152,7 +121,7 @@ dataloader = StreamingDataLoader(dataset)
 # Key Features
 
 - [Multi-GPU / Multi-Node Support](#multi-gpu--multi-node-support)
-- [Subsample and split your datasets](#access-any-item)
+- [Subsample and split your datasets](#subsample-and-split-your-datasets)
 - [Access any item](#access-any-item)
 - [Use any data transforms](#use-any-data-transforms)
 - [The Map Operator](#the-map-operator)
@@ -162,6 +131,7 @@ dataloader = StreamingDataLoader(dataset)
 - [Reduce your memory footprint](#reduce-your-memory-footprint)
 - [Configure Cache Size Limit](#configure-cache-size-limit)
 - [On-Prem Optimizations](#on-prem-optimizations)
+- [Support S3-Compatible Object Storage](#support-s3-compatible-object-storage)
 
 
 ## Multi-GPU / Multi-Node Support
@@ -397,6 +367,35 @@ from litdata import StreamingDataset
 
 dataset = StreamingDataset(input_dir="local:/data/shared-drive/some-data")
 ```
+
+## Support S3-Compatible Object Storage
+
+Integrate S3-compatible object storage servers like [MinIO](https://min.io/) with litdata, ideal for on-premises infrastructure setups. Configure the endpoint and credentials using environment variables or configuration files. 
+
+Set up the environment variables to connect to MinIO:
+
+```bash
+export AWS_ACCESS_KEY_ID=access_key
+export AWS_SECRET_ACCESS_KEY=secret_key
+export AWS_ENDPOINT_URL=http://localhost:9000  # MinIO endpoint
+```
+
+Alternatively, configure credentials and endpoint in `~/.aws/{credentials,config}`:
+
+```bash
+mkdir -p ~/.aws && \
+cat <<EOL >> ~/.aws/credentials
+[default]
+aws_access_key_id = access_key
+aws_secret_access_key = secret_key
+EOL
+
+cat <<EOL >> ~/.aws/config
+[default]
+endpoint_url = http://localhost:9000  # MinIO endpoint
+EOL
+```
+Explore an example setup of litdata with MinIO in the [LitData with MinIO](https://github.com/bhimrazy/litdata-with-minio) repository for practical implementation details.
 
 # Benchmarks
 
