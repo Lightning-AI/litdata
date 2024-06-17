@@ -1,5 +1,6 @@
-import numpy as np
 from typing import Any, Dict, List, Optional, Tuple
+
+import numpy as np
 
 
 def shuffle_lists_together(
