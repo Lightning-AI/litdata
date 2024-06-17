@@ -73,7 +73,7 @@ def subsample_streaming_dataset(
     # shuffle lists together
     if shuffle:
         random_seed_sampler = np.random.RandomState([seed])
-        # checking if subsample is 1, as if user wants complete data, then let, shuffler and sampler do the work
+        # checking if subsample is 1, as if user wants complete data, then let shuffler and sampler do the work
         original_chunks, roi = shuffle_lists_together(original_chunks, roi, random_seed_sampler)
 
     num_items_to_subsample = int(sum([roi[1] - roi[0] for roi in roi]) * subsample)
