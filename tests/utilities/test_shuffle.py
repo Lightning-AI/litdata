@@ -1,3 +1,4 @@
+from litdata.streaming.item_loader import Interval
 from litdata.utilities.env import _DistributedEnv
 from litdata.utilities.shuffle import (
     _associate_chunks_and_internals_to_ranks,
@@ -22,7 +23,16 @@ def test_intra_node_chunk_shuffle():
 
 def test_associate_chunks_and_internals_to_ranks():
     indexes = [0, 1, 2, 3, 4, 5, 6, 7]
-    chunk_intervals = [[0, 50], [0, 50], [0, 50], [0, 50], [0, 50], [0, 50], [0, 50], [0, 50]]
+    chunk_intervals = [
+        Interval(0, 0, 50, 50),
+        Interval(0, 0, 50, 50),
+        Interval(0, 0, 50, 50),
+        Interval(0, 0, 50, 50),
+        Interval(0, 0, 50, 50),
+        Interval(0, 0, 50, 50),
+        Interval(0, 0, 50, 50),
+        Interval(0, 0, 50, 50),
+    ]
 
     chunks_per_ranks, intervals_per_ranks = _associate_chunks_and_internals_to_ranks(
         _DistributedEnv(4, 1, 2),
@@ -32,9 +42,23 @@ def test_associate_chunks_and_internals_to_ranks():
     )
 
     assert chunks_per_ranks == [[0, 1], [2, 3], [4, 5], [6, 7]]
-    assert intervals_per_ranks == [[[0, 50], [0, 50]], [[0, 50], [0, 50]], [[0, 50], [0, 50]], [[0, 50], [0, 50]]]
+    assert intervals_per_ranks == [
+        [[0, 0, 50, 50], [0, 0, 50, 50]],
+        [[0, 0, 50, 50], [0, 0, 50, 50]],
+        [[0, 0, 50, 50], [0, 0, 50, 50]],
+        [[0, 0, 50, 50], [0, 0, 50, 50]],
+    ]
 
-    chunk_intervals = [[0, 50], [0, 150], [0, 50], [0, 12], [0, 50], [0, 27], [0, 50], [0, 33]]
+    chunk_intervals = [
+        Interval(0, 0, 50, 50),
+        Interval(0, 0, 150, 150),
+        Interval(0, 0, 50, 50),
+        Interval(0, 0, 12, 12),
+        Interval(0, 0, 50, 50),
+        Interval(0, 0, 27, 27),
+        Interval(0, 0, 50, 50),
+        Interval(0, 0, 33, 33),
+    ]
 
     chunks_per_ranks, intervals_per_ranks = _associate_chunks_and_internals_to_ranks(
         _DistributedEnv(4, 1, 2),
@@ -44,18 +68,28 @@ def test_associate_chunks_and_internals_to_ranks():
     )
 
     assert chunks_per_ranks == [[0, 1], [1, 2], [2, 3, 4, 5], [5, 6, 7]]
-    assert sum([interval[-1] - interval[0] for interval in intervals_per_ranks[0]]) == 105
-    assert sum([interval[-1] - interval[0] for interval in intervals_per_ranks[1]]) == 105
-    assert sum([interval[-1] - interval[0] for interval in intervals_per_ranks[2]]) == 105
-    assert sum([interval[-1] - interval[0] for interval in intervals_per_ranks[3]]) == 105
+    assert sum([interval[2] - interval[1] for interval in intervals_per_ranks[0]]) == 105
+    assert sum([interval[2] - interval[1] for interval in intervals_per_ranks[1]]) == 105
+    assert sum([interval[2] - interval[1] for interval in intervals_per_ranks[2]]) == 105
+    assert sum([interval[2] - interval[1] for interval in intervals_per_ranks[3]]) == 105
+
     assert intervals_per_ranks == [
-        [[0, 50], [0, 55]],
-        [(55, 150), [0, 10]],
-        [(10, 50), [0, 12], [0, 50], [0, 3]],
-        [(3, 27), [0, 50], [0, 31]],
+        [[0, 0, 50, 50], [0, 0, 55, 150]],
+        [[0, 55, 150, 150], [0, 0, 10, 50]],
+        [[0, 10, 50, 50], [0, 0, 12, 12], [0, 0, 50, 50], [0, 0, 3, 27]],
+        [[0, 3, 27, 27], [0, 0, 50, 50], [0, 0, 31, 33]],
     ]
 
-    chunk_intervals = [[0, 5], [0, 150], [0, 7], [0, 12], [0, 4], [0, 27], [0, 50], [0, 1]]
+    chunk_intervals = [
+        Interval(0, 0, 5, 5),
+        Interval(0, 0, 150, 150),
+        Interval(0, 0, 7, 7),
+        Interval(0, 0, 12, 12),
+        Interval(0, 0, 4, 4),
+        Interval(0, 0, 27, 27),
+        Interval(0, 0, 50, 50),
+        Interval(0, 0, 1, 1),
+    ]
 
     chunks_per_ranks, intervals_per_ranks = _associate_chunks_and_internals_to_ranks(
         _DistributedEnv(4, 1, 2),
@@ -65,15 +99,15 @@ def test_associate_chunks_and_internals_to_ranks():
     )
 
     assert chunks_per_ranks == [[0, 1], [1], [1, 2, 3, 4, 5], [5, 6, 7]]
-    assert sum([interval[-1] - interval[0] for interval in intervals_per_ranks[0]]) == 64
-    assert sum([interval[-1] - interval[0] for interval in intervals_per_ranks[1]]) == 64
-    assert sum([interval[-1] - interval[0] for interval in intervals_per_ranks[2]]) == 64
-    assert sum([interval[-1] - interval[0] for interval in intervals_per_ranks[3]]) == 64
+    assert sum([interval[2] - interval[1] for interval in intervals_per_ranks[0]]) == 64
+    assert sum([interval[2] - interval[1] for interval in intervals_per_ranks[1]]) == 64
+    assert sum([interval[2] - interval[1] for interval in intervals_per_ranks[2]]) == 64
+    assert sum([interval[2] - interval[1] for interval in intervals_per_ranks[3]]) == 64
     assert intervals_per_ranks == [
-        [[0, 5], [0, 59]],
-        [[59, 123]],
-        [(123, 150), [0, 7], [0, 12], [0, 4], [0, 14]],
-        [(14, 27), [0, 50], [0, 1]],
+        [[0, 0, 5, 5], [0, 0, 59, 150]],
+        [[0, 59, 123, 150]],
+        [[0, 123, 150, 150], [0, 0, 7, 7], [0, 0, 12, 12], [0, 0, 4, 4], [0, 0, 14, 27]],
+        [[0, 14, 27, 27], [0, 0, 50, 50], [0, 0, 1, 1]],
     ]
 
     disable_deletion_ranks = _find_chunks_per_ranks_on_which_to_skip_deletion(1, chunks_per_ranks, intervals_per_ranks)

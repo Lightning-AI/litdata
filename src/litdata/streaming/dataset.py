@@ -11,7 +11,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import hashlib
 import os
 from logging import Logger
 from time import time
@@ -21,15 +20,16 @@ import numpy as np
 from torch.utils.data import IterableDataset
 
 from litdata.constants import (
-    _DEFAULT_CACHE_DIR,
     _INDEX_FILENAME,
 )
 from litdata.streaming import Cache
+from litdata.streaming.downloader import get_downloader_cls  # noqa: F401
 from litdata.streaming.item_loader import BaseItemLoader
 from litdata.streaming.resolver import Dir, _resolve_dir
 from litdata.streaming.sampler import ChunkedIndex
 from litdata.streaming.serializers import Serializer
 from litdata.streaming.shuffle import FullShuffle, NoShuffle, Shuffle
+from litdata.utilities.dataset_utilities import _should_replace_path, _try_create_cache_dir, subsample_streaming_dataset
 from litdata.utilities.env import _DistributedEnv, _is_in_dataloader_worker, _WorkerEnv
 from litdata.utilities.shuffle import _find_chunks_per_ranks_on_which_to_skip_deletion
 
@@ -48,6 +48,7 @@ class StreamingDataset(IterableDataset):
         seed: int = 42,
         serializers: Optional[Dict[str, Serializer]] = None,
         max_cache_size: Union[int, str] = "100GB",
+        subsample: float = 1.0,
     ) -> None:
         """The streaming dataset can be used once your data have been optimised using the DatasetOptimiser class.
 
@@ -62,15 +63,24 @@ class StreamingDataset(IterableDataset):
             seed: Random seed for shuffling.
             serializers: The serializers used to serialize and deserialize the chunks.
             max_cache_size: The maximum cache size used by the StreamingDataset.
+            subsample: Float representing fraction of the dataset to be randomly sampled (e.g., 0.1 => 10% of dataset).
 
         """
         super().__init__()
         if not isinstance(shuffle, bool):
             raise ValueError(f"Shuffle should be a boolean. Found {shuffle}")
 
+        if not isinstance(subsample, float) or subsample <= 0.0 or subsample > 1.0:
+            raise ValueError("subsample must be a float with value between 0 and 1.")
+
         input_dir = _resolve_dir(input_dir)
 
         self.input_dir = input_dir
+        self.subsampled_files: List[str] = []
+        self.region_of_interest: List[Tuple[int, int]] = []
+        self.subsampled_files, self.region_of_interest = subsample_streaming_dataset(
+            self.input_dir, item_loader, subsample, shuffle, seed
+        )
 
         self.item_loader = item_loader
         self.shuffle: bool = shuffle
@@ -137,6 +147,8 @@ class StreamingDataset(IterableDataset):
 
         cache = Cache(
             input_dir=self.input_dir,
+            subsampled_files=self.subsampled_files,
+            region_of_interest=self.region_of_interest,
             item_loader=self.item_loader,
             chunk_bytes=1,
             serializers=self.serializers,
@@ -258,7 +270,7 @@ class StreamingDataset(IterableDataset):
 
         # replay the indexes for the current chunks
         interval = self.worker_intervals[self.chunk_index]
-        current_indexes = np.arange(interval[0], interval[1])
+        current_indexes = np.arange(interval[1], interval[2])
 
         # re-shuffle the indexes
         current_indexes = self.shuffler(current_indexes, self.num_chunks, self.current_epoch, self.chunk_index)
@@ -279,6 +291,11 @@ class StreamingDataset(IterableDataset):
             self.shuffler = self._create_shuffler(self.cache)
         if isinstance(index, int):
             index = ChunkedIndex(index, self.cache._get_chunk_index_from_index(index))
+        elif isinstance(index, slice):
+            start, stop, step = index.indices(len(self))
+            _my_indices = list(range(start, stop, step))
+            _my_cache_indices = [ChunkedIndex(idx, self.cache._get_chunk_index_from_index(idx)) for idx in _my_indices]
+            return [self.cache[chnk_idx] for chnk_idx in _my_cache_indices]
         return self.cache[index]
 
     def __next__(self) -> Any:
@@ -297,7 +314,7 @@ class StreamingDataset(IterableDataset):
             self.index = 0
 
             interval = self.worker_intervals[self.chunk_index]
-            current_indexes = np.arange(interval[0], interval[1])
+            current_indexes = np.arange(interval[1], interval[2])
 
             assert self.shuffler is not None
             assert self.num_chunks is not None
@@ -345,6 +362,8 @@ class StreamingDataset(IterableDataset):
             "seed": self.seed,
             "world_size": self.distributed_env.world_size,
             "shuffle": self.shuffle,
+            "subsampled_files": self.subsampled_files,
+            "region_of_interest": self.region_of_interest,
         }
 
     def load_state_dict(self, state_dict: Dict[str, Any]) -> None:
@@ -412,24 +431,30 @@ class StreamingDataset(IterableDataset):
                 f"Found `{self.drop_last}` instead of `{state['drop_last']}`."
             )
 
+    def reset(self) -> None:
+        # undo all the properties associated with original dataset
+        default_properties: Dict[str, Any] = {
+            "cache": None,
+            "worker_env": None,
+            "worker_chunks": [],
+            "worker_intervals": [],
+            "current_indexes": [],
+            "chunk_index": 0,
+            "num_chunks": None,
+            "global_index": 0,
+            "index": 0,
+            "has_triggered_download": False,
+            "min_items_per_replica": None,
+            "current_epoch": 1,
+            "random_state": None,
+            "shuffler": None,
+            "_state_dict": None,
+            "num_workers": None,
+            "batch_size": None,
+        }
 
-def _try_create_cache_dir(input_dir: Optional[str]) -> Optional[str]:
-    hash_object = hashlib.md5((input_dir or "").encode())  # noqa: S324
-    if "LIGHTNING_CLUSTER_ID" not in os.environ or "LIGHTNING_CLOUD_PROJECT_ID" not in os.environ:
-        cache_dir = os.path.join(_DEFAULT_CACHE_DIR, hash_object.hexdigest())
-        os.makedirs(cache_dir, exist_ok=True)
-        return cache_dir
-    cache_dir = os.path.join("/cache", "chunks", hash_object.hexdigest())
-    os.makedirs(cache_dir, exist_ok=True)
-    return cache_dir
-
-
-def _should_replace_path(path: Optional[str]) -> bool:
-    """Whether the input path is a special path to be replaced."""
-    if path is None or path == "":
-        return True
-
-    return path.startswith("/teamspace/datasets/") or path.startswith("/teamspace/s3_connections/")
+        for prop, value in default_properties.items():
+            setattr(self, prop, value)
 
 
 def is_integer(value: str) -> bool:

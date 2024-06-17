@@ -14,6 +14,7 @@
 import functools
 import os
 from abc import ABC, abstractmethod
+from collections import namedtuple
 from copy import deepcopy
 from time import sleep
 from typing import Any, Dict, List, Optional, Tuple
@@ -27,16 +28,25 @@ from litdata.constants import (
 from litdata.streaming.serializers import Serializer
 from litdata.utilities._pytree import PyTree, tree_unflatten
 
+Interval = namedtuple("Interval", ["chunk_start", "roi_start_idx", "roi_end_idx", "chunk_end"])
+
 
 class BaseItemLoader(ABC):
     """The base item loader is responsible to decide how the items within a chunk are loaded."""
 
-    def setup(self, config: Dict, chunks: List, serializers: Dict[str, Serializer]) -> None:
+    def setup(
+        self,
+        config: Dict,
+        chunks: List,
+        serializers: Dict[str, Serializer],
+        region_of_interest: Optional[List[Tuple[int, int]]] = None,
+    ) -> None:
         self._config = config
         self._chunks = chunks
         self._serializers = {**serializers}
         self._data_format = self._config["data_format"]
         self._shift_idx = len(self._data_format) * 4
+        self.region_of_interest = region_of_interest
 
         # setup the serializers on restart
         for data_format in self._data_format:
@@ -57,8 +67,13 @@ class BaseItemLoader(ABC):
         return {}
 
     @abstractmethod
-    def generate_intervals(self) -> List[Tuple[int, int]]:
-        """Returns a list of tuple describing the indexes intervals of the chunks."""
+    def generate_intervals(self) -> List[Interval]:
+        """Returns a list of intervals: [chunk_start,
+        region_of_interest_start, region_of_interest_end, chunk_end]
+
+        region_of_interest: indicates the indexes a chunk our StreamingDataset is allowed to read.
+
+        """
         pass
 
     @abstractmethod
@@ -85,14 +100,19 @@ class PyTreeLoader(BaseItemLoader):
     def __init__(self) -> None:
         self._chunk_filepaths: Dict[str, bool] = {}
 
-    def generate_intervals(self) -> List[Tuple[int, int]]:
+    def generate_intervals(self) -> List[Interval]:
         intervals = []
         begin = 0
         end = 0
-        for chunk in self._chunks:
-            end += chunk["chunk_size"]
-            intervals.append((begin, end))
-            begin += chunk["chunk_size"]
+        for idx, curr_chunk in enumerate(self._chunks):
+            end += curr_chunk["chunk_size"]
+            start_idx, end_idx = begin, end
+            if self.region_of_interest is not None:
+                start_idx = begin + self.region_of_interest[idx][0]
+                end_idx = begin + self.region_of_interest[idx][1]
+
+            intervals.append(Interval(begin, start_idx, end_idx, end))
+            begin += curr_chunk["chunk_size"]
         return intervals
 
     def pre_load_chunk(self, chunk_index: int, chunk_filepath: str) -> None:
@@ -162,21 +182,31 @@ class TokensLoader(BaseItemLoader):
             "block_size": self._block_size,
         }
 
-    def setup(self, config: Dict, chunks: List, serializers: Dict[str, Serializer]) -> None:
-        super().setup(config, chunks, serializers)
+    def setup(
+        self,
+        config: Dict,
+        chunks: List,
+        serializers: Dict[str, Serializer],
+        region_of_interest: Optional[List[Tuple[int, int]]] = None,
+    ) -> None:
+        super().setup(config, chunks, serializers, region_of_interest)
         self._dtype = _TORCH_DTYPES_MAPPING[int(config["data_format"][0].split(":")[1])]
         if all(chunk["dim"] is None for chunk in self._chunks):
             raise ValueError("The provided chunks isn't properly setup.")
 
-    def generate_intervals(self) -> List[Tuple[int, int]]:
+    def generate_intervals(self) -> List[Interval]:
         intervals = []
         begin = 0
         end = 0
-        for chunk in self._chunks:
+        for idx, chunk in enumerate(self._chunks):
             dim = chunk["dim"]
             num_blocks = dim // self._block_size
             end += num_blocks
-            intervals.append((begin, end))
+            start_idx, end_idx = begin, end
+            if self.region_of_interest is not None:
+                start_idx = begin + self.region_of_interest[idx][0]
+                end_idx = begin + self.region_of_interest[idx][1]
+            intervals.append(Interval(begin, start_idx, end_idx, end))
             begin += num_blocks
         return intervals
 

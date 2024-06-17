@@ -62,7 +62,7 @@ def test_cache_batch_sampler(params):
         for batch in batch_sampler:
             batches.append(batch)
 
-        chunks_interval = [[batch[0], batch[-1] + 1] for batch in batches if len(batch)]
+        chunks_interval = [[batch[0], batch[0], batch[-1] + 1, batch[-1] + 1] for batch in batches if len(batch)]
     else:
         batch_sampler = CacheBatchSampler(params[0], params[1], 0, 3, 3, False, True, cache)
         batches = []
@@ -70,7 +70,7 @@ def test_cache_batch_sampler(params):
             batches.append(batch)
         assert batches == params[2], batches
 
-        chunks_interval = [[batch[0], batch[-1] + 1] for batch in batches if len(batch)]
+        chunks_interval = [[batch[0], batch[0], batch[-1] + 1, batch[-1] + 1] for batch in batches if len(batch)]
 
     cache.filled = True
     cache.get_chunk_intervals.return_value = chunks_interval

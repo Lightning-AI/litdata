@@ -17,14 +17,18 @@ from litdata.processing.functions import map, optimize, walk
 from litdata.streaming.combined import CombinedStreamingDataset
 from litdata.streaming.dataloader import StreamingDataLoader
 from litdata.streaming.dataset import StreamingDataset
+from litdata.streaming.item_loader import TokensLoader
+from litdata.utilities.train_test_split import train_test_split
 
 __all__ = [
     "StreamingDataset",
     "CombinedStreamingDataset",
     "StreamingDataLoader",
+    "TokensLoader",
     "map",
     "optimize",
     "walk",
+    "train_test_split",
 ]
 if RequirementCache("lightning_sdk"):
     from lightning_sdk import Machine  # noqa: F401

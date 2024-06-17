@@ -174,10 +174,9 @@ class CacheBatchSampler:
             chunks_per_workers[i % self._num_workers].append(chunk_index)
 
         indices_per_workers: List[List[ChunkedIndex]] = [[] for _ in range(self._num_workers)]
-
         for i, (chunk_index, chunk_interval) in enumerate(zip(shuffled_indexes, shuffled_chunk_intervals)):
             worker_id = i % self._num_workers
-            interval_indices = np.arange(chunk_interval[0], chunk_interval[1])
+            interval_indices = np.arange(chunk_interval[1], chunk_interval[2])
             shuffled_interval_indices = np.random.permutation(interval_indices).tolist()
             is_empty = len(indices_per_workers[worker_id]) == 0
             indices_per_workers[worker_id].extend(

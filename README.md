@@ -121,6 +121,7 @@ dataloader = StreamingDataLoader(dataset)
 # Key Features
 
 - [Multi-GPU / Multi-Node Support](#multi-gpu--multi-node-support)
+- [Subsample and split your datasets](#access-any-item)
 - [Access any item](#access-any-item)
 - [Use any data transforms](#use-any-data-transforms)
 - [The Map Operator](#the-map-operator)
@@ -131,6 +132,7 @@ dataloader = StreamingDataLoader(dataset)
 - [Configure Cache Size Limit](#configure-cache-size-limit)
 - [On-Prem Optimizations](#on-prem-optimizations)
 
+
 ## Multi-GPU / Multi-Node Support
 
 The `StreamingDataset` and `StreamingDataLoader` automatically make sure each rank receives the same quantity of varied batches of data, so it works out of the box with your favorite frameworks ([PyTorch Lightning](https://lightning.ai/docs/pytorch/stable/), [Lightning Fabric](https://lightning.ai/docs/fabric/stable/), or [PyTorch](https://pytorch.org/docs/stable/index.html)) to do distributed training. 
@@ -138,6 +140,41 @@ The `StreamingDataset` and `StreamingDataLoader` automatically make sure each ra
 Here you can see an illustration showing how the Streaming Dataset works with multi node / multi gpu under the hood.
 
 ![An illustration showing how the Streaming Dataset works with multi node.](https://pl-flash-data.s3.amazonaws.com/streaming_dataset.gif)
+
+## Subsample and split your datasets
+
+You can split your dataset with more ease with `train_test_split`.
+
+```python
+from litdata import StreamingDataset, train_test_split
+
+dataset = StreamingDataset("s3://my-bucket/my-data") # data are stored in the cloud
+
+print(len(dataset)) # display the length of your data
+# out: 100,000
+
+train_dataset, val_dataset, test_dataset = train_test_split(dataset, splits=[0.3, 0.2, 0.5])
+
+print(train_dataset)
+# out: 30,000
+
+print(val_dataset)
+# out: 20,000
+
+print(test_dataset)
+# out: 50,000
+```
+
+Or simply subsample them
+
+```python
+from litdata import StreamingDataset, train_test_split
+
+dataset = StreamingDataset("s3://my-bucket/my-data", subsample=0.01) # data are stored in the cloud
+
+print(len(dataset)) # display the length of your data
+# out: 1000
+```
 
 ## Access any item
 
@@ -209,8 +246,7 @@ Easily experiment with dataset mixtures using the `CombinedStreamingDataset` cla
 As an example, this mixture of [Slimpajama](https://huggingface.co/datasets/cerebras/SlimPajama-627B) & [StarCoder](https://huggingface.co/datasets/bigcode/starcoderdata) was used in the [TinyLLAMA](https://github.com/jzhang38/TinyLlama) project to pretrain a 1.1B Llama model on 3 trillion tokens. 
 
 ```python
-from litdata import StreamingDataset, CombinedStreamingDataset, StreamingDataLoader
-from litdata.streaming.item_loader import TokensLoader
+from litdata import StreamingDataset, CombinedStreamingDataset, StreamingDataLoader, TokensLoader
 from tqdm import tqdm
 import os
 
