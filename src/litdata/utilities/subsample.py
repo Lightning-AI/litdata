@@ -1,10 +1,9 @@
-from typing import Any, Dict, List, Optional, Tuple
-
 import numpy as np
+from typing import Any, Dict, List, Optional, Tuple
 
 
 def shuffle_lists_together(
-    list1: List[Any], list2: List[Any], random_seed_sampler: Optional[np.random.RandomState] = None
+    list1: List[Any], list2: List[Any], random_seed_sampler: Optional[np.random.RandomState] = None, seed: int = 42
 ) -> Tuple[List[Any], List[Any]]:
     """Shuffles list1 and applies the same shuffle order to list2.
 
@@ -12,6 +11,7 @@ def shuffle_lists_together(
         list1: The first list to shuffle.
         list2: The second list to shuffle in correspondence with list1.
         random_seed_sampler: Random seed sampler to be used for shuffling
+        seed: Seed to use incase random_seed_sampler is not provided
 
     Returns:
         A tuple containing the shuffled versions of list1 and list2.
@@ -22,7 +22,7 @@ def shuffle_lists_together(
         raise ValueError("Lists must be of the same size.")
 
     if random_seed_sampler is None:
-        random_seed_sampler = np.random.RandomState([42])
+        random_seed_sampler = np.random.RandomState([seed])
 
     # Shuffle the first list
     shuffled_indices = list(range(len(list1)))
