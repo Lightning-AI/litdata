@@ -18,7 +18,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from litdata.constants import _INDEX_FILENAME
 from litdata.streaming.compression import _COMPRESSORS, Compressor
 from litdata.streaming.downloader import get_downloader_cls
-from litdata.streaming.item_loader import BaseItemLoader, PyTreeLoader, TokensLoader
+from litdata.streaming.item_loader import BaseItemLoader, Interval, PyTreeLoader, TokensLoader
 from litdata.streaming.sampler import ChunkedIndex
 from litdata.streaming.serializers import Serializer
 from litdata.utilities._pytree import tree_unflatten, treespec_loads
@@ -31,6 +31,8 @@ class ChunksConfig:
         serializers: Dict[str, Serializer],
         remote_dir: Optional[str],
         item_loader: Optional[BaseItemLoader] = None,
+        subsampled_files: Optional[List[str]] = None,
+        region_of_interest: Optional[List[Tuple[int, int]]] = None,
     ) -> None:
         """The ChunksConfig reads the index files associated a chunked dataset and enables to map an index to its
         chunk.
@@ -40,24 +42,34 @@ class ChunksConfig:
             serializers: The serializers used to serialize and deserialize the chunks.
             remote_dir: The path to a remote folder where the data are located.
                 The scheme needs to be added to the path.
+            subsampled_files: List of subsampled chunk files loaded from `input_dir/index.json` file.
+            region_of_interest: List of tuples of {start,end} of region of interest for each chunk.
 
         """
         self._cache_dir = cache_dir
-        self._intervals: List[Tuple[int, int]] = []
+        self._intervals: List[Interval] = []
         self._config = None
-        self._chunks = []
+        self._chunks = None
         self._remote_dir = remote_dir
         self._item_loader = item_loader or PyTreeLoader()
 
         with open(os.path.join(self._cache_dir, _INDEX_FILENAME)) as f:
             data = json.load(f)
+            _original_chunks = data["chunks"]
             self._config = data["config"]
             self._validate_item_loader()
-            self._chunks.extend(data["chunks"])
+
+            assert _original_chunks is not None
+
+            if subsampled_files is None:
+                self._chunks = _original_chunks
+            else:
+                self._chunks = load_subsampled_chunks(subsampled_files, _original_chunks)
 
         self._config["data_spec"] = treespec_loads(self._config["data_spec"])
 
-        self._item_loader.setup(self._config, self._chunks, serializers)
+        assert self._chunks is not None
+        self._item_loader.setup(self._config, self._chunks, serializers, region_of_interest)
         self._intervals = self._item_loader.generate_intervals()
         self._length = self._intervals[-1][-1]
         self._downloader = None
@@ -87,6 +99,7 @@ class ChunksConfig:
         self._skip_chunk_indexes_deletion = skip_chunk_indexes_deletion
 
     def download_chunk_from_index(self, chunk_index: int) -> None:
+        assert self._chunks is not None
         chunk_filename = self._chunks[chunk_index]["filename"]
 
         local_chunkpath = os.path.join(self._cache_dir, chunk_filename)
@@ -124,7 +137,7 @@ class ChunksConfig:
             f.write(data)
 
     @property
-    def intervals(self) -> List[Tuple[int, int]]:
+    def intervals(self) -> List[Interval]:
         if self._intervals is None:
             raise RuntimeError("The intervals should be defined.")
         return self._intervals
@@ -133,6 +146,7 @@ class ChunksConfig:
     def num_bytes(self) -> int:
         if self._config is None:
             raise RuntimeError("The config should be defined.")
+        assert self._chunks is not None
         return sum(c["chunk_bytes"] for c in self._chunks)
 
     @property
@@ -167,7 +181,7 @@ class ChunksConfig:
 
     def _get_chunk_index_from_index(self, index: int) -> int:
         for chunk_index, internal in enumerate(self._intervals):
-            if internal[0] <= index < internal[1]:
+            if internal[0] <= index < internal[-1]:
                 return chunk_index
         raise ValueError(
             f"The provided index {index} didn't find a match within the chunk intervals {self._intervals}."
@@ -175,6 +189,7 @@ class ChunksConfig:
 
     def __getitem__(self, index: ChunkedIndex) -> Tuple[str, int, int]:
         """Find the associated chunk metadata."""
+        assert self._chunks is not None
         chunk = self._chunks[index.chunk_index]
 
         local_chunkpath = os.path.join(self._cache_dir, chunk["filename"])
@@ -188,6 +203,7 @@ class ChunksConfig:
 
     def _get_chunk_index_from_filename(self, chunk_filename: str) -> int:
         """Retrieves the associated chunk_index for a given chunk filename."""
+        assert self._chunks is not None
         for chunk_index, chunk in enumerate(self._chunks):
             if chunk["filename"] == chunk_filename:
                 return chunk_index
@@ -200,6 +216,8 @@ class ChunksConfig:
         serializers: Dict[str, Serializer],
         remote_dir: Optional[str] = None,
         item_loader: Optional[BaseItemLoader] = None,
+        subsampled_files: Optional[List[str]] = None,
+        region_of_interest: Optional[List[Tuple[int, int]]] = None,
     ) -> Optional["ChunksConfig"]:
         cache_index_filepath = os.path.join(cache_dir, _INDEX_FILENAME)
 
@@ -210,7 +228,7 @@ class ChunksConfig:
         if not os.path.exists(cache_index_filepath):
             return None
 
-        return ChunksConfig(cache_dir, serializers, remote_dir, item_loader)
+        return ChunksConfig(cache_dir, serializers, remote_dir, item_loader, subsampled_files, region_of_interest)
 
     def __len__(self) -> int:
         return self._length
@@ -223,3 +241,32 @@ class ChunksConfig:
             and not isinstance(self._item_loader, TokensLoader)
         ):
             raise ValueError("Please, use Cache(..., item_loader=TokensLoader(block_size=...))")
+
+
+def load_subsampled_chunks(subsampled_files: List[str], original_chunks: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Loads Chunks based on subsample provided."""
+    _subsampled_chunks: List[Dict[str, Any]] = [{} for _ in range(len(subsampled_files))]
+
+    assert len(_subsampled_chunks) == len(subsampled_files)
+
+    filename_dict = {}
+
+    # Populate the dictionary with filenames and their indices
+    for index, filename in enumerate(subsampled_files):
+        filename_dict[filename] = index
+
+    for curr_chunk in original_chunks:
+        if curr_chunk["filename"] in filename_dict:
+            idx = filename_dict[curr_chunk["filename"]]
+            _subsampled_chunks[idx] = curr_chunk
+
+    # if any idx of _subsampled_chunks is None, means,
+    # some elements in subsampled_files were not actually part of chunks
+    # raise error
+    if any(not _subsampled_chunk for _subsampled_chunk in _subsampled_chunks):
+        raise ValueError(
+            "Mismatch in subsampled files and the chunks loaded",
+            "Make sure subsampled chunks are actually part of the original chunk",
+        )
+
+    return _subsampled_chunks

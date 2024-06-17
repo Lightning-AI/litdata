@@ -112,3 +112,7 @@ lightning_logs
 
 # Ruff
 .ruff_cache/
+
+
+# status.json file
+status.json

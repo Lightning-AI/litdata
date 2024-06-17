@@ -15,6 +15,7 @@ from typing import Any, Dict, List, Tuple
 
 import numpy as np
 
+from litdata.streaming.item_loader import Interval
 from litdata.utilities.env import _DistributedEnv
 
 
@@ -44,12 +45,12 @@ def _intra_node_chunk_shuffle(
 def _associate_chunks_and_internals_to_ranks(
     distributed_env: _DistributedEnv,
     indexes: Any,
-    chunk_intervals: Any,
+    chunk_intervals: List[Interval],
     drop_last: bool,
     num_workers: int = 1,
     batch_size: int = 1,
 ) -> Tuple[List[List[int]], List[Any]]:
-    num_items = sum([(interval[-1] - interval[0]) for interval in chunk_intervals])
+    num_items = sum([(interval[2] - interval[1]) for interval in chunk_intervals])
     num_items_per_ranks: List[int] = [
         num_items // distributed_env.world_size + num_items % distributed_env.world_size
         if rank == distributed_env.world_size - 1 and not drop_last
@@ -77,21 +78,25 @@ def _associate_chunks_and_internals_to_ranks(
                 rank += 1
                 continue
 
-            items_in_chunk = chunk_interval[-1] - chunk_interval[0]
+            items_in_chunk = chunk_interval[2] - chunk_interval[1]
 
             if items_in_chunk == 0:
                 break
 
             if items_in_chunk > items_left_to_assign:
                 chunks_per_ranks[rank].append(chunk_index)
-                begin, end = chunk_interval
-                intervals_per_ranks[rank].append([begin, begin + items_left_to_assign])
-                chunk_interval = (begin + items_left_to_assign, end)
+
+                chunk_start, chunk_roi_start, chunk_roi_end, chunk_end = chunk_interval
+
+                intervals_per_ranks[rank].append(
+                    [chunk_start, chunk_roi_start, chunk_roi_start + items_left_to_assign, chunk_end]
+                )
+                chunk_interval = Interval(chunk_start, chunk_roi_start + items_left_to_assign, chunk_roi_end, chunk_end)
                 num_items_per_ranks[rank] = 0
                 rank += 1
             else:
                 chunks_per_ranks[rank].append(chunk_index)
-                intervals_per_ranks[rank].append(chunk_interval)
+                intervals_per_ranks[rank].append(list(chunk_interval))
                 num_items_per_ranks[rank] -= items_in_chunk
                 break
 
@@ -119,7 +124,7 @@ def _find_chunks_per_ranks_on_which_to_skip_deletion(
         counters = []
         for rank in ranks:
             chunks = chunks_per_ranks[rank]
-            intervals = [interval[1] - interval[0] for interval in intervals_per_ranks[rank]]
+            intervals = [interval[2] - interval[1] for interval in intervals_per_ranks[rank]]
 
             workers_chunks: Any = [[] for _ in range(num_workers)]
             workers_intervals: Any = [[] for _ in range(num_workers)]

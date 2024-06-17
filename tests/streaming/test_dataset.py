@@ -11,6 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
 import os
 import random
 import sys
@@ -32,11 +33,10 @@ from litdata.streaming.dataset import (
     _associate_chunks_to_workers,
     _replay_chunks_sampling,
     _replay_sampling,
-    _should_replace_path,
-    _try_create_cache_dir,
 )
 from litdata.streaming.item_loader import TokensLoader
 from litdata.streaming.shuffle import FullShuffle, NoShuffle
+from litdata.utilities import dataset_utilities as dataset_utilities_module
 from litdata.utilities.env import _DistributedEnv, _WorkerEnv
 from torch.utils.data import DataLoader
 
@@ -58,12 +58,8 @@ def seed_everything(random_seed):
 def test_streaming_dataset(tmpdir, monkeypatch, compression):
     seed_everything(42)
 
-    dataset = StreamingDataset(input_dir=str(tmpdir))
     with pytest.raises(ValueError, match="The provided dataset"):
-        iter(dataset)
-    dataset = StreamingDataset(input_dir=str(tmpdir))
-    with pytest.raises(ValueError, match="The provided dataset"):
-        _ = dataset[0]
+        dataset = StreamingDataset(input_dir=str(tmpdir))
 
     cache = Cache(str(tmpdir), chunk_size=10, compression=compression)
     for i in range(60):
@@ -86,16 +82,6 @@ def test_streaming_dataset(tmpdir, monkeypatch, compression):
     assert len(dataloader) == 60
     dataloader = DataLoader(dataset, num_workers=2, batch_size=2)
     assert len(dataloader) == 30
-
-
-def test_should_replace_path():
-    assert _should_replace_path(None)
-    assert _should_replace_path("")
-    assert not _should_replace_path(".../datasets/...")
-    assert not _should_replace_path(".../s3__connections/...")
-    assert _should_replace_path("/teamspace/datasets/...")
-    assert _should_replace_path("/teamspace/s3_connections/...")
-    assert not _should_replace_path("something_else")
 
 
 @pytest.mark.parametrize("drop_last", [False, True])
@@ -180,7 +166,7 @@ def test_streaming_dataset_distributed_no_shuffle(drop_last, tmpdir, compression
     for i in process_1_1:
         found = False
         for interval in intervals_per_ranks[0]:
-            if interval[0] <= i <= interval[1]:
+            if interval[1] <= i <= interval[2]:
                 found = True
                 break
         found_list.append(found)
@@ -191,7 +177,7 @@ def test_streaming_dataset_distributed_no_shuffle(drop_last, tmpdir, compression
     for i in process_2_1:
         found = False
         for interval in intervals_per_ranks[1]:
-            if interval[0] <= i <= interval[1]:
+            if interval[1] <= i <= interval[2]:
                 found = True
                 break
         found_list.append(found)
@@ -441,22 +427,6 @@ def test_dataset_cache_recreation(tmpdir):
     assert dataset.shuffler is shuffler  # shuffler gets reused
 
 
-def test_try_create_cache_dir():
-    with mock.patch.dict(os.environ, {}, clear=True):
-        assert os.path.join("chunks", "100b8cad7cf2a56f6df78f171f97a1ec") in _try_create_cache_dir("any")
-
-    # the cache dir creating at /cache requires root privileges, so we need to mock `os.makedirs()`
-    with (
-        mock.patch.dict("os.environ", {"LIGHTNING_CLUSTER_ID": "abc", "LIGHTNING_CLOUD_PROJECT_ID": "123"}),
-        mock.patch("litdata.streaming.dataset.os.makedirs") as makedirs_mock,
-    ):
-        cache_dir_1 = _try_create_cache_dir("")
-        cache_dir_2 = _try_create_cache_dir("ssdf")
-        assert cache_dir_1 != cache_dir_2
-        assert cache_dir_1 == os.path.join("/cache", "chunks", "d41d8cd98f00b204e9800998ecf8427e")
-        assert len(makedirs_mock.mock_calls) == 2
-
-
 def test_dataset_for_text_tokens(tmpdir):
     seed_everything(42)
 
@@ -660,10 +630,22 @@ def test_dataset_for_text_tokens_distributed_num_workers_end_to_end(tmpdir, monk
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="Not tested on windows and MacOs")
-def test_s3_streaming_dataset():
+def test_s3_streaming_dataset(monkeypatch):
+    downloader = mock.MagicMock()
+
+    def fn(remote_chunkpath: str, local_chunkpath: str):
+        with open(local_chunkpath, "w") as f:
+            json.dump({"chunks": [{"chunk_size": 2, "filename": "0.bin"}]}, f)
+
+    downloader.download_file = fn
+
+    monkeypatch.setattr(dataset_utilities_module, "get_downloader_cls", mock.MagicMock(return_value=downloader))
+
     dataset = StreamingDataset(input_dir="s3://pl-flash-data/optimized_tiny_imagenet")
     assert dataset.input_dir.url == "s3://pl-flash-data/optimized_tiny_imagenet"
-    assert dataset.input_dir.path is None
+    assert dataset.input_dir.path.endswith(
+        "/chunks/597d6184e3ba942b36c8b6357a890033"
+    )  # it won't be None, and a cache dir will be created
 
 
 class EmulateS3StreamingDataset(StreamingDataset):
@@ -946,7 +928,14 @@ def test_replay_chunks_sampling():
     assert _replay_chunks_sampling(workers_intervals, {0: 15, 1: 12}) == ({0: 3, 1: 2}, {0: 0, 1: 2})
 
 
-def test_dataset_distributed_drop_last(tmpdir, monkeypatch):
+@pytest.mark.parametrize(
+    "compression",
+    [
+        pytest.param(None),
+        pytest.param("zstd", marks=pytest.mark.skipif(condition=not _ZSTD_AVAILABLE, reason="Requires: ['zstd']")),
+    ],
+)
+def test_dataset_distributed_drop_last(tmpdir, monkeypatch, compression):
     class _DistributedEnvMock:
         def detect(cls):
             return _DistributedEnv(2, 0, 1)
@@ -955,6 +944,12 @@ def test_dataset_distributed_drop_last(tmpdir, monkeypatch):
 
     monkeypatch.setattr(dataset_module, "_DistributedEnv", _DistributedEnvMock())
     monkeypatch.setattr(dataset_module, "logger", logger_mock)
+
+    cache = Cache(str(tmpdir), chunk_size=10, compression=compression)
+    for i in range(60):
+        cache[i] = i
+    cache.done()
+    cache.merge()
 
     dataset = StreamingDataset(str(tmpdir), drop_last=None)
     assert dataset.drop_last
@@ -969,3 +964,34 @@ def test_dataset_distributed_drop_last(tmpdir, monkeypatch):
         " if your system depends on distributed collectives."
     )
     assert expected_warn_msg == warn_msg
+
+
+def test_subsample_streaming_dataset_with_token_loader(tmpdir, monkeypatch):
+    monkeypatch.setattr(functions, "_get_input_dir", lambda x: str(tmpdir))
+
+    seed_everything(42)
+
+    with open(tmpdir / "a.txt", "w") as f:
+        f.write("hello")
+
+    inputs = [(v, str(tmpdir / "a.txt")) for v in range(0, 200, 20)]
+
+    cache_dir = os.path.join(tmpdir, "cache")
+    output_dir = os.path.join(tmpdir, "target_dir")
+    os.makedirs(output_dir, exist_ok=True)
+    monkeypatch.setenv("DATA_OPTIMIZER_CACHE_FOLDER", cache_dir)
+    monkeypatch.setenv("DATA_OPTIMIZER_DATA_CACHE_FOLDER", cache_dir)
+
+    functions.optimize(
+        optimize_fn, inputs, output_dir=str(tmpdir), num_workers=2, chunk_size=2, reorder_files=False, num_downloaders=1
+    )
+
+    assert len([f for f in os.listdir(tmpdir) if f.endswith(".bin")]) == 10
+
+    block_size = 10
+    dataset1 = StreamingDataset(input_dir=str(tmpdir), item_loader=TokensLoader(block_size), shuffle=False)
+    dataset2 = StreamingDataset(
+        input_dir=str(tmpdir), item_loader=TokensLoader(block_size), shuffle=False, subsample=0.4
+    )
+
+    assert len(dataset2) == int(len(dataset1) * 0.4)

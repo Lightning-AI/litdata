@@ -35,6 +35,7 @@ import torch
 from litdata.constants import (
     _BOTO3_AVAILABLE,
     _DEFAULT_FAST_DEV_RUN_ITEMS,
+    _ENABLE_STATUS,
     _INDEX_FILENAME,
     _IS_IN_STUDIO,
     _LIGHTNING_CLOUD_AVAILABLE,
@@ -995,7 +996,7 @@ class DataProcessor:
             if current_total == num_items:
                 break
 
-            if _IS_IN_STUDIO and node_rank == 0:
+            if _IS_IN_STUDIO and node_rank == 0 and _ENABLE_STATUS:
                 with open("status.json", "w") as f:
                     json.dump({"progress": str(100 * current_total * num_nodes / total_num_items) + "%"}, f)
 
