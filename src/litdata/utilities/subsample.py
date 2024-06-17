@@ -44,14 +44,22 @@ def subsample_filenames_and_roi(
     assert len(chunks) == len(roi_list)
 
     cumsum_sizes = np.cumsum([r[-1] for r in roi_list])
+
+
     match = np.argmax(cumsum_sizes > target)
     left_chunk_filenames = [c["filename"] for c in chunks[: match + 1]]
     left_chunk_roi = [r[-1] for r in roi_list[: match + 1]]
     left_chunk_roi[-1] = target if match == 0 else (target - cumsum_sizes[match - 1])
+
     assert np.sum(left_chunk_roi) == target
 
     right_chunk_filenames = chunks[match:]
     right_chunk_roi = [r[-1] for r in roi_list[match:]]
     right_chunk_roi[0] -= left_chunk_roi[-1]
+
+    # exact match
+    if left_chunk_roi[-1] == 0:
+        left_chunk_filenames = left_chunk_filenames[:-1]
+        left_chunk_roi = left_chunk_roi[:-1]
 
     return left_chunk_filenames, [(0, r) for r in left_chunk_roi], right_chunk_filenames, [(0, r) for r in right_chunk_roi]
