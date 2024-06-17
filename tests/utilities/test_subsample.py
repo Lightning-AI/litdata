@@ -3,7 +3,6 @@ import pytest
 from litdata.utilities.subsample import (
     shuffle_lists_together,
     subsample_filenames_and_roi,
-    target_sum_problem_with_space_optimization,
 )
 
 
@@ -27,24 +26,6 @@ def test_shuffle_lists_together():
 
     assert all(l2[l1.index(shuffled_l1[i])] == shuffled_l2[i] for i in range(len(shuffled_l1)))
     assert all(l2[l1.index(shuffled_l1[i])] == shuffled_l2[i] for i in range(len(shuffled_l1)))
-
-
-def test_target_sum_problem_with_space_optimization():
-    my_roi_list = [(0, 50), (0, 50), (0, 50), (0, 50)]
-    target = 100
-
-    final_table_row = target_sum_problem_with_space_optimization(my_roi_list, target)
-
-    assert final_table_row[100] == (0, 1)
-
-    # -----------------------------------------------------
-
-    my_roi_list = [(0, 55), (0, 5), (0, 40), (0, 70), (0, 30)]
-    target = 100
-
-    final_table_row = target_sum_problem_with_space_optimization(my_roi_list, target)
-
-    assert final_table_row[100] == (3, 4)
 
 
 def test_subsample_filenames_and_roi():
