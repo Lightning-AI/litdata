@@ -20,7 +20,7 @@ from threading import Event, Thread
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 from litdata.constants import _TORCH_GREATER_EQUAL_2_1_0
-from litdata.streaming.config import ChunksConfig
+from litdata.streaming.config import ChunksConfig, Interval
 from litdata.streaming.item_loader import BaseItemLoader, PyTreeLoader
 from litdata.streaming.sampler import ChunkedIndex
 from litdata.streaming.serializers import Serializer, _get_serializers
@@ -306,7 +306,7 @@ class BinaryReader:
 
         return len(self.config)
 
-    def get_chunk_intervals(self) -> List[Tuple[int, int, int, int]]:
+    def get_chunk_intervals(self) -> List[Interval]:
         """Get the index interval of each chunk."""
         if self._config is None and self._try_load_config() is None:
             raise Exception("The reader index isn't defined.")

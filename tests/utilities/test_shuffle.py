@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+from litdata.streaming.item_loader import Interval
 from litdata.utilities.env import _DistributedEnv
 from litdata.utilities.shuffle import (
     _associate_chunks_and_internals_to_ranks,
@@ -23,23 +24,6 @@ def test_intra_node_chunk_shuffle():
 
 
 def test_associate_chunks_and_internals_to_ranks():
-    @dataclass
-    class Interval:
-        chunk_start: int
-        roi_start_idx: int
-        roi_end_idx: int
-        chunk_end: int
-
-        def __getitem__(self, index: int) -> int:
-            if not 0 <= index <= 3:
-                raise IndexError("Index must be between 0 and 3")
-
-            return (
-                self.chunk_start,
-                self.roi_start_idx,
-                self.roi_end_idx,
-                self.chunk_end,
-            )[index]
 
     indexes = [0, 1, 2, 3, 4, 5, 6, 7]
     chunk_intervals = [
@@ -53,7 +37,6 @@ def test_associate_chunks_and_internals_to_ranks():
         Interval(0, 0, 50, 50),
     ]
 
-    chunk_intervals = [[chnk_interval[i] for i in range(4)] for chnk_interval in chunk_intervals]
 
     chunks_per_ranks, intervals_per_ranks = _associate_chunks_and_internals_to_ranks(
         _DistributedEnv(4, 1, 2),
@@ -81,7 +64,6 @@ def test_associate_chunks_and_internals_to_ranks():
         Interval(0, 0, 33, 33),
     ]
 
-    chunk_intervals = [[chnk_interval[i] for i in range(4)] for chnk_interval in chunk_intervals]
 
     chunks_per_ranks, intervals_per_ranks = _associate_chunks_and_internals_to_ranks(
         _DistributedEnv(4, 1, 2),
@@ -98,9 +80,9 @@ def test_associate_chunks_and_internals_to_ranks():
 
     assert intervals_per_ranks == [
         [[0, 0, 50, 50], [0, 0, 55, 150]],
-        [(0, 55, 150, 150), [0, 0, 10, 50]],
-        [(0, 10, 50, 50), [0, 0, 12, 12], [0, 0, 50, 50], [0, 0, 3, 27]],
-        [(0, 3, 27, 27), [0, 0, 50, 50], [0, 0, 31, 33]],
+        [[0, 55, 150, 150], [0, 0, 10, 50]],
+        [[0, 10, 50, 50], [0, 0, 12, 12], [0, 0, 50, 50], [0, 0, 3, 27]],
+        [[0, 3, 27, 27], [0, 0, 50, 50], [0, 0, 31, 33]],
     ]
 
     chunk_intervals = [
@@ -114,7 +96,6 @@ def test_associate_chunks_and_internals_to_ranks():
         Interval(0, 0, 1, 1),
     ]
 
-    chunk_intervals = [[chnk_interval[i] for i in range(4)] for chnk_interval in chunk_intervals]
 
     chunks_per_ranks, intervals_per_ranks = _associate_chunks_and_internals_to_ranks(
         _DistributedEnv(4, 1, 2),
@@ -131,8 +112,8 @@ def test_associate_chunks_and_internals_to_ranks():
     assert intervals_per_ranks == [
         [[0, 0, 5, 5], [0, 0, 59, 150]],
         [[0, 59, 123, 150]],
-        [(0, 123, 150, 150), [0, 0, 7, 7], [0, 0, 12, 12], [0, 0, 4, 4], [0, 0, 14, 27]],
-        [(0, 14, 27, 27), [0, 0, 50, 50], [0, 0, 1, 1]],
+        [[0, 123, 150, 150], [0, 0, 7, 7], [0, 0, 12, 12], [0, 0, 4, 4], [0, 0, 14, 27]],
+        [[0, 14, 27, 27], [0, 0, 50, 50], [0, 0, 1, 1]],
     ]
 
     disable_deletion_ranks = _find_chunks_per_ranks_on_which_to_skip_deletion(1, chunks_per_ranks, intervals_per_ranks)

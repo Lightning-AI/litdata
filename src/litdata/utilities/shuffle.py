@@ -16,7 +16,7 @@ from typing import Any, Dict, List, Tuple
 import numpy as np
 
 from litdata.utilities.env import _DistributedEnv
-
+from litdata.streaming.item_loader import Interval
 
 def _intra_node_chunk_shuffle(
     distributed_env: _DistributedEnv,
@@ -44,7 +44,7 @@ def _intra_node_chunk_shuffle(
 def _associate_chunks_and_internals_to_ranks(
     distributed_env: _DistributedEnv,
     indexes: Any,
-    chunk_intervals: Any,
+    chunk_intervals: List[Interval],
     drop_last: bool,
     num_workers: int = 1,
     batch_size: int = 1,
@@ -83,17 +83,20 @@ def _associate_chunks_and_internals_to_ranks(
                 break
 
             if items_in_chunk > items_left_to_assign:
+
                 chunks_per_ranks[rank].append(chunk_index)
-                begin, end = chunk_interval[1], chunk_interval[2]
+
+                chunk_start, chunk_roi_start, chunk_roi_end, chunk_end = chunk_interval
+
                 intervals_per_ranks[rank].append(
-                    [chunk_interval[0], begin, begin + items_left_to_assign, chunk_interval[3]]
+                    [chunk_start, chunk_roi_start, chunk_roi_start + items_left_to_assign, chunk_end]
                 )
-                chunk_interval = (chunk_interval[0], begin + items_left_to_assign, end, chunk_interval[3])
+                chunk_interval = Interval(chunk_start, chunk_roi_start + items_left_to_assign, chunk_roi_end, chunk_end)
                 num_items_per_ranks[rank] = 0
                 rank += 1
             else:
                 chunks_per_ranks[rank].append(chunk_index)
-                intervals_per_ranks[rank].append(chunk_interval)
+                intervals_per_ranks[rank].append(list(chunk_interval))
                 num_items_per_ranks[rank] -= items_in_chunk
                 break
 

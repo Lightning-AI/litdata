@@ -18,7 +18,6 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 from litdata.constants import (
     _INDEX_FILENAME,
 )
-from litdata.streaming.item_loader import BaseItemLoader
 from litdata.streaming.reader import BinaryReader
 from litdata.streaming.resolver import Dir, _resolve_dir
 from litdata.streaming.sampler import ChunkedIndex
@@ -26,6 +25,7 @@ from litdata.streaming.serializers import Serializer
 from litdata.streaming.writer import BinaryWriter
 from litdata.utilities.env import _DistributedEnv, _WorkerEnv
 from litdata.utilities.format import _convert_bytes_to_int
+from litdata.streaming.item_loader import BaseItemLoader, Interval
 
 logger = logging.Logger(__name__)
 
@@ -144,7 +144,7 @@ class Cache:
     def __len__(self) -> int:
         return self._reader.get_length()
 
-    def get_chunk_intervals(self) -> List[Tuple[int, int, int, int]]:
+    def get_chunk_intervals(self) -> List[Interval]:
         return self._reader.get_chunk_intervals()
 
     def _get_chunk_index_from_index(self, index: int) -> int:

@@ -21,6 +21,7 @@ from litdata.streaming.downloader import get_downloader_cls
 from litdata.streaming.item_loader import BaseItemLoader, PyTreeLoader, TokensLoader
 from litdata.streaming.sampler import ChunkedIndex
 from litdata.streaming.serializers import Serializer
+from litdata.streaming.item_loader import Interval
 from litdata.utilities._pytree import tree_unflatten, treespec_loads
 
 
@@ -47,7 +48,7 @@ class ChunksConfig:
 
         """
         self._cache_dir = cache_dir
-        self._intervals: List[Tuple[int, int, int, int]] = []
+        self._intervals: List[Interval] = []
         self._config = None
         self._chunks = None
         self._remote_dir = remote_dir
@@ -137,7 +138,7 @@ class ChunksConfig:
             f.write(data)
 
     @property
-    def intervals(self) -> List[Tuple[int, int, int, int]]:
+    def intervals(self) -> List[Interval]:
         if self._intervals is None:
             raise RuntimeError("The intervals should be defined.")
         return self._intervals

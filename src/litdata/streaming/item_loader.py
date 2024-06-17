@@ -16,6 +16,7 @@ import os
 from abc import ABC, abstractmethod
 from copy import deepcopy
 from time import sleep
+from collections import namedtuple
 from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
@@ -27,6 +28,8 @@ from litdata.constants import (
 from litdata.streaming.serializers import Serializer
 from litdata.utilities._pytree import PyTree, tree_unflatten
 
+
+Interval = namedtuple('Interval', ['chunk_start', 'roi_start_idx', 'roi_end_idx', 'chunk_end'])
 
 class BaseItemLoader(ABC):
     """The base item loader is responsible to decide how the items within a chunk are loaded."""
@@ -64,8 +67,8 @@ class BaseItemLoader(ABC):
         return {}
 
     @abstractmethod
-    def generate_intervals(self) -> List[Tuple[int, int, int, int]]:
-        """Returns a list of tuples describing the indexes intervals of the chunks. [chunk_start,
+    def generate_intervals(self) -> List[Interval]:
+        """Returns a list of intervals: [chunk_start,
         region_of_interest_start, region_of_interest_end, chunk_end]
 
         region_of_interest: indicates the indexes a chunk our StreamingDataset is allowed to read.
@@ -97,7 +100,7 @@ class PyTreeLoader(BaseItemLoader):
     def __init__(self) -> None:
         self._chunk_filepaths: Dict[str, bool] = {}
 
-    def generate_intervals(self) -> List[Tuple[int, int, int, int]]:
+    def generate_intervals(self) -> List[Interval]:
         intervals = []
         begin = 0
         end = 0
@@ -108,7 +111,7 @@ class PyTreeLoader(BaseItemLoader):
                 start_idx = begin + self.region_of_interest[idx][0]
                 end_idx = begin + self.region_of_interest[idx][1]
 
-            intervals.append((begin, start_idx, end_idx, end))
+            intervals.append(Interval(begin, start_idx, end_idx, end))
             begin += curr_chunk["chunk_size"]
         return intervals
 
@@ -191,7 +194,7 @@ class TokensLoader(BaseItemLoader):
         if all(chunk["dim"] is None for chunk in self._chunks):
             raise ValueError("The provided chunks isn't properly setup.")
 
-    def generate_intervals(self) -> List[Tuple[int, int, int, int]]:
+    def generate_intervals(self) -> List[Interval]:
         intervals = []
         begin = 0
         end = 0
@@ -203,7 +206,7 @@ class TokensLoader(BaseItemLoader):
             if self.region_of_interest is not None:
                 start_idx = begin + self.region_of_interest[idx][0]
                 end_idx = begin + self.region_of_interest[idx][1]
-            intervals.append((begin, start_idx, end_idx, end))
+            intervals.append(Interval(begin, start_idx, end_idx, end))
             begin += num_blocks
         return intervals
 
