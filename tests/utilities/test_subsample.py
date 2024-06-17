@@ -56,15 +56,15 @@ def test_subsample_filenames_and_roi():
         {"filename": "5.txt"},
     ]
 
-    my_roi_list = [(0, 50), (0, 25), (0, 75), (0, 35), (0, 5)]
+    roi_list = [(0, 50), (0, 25), (0, 75), (0, 35), (0, 5)]
 
-    total_chunk_roi_length = sum([roi[1] - roi[0] for roi in my_roi_list])
+    total_chunk_roi_length = sum([roi[1] - roi[0] for roi in roi_list])
 
     subsample = 0.42
 
     target = int(total_chunk_roi_length * subsample)
 
-    _, my_roi_list, _, left_roi = subsample_filenames_and_roi(my_chunks, my_roi_list, target)
+    _, roi_list, _, left_roi = subsample_filenames_and_roi(my_chunks, roi_list, target)
 
-    assert target == sum([roi[1] - roi[0] for roi in my_roi_list])
-    assert total_chunk_roi_length - target == sum([roi[1] - roi[0] for roi in left_roi])
+    assert target == sum([roi[1] - roi[0] for roi in roi_list])
+    assert (total_chunk_roi_length - target) == np.sum(left_roi)

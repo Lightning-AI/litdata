@@ -70,6 +70,8 @@ def target_sum_problem_with_space_optimization(
     if curr_chunk_size <= target:
         prev_row[curr_chunk_size] = (0,)
 
+    print(len(roi_list), target)
+
     for i in range(1, len(roi_list)):
         for j in range(target + 1):
             if prev_row[j] is not None:
@@ -111,63 +113,18 @@ def target_sum_problem_with_space_optimization(
 def subsample_filenames_and_roi(
     chunks: List[Dict[str, Any]], roi_list: List[Tuple[int, int]], target: int
 ) -> Tuple[List[str], List[Tuple[int, int]], List[Dict[str, Any]], List[Tuple[int, int]]]:
-    """Selects a subset of filenames and ROIs that best match the target sum, with the remaining items returned
-    separately.
 
-    Args:
-        chunks: A list of dictionaries, each containing metadata including 'filename'.
-        roi_list: A list of tuples, each containing two integers representing a range.
-        target: An integer representing the target sum.
-
-    Returns:
-        A tuple containing four lists:
-            - List of filenames corresponding to the selected chunks.
-            - List of ROIs corresponding to the selected chunks.
-            - List of remaining chunk dictionaries not included in the target sum.
-            - List of remaining ROIs not included in the target sum.
-
-    """
     assert len(chunks) == len(roi_list)
 
-    complete_roi_lists = target_sum_problem_with_space_optimization(roi_list, target)
+    cumsum_sizes = np.cumsum([r[-1] for r in roi_list])
+    match = np.argmax(cumsum_sizes>target)
+    left_chunk_filenames = [c["filename"] for c in chunks[:match + 1]]
+    left_chunk_roi = [r[-1] for r in roi_list[:match + 1]]
+    left_chunk_roi[-1] = target if match == 0 else (target - cumsum_sizes[match -1])
+    assert np.sum(left_chunk_roi) == target
 
-    # iterate from end, and for the first non-None value,
-    # sum up the complete roi chunks, and then try to accomodate for left
-    i = len(complete_roi_lists) - 1
-    while i >= 0 and complete_roi_lists[i] is None:
-        i -= 1
+    right_chunk_filenames = [c["filename"] for c in chunks[match:]]
+    right_chunk_roi = [r[-1] for r in roi_list[match:]]
+    right_chunk_roi[0] -= left_chunk_roi[-1]
 
-    assert i >= 0
-
-    complete_roi_list = complete_roi_lists[i]
-    assert complete_roi_list is not None
-
-    subsampled_chunk_filenames = [chunks[i]["filename"] for i in complete_roi_list]
-    subsampled_roi = [roi_list[i] for i in complete_roi_list]
-
-    left_chunks = [chunks[i] for i in range(len(chunks)) if i not in complete_roi_list]
-    left_roi = [roi_list[i] for i in range(len(chunks)) if i not in complete_roi_list]
-
-    sum_of_complete_overlap_roi = sum([i[1] - i[0] for i in subsampled_roi])
-    left_item_count = target - sum_of_complete_overlap_roi
-
-    while left_item_count > 0:
-        top_left_chunk = left_chunks.pop(0)
-        top_left_roi = left_roi.pop(0)
-        top_left_roi_item_count = top_left_roi[1] - top_left_roi[0]
-
-        if top_left_roi_item_count <= left_item_count:
-            subsampled_chunk_filenames.append(top_left_chunk["filename"])
-            subsampled_roi.append(top_left_roi)
-            left_item_count -= top_left_roi[1] - top_left_roi[0]
-
-        else:
-            subsampled_chunk_filenames.append(top_left_chunk["filename"])
-            left_chunks.append(
-                top_left_chunk
-            )  # it will also be available for other splits, as not all roi is exhausted
-            subsampled_roi.append((top_left_roi[0], top_left_roi[0] + left_item_count))
-            left_roi.append((top_left_roi[0] + left_item_count, top_left_roi[1]))
-            left_item_count = 0
-
-    return subsampled_chunk_filenames, subsampled_roi, left_chunks, left_roi
+    return left_chunk_filenames, [(0, r) for r in left_chunk_roi], right_chunk_filenames, right_chunk_roi
