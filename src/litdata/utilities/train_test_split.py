@@ -69,14 +69,12 @@ def train_test_split(
 
     dataset_length = sum([my_roi[1] - my_roi[0] for my_roi in dummy_subsampled_roi])
 
+    subsampled_chunks, dummy_subsampled_roi = shuffle_lists_together(
+        subsampled_chunks, dummy_subsampled_roi, np.random.RandomState([seed])
+    )
+
     for i, split in enumerate(splits):
         item_count = int(dataset_length * split)
-
-        random_seed_sampler = np.random.RandomState([seed, i])
-
-        subsampled_chunks, dummy_subsampled_roi = shuffle_lists_together(
-            subsampled_chunks, dummy_subsampled_roi, random_seed_sampler
-        )
 
         curr_chunk_filename, curr_chunk_roi, left_chunks, left_roi = subsample_filenames_and_roi(
             subsampled_chunks, dummy_subsampled_roi, item_count
