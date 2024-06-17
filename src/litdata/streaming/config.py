@@ -244,7 +244,7 @@ class ChunksConfig:
 
 
 def load_subsampled_chunks(subsampled_files: List[str], original_chunks: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    """Loads Chunks based on the basis of subsample provided."""
+    """Loads Chunks based on subsample provided."""
     _subsampled_chunks: List[Dict[str, Any]] = [{}] * len(subsampled_files)
 
     assert len(_subsampled_chunks) == len(subsampled_files)
