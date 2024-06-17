@@ -54,4 +54,9 @@ def subsample_filenames_and_roi(
     right_chunk_roi = [r[-1] for r in roi_list[match:]]
     right_chunk_roi[0] -= left_chunk_roi[-1]
 
-    return left_chunk_filenames, [(0, r) for r in left_chunk_roi], right_chunk_filenames, [(0, r) for r in right_chunk_roi]
+    return (
+        left_chunk_filenames,
+        [(0, r) for r in left_chunk_roi],
+        right_chunk_filenames,
+        [(0, r) for r in right_chunk_roi],
+    )
