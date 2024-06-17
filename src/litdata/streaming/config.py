@@ -245,13 +245,19 @@ class ChunksConfig:
 
 def load_subsampled_chunks(subsampled_files: List[str], original_chunks: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """Loads Chunks based on subsample provided."""
-    _subsampled_chunks: List[Dict[str, Any]] = [{}] * len(subsampled_files)
+    _subsampled_chunks: List[Dict[str, Any]] = [{} for _ in range(len(subsampled_files))]
 
     assert len(_subsampled_chunks) == len(subsampled_files)
 
+    filename_dict = {}
+
+    # Populate the dictionary with filenames and their indices
+    for index, filename in enumerate(subsampled_files):
+        filename_dict[filename] = index
+
     for curr_chunk in original_chunks:
-        if curr_chunk["filename"] in subsampled_files:
-            idx = subsampled_files.index(curr_chunk["filename"])
+        if curr_chunk["filename"] in filename_dict:
+            idx = filename_dict[curr_chunk["filename"]]
             _subsampled_chunks[idx] = curr_chunk
 
     # if any idx of _subsampled_chunks is None, means,
