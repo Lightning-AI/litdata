@@ -15,8 +15,9 @@ from typing import Any, Dict, List, Tuple
 
 import numpy as np
 
-from litdata.utilities.env import _DistributedEnv
 from litdata.streaming.item_loader import Interval
+from litdata.utilities.env import _DistributedEnv
+
 
 def _intra_node_chunk_shuffle(
     distributed_env: _DistributedEnv,
@@ -83,7 +84,6 @@ def _associate_chunks_and_internals_to_ranks(
                 break
 
             if items_in_chunk > items_left_to_assign:
-
                 chunks_per_ranks[rank].append(chunk_index)
 
                 chunk_start, chunk_roi_start, chunk_roi_end, chunk_end = chunk_interval

@@ -1,4 +1,3 @@
-from dataclasses import dataclass
 
 from litdata.streaming.item_loader import Interval
 from litdata.utilities.env import _DistributedEnv
@@ -24,7 +23,6 @@ def test_intra_node_chunk_shuffle():
 
 
 def test_associate_chunks_and_internals_to_ranks():
-
     indexes = [0, 1, 2, 3, 4, 5, 6, 7]
     chunk_intervals = [
         Interval(0, 0, 50, 50),
@@ -36,7 +34,6 @@ def test_associate_chunks_and_internals_to_ranks():
         Interval(0, 0, 50, 50),
         Interval(0, 0, 50, 50),
     ]
-
 
     chunks_per_ranks, intervals_per_ranks = _associate_chunks_and_internals_to_ranks(
         _DistributedEnv(4, 1, 2),
@@ -63,7 +60,6 @@ def test_associate_chunks_and_internals_to_ranks():
         Interval(0, 0, 50, 50),
         Interval(0, 0, 33, 33),
     ]
-
 
     chunks_per_ranks, intervals_per_ranks = _associate_chunks_and_internals_to_ranks(
         _DistributedEnv(4, 1, 2),
@@ -95,7 +91,6 @@ def test_associate_chunks_and_internals_to_ranks():
         Interval(0, 0, 50, 50),
         Interval(0, 0, 1, 1),
     ]
-
 
     chunks_per_ranks, intervals_per_ranks = _associate_chunks_and_internals_to_ranks(
         _DistributedEnv(4, 1, 2),

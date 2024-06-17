@@ -18,10 +18,9 @@ from typing import Any, Dict, List, Optional, Tuple
 from litdata.constants import _INDEX_FILENAME
 from litdata.streaming.compression import _COMPRESSORS, Compressor
 from litdata.streaming.downloader import get_downloader_cls
-from litdata.streaming.item_loader import BaseItemLoader, PyTreeLoader, TokensLoader
+from litdata.streaming.item_loader import BaseItemLoader, Interval, PyTreeLoader, TokensLoader
 from litdata.streaming.sampler import ChunkedIndex
 from litdata.streaming.serializers import Serializer
-from litdata.streaming.item_loader import Interval
 from litdata.utilities._pytree import tree_unflatten, treespec_loads
 
 

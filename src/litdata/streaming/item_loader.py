@@ -14,9 +14,9 @@
 import functools
 import os
 from abc import ABC, abstractmethod
+from collections import namedtuple
 from copy import deepcopy
 from time import sleep
-from collections import namedtuple
 from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
@@ -28,8 +28,8 @@ from litdata.constants import (
 from litdata.streaming.serializers import Serializer
 from litdata.utilities._pytree import PyTree, tree_unflatten
 
+Interval = namedtuple("Interval", ["chunk_start", "roi_start_idx", "roi_end_idx", "chunk_end"])
 
-Interval = namedtuple('Interval', ['chunk_start', 'roi_start_idx', 'roi_end_idx', 'chunk_end'])
 
 class BaseItemLoader(ABC):
     """The base item loader is responsible to decide how the items within a chunk are loaded."""
