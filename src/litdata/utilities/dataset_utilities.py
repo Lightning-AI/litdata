@@ -26,7 +26,7 @@ def subsample_streaming_dataset(
     - Make sure input_dir contains cache path and remote url.
     - Check if `index.json` file exists in cache path.
     - If not, download from remote url. If remote url doesn't contain `index.json` file, raise error.
-    - Once download, load chunks from `index.json` file.
+    - Once downloaded, load chunks from `index.json` file.
     - Once chunks are ready, subsample (chunk filenames, region_of_interest).
 
     """
