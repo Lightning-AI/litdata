@@ -65,7 +65,7 @@ class BaseItemLoader(ABC):
 
     @abstractmethod
     def generate_intervals(self) -> List[Tuple[int, int, int, int]]:
-        """Returns a list of tuple describing the indexes intervals of the chunks. [chunk_start,
+        """Returns a list of tuples describing the indexes intervals of the chunks. [chunk_start,
         region_of_interest_start, region_of_interest_end, chunk_end]
 
         region_of_interest: indicates indexes a chunk our StreamingDataset is allowed to read.
