@@ -68,7 +68,7 @@ class BaseItemLoader(ABC):
         """Returns a list of tuples describing the indexes intervals of the chunks. [chunk_start,
         region_of_interest_start, region_of_interest_end, chunk_end]
 
-        region_of_interest: indicates indexes a chunk our StreamingDataset is allowed to read.
+        region_of_interest: indicates the indexes a chunk our StreamingDataset is allowed to read.
 
         """
         pass
