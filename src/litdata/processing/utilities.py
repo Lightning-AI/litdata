@@ -13,12 +13,14 @@
 
 import io
 import os
+import json
+import shutil
 import urllib
 from contextlib import contextmanager
 from subprocess import DEVNULL, Popen
-from typing import Any, Callable, List, Optional, Tuple, Union
+from typing import Any, Callable, List, Optional, Tuple, Union, Literal
 
-from litdata.constants import _IS_IN_STUDIO, _LIGHTNING_CLOUD_AVAILABLE
+from litdata.constants import _IS_IN_STUDIO, _LIGHTNING_CLOUD_AVAILABLE, _INDEX_FILENAME
 
 if _LIGHTNING_CLOUD_AVAILABLE:
     from lightning_cloud.openapi import (
@@ -177,3 +179,88 @@ def _get_work_dir() -> str:
     assert project_id is not None
     assert work_id is not None
     return f"s3://{bucket_name}/projects/{project_id}/lightningapps/{app_id}/artifacts/{work_id}/content/"
+
+
+def append_index_json(temp_index: Dict[str, Any], output_index: Dict[str, Any]) -> None:
+    "Utility function to append the optimize utility to the output directory."
+    if temp_index["config"]!=output_index['config']:
+        raise ValueError("The config of the optimized dataset is different from the original one.")
+    
+    combined_chunks = temp_index["chunks"] + output_index["chunks"]
+    combined_config = temp_index["config"]
+
+    return {"chunks": combined_chunks, "config": combined_config}
+
+
+def override_index_json(temp_index: Dict[str, Any], output_index: Dict[str, Any]) -> None:
+    "Utility function to override the optimize utility to the output directory."
+    if temp_index["config"]!=output_index['config']:
+        raise ValueError("The config of the optimized dataset is different from the original one.")
+    
+    return {"chunks": temp_index["chunks"], "config": temp_index["config"]}
+
+
+def optimize_mode_utility(temp_dir: str, output_dir: str, mode=Literal["append", "overwrite"]) -> None:
+    "Utility function to override the optimize utility to the output directory."
+
+    if mode not in ["append", "overwrite"]:
+        raise ValueError(f"The provided mode {mode} isn't supported. Use `append`, or `overwrite`.")
+
+    try:
+        if not os.path.exists(os.path.join(output_dir, _INDEX_FILENAME)):
+            # simply move `index.json` from the temp_dir to the output_dir, and delete the temp_dir
+            move_files_between_dirs(temp_dir, output_dir, _INDEX_FILENAME)
+        else:
+            # read index.json from temp_dir and output_dir and merge/override them
+            with open(os.path.join(temp_dir, _INDEX_FILENAME)) as f:
+                with open(os.path.join(output_dir, _INDEX_FILENAME)) as g:
+                    temp_index = json.load(f)
+                    output_index = json.load(g)
+
+                    if mode == "append":
+                        final_index = append_index_json(temp_index, output_index)
+                    else:
+                        final_index = override_index_json(temp_index, output_index)
+                    
+                    # write the final data to a file (final_index.json)
+                    with open(os.path.join(output_dir, _INDEX_FILENAME), "w") as final_index:
+                        json.dump(final_index, final_index)
+
+        # move all the `.bin` files from the temp_dir to the output_dir
+        move_files_between_dirs(temp_dir, output_dir, ".bin")
+    finally:
+        # delete the temp_dir
+        shutil.rmtree(temp_dir)
+
+
+def move_files_between_dirs(source_dir, target_dir, file_extension):
+    # Ensure target_dir exists
+    if not os.path.exists(target_dir):
+        os.makedirs(target_dir)
+    
+    # List all files in the source_dir
+    for filename in os.listdir(source_dir):
+        # Check if the file has the desired extension
+        if filename.endswith(file_extension):
+            # Construct full file path
+            source_file = os.path.join(source_dir, filename)
+            target_file = os.path.join(target_dir, filename)
+            # Move the file
+            shutil.move(source_file, target_file)
+
+def delete_files_with_extension(directory, extension):
+    """Delete all files with the given extension in the specified directory.
+            **Not** in the subdirectories.
+    """
+    # Construct the pattern for the files with the given extension in the specified directory
+    pattern = os.path.join(directory, f'*.{extension}')
+    
+    # Use glob to find all files that match the pattern
+    files_to_delete = glob.glob(pattern)
+    
+    # Iterate over the files and delete them
+    for file_path in files_to_delete:
+        try:
+            os.remove(file_path)
+        except OSError as e:
+            continue

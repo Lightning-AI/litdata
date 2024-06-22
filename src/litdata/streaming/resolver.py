@@ -251,6 +251,13 @@ def _assert_dir_has_index_file(output_dir: Dir) -> None:
         raise ValueError("The provided output_dir isn't a Dir Object.")
 
     if output_dir.url is None:
+        # this is a local path
+        if os.path.exists(output_dir.path) and os.path.exists(os.path.join(output_dir.path, "index.json")):
+            raise RuntimeError(
+                f"The provided output_dir `{output_dir.path}` already contains an optimized immutable datasets."
+                " HINT: Did you consider changing the `output_dir` with your own versioning as a suffix?"
+                " You can also pass the `mode` argument to the `optimize` function to append or overwrite."
+            )
         return
 
     obj = parse.urlparse(output_dir.url)
@@ -283,6 +290,7 @@ def _assert_dir_has_index_file(output_dir: Dir) -> None:
         raise RuntimeError(
             f"The provided output_dir `{output_dir.path}` already contains an optimized immutable datasets."
             " HINT: Did you consider changing the `output_dir` with your own versioning as a suffix?"
+            " You can also pass the `mode` argument to the `optimize` function to append or overwrite."
         )
 
     bucket_name = obj.netloc

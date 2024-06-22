@@ -15,7 +15,7 @@ import json
 import os
 import warnings
 from dataclasses import dataclass
-from time import sleep
+from time import sleep, time
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
@@ -98,7 +98,7 @@ class BinaryWriter:
         self._is_done = False
         self._distributed_env = _DistributedEnv.detect()
         self._follow_tensor_dimension = follow_tensor_dimension
-
+        self._current_time_stamp = int(time())
         self._per_sample_num_bytes = 0
         self._per_sample_num_items = 0
 
@@ -259,8 +259,8 @@ class BinaryWriter:
 
     def get_chunk_filename(self) -> str:
         if self._compression:
-            return f"chunk-{self.rank}-{self._chunk_index}.{self._compression}.bin"
-        return f"chunk-{self.rank}-{self._chunk_index}.bin"
+            return f"chunk-{self.rank}-{self._chunk_index}-{self._current_time_stamp}.{self._compression}.bin"
+        return f"chunk-{self.rank}-{self._chunk_index}-{self._current_time_stamp}.bin"
 
     def write_chunk(self, on_done: bool = False) -> str:
         """Write a chunk to the filesystem."""

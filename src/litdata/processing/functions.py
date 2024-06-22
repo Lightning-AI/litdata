@@ -14,11 +14,12 @@
 import concurrent.futures
 import inspect
 import os
+from time import time
 from datetime import datetime
 from functools import partial
 from pathlib import Path
 from types import FunctionType
-from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union, Literal
 from urllib import parse
 
 import torch
@@ -26,7 +27,7 @@ import torch
 from litdata.constants import _IS_IN_STUDIO
 from litdata.processing.data_processor import DataChunkRecipe, DataProcessor, DataTransformRecipe
 from litdata.processing.readers import BaseReader
-from litdata.processing.utilities import optimize_dns_context
+from litdata.processing.utilities import optimize_dns_context, optimize_mode_utility
 from litdata.streaming.dataloader import StreamingDataLoader
 from litdata.streaming.resolver import (
     Dir,
@@ -292,6 +293,7 @@ def optimize(
     reorder_files: bool = True,
     reader: Optional[BaseReader] = None,
     batch_size: Optional[int] = None,
+    mode: Optional[Literal["append", "overwrite"]] = None,
 ) -> None:
     """This function converts a dataset into chunks possibly in a distributed way.
 
@@ -315,8 +317,30 @@ def optimize(
         reorder_files: By default, reorders the files by file size to distribute work equally among all workers.
             Set this to ``False`` if the order in which samples are processed should be preserved.
         batch_size: Group the inputs into batches of batch_size length.
+        mode: The mode to use when writing the data. Either ``append``, ``overwrite``, or ``None` (default)`.
+            If ``append``, the data will be appended to the optimized output file.
+            If ``overwrite``, the data will be overwritten.
+            If ``None``, it will raise an error if the output directory already contains `index.json` file.
 
     """
+    if mode is not None and mode not in ["append", "overwrite"]:
+        raise ValueError(f"The provided mode {mode} isn't supported. Use `append`, or `overwrite`, or None.")  
+
+    if mode in ["append", "overwrite"]:
+        # recursively call optimize with the same arguments but output_dir/temp_dir
+        # once all the files are optimized and written in dummy_dir, we can move them to temp_dir
+        # and merge/ replace the index.json file depending on the mode
+        # and, finally, delete the dummy_dir
+        current_time_stamp = int(time())
+        temp_dir = os.path.join(output_dir, str(current_time_stamp))
+        optimize(fn, inputs, temp_dir, input_dir, weights,
+            chunk_size, chunk_bytes, compression, num_workers,
+            fast_dev_run, num_nodes, machine, num_downloaders,
+            num_uploaders, reorder_files, reader, batch_size, mode=None) # mode=None `important`
+
+        optimize_mode_utility(temp_dir, output_dir, mode)``
+        return None
+
     if isinstance(inputs, StreamingDataLoader) and batch_size is not None:
         raise ValueError("When providing a streaming dataloader, pass the batch_size to the dataloader directly.")
 
@@ -353,7 +377,8 @@ def optimize(
                 " HINT: You can either use `/teamspace/s3_connections/...` or `/teamspace/datasets/...`."
             )
 
-        _assert_dir_has_index_file(_output_dir)
+        if mode is None:
+            _assert_dir_has_index_file(_output_dir)
 
         if not isinstance(inputs, StreamingDataLoader):
             resolved_dir = _resolve_dir(input_dir or _get_input_dir(inputs))
