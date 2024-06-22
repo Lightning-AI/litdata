@@ -1,7 +1,8 @@
 import os
 import sys
-from unittest import mock
 from typing import Tuple
+from unittest import mock
+
 import pytest
 from litdata import walk
 from litdata.processing.functions import _get_input_dir, _resolve_dir, optimize
@@ -46,22 +47,21 @@ def test_get_input_dir_with_s3_path():
     assert input_dir.url == "s3://my_bucket/my_folder"
 
 
-
 def test_optimize_function_modes(tmpdir):
     output_dir = tmpdir.mkdir("output")
     output_dir = str(output_dir)
 
     def compress(index: int) -> Tuple[int, int]:
-        return (index, index ** 2)
-    
-    def different_compress(index: int)->  Tuple[int, int, int]:
-        return (index, index ** 2, index**3)
+        return (index, index**2)
+
+    def different_compress(index: int) -> Tuple[int, int, int]:
+        return (index, index**2, index**3)
 
     # none mode
     optimize(
         fn=compress,
         inputs=list(range(1, 101)),
-        output_dir = output_dir,
+        output_dir=output_dir,
         chunk_bytes="64MB",
     )
 
@@ -69,11 +69,10 @@ def test_optimize_function_modes(tmpdir):
     assert len(my_dataset) == 100
     assert my_dataset[:] == [(i, i**2) for i in range(1, 101)]
 
-
     # append mode
     optimize(
         fn=compress,
-        mode = "append",
+        mode="append",
         inputs=list(range(101, 201)),
         output_dir=output_dir,
         chunk_bytes="64MB",
@@ -83,11 +82,10 @@ def test_optimize_function_modes(tmpdir):
     assert len(my_dataset) == 200
     assert my_dataset[:] == [(i, i**2) for i in range(1, 201)]
 
-
     # overwrite mode
     optimize(
         fn=compress,
-        mode = "overwrite",
+        mode="overwrite",
         inputs=list(range(201, 351)),
         output_dir=output_dir,
         chunk_bytes="64MB",
@@ -97,16 +95,13 @@ def test_optimize_function_modes(tmpdir):
     assert len(my_dataset) == 150
     assert my_dataset[:] == [(i, i**2) for i in range(201, 351)]
 
-
     # failing case
     with pytest.raises(ValueError, match="The config of the optimized dataset is different from the original one."):
         # overwrite mode
         optimize(
             fn=different_compress,
-            mode = "overwrite",
+            mode="overwrite",
             inputs=list(range(201, 351)),
             output_dir=output_dir,
             chunk_bytes="64MB",
         )
-
-

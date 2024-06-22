@@ -207,7 +207,7 @@ def test_cache_with_auto_wrapping(tmpdir):
     for batch in dataloader:
         assert isinstance(batch, torch.Tensor)
 
-    chunks = ["chunk-0-0", "chunk-0-1","index.json"]
+    chunks = ["chunk-0-0", "chunk-0-1", "index.json"]
 
     for idx, cache_chunk in enumerate(sorted(os.listdir(os.path.join(tmpdir, "cache_1")))):
         if cache_chunk == "index.json":
@@ -261,11 +261,11 @@ def test_create_undersized_and_oversized_chunk(tmp_path):
 
     chunks = index["chunks"]
     assert chunks[0]["chunk_size"] == 1
-    assert chunks[0]["filename"].startswith("chunk-0-0") and chunks[0]["filename"].endswith('.bin') 
+    assert chunks[0]["filename"].startswith("chunk-0-0") and chunks[0]["filename"].endswith(".bin")
     assert chunks[1]["chunk_size"] == 1
-    assert chunks[1]["filename"].startswith("chunk-0-1") and chunks[1]["filename"].endswith('.bin')
+    assert chunks[1]["filename"].startswith("chunk-0-1") and chunks[1]["filename"].endswith(".bin")
     assert chunks[2]["chunk_size"] == 2
-    assert chunks[2]["filename"].startswith("chunk-0-2") and chunks[2]["filename"].endswith('.bin')
+    assert chunks[2]["filename"].startswith("chunk-0-2") and chunks[2]["filename"].endswith(".bin")
 
 
 class CustomData:

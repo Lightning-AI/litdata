@@ -14,12 +14,12 @@
 import concurrent.futures
 import inspect
 import os
-from time import time
 from datetime import datetime
 from functools import partial
 from pathlib import Path
+from time import time
 from types import FunctionType
-from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union, Literal
+from typing import Any, Callable, Dict, List, Literal, Optional, Sequence, Tuple, Union
 from urllib import parse
 
 import torch
@@ -324,7 +324,7 @@ def optimize(
 
     """
     if mode is not None and mode not in ["append", "overwrite"]:
-        raise ValueError(f"The provided mode {mode} isn't supported. Use `append`, or `overwrite`, or None.")  
+        raise ValueError(f"The provided mode {mode} isn't supported. Use `append`, or `overwrite`, or None.")
 
     if mode in ["append", "overwrite"]:
         # recursively call optimize with the same arguments but output_dir/temp_dir
@@ -333,10 +333,26 @@ def optimize(
         # and, finally, delete the dummy_dir
         current_time_stamp = int(time())
         temp_dir = os.path.join(output_dir, str(current_time_stamp))
-        optimize(fn, inputs, temp_dir, input_dir, weights,
-            chunk_size, chunk_bytes, compression, num_workers,
-            fast_dev_run, num_nodes, machine, num_downloaders,
-            num_uploaders, reorder_files, reader, batch_size, mode=None) # mode=None `important`
+        optimize(
+            fn,
+            inputs,
+            temp_dir,
+            input_dir,
+            weights,
+            chunk_size,
+            chunk_bytes,
+            compression,
+            num_workers,
+            fast_dev_run,
+            num_nodes,
+            machine,
+            num_downloaders,
+            num_uploaders,
+            reorder_files,
+            reader,
+            batch_size,
+            mode=None,
+        )  # mode=None `important`
 
         optimize_mode_utility(temp_dir, output_dir, mode)
         return None
