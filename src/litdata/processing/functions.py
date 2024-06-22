@@ -338,7 +338,7 @@ def optimize(
             fast_dev_run, num_nodes, machine, num_downloaders,
             num_uploaders, reorder_files, reader, batch_size, mode=None) # mode=None `important`
 
-        optimize_mode_utility(temp_dir, output_dir, mode)``
+        optimize_mode_utility(temp_dir, output_dir, mode)
         return None
 
     if isinstance(inputs, StreamingDataLoader) and batch_size is not None:

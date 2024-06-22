@@ -13,12 +13,13 @@
 
 import io
 import os
+import glob
 import json
 import shutil
 import urllib
 from contextlib import contextmanager
 from subprocess import DEVNULL, Popen
-from typing import Any, Callable, List, Optional, Tuple, Union, Literal
+from typing import Any, Callable, List, Optional, Tuple, Union, Literal, Dict, TextIO
 
 from litdata.constants import _IS_IN_STUDIO, _LIGHTNING_CLOUD_AVAILABLE, _INDEX_FILENAME
 
@@ -181,27 +182,27 @@ def _get_work_dir() -> str:
     return f"s3://{bucket_name}/projects/{project_id}/lightningapps/{app_id}/artifacts/{work_id}/content/"
 
 
-def append_index_json(temp_index: Dict[str, Any], output_index: Dict[str, Any]) -> None:
+def append_index_json(temp_index: Dict[str, Any], output_index: Dict[str, Any]) -> Dict[str, Any]:
     "Utility function to append the optimize utility to the output directory."
     if temp_index["config"]!=output_index['config']:
         raise ValueError("The config of the optimized dataset is different from the original one.")
     
-    combined_chunks = temp_index["chunks"] + output_index["chunks"]
+    combined_chunks = output_index["chunks"] + temp_index["chunks"]
     combined_config = temp_index["config"]
 
     return {"chunks": combined_chunks, "config": combined_config}
 
 
-def override_index_json(temp_index: Dict[str, Any], output_index: Dict[str, Any]) -> None:
-    "Utility function to override the optimize utility to the output directory."
+def overwrite_index_json(temp_index: Dict[str, Any], output_index: Dict[str, Any]) -> Dict[str, Any]:
+    "Utility function to overwrite the optimize utility to the output directory."
     if temp_index["config"]!=output_index['config']:
         raise ValueError("The config of the optimized dataset is different from the original one.")
     
     return {"chunks": temp_index["chunks"], "config": temp_index["config"]}
 
 
-def optimize_mode_utility(temp_dir: str, output_dir: str, mode=Literal["append", "overwrite"]) -> None:
-    "Utility function to override the optimize utility to the output directory."
+def optimize_mode_utility(temp_dir: str, output_dir: str, mode:Literal["append", "overwrite"]) -> None:
+    "Utility function to append/overwrite new optimized data to the output directory."
 
     if mode not in ["append", "overwrite"]:
         raise ValueError(f"The provided mode {mode} isn't supported. Use `append`, or `overwrite`.")
@@ -211,7 +212,7 @@ def optimize_mode_utility(temp_dir: str, output_dir: str, mode=Literal["append",
             # simply move `index.json` from the temp_dir to the output_dir, and delete the temp_dir
             move_files_between_dirs(temp_dir, output_dir, _INDEX_FILENAME)
         else:
-            # read index.json from temp_dir and output_dir and merge/override them
+            # read index.json from temp_dir and output_dir and merge/overwrite them
             with open(os.path.join(temp_dir, _INDEX_FILENAME)) as f:
                 with open(os.path.join(output_dir, _INDEX_FILENAME)) as g:
                     temp_index = json.load(f)
@@ -220,11 +221,11 @@ def optimize_mode_utility(temp_dir: str, output_dir: str, mode=Literal["append",
                     if mode == "append":
                         final_index = append_index_json(temp_index, output_index)
                     else:
-                        final_index = override_index_json(temp_index, output_index)
+                        final_index = overwrite_index_json(temp_index, output_index)
                     
-                    # write the final data to a file (final_index.json)
-                    with open(os.path.join(output_dir, _INDEX_FILENAME), "w") as final_index:
-                        json.dump(final_index, final_index)
+            # write the final data to a file (final_index.json)
+            with open(os.path.join(output_dir, _INDEX_FILENAME), "w") as final_index_file:
+                json.dump(final_index, final_index_file)
 
         # move all the `.bin` files from the temp_dir to the output_dir
         move_files_between_dirs(temp_dir, output_dir, ".bin")
@@ -233,7 +234,7 @@ def optimize_mode_utility(temp_dir: str, output_dir: str, mode=Literal["append",
         shutil.rmtree(temp_dir)
 
 
-def move_files_between_dirs(source_dir, target_dir, file_extension):
+def move_files_between_dirs(source_dir: str, target_dir: str, file_extension: str) -> None:
     # Ensure target_dir exists
     if not os.path.exists(target_dir):
         os.makedirs(target_dir)
@@ -248,7 +249,7 @@ def move_files_between_dirs(source_dir, target_dir, file_extension):
             # Move the file
             shutil.move(source_file, target_file)
 
-def delete_files_with_extension(directory, extension):
+def delete_files_with_extension(directory: str, extension: str) -> None:
     """Delete all files with the given extension in the specified directory.
             **Not** in the subdirectories.
     """

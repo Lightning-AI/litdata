@@ -404,42 +404,50 @@ def test_data_processsor(fast_dev_run, delete_cached_files, tmpdir, monkeypatch)
     data_processor.run(CustomDataChunkRecipe(chunk_size=2))
 
     fast_dev_run_enabled_chunks = [
-        "chunk-0-0.bin",
-        "chunk-0-1.bin",
-        "chunk-0-2.bin",
-        "chunk-0-3.bin",
-        "chunk-0-4.bin",
-        "chunk-1-0.bin",
-        "chunk-1-1.bin",
-        "chunk-1-2.bin",
-        "chunk-1-3.bin",
-        "chunk-1-4.bin",
+        "chunk-0-0",
+        "chunk-0-1",
+        "chunk-0-2",
+        "chunk-0-3",
+        "chunk-0-4",
+        "chunk-1-0",
+        "chunk-1-1",
+        "chunk-1-2",
+        "chunk-1-3",
+        "chunk-1-4",
         "index.json",
     ]
 
     fast_dev_run_disabled_chunks = [
-        "chunk-0-0.bin",
-        "chunk-0-1.bin",
-        "chunk-0-2.bin",
-        "chunk-0-3.bin",
-        "chunk-0-4.bin",
-        "chunk-0-5.bin",
-        "chunk-0-6.bin",
-        "chunk-0-7.bin",
-        "chunk-1-0.bin",
-        "chunk-1-1.bin",
-        "chunk-1-2.bin",
-        "chunk-1-3.bin",
-        "chunk-1-4.bin",
-        "chunk-1-5.bin",
-        "chunk-1-6.bin",
-        "chunk-1-7.bin",
+        "chunk-0-0",
+        "chunk-0-1",
+        "chunk-0-2",
+        "chunk-0-3",
+        "chunk-0-4",
+        "chunk-0-5",
+        "chunk-0-6",
+        "chunk-0-7",
+        "chunk-1-0",
+        "chunk-1-1",
+        "chunk-1-2",
+        "chunk-1-3",
+        "chunk-1-4",
+        "chunk-1-5",
+        "chunk-1-6",
+        "chunk-1-7",
         "index.json",
     ]
 
     chunks = fast_dev_run_enabled_chunks if fast_dev_run == 10 else fast_dev_run_disabled_chunks
 
-    assert sorted(os.listdir(cache_dir)) == chunks
+    # assert if the chunks follow the same starting name and ending name
+    # for example, if the actual name is "chunk-0-0-3189.bin", then the expected name is "chunk-0-0.bin"
+    # this is due the timestamp in the filename
+    for idx, cache_chunk in enumerate(sorted(os.listdir(cache_dir))):
+        if cache_chunk == "index.json":
+            assert cache_chunk == chunks[idx]
+            continue
+        assert cache_chunk.startswith(chunks[idx])
+        assert cache_chunk.endswith(".bin")
 
     files = []
     for _, _, filenames in os.walk(os.path.join(cache_dir, "data")):
@@ -711,7 +719,14 @@ def test_data_processing_optimize(monkeypatch, tmpdir):
 
     optimize(optimize_fn, inputs, output_dir=output_dir, chunk_size=2, num_workers=1)
 
-    assert sorted(os.listdir(output_dir)) == ["chunk-0-0.bin", "chunk-0-1.bin", "chunk-0-2.bin", "index.json"]
+    chunks = ["chunk-0-0", "chunk-0-1", "chunk-0-2", "index.json"]
+
+    for idx, cache_chunk in enumerate(sorted(os.listdir(output_dir))):
+        if cache_chunk == "index.json":
+            assert cache_chunk == chunks[idx]
+            continue
+        assert cache_chunk.startswith(chunks[idx])
+        assert cache_chunk.endswith(".bin")
 
     cache = Cache(output_dir, chunk_size=1)
     assert len(cache) == 5
@@ -734,7 +749,14 @@ def test_data_processing_optimize_yield(monkeypatch, tmpdir):
 
     optimize(partial(generate_data, shift=2), [0, 1], output_dir=output_dir, chunk_size=2, num_workers=1)
 
-    assert sorted(os.listdir(output_dir)) == ["chunk-0-0.bin", "chunk-0-1.bin", "chunk-0-2.bin", "index.json"]
+    chunks = ["chunk-0-0", "chunk-0-1", "chunk-0-2", "index.json"]
+
+    for idx, cache_chunk in enumerate(sorted(os.listdir(output_dir))):
+        if cache_chunk == "index.json":
+            assert cache_chunk == chunks[idx]
+            continue
+        assert cache_chunk.startswith(chunks[idx])
+        assert cache_chunk.endswith(".bin")
 
 
 class Optimize:
@@ -773,7 +795,14 @@ def test_data_processing_optimize_class(monkeypatch, tmpdir):
 
     optimize(Optimize(), inputs, output_dir=output_dir, chunk_size=2, num_workers=1)
 
-    assert sorted(os.listdir(output_dir)) == ["chunk-0-0.bin", "chunk-0-1.bin", "chunk-0-2.bin", "index.json"]
+    chunks = ["chunk-0-0", "chunk-0-1", "chunk-0-2", "index.json"]
+
+    for idx, cache_chunk in enumerate(sorted(os.listdir(output_dir))):
+        if cache_chunk == "index.json":
+            assert cache_chunk == chunks[idx]
+            continue
+        assert cache_chunk.startswith(chunks[idx])
+        assert cache_chunk.endswith(".bin")
 
     cache = Cache(output_dir, chunk_size=1)
     assert len(cache) == 5
@@ -816,7 +845,14 @@ def test_data_processing_optimize_class_yield(monkeypatch, tmpdir):
 
     optimize(OptimizeYield(), inputs, output_dir=output_dir, chunk_size=2, num_workers=1)
 
-    assert sorted(os.listdir(output_dir)) == ["chunk-0-0.bin", "chunk-0-1.bin", "chunk-0-2.bin", "index.json"]
+    chunks = ["chunk-0-0", "chunk-0-1", "chunk-0-2", "index.json"]
+
+    for idx, cache_chunk in enumerate(sorted(os.listdir(output_dir))):
+        if cache_chunk == "index.json":
+            assert cache_chunk == chunks[idx]
+            continue
+        assert cache_chunk.startswith(chunks[idx])
+        assert cache_chunk.endswith(".bin")
 
     cache = Cache(output_dir, chunk_size=1)
     assert len(cache) == 5

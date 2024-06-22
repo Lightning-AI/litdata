@@ -1,10 +1,11 @@
 import os
 import sys
 from unittest import mock
-
+from typing import Tuple
 import pytest
 from litdata import walk
-from litdata.processing.functions import _get_input_dir, _resolve_dir
+from litdata.processing.functions import _get_input_dir, _resolve_dir, optimize
+from litdata.streaming.dataset import StreamingDataset
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="currently not supported for windows.")
@@ -43,3 +44,69 @@ def test_get_input_dir_with_s3_path():
     input_dir = _resolve_dir(input_dir)
     assert not input_dir.path
     assert input_dir.url == "s3://my_bucket/my_folder"
+
+
+
+def test_optimize_function_modes(tmpdir):
+    output_dir = tmpdir.mkdir("output")
+    output_dir = str(output_dir)
+
+    def compress(index: int) -> Tuple[int, int]:
+        return (index, index ** 2)
+    
+    def different_compress(index: int)->  Tuple[int, int, int]:
+        return (index, index ** 2, index**3)
+
+    # none mode
+    optimize(
+        fn=compress,
+        inputs=list(range(1, 101)),
+        output_dir = output_dir,
+        chunk_bytes="64MB",
+    )
+
+    my_dataset = StreamingDataset(output_dir)
+    assert len(my_dataset) == 100
+    assert my_dataset[:] == [(i, i**2) for i in range(1, 101)]
+
+
+    # append mode
+    optimize(
+        fn=compress,
+        mode = "append",
+        inputs=list(range(101, 201)),
+        output_dir=output_dir,
+        chunk_bytes="64MB",
+    )
+
+    my_dataset = StreamingDataset(output_dir)
+    assert len(my_dataset) == 200
+    assert my_dataset[:] == [(i, i**2) for i in range(1, 201)]
+
+
+    # overwrite mode
+    optimize(
+        fn=compress,
+        mode = "overwrite",
+        inputs=list(range(201, 351)),
+        output_dir=output_dir,
+        chunk_bytes="64MB",
+    )
+
+    my_dataset = StreamingDataset(output_dir)
+    assert len(my_dataset) == 150
+    assert my_dataset[:] == [(i, i**2) for i in range(201, 351)]
+
+
+    # failing case
+    with pytest.raises(ValueError, match="The config of the optimized dataset is different from the original one."):
+        # overwrite mode
+        optimize(
+            fn=different_compress,
+            mode = "overwrite",
+            inputs=list(range(201, 351)),
+            output_dir=output_dir,
+            chunk_bytes="64MB",
+        )
+
+

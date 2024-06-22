@@ -206,11 +206,15 @@ def test_cache_with_auto_wrapping(tmpdir):
     dataloader = CacheDataLoader(dataset, cache_dir=os.path.join(tmpdir, "cache_1"), chunk_bytes=2 << 12)
     for batch in dataloader:
         assert isinstance(batch, torch.Tensor)
-    assert sorted(os.listdir(os.path.join(tmpdir, "cache_1"))) == [
-        "chunk-0-0.bin",
-        "chunk-0-1.bin",
-        "index.json",
-    ]
+
+    chunks = ["chunk-0-0", "chunk-0-1","index.json"]
+
+    for idx, cache_chunk in enumerate(sorted(os.listdir(os.path.join(tmpdir, "cache_1")))):
+        if cache_chunk == "index.json":
+            assert cache_chunk == chunks[idx]
+            continue
+        assert cache_chunk.startswith(chunks[idx])
+        assert cache_chunk.endswith(".bin")
     # Your dataset is optimised for the cloud
 
     class RandomDatasetAtRuntime(Dataset):
@@ -257,11 +261,11 @@ def test_create_undersized_and_oversized_chunk(tmp_path):
 
     chunks = index["chunks"]
     assert chunks[0]["chunk_size"] == 1
-    assert chunks[0]["filename"] == "chunk-0-0.bin"
+    assert chunks[0]["filename"].startswith("chunk-0-0") and chunks[0]["filename"].endswith('.bin') 
     assert chunks[1]["chunk_size"] == 1
-    assert chunks[1]["filename"] == "chunk-0-1.bin"
+    assert chunks[1]["filename"].startswith("chunk-0-1") and chunks[1]["filename"].endswith('.bin')
     assert chunks[2]["chunk_size"] == 2
-    assert chunks[2]["filename"] == "chunk-0-2.bin"
+    assert chunks[2]["filename"].startswith("chunk-0-2") and chunks[2]["filename"].endswith('.bin')
 
 
 class CustomData:
