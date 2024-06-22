@@ -213,8 +213,7 @@ def optimize_mode_utility(temp_dir: str, output_dir: str, mode: Literal["append"
             move_files_between_dirs(temp_dir, output_dir, _INDEX_FILENAME)
         else:
             # read index.json from temp_dir and output_dir and merge/overwrite them
-            with open(os.path.join(temp_dir, _INDEX_FILENAME)) as f:
-                with open(os.path.join(output_dir, _INDEX_FILENAME)) as g:
+            with open(os.path.join(temp_dir, _INDEX_FILENAME)) as f, open(os.path.join(output_dir, _INDEX_FILENAME)) as g:
                     temp_index = json.load(f)
                     output_index = json.load(g)
 

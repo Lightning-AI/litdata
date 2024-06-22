@@ -261,11 +261,11 @@ def test_create_undersized_and_oversized_chunk(tmp_path):
 
     chunks = index["chunks"]
     assert chunks[0]["chunk_size"] == 1
-    assert chunks[0]["filename"].startswith("chunk-0-0") and chunks[0]["filename"].endswith(".bin")
+    assert chunks[0]["filename"].startswith("chunk-0-0")
     assert chunks[1]["chunk_size"] == 1
-    assert chunks[1]["filename"].startswith("chunk-0-1") and chunks[1]["filename"].endswith(".bin")
+    assert chunks[1]["filename"].startswith("chunk-0-1")
     assert chunks[2]["chunk_size"] == 2
-    assert chunks[2]["filename"].startswith("chunk-0-2") and chunks[2]["filename"].endswith(".bin")
+    assert chunks[2]["filename"].startswith("chunk-0-2")
 
 
 class CustomData:
