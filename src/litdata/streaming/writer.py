@@ -98,7 +98,7 @@ class BinaryWriter:
         self._is_done = False
         self._distributed_env = _DistributedEnv.detect()
         self._follow_tensor_dimension = follow_tensor_dimension
-        self._current_time_stamp = int(time())
+        self._current_time_stamp = time()
         self._per_sample_num_bytes = 0
         self._per_sample_num_items = 0
 
