@@ -15,7 +15,6 @@ import datetime
 import os
 import re
 import sys
-import shutil
 from dataclasses import dataclass
 from pathlib import Path
 from time import sleep

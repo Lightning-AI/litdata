@@ -24,14 +24,14 @@ from urllib import parse
 import torch
 
 from litdata.constants import _IS_IN_STUDIO
-from litdata.processing.readers import BaseReader
 from litdata.processing.data_processor import DataChunkRecipe, DataProcessor, DataTransformRecipe
-from litdata.streaming.dataloader import StreamingDataLoader
+from litdata.processing.readers import BaseReader
 from litdata.processing.utilities import (
+    extract_rank_and_index_from_filename,
     optimize_dns_context,
     read_index_file_content,
-    extract_rank_and_index_from_filename
 )
+from litdata.streaming.dataloader import StreamingDataLoader
 from litdata.streaming.resolver import (
     Dir,
     _assert_dir_has_index_file,
@@ -375,14 +375,11 @@ def optimize(
 
         if num_workers == 0:
             num_workers = 1
-        
+
         num_workers = num_workers or _get_default_num_workers()
-        
-        writer_starting_index_dict = {
-            rank: 0
-            for rank in range(num_workers)
-        }
-        
+
+        writer_starting_index_dict = {rank: 0 for rank in range(num_workers)}
+
         if mode == "append":
             index_file_content = read_index_file_content(_output_dir)
 
@@ -391,8 +388,7 @@ def optimize(
                     rank, index = extract_rank_and_index_from_filename(chunk["filename"])
 
                     if writer_starting_index_dict[rank] <= index:
-                        writer_starting_index_dict[rank] = index + 1 # +1 because we want to start from the next index
-
+                        writer_starting_index_dict[rank] = index + 1  # +1 because we want to start from the next index
 
         data_processor = DataProcessor(
             input_dir=resolved_dir,
@@ -403,7 +399,7 @@ def optimize(
             num_uploaders=num_uploaders,
             reorder_files=reorder_files,
             reader=reader,
-            writer_starting_index_dict=writer_starting_index_dict
+            writer_starting_index_dict=writer_starting_index_dict,
         )
 
         with optimize_dns_context(True):

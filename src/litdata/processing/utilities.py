@@ -12,18 +12,17 @@
 # limitations under the License.
 
 import io
-import os
 import json
-import urllib
+import os
 import tempfile
-from urllib import parse
+import urllib
 from contextlib import contextmanager
 from subprocess import DEVNULL, Popen
-from typing import Any, Callable, List, Optional, Tuple, Union, Dict
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from urllib import parse
 
-from litdata.constants import _IS_IN_STUDIO, _LIGHTNING_CLOUD_AVAILABLE
+from litdata.constants import _INDEX_FILENAME, _IS_IN_STUDIO, _LIGHTNING_CLOUD_AVAILABLE
 from litdata.streaming.cache import Dir
-from litdata.constants import _INDEX_FILENAME
 
 if _LIGHTNING_CLOUD_AVAILABLE:
     from lightning_cloud.openapi import (
@@ -39,7 +38,6 @@ try:
     _BOTO3_AVAILABLE = True
 except Exception:
     _BOTO3_AVAILABLE = False
-
 
 
 def _create_dataset(
@@ -204,9 +202,9 @@ def read_index_file_content(output_dir: Dir) -> Optional[Dict[str, Any]]:
         index_file_path = os.path.join(output_dir.path, _INDEX_FILENAME)
         if not os.path.exists(index_file_path):
             return None
-        with open(index_file_path, "r") as f:
+        with open(index_file_path) as f:
             return json.load(f)
-    
+
     else:
         # download the index file from s3, and read it
         obj = parse.urlparse(output_dir.url)
@@ -221,11 +219,11 @@ def read_index_file_content(output_dir: Dir) -> Optional[Dict[str, Any]]:
         # Check the index file exists
         try:
             # Create a temporary file
-            with tempfile.NamedTemporaryFile(suffix='.json', delete=False) as temp_file:
+            with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as temp_file:
                 temp_file_name = temp_file.name
                 s3.download_file(obj.netloc, os.path.join(prefix, _INDEX_FILENAME), temp_file_name)
             # Read data from the temporary file
-            with open(temp_file_name, 'r') as temp_file:
+            with open(temp_file_name) as temp_file:
                 data = json.load(temp_file)
             # Delete the temporary file
             os.remove(temp_file_name)
@@ -236,13 +234,15 @@ def read_index_file_content(output_dir: Dir) -> Optional[Dict[str, Any]]:
 
 def extract_rank_and_index_from_filename(chunk_filename: str) -> Tuple[int, int]:
     """Extract the rank and index from the filename.
-    
-    It is assumed that the filename is in the format `chunk-<rank>-<index>.bin` or `chunk-<rank>-<index>.compressionAlgorithm.bin`.
+
+    It is assumed that the filename is in the format `chunk-<rank>-<index>.bin` or
+    `chunk-<rank>-<index>.compressionAlgorithm.bin`.
+
     """
     # remove chunk and bin
-    chunk_filename = chunk_filename[6:-4].split("-") # (0, 0) or (0, 0.compressionAlgorithm)
+    chunk_filename = chunk_filename[6:-4].split("-")  # (0, 0) or (0, 0.compressionAlgorithm)
     assert len(chunk_filename) == 2
-    
+
     # get the rank and index
     rank = int(chunk_filename[0])
     index = int(chunk_filename[1].split(".")[0])

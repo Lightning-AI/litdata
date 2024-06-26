@@ -2,9 +2,8 @@ from unittest.mock import MagicMock
 
 from litdata.processing import utilities as utilities_module
 from litdata.processing.utilities import (
-    optimize_dns_context,
     extract_rank_and_index_from_filename,
-    read_index_file_content,
+    optimize_dns_context,
 )
 
 

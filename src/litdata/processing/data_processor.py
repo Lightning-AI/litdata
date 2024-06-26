@@ -42,6 +42,7 @@ from litdata.constants import (
 )
 from litdata.imports import RequirementCache
 from litdata.processing.readers import BaseReader, StreamingDataLoaderReader
+from litdata.processing.utilities import _create_dataset
 from litdata.streaming import Cache
 from litdata.streaming.cache import Dir
 from litdata.streaming.client import S3Client
@@ -50,7 +51,6 @@ from litdata.streaming.resolver import _resolve_dir
 from litdata.utilities._pytree import tree_flatten, tree_unflatten, treespec_loads
 from litdata.utilities.broadcast import broadcast_object
 from litdata.utilities.packing import _pack_greedily
-from litdata.processing.utilities import _create_dataset
 
 _TQDM_AVAILABLE = RequirementCache("tqdm")
 
@@ -389,7 +389,7 @@ class BaseWorker:
         num_uploaders: int,
         remove: bool,
         reader: Optional[BaseReader] = None,
-        writer_starting_chunk_index: int = 0
+        writer_starting_chunk_index: int = 0,
     ) -> None:
         """The BaseWorker is responsible to process the user data."""
         self.worker_index = worker_index
@@ -1068,7 +1068,7 @@ class DataProcessor:
                 self.num_uploaders,
                 self.delete_cached_files,
                 self.reader,
-                self.writer_starting_index_dict[worker_idx]
+                self.writer_starting_index_dict[worker_idx],
             )
             worker.start()
             workers.append(worker)
