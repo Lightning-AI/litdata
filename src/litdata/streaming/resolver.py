@@ -14,12 +14,12 @@
 import datetime
 import os
 import re
-import sys
 import shutil
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 from time import sleep
-from typing import Any, Optional, Union, Literal
+from typing import Any, Literal, Optional, Union
 from urllib import parse
 
 from litdata.constants import _LIGHTNING_CLOUD_AVAILABLE
@@ -250,7 +250,7 @@ def _assert_dir_is_empty(output_dir: Dir, append: bool = False, overwrite: bool 
 def _assert_dir_has_index_file(output_dir: Dir, mode: Optional[Literal["append", "overwrite"]] = None) -> None:
     if mode is not None and mode not in ["append", "overwrite"]:
         raise ValueError(f"The provided `mode` should be either `append` or `overwrite`. Found {mode}.")
-    
+
     if mode == "append":
         # in append mode, we neither need to delete the index file nor the chunks
         return

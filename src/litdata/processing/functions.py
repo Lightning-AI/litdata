@@ -18,7 +18,7 @@ from datetime import datetime
 from functools import partial
 from pathlib import Path
 from types import FunctionType
-from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union, Literal
+from typing import Any, Callable, Dict, List, Literal, Optional, Sequence, Tuple, Union
 from urllib import parse
 
 import torch
