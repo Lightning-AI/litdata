@@ -279,7 +279,9 @@ def _assert_dir_has_index_file(output_dir: Dir, mode: Optional[Literal["append",
                     "Please use a different output_dir."
                 )
 
-            shutil.rmtree(output_dir.path)
+            # delete all the files
+            for file in os.listdir(output_dir.path):
+                os.remove(os.path.join(output_dir.path, file))
         return
 
     obj = parse.urlparse(output_dir.url)
