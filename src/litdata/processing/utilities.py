@@ -236,7 +236,7 @@ def delete_index_file(output_dir: Dir) -> None:
     """Delete the index file."""
     if not isinstance(output_dir, Dir):
         raise ValueError("The provided output_dir should be a Dir object.")
-    
+
     if output_dir.url is None:
         if output_dir.path is None:
             return

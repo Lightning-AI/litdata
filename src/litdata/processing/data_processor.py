@@ -741,7 +741,7 @@ class DataChunkRecipe(DataRecipe):
 
         merge_cache = Cache(cache_dir, chunk_bytes=1)
         node_rank = _get_node_rank()
-        if hasattr(self, 'existing_index') and self.existing_index is not None:
+        if hasattr(self, "existing_index") and self.existing_index is not None:
             merge_cache._merge_no_wait(node_rank if num_nodes > 1 else None, self.existing_index)
         else:
             merge_cache._merge_no_wait(node_rank if num_nodes > 1 else None)
