@@ -1013,8 +1013,8 @@ class DataProcessor:
 
             # Exit early if all the workers are done.
             # This means there were some kinda of errors.
-            if all(not w.is_alive() for w in self.workers):
-                raise RuntimeError("One of the worker has failed")
+            # if all(not w.is_alive() for w in self.workers):
+            #     raise RuntimeError("One of the worker has failed")
 
         if _TQDM_AVAILABLE:
             pbar.close()

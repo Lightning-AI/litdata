@@ -27,7 +27,6 @@ from litdata.constants import _IS_IN_STUDIO
 from litdata.processing.data_processor import DataChunkRecipe, DataProcessor, DataTransformRecipe
 from litdata.processing.readers import BaseReader
 from litdata.processing.utilities import (
-    delete_index_file,
     extract_rank_and_index_from_filename,
     optimize_dns_context,
     read_index_file_content,
@@ -386,13 +385,12 @@ def optimize(
         existing_index_file_content = None
         if mode == "append":
             existing_index_file_content = read_index_file_content(_output_dir)
-            delete_index_file(_output_dir)
 
             if existing_index_file_content is not None:
                 for chunk in existing_index_file_content["chunks"]:
                     rank, index = extract_rank_and_index_from_filename(chunk["filename"])
 
-                    if writer_starting_index_dict[rank] <= index:
+                    if rank < num_workers and writer_starting_index_dict[rank] <= index:
                         writer_starting_index_dict[rank] = index + 1  # +1 because we want to start from the next index
 
         data_processor = DataProcessor(

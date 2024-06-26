@@ -1,9 +1,12 @@
-from unittest.mock import MagicMock
+import json
 
+from unittest.mock import MagicMock
+from litdata.streaming.resolver import _resolve_dir
 from litdata.processing import utilities as utilities_module
 from litdata.processing.utilities import (
     extract_rank_and_index_from_filename,
     optimize_dns_context,
+    read_index_file_content,
 )
 
 
@@ -68,6 +71,16 @@ def test_extract_rank_and_index_from_filename():
         assert index == rank_and_index[idx][1]
 
 
-def test_read_index_file_content():
-    # TODO: Add a test for reading index file content on local and remote
-    ...
+def test_read_index_file_content(tmpdir):
+    output_dir = tmpdir / "output_dir"
+
+    assert read_index_file_content(_resolve_dir(str(output_dir))) is None
+
+    output_dir.mkdir()
+    assert read_index_file_content(_resolve_dir(str(output_dir))) is None
+
+    with open(output_dir / "index.json", "w") as f:
+        dummy_dict = {"chunks": ["abc.bin", "def.bin"], "config": {"data_format": "a", "data_spec": "b"}}
+        json.dump(dummy_dict, f)
+    
+    assert read_index_file_content(_resolve_dir(str(output_dir))) == dummy_dict
