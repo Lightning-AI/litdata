@@ -16,7 +16,7 @@ import json
 import os
 import tempfile
 import urllib
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from subprocess import DEVNULL, Popen
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 from urllib import parse
@@ -254,10 +254,8 @@ def delete_index_file(output_dir: Dir) -> None:
 
         prefix = obj.path.lstrip("/").rstrip("/") + "/"
 
-        try:
+        with suppress(botocore.exceptions.ClientError):
             s3.delete_object(Bucket=obj.netloc, Key=os.path.join(prefix, _INDEX_FILENAME))
-        except botocore.exceptions.ClientError:
-            pass
 
 
 def extract_rank_and_index_from_filename(chunk_filename: str) -> Tuple[int, int]:
