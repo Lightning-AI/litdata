@@ -14,7 +14,6 @@
 import datetime
 import os
 import re
-import shutil
 import sys
 from dataclasses import dataclass
 from pathlib import Path
