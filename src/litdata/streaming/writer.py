@@ -50,6 +50,7 @@ class BinaryWriter:
         compression: Optional[str] = None,
         follow_tensor_dimension: bool = True,
         serializers: Optional[Dict[str, Serializer]] = None,
+        chunk_index: Optional[int] = None,
     ):
         """The BinaryWriter enables to chunk dataset into an efficient streaming format for cloud training.
 
@@ -59,6 +60,7 @@ class BinaryWriter:
             chunk_size: The maximum number of items within a chunk.
             compression: The compression algorithm to use.
             serializers: Provide your own serializers.
+            chunk_index: The index of the chunk to start from.
 
         """
         self._cache_dir = cache_dir
@@ -89,7 +91,7 @@ class BinaryWriter:
             self._compressor: Compressor = _COMPRESSORS[self._compression]
 
         self._serialized_items: Dict[int, Item] = {}
-        self._chunk_index = 0
+        self._chunk_index = chunk_index or 0
         self._min_index: Optional[int] = None
         self._max_index: Optional[int] = None
         self._chunks_info: List[Dict[str, Any]] = []

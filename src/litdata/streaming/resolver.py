@@ -15,6 +15,7 @@ import datetime
 import os
 import re
 import sys
+import shutil
 from dataclasses import dataclass
 from pathlib import Path
 from time import sleep
@@ -270,17 +271,14 @@ def _assert_dir_has_index_file(output_dir: Dir, mode: Optional[Literal["append",
                     " HINT: Did you consider changing the `output_dir` with your own versioning as a suffix?"
                     " HINT: If you want to append/overwrite to the existing dataset, use `mode='append | overwrite'`."
                 )
-            # empty the directory
-            if output_dir.path == "/teamspace/studios/this_studio":
-                # user wants to delete the whole studio. Raise an error
-                raise RuntimeError(
-                    f"The provided output_dir `{output_dir.path}` is the root of the studio. It must be a mistake."
-                    "Please use a different output_dir."
-                )
 
-            # delete all the files
+            # delete index.json file and chunks
+            if os.path.exists(os.path.join(output_dir.path, "index.json")):
+                os.remove(os.path.join(output_dir.path, "index.json"))
             for file in os.listdir(output_dir.path):
-                os.remove(os.path.join(output_dir.path, file))
+                if file.endswith(".bin"):
+                    os.remove(os.path.join(output_dir.path, file))
+
         return
 
     obj = parse.urlparse(output_dir.url)

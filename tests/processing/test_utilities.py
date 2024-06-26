@@ -1,7 +1,11 @@
 from unittest.mock import MagicMock
 
 from litdata.processing import utilities as utilities_module
-from litdata.processing.utilities import optimize_dns_context
+from litdata.processing.utilities import (
+    optimize_dns_context,
+    extract_rank_and_index_from_filename,
+    read_index_file_content,
+)
 
 
 def test_optimize_dns_context(monkeypatch):
@@ -34,3 +38,37 @@ def test_optimize_dns_context(monkeypatch):
         " -c 'from litdata.processing.utilities import _optimize_dns; _optimize_dns(True)'"
     )
     assert cmd == expected_cmd
+
+
+def test_extract_rank_and_index_from_filename():
+    file_names = [
+        "chunk-0-0.bin",
+        "chunk-0-0.compressionAlgorithm.bin",
+        "chunk-1-4.bin",
+        "chunk-1-9.compressionAlgorithm.bin",
+        "chunk-22-10.bin",
+        "chunk-2-3.compressionAlgorithm.bin",
+        "chunk-31-3.bin",
+        "chunk-3-110.compressionAlgorithm.bin",
+    ]
+
+    rank_and_index = [
+        (0, 0),
+        (0, 0),
+        (1, 4),
+        (1, 9),
+        (22, 10),
+        (2, 3),
+        (31, 3),
+        (3, 110),
+    ]
+
+    for idx, file_name in enumerate(file_names):
+        rank, index = extract_rank_and_index_from_filename(file_name)
+        assert rank == rank_and_index[idx][0]
+        assert index == rank_and_index[idx][1]
+
+
+def test_read_index_file_content():
+    # TODO: Add a test for reading index file content on local and remote
+    ...

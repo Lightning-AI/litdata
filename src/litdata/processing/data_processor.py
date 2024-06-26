@@ -42,7 +42,6 @@ from litdata.constants import (
 )
 from litdata.imports import RequirementCache
 from litdata.processing.readers import BaseReader, StreamingDataLoaderReader
-from litdata.processing.utilities import _create_dataset
 from litdata.streaming import Cache
 from litdata.streaming.cache import Dir
 from litdata.streaming.client import S3Client
@@ -51,6 +50,7 @@ from litdata.streaming.resolver import _resolve_dir
 from litdata.utilities._pytree import tree_flatten, tree_unflatten, treespec_loads
 from litdata.utilities.broadcast import broadcast_object
 from litdata.utilities.packing import _pack_greedily
+from litdata.processing.utilities import _create_dataset
 
 _TQDM_AVAILABLE = RequirementCache("tqdm")
 
@@ -389,6 +389,7 @@ class BaseWorker:
         num_uploaders: int,
         remove: bool,
         reader: Optional[BaseReader] = None,
+        writer_starting_chunk_index: int = 0
     ) -> None:
         """The BaseWorker is responsible to process the user data."""
         self.worker_index = worker_index
@@ -417,6 +418,7 @@ class BaseWorker:
         self._counter = 0
         self._last_time = time()
         self._index_counter = 0
+        self.writer_starting_chunk_index = writer_starting_chunk_index
 
     def run(self) -> None:
         try:
@@ -510,6 +512,7 @@ class BaseWorker:
             chunk_bytes=self.data_recipe.chunk_bytes,
             chunk_size=self.data_recipe.chunk_size,
             compression=self.data_recipe.compression,
+            writer_chunk_index=self.writer_starting_chunk_index,
         )
         self.cache._reader._rank = _get_node_rank() * self.num_workers + self.worker_index
 
@@ -844,6 +847,7 @@ class DataProcessor:
         reorder_files: bool = True,
         weights: Optional[List[int]] = None,
         reader: Optional[BaseReader] = None,
+        writer_starting_index_dict: Optional[Dict[int, int]] = None,
     ):
         """The `DatasetOptimiser` provides an efficient way to process data across multiple machine into chunks to make
         training faster.
@@ -862,6 +866,7 @@ class DataProcessor:
             weights: Provide a list of weights associated to the inputs.
                 This is used to evenly split the work among the workers.
             reader: Map the inputs to worker inputs and provides a read method to read a slice of the data.
+            writer_starting_index_dict: The starting index of the writer.
 
         """
         self.input_dir = _resolve_dir(input_dir)
@@ -880,6 +885,8 @@ class DataProcessor:
         self.reorder_files = reorder_files
         self.weights = weights
         self.reader = reader
+
+        self.writer_starting_index_dict = writer_starting_index_dict or {rank: 0 for rank in range(self.num_workers)}
 
         if self.reader is not None and self.weights is not None:
             raise ValueError("Either the reader or the weights needs to be defined.")
@@ -1061,6 +1068,7 @@ class DataProcessor:
                 self.num_uploaders,
                 self.delete_cached_files,
                 self.reader,
+                self.writer_starting_index_dict[worker_idx]
             )
             worker.start()
             workers.append(worker)
