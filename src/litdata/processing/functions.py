@@ -316,7 +316,8 @@ def optimize(
         reorder_files: By default, reorders the files by file size to distribute work equally among all workers.
             Set this to ``False`` if the order in which samples are processed should be preserved.
         batch_size: Group the inputs into batches of batch_size length.
-        mode: The mode to use when writing the data. Accepts either ``append`` or ``overwrite`` or None. Defaults to None.
+        mode: The mode to use when writing the data. Accepts either ``append`` or ``overwrite`` or None.
+            Defaults to None.
 
     """
     if mode is not None and mode not in ["append", "overwrite"]:

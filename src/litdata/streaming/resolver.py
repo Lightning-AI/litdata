@@ -265,11 +265,11 @@ def _assert_dir_has_index_file(output_dir: Dir, mode: Optional[Literal["append",
         if os.path.exists(output_dir.path):
             # we need to delete the index file
             index_file = os.path.join(output_dir.path, "index.json")
-            if os.path.exists(index_file) and mode == None:
+            if os.path.exists(index_file) and mode is None:
                 raise RuntimeError(
                     f"The provided output_dir `{output_dir.path}` already contains an optimized immutable datasets."
                     " HINT: Did you consider changing the `output_dir` with your own versioning as a suffix?"
-                    " HINT: If you want to append to the existing dataset, use `mode='append'`, otherwise use `mode='overwrite'`."
+                    " HINT: If you want to append/overwrite to the existing dataset, use `mode='append | overwrite'`."
                 )
             # empty the directory
             if output_dir.path == "/teamspace/studios/this_studio":
@@ -308,11 +308,11 @@ def _assert_dir_has_index_file(output_dir: Dir, mode: Optional[Literal["append",
     except botocore.exceptions.ClientError:
         has_index_file = False
 
-    if has_index_file and mode == None:
+    if has_index_file and mode is None:
         raise RuntimeError(
             f"The provided output_dir `{output_dir.path}` already contains an optimized immutable datasets."
             " HINT: Did you consider changing the `output_dir` with your own versioning as a suffix?"
-            " HINT: If you want to append to the existing dataset, use `mode='append'`, otherwise use `mode='overwrite'`."
+            " HINT: If you want to append/overwrite to the existing dataset, use `mode='append | overwrite'`."
         )
 
     # Delete all the files (including the index file in overwrite mode)
