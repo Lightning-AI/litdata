@@ -16,7 +16,7 @@ import json
 import os
 import tempfile
 import urllib
-from contextlib import contextmanager, suppress
+from contextlib import contextmanager
 from subprocess import DEVNULL, Popen
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 from urllib import parse
