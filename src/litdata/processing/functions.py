@@ -30,6 +30,7 @@ from litdata.processing.utilities import (
     extract_rank_and_index_from_filename,
     optimize_dns_context,
     read_index_file_content,
+    delete_index_file,
 )
 from litdata.streaming.dataloader import StreamingDataLoader
 from litdata.streaming.resolver import (
@@ -140,11 +141,13 @@ class LambdaDataChunkRecipe(DataChunkRecipe):
         chunk_size: Optional[int],
         chunk_bytes: Optional[Union[int, str]],
         compression: Optional[str],
+        existing_index: Optional[Dict[str, Any]] = None,
     ):
         super().__init__(chunk_size=chunk_size, chunk_bytes=chunk_bytes, compression=compression)
         self._fn = fn
         self._inputs = inputs
         self.is_generator = False
+        self.existing_index = existing_index
 
         self.check_fn()
 
@@ -380,11 +383,14 @@ def optimize(
 
         writer_starting_index_dict = {rank: 0 for rank in range(num_workers)}
 
+        existing_index_file_content = None
         if mode == "append":
-            index_file_content = read_index_file_content(_output_dir)
+            existing_index_file_content = read_index_file_content(_output_dir)
+            delete_index_file(_output_dir)
 
-            if index_file_content is not None:
-                for chunk in index_file_content["chunks"]:
+
+            if existing_index_file_content is not None:
+                for chunk in existing_index_file_content["chunks"]:
                     rank, index = extract_rank_and_index_from_filename(chunk["filename"])
 
                     if writer_starting_index_dict[rank] <= index:
@@ -410,6 +416,7 @@ def optimize(
                     chunk_size=chunk_size,
                     chunk_bytes=chunk_bytes,
                     compression=compression,
+                    existing_index=existing_index_file_content,
                 )
             )
         return None

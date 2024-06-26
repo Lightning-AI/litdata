@@ -428,7 +428,7 @@ class BinaryWriter:
 
         self._merge_no_wait(node_rank=node_rank)
 
-    def _merge_no_wait(self, node_rank: Optional[int] = None) -> None:
+    def _merge_no_wait(self, node_rank: Optional[int] = None, existing_index: Optional[Dict[str, Any]] = None) -> None:
         """Once all the workers have written their own index, the merge function is responsible to read and merge them
         into a single index."""
         files = os.listdir(self._cache_dir)
@@ -436,6 +436,11 @@ class BinaryWriter:
 
         chunks_info = []
         config = None
+
+        if existing_index is not None:
+            chunks_info.extend(existing_index["chunks"])
+            config = existing_index["config"]
+
         for index_filename in sorted(index_files):
             chunk_path = os.path.join(self._cache_dir, index_filename)
             with open(chunk_path) as f:

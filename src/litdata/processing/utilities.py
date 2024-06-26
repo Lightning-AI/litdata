@@ -232,6 +232,34 @@ def read_index_file_content(output_dir: Dir) -> Optional[Dict[str, Any]]:
             return None
 
 
+def delete_index_file(output_dir: Dir) -> None:
+    """Delete the index file."""
+    if not isinstance(output_dir, Dir):
+        raise ValueError("The provided output_dir should be a Dir object.")
+    
+    if output_dir.url is None:
+        if output_dir.path is None:
+            return
+        index_file_path = os.path.join(output_dir.path, _INDEX_FILENAME)
+        if os.path.exists(index_file_path):
+            os.remove(index_file_path)
+    else:
+        # delete the index file from s3
+        obj = parse.urlparse(output_dir.url)
+
+        if obj.scheme != "s3":
+            raise ValueError(f"The provided folder should start with s3://. Found {output_dir.path}.")
+
+        s3 = boto3.client("s3")
+
+        prefix = obj.path.lstrip("/").rstrip("/") + "/"
+
+        try:
+            s3.delete_object(Bucket=obj.netloc, Key=os.path.join(prefix, _INDEX_FILENAME))
+        except botocore.exceptions.ClientError:
+            pass
+
+
 def extract_rank_and_index_from_filename(chunk_filename: str) -> Tuple[int, int]:
     """Extract the rank and index from the filename.
 
