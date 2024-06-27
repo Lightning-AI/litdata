@@ -3,8 +3,9 @@ import sys
 from unittest import mock
 
 import pytest
-from litdata import StreamingDataset, optimize, walk
+from litdata import StreamingDataset, merge_datasets, optimize, walk
 from litdata.processing.functions import _get_input_dir, _resolve_dir
+from litdata.streaming.cache import Cache
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="currently not supported for windows.")
@@ -154,3 +155,36 @@ def test_optimize_append_overwrite(tmpdir):
 
     assert len(ds) == 5
     assert ds[:] == [(i, i**2, i**3) for i in range(0, 5)]
+
+
+def test_merge_datasets(tmpdir):
+    folder_1 = os.path.join(tmpdir, "folder_1")
+    folder_2 = os.path.join(tmpdir, "folder_2")
+    folder_3 = os.path.join(tmpdir, "folder_3")
+
+    os.makedirs(folder_1, exist_ok=True)
+    os.makedirs(folder_2, exist_ok=True)
+
+    cache_1 = Cache(input_dir=folder_1, chunk_bytes="64MB")
+    for i in range(10):
+        cache_1[i] = i
+
+    cache_1.done()
+    cache_1.merge()
+
+    cache_2 = Cache(input_dir=folder_2, chunk_bytes="64MB")
+    for i in range(10, 20):
+        cache_2[i] = i
+
+    cache_2.done()
+    cache_2.merge()
+
+    merge_datasets(
+        input_dirs=[folder_1, folder_2],
+        output_dir=folder_3,
+    )
+
+    ds = StreamingDataset(input_dir=folder_3)
+
+    assert len(ds) == 20
+    assert ds[:] == list(range(20))
