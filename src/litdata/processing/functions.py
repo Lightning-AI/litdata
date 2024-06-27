@@ -519,18 +519,21 @@ def merge_datasets(input_dirs: List[str], output_dir: str) -> None:
     if output_dir_file_content is not None:
         raise ValueError("The output_dir already contains an optimized dataset")
 
+    assert input_dirs_file_content
+
     for input_dir_file_content in input_dirs_file_content[1:]:
-        if input_dirs_file_content[0]["config"]["data_format"] != input_dir_file_content["config"]["data_format"]:
+        if input_dirs_file_content[0]["config"]["data_format"] != input_dir_file_content["config"]["data_format"]:  # type: ignore
             raise ValueError("Your are trying to merge datasets with different data formats")
 
-        if input_dirs_file_content[0]["config"]["compression"] != input_dir_file_content["config"]["compression"]:
+        if input_dirs_file_content[0]["config"]["compression"] != input_dir_file_content["config"]["compression"]:  # type: ignore
             raise ValueError("Your are trying to merge datasets with different compression configuration.")
 
     chunks = []
     copy_infos: List[CopyInfo] = []
     counter = 0
     for input_dir, input_dir_file_content in zip(resolved_input_dirs, input_dirs_file_content):
-        for chunk in input_dir_file_content["chunks"]:
+        for chunk in input_dir_file_content["chunks"]:  # type: ignore
+            assert isinstance(chunk, dict)
             old_filename = chunk["filename"]
             new_filename = f"chunk-0-{counter}.bin"
             copy_infos.append(CopyInfo(input_dir=input_dir, old_filename=old_filename, new_filename=new_filename))
@@ -538,7 +541,7 @@ def merge_datasets(input_dirs: List[str], output_dir: str) -> None:
             chunks.append(chunk)
             counter += 1
 
-    index_json = {"config": input_dirs_file_content[0]["config"], "chunks": chunks}
+    index_json = {"config": input_dirs_file_content[0]["config"], "chunks": chunks}  # type: ignore
 
     for copy_info in _tqdm(copy_infos):
         _apply_copy(copy_info, resolved_output_dir)
@@ -548,6 +551,8 @@ def merge_datasets(input_dirs: List[str], output_dir: str) -> None:
 
 def _apply_copy(copy_info: CopyInfo, output_dir: Dir) -> None:
     if output_dir.url is None and copy_info.input_dir.url is None:
+        assert copy_info.input_dir.path
+        assert output_dir.path
         input_filepath = os.path.join(copy_info.input_dir.path, copy_info.old_filename)
         output_filepath = os.path.join(output_dir.path, copy_info.new_filename)
         os.makedirs(os.path.dirname(output_filepath), exist_ok=True)
@@ -569,6 +574,7 @@ def _apply_copy(copy_info: CopyInfo, output_dir: Dir) -> None:
 
 def _save_index(index_json: Dict, output_dir: Dir) -> None:
     if output_dir.url is None:
+        assert output_dir.path
         with open(os.path.join(output_dir.path, _INDEX_FILENAME), "w") as f:
             json.dump(index_json, f)
     else:
