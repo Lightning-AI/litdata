@@ -1,8 +1,7 @@
 import pytest
-from litdata import train_test_split
+from litdata import StreamingDataset, train_test_split
 from litdata.constants import _ZSTD_AVAILABLE
 from litdata.streaming.cache import Cache
-from litdata import StreamingDataset
 
 
 @pytest.mark.parametrize(
@@ -54,21 +53,18 @@ def test_split_a_subsampled_dataset(tmpdir, compression):
 
     _split_fraction = [0.0, 0.0, 1.0]
 
-    split_datasets = train_test_split(
-        _sub_sampled_streaming_dataset, _split_fraction)
+    split_datasets = train_test_split(_sub_sampled_streaming_dataset, _split_fraction)
 
     assert all(len(split_datasets[i]) == int(300 * split) for i, split in enumerate(_split_fraction))
 
     # ------------- test if some splits get 0 samples -------------
 
-    _sub_sampled_streaming_dataset = StreamingDataset(
-        input_dir=str(tmpdir), subsample=0.05)
+    _sub_sampled_streaming_dataset = StreamingDataset(input_dir=str(tmpdir), subsample=0.05)
 
     assert len(_sub_sampled_streaming_dataset) == 50  # 1000 * 0.05
 
     _split_fraction = [0.01, 0.01, 0.98]
 
-    split_datasets = train_test_split(
-        _sub_sampled_streaming_dataset, _split_fraction)
+    split_datasets = train_test_split(_sub_sampled_streaming_dataset, _split_fraction)
 
     assert all(len(split_datasets[i]) == int(50 * split) for i, split in enumerate(_split_fraction))
