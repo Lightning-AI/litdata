@@ -204,7 +204,7 @@ class BinaryReader:
         self._last_chunk_index: Optional[int] = None
         self._max_cache_size = int(os.getenv("MAX_CACHE_SIZE", max_cache_size or 0))
 
-    def _get_chunk_index_from_index(self, index: int) -> int:
+    def _get_chunk_index_from_index(self, index: int) -> Tuple[int, int]:
         # Load the config containing the index
         if self._config is None and self._try_load_config() is None:
             raise Exception("The reader index isn't defined.")

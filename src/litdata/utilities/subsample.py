@@ -39,31 +39,41 @@ def shuffle_lists_together(
 
 
 def subsample_filenames_and_roi(
-    chunks: List[Dict[str, Any]], roi_list: List[Tuple[int, int]], target: int
+    chunks: List[Dict[str, Any]], roi_list: List[Tuple[int, int]], item_count: int
 ) -> Tuple[List[str], List[Tuple[int, int]], List[Dict[str, Any]], List[Tuple[int, int]]]:
+    
     assert len(chunks) == len(roi_list)
 
-    cumsum_sizes = np.cumsum([r[-1] for r in roi_list])
+    if item_count == 0:
+        return [], [], chunks, roi_list
 
-    match = np.argmax(cumsum_sizes > target)
-    left_chunk_filenames = [c["filename"] for c in chunks[: match + 1]]
-    left_chunk_roi = [r[-1] for r in roi_list[: match + 1]]
-    left_chunk_roi[-1] = target if match == 0 else (target - cumsum_sizes[match - 1])
+    cumsum_sizes = np.cumsum([r[1]-r[0] for r in roi_list])
 
-    assert np.sum(left_chunk_roi) == target
+    match = np.argmax(cumsum_sizes >= item_count)
 
-    right_chunk_filenames = chunks[match:]
-    right_chunk_roi = [r[-1] for r in roi_list[match:]]
-    right_chunk_roi[0] -= left_chunk_roi[-1]
+    exact_item_count_match = cumsum_sizes[match] == item_count
 
-    # exact match
-    if left_chunk_roi[-1] == 0:
-        left_chunk_filenames = left_chunk_filenames[:-1]
-        left_chunk_roi = left_chunk_roi[:-1]
+    subsampled_filenames = [c["filename"] for c in chunks[: match + 1]]
+    subsampled_chunk_roi = [r for r in roi_list[: match + 1]]
+    # bcoz tuple doesn't support item assignment
+    subsampled_chunk_roi[-1] = (subsampled_chunk_roi[-1][0], subsampled_chunk_roi[-1][1] - (cumsum_sizes[match] - item_count))
+
+
+
+    assert sum(_chnk[1]-_chnk[0] for _chnk in subsampled_chunk_roi) == item_count
+
+    if exact_item_count_match:
+        match += 1 # start from next chunk
+    left_over_chunks = chunks[match:]
+    left_over_chunk_roi = [r for r in roi_list[match:]]
+
+    if not exact_item_count_match:
+        # bcoz tuple doesn't support item assignment
+        left_over_chunk_roi[0] = subsampled_chunk_roi[-1][1], left_over_chunk_roi[0][1] # start from next chunk
 
     return (
-        left_chunk_filenames,
-        [(0, r) for r in left_chunk_roi],
-        right_chunk_filenames,
-        [(0, r) for r in right_chunk_roi],
+        subsampled_filenames,
+        subsampled_chunk_roi,
+        left_over_chunks,
+        left_over_chunk_roi,
     )

@@ -129,7 +129,7 @@ class Cache:
     def __getitem__(self, index: Union[int, ChunkedIndex]) -> Dict[str, Any]:
         """Read an item in the reader."""
         if isinstance(index, int):
-            index = ChunkedIndex(index, self._get_chunk_index_from_index(index))
+            index = ChunkedIndex(*self._get_chunk_index_from_index(index))
         return self._reader.read(index)
 
     def done(self) -> Optional[List[str]]:
@@ -150,5 +150,5 @@ class Cache:
     def get_chunk_intervals(self) -> List[Interval]:
         return self._reader.get_chunk_intervals()
 
-    def _get_chunk_index_from_index(self, index: int) -> int:
+    def _get_chunk_index_from_index(self, index: int) -> Tuple[int, int]:
         return self._reader._get_chunk_index_from_index(index)

@@ -84,6 +84,7 @@ class ChunksConfig:
             self._compressor = _COMPRESSORS[self._compressor_name]
 
         self._skip_chunk_indexes_deletion: Optional[List[int]] = None
+        self.zero_based_roi: Optional[List[Tuple[int, int]]] = None
 
     def can_delete(self, chunk_index: int) -> bool:
         if self._skip_chunk_indexes_deletion is None:
@@ -179,10 +180,26 @@ class ChunksConfig:
             raise RuntimeError("The config should be defined.")
         return self._config
 
-    def _get_chunk_index_from_index(self, index: int) -> int:
-        for chunk_index, internal in enumerate(self._intervals):
+    def _get_chunk_index_from_index(self, index: int) -> Tuple[int, int]:
+
+        if self.zero_based_roi is None:
+            # zero_based_roi is a list of tuples (start, end),
+            # to efficiently find the chunk index.
+            # Example: 
+            #  self._intervals = [(0, 5, 10, 10), (10, 10, 20, 20)]
+            #  self.zero_based_roi = [(0, 5), (5, 15)]
+            
+            self.zero_based_roi = []
+            start = 0
+            for curr_interval in self._intervals:
+                diff = curr_interval[2] - curr_interval[1] # roi_start, roi_end
+                self.zero_based_roi.append((start, start+diff))
+                start += diff
+            
+        for chunk_index, internal in enumerate(self.zero_based_roi):
             if internal[0] <= index < internal[-1]:
-                return chunk_index
+                real_index_to_read_from = self._intervals[chunk_index][1] + (index - internal[0])
+                return real_index_to_read_from, chunk_index
         raise ValueError(
             f"The provided index {index} didn't find a match within the chunk intervals {self._intervals}."
         )
