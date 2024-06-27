@@ -53,7 +53,7 @@ def subsample_filenames_and_roi(
     exact_item_count_match = cumsum_sizes[match] == item_count
 
     subsampled_filenames = [c["filename"] for c in chunks[: match + 1]]
-    subsampled_chunk_roi = [r for r in roi_list[: match + 1]]
+    subsampled_chunk_roi = roi_list[: match + 1]
     # bcoz tuple doesn't support item assignment
     subsampled_chunk_roi[-1] = (
         subsampled_chunk_roi[-1][0],
@@ -65,7 +65,7 @@ def subsample_filenames_and_roi(
     if exact_item_count_match:
         match += 1  # start from next chunk
     left_over_chunks = chunks[match:]
-    left_over_chunk_roi = [r for r in roi_list[match:]]
+    left_over_chunk_roi = roi_list[match:]
 
     if not exact_item_count_match:
         # bcoz tuple doesn't support item assignment
