@@ -57,6 +57,9 @@ class Range:
     def __iter__(self):
         yield from self.values
 
+    def __len__(self):
+        return len(self.values)
+
 
 def test_combined_dataset_iterate_over_all_4_datasets():
     dataset = TestCombinedStreamingDataset(
@@ -82,6 +85,8 @@ def test_combined_dataset_num_samples_yield_iterate_over_all():
 def test_drop_last_and_shuffle():
     dataset_mock_1 = MagicMock()
     dataset_mock_2 = MagicMock()
+    dataset_mock_1.__len__.return_value = 1
+    dataset_mock_2.__len__.return_value = 1
 
     dataset = TestCombinedStreamingDataset([dataset_mock_1, dataset_mock_2], 42, iterate_over_all=True)
     StreamingDataLoader(dataset, shuffle=True, drop_last=True)
@@ -193,7 +198,7 @@ def test_combined_dataset_state_dict():
         ([2, 0.5], [0.8, 0.2]),
         ([1, 1, 1], [1 / 3, 1 / 3, 1 / 3]),
         ([0.3, 0, 0], [1.0, 0, 0]),
-        (None, [0.5, 0.5]),
+        (None, [1 / 3, 2 / 3]),
     ],
 )
 def test_combined_dataset_normalizes_weights(weights, expected):
