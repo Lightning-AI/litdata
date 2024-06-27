@@ -486,6 +486,14 @@ class CopyInfo:
 
 
 def merge_datasets(input_dirs: List[str], output_dir: str) -> None:
+    """The merge_datasets utility enables to merge multiple existing optimized datasets into a single optimized
+    dataset.
+
+    Arguments:
+        input_dirs: A list of directories pointing to the existing optimized datasets.
+        output_dir: The directory where the merged dataset would be stored.
+
+    """
     if len(input_dirs) == 0:
         raise ValueError("The input directories needs to be defined.")
 
@@ -496,6 +504,10 @@ def merge_datasets(input_dirs: List[str], output_dir: str) -> None:
     resolved_output_dir = _resolve_dir(output_dir)
 
     input_dirs_file_content = [read_index_file_content(input_dir) for input_dir in resolved_input_dirs]
+
+    if any(file_content is None for file_content in input_dirs_file_content):
+        raise ValueError("One of the provided input_dir doesn't have an index file.")
+
     output_dir_file_content = read_index_file_content(resolved_output_dir)
 
     if output_dir_file_content is not None:
