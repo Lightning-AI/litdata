@@ -102,5 +102,7 @@ def test_prepare_chunks_thread_eviction(tmpdir, monkeypatch):
     assert thread._pre_download_counter <= 2
 
     assert len(os.listdir(cache_dir)) == 9
-    assert thread._has_exited
+
     thread.join()
+    sleep(0.1)
+    assert thread._has_exited
