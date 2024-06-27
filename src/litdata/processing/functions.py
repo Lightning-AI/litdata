@@ -26,9 +26,8 @@ from typing import Any, Callable, Dict, List, Literal, Optional, Sequence, Tuple
 from urllib import parse
 
 import torch
-from tqdm.auto import tqdm
 
-from litdata.constants import _INDEX_FILENAME, _IS_IN_STUDIO
+from litdata.constants import _INDEX_FILENAME, _IS_IN_STUDIO, _TQDM_AVAILABLE
 from litdata.processing.data_processor import DataChunkRecipe, DataProcessor, DataTransformRecipe
 from litdata.processing.readers import BaseReader
 from litdata.processing.utilities import (
@@ -46,6 +45,13 @@ from litdata.streaming.resolver import (
     _resolve_dir,
 )
 from litdata.utilities._pytree import tree_flatten
+
+if _TQDM_AVAILABLE:
+    from tqdm.auto import tqdm as _tqdm
+else:
+
+    def _tqdm(iterator: Any) -> Any:
+        yield from iterator
 
 
 def _is_remote_file(path: str) -> bool:
@@ -534,7 +540,7 @@ def merge_datasets(input_dirs: List[str], output_dir: str) -> None:
 
     index_json = {"config": input_dirs_file_content[0]["config"], "chunks": chunks}
 
-    for copy_info in tqdm(copy_infos):
+    for copy_info in _tqdm(copy_infos):
         _apply_copy(copy_info, resolved_output_dir)
 
     _save_index(index_json, resolved_output_dir)

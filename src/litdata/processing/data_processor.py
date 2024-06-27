@@ -39,8 +39,8 @@ from litdata.constants import (
     _INDEX_FILENAME,
     _IS_IN_STUDIO,
     _LIGHTNING_CLOUD_AVAILABLE,
+    _TQDM_AVAILABLE,
 )
-from litdata.imports import RequirementCache
 from litdata.processing.readers import BaseReader, StreamingDataLoaderReader
 from litdata.processing.utilities import _create_dataset
 from litdata.streaming import Cache
@@ -51,8 +51,6 @@ from litdata.streaming.resolver import _resolve_dir
 from litdata.utilities._pytree import tree_flatten, tree_unflatten, treespec_loads
 from litdata.utilities.broadcast import broadcast_object
 from litdata.utilities.packing import _pack_greedily
-
-_TQDM_AVAILABLE = RequirementCache("tqdm")
 
 if _TQDM_AVAILABLE:
     from tqdm.auto import tqdm as _tqdm

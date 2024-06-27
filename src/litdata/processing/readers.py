@@ -16,11 +16,11 @@ import os
 from abc import ABC, abstractmethod
 from typing import Any, List
 
+from litdata.constants import _TQDM_AVAILABLE
 from litdata.imports import RequirementCache
 from litdata.streaming.dataloader import StreamingDataLoader
 
 _PYARROW_AVAILABLE = RequirementCache("pyarrow")
-_TQDM_AVAILABLE = RequirementCache("tqdm")
 
 if _TQDM_AVAILABLE:
     from tqdm.auto import tqdm as _tqdm
