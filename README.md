@@ -122,7 +122,7 @@ dataloader = StreamingDataLoader(dataset)
 
 - [Multi-GPU / Multi-Node Support](#multi-gpu--multi-node-support)
 - [Subsample and split your datasets](#subsample-and-split-your-datasets)
-- [Append or Overwrite optimized datasets](#subsample-and-split-your-datasets)
+- [Append or Overwrite optimized datasets](#append-or-overwrite-optimized-datasets)
 - [Access any item](#access-any-item)
 - [Use any data transforms](#use-any-data-transforms)
 - [The Map Operator](#the-map-operator)
