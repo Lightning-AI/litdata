@@ -48,7 +48,7 @@ def test_subsample_filenames_and_roi():
     _, roi_list, _, left_roi = subsample_filenames_and_roi(my_chunks, roi_list, target)
 
     assert target == sum([roi[1] - roi[0] for roi in roi_list])
-    assert (total_chunk_roi_length - target) == np.sum(left_roi)
+    assert (total_chunk_roi_length - target) == sum(_roi[1] - _roi[0] for _roi in left_roi)
 
 
 def test_subsample_filenames_and_roi_exact():

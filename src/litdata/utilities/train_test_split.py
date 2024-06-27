@@ -40,9 +40,6 @@ def train_test_split(
     if not all(0 <= _f <= 1 for _f in splits):
         raise ValueError("Each Split should be a float with each value in [0,1].")
 
-    if any(split == 0 for split in splits):
-        logging.warning("Warning: some splits are 0, this will lead to empty datasets")
-
     if sum(splits) > 1:
         raise ValueError("Splits' sum must be less than 1.")
 
@@ -77,9 +74,12 @@ def train_test_split(
         subsampled_chunks, dummy_subsampled_roi, np.random.RandomState([seed])
     )
 
-    for i, split in enumerate(splits):
-        item_count = int(dataset_length * split)
+    item_count_list = [int(dataset_length * split) for split in splits]
 
+    if any(item_count == 0 for item_count in item_count_list):
+        logging.warning("Warning: some splits are having item count 0, this will lead to empty datasets")
+
+    for i, item_count in enumerate(item_count_list):
         curr_chunk_filename, curr_chunk_roi, left_chunks, left_roi = subsample_filenames_and_roi(
             subsampled_chunks, dummy_subsampled_roi, item_count
         )
