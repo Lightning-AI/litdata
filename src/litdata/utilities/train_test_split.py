@@ -80,7 +80,6 @@ def train_test_split(
         logging.warning("Warning: some splits are having item count 0, this will lead to empty datasets")
 
     for i, item_count in enumerate(item_count_list):
-
         curr_chunk_filename, curr_chunk_roi, left_chunks, left_roi = subsample_filenames_and_roi(
             subsampled_chunks, dummy_subsampled_roi, item_count
         )

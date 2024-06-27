@@ -1,5 +1,5 @@
 import pytest
-from litdata import StreamingDataset, train_test_split, StreamingDataLoader
+from litdata import StreamingDataLoader, StreamingDataset, train_test_split
 from litdata.constants import _ZSTD_AVAILABLE
 from litdata.streaming.cache import Cache
 
@@ -69,6 +69,7 @@ def test_split_a_subsampled_dataset(tmpdir, compression):
 
     assert all(len(split_datasets[i]) == int(50 * split) for i, split in enumerate(_split_fraction))
 
+
 @pytest.mark.parametrize(
     "compression",
     [
@@ -85,7 +86,7 @@ def test_train_test_split_with_streaming_dataloader(tmpdir, compression):
 
     my_streaming_dataset = StreamingDataset(input_dir=str(tmpdir))
 
-    splits=[0.1, 0.2, 0.7,0.0]
+    splits = [0.1, 0.2, 0.7, 0.0]
 
     ds = train_test_split(my_streaming_dataset, splits=splits)
 
@@ -106,4 +107,3 @@ def test_train_test_split_with_streaming_dataloader(tmpdir, compression):
             for curr_idx in _dl:
                 assert curr_idx not in visited_indices
                 visited_indices.add(curr_idx)
-

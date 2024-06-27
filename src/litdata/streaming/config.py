@@ -181,21 +181,20 @@ class ChunksConfig:
         return self._config
 
     def _get_chunk_index_from_index(self, index: int) -> Tuple[int, int]:
-
         if self.zero_based_roi is None:
             # zero_based_roi is a list of tuples (start, end),
             # to efficiently find the chunk index.
-            # Example: 
+            # Example:
             #  self._intervals = [(0, 5, 10, 10), (10, 10, 20, 20)]
             #  self.zero_based_roi = [(0, 5), (5, 15)]
-            
+
             self.zero_based_roi = []
             start = 0
             for curr_interval in self._intervals:
-                diff = curr_interval[2] - curr_interval[1] # roi_start, roi_end
-                self.zero_based_roi.append((start, start+diff))
+                diff = curr_interval[2] - curr_interval[1]  # roi_start, roi_end
+                self.zero_based_roi.append((start, start + diff))
                 start += diff
-            
+
         for chunk_index, internal in enumerate(self.zero_based_roi):
             if internal[0] <= index < internal[-1]:
                 real_index_to_read_from = self._intervals[chunk_index][1] + (index - internal[0])
