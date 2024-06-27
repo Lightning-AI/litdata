@@ -741,10 +741,7 @@ class DataChunkRecipe(DataRecipe):
 
         merge_cache = Cache(cache_dir, chunk_bytes=1)
         node_rank = _get_node_rank()
-        if hasattr(self, "existing_index") and self.existing_index is not None:
-            merge_cache._merge_no_wait(node_rank if num_nodes > 1 else None, self.existing_index)
-        else:
-            merge_cache._merge_no_wait(node_rank if num_nodes > 1 else None)
+        merge_cache._merge_no_wait(node_rank if num_nodes > 1 else None, getattr(self, "existing_index", None))
 
         self._upload_index(output_dir, cache_dir, num_nodes, node_rank)
 
@@ -851,7 +848,7 @@ class DataProcessor:
         reorder_files: bool = True,
         weights: Optional[List[int]] = None,
         reader: Optional[BaseReader] = None,
-        writer_starting_index_dict: Optional[Dict[int, int]] = None,
+        state_dict: Optional[Dict[int, int]] = None,
     ):
         """The `DatasetOptimiser` provides an efficient way to process data across multiple machine into chunks to make
         training faster.
@@ -870,7 +867,7 @@ class DataProcessor:
             weights: Provide a list of weights associated to the inputs.
                 This is used to evenly split the work among the workers.
             reader: Map the inputs to worker inputs and provides a read method to read a slice of the data.
-            writer_starting_index_dict: The starting index of the writer.
+            state_dict: The writer state dict. This is used to decide how to append data to an existing dataset.
 
         """
         self.input_dir = _resolve_dir(input_dir)
@@ -890,7 +887,7 @@ class DataProcessor:
         self.weights = weights
         self.reader = reader
 
-        self.writer_starting_index_dict = writer_starting_index_dict or {rank: 0 for rank in range(self.num_workers)}
+        self.state_dict = state_dict or {rank: 0 for rank in range(self.num_workers)}
 
         if self.reader is not None and self.weights is not None:
             raise ValueError("Either the reader or the weights needs to be defined.")
@@ -1013,8 +1010,8 @@ class DataProcessor:
 
             # Exit early if all the workers are done.
             # This means there were some kinda of errors.
-            # if all(not w.is_alive() for w in self.workers):
-            #     raise RuntimeError("One of the worker has failed")
+            if all(not w.is_alive() for w in self.workers):
+                raise RuntimeError("One of the worker has failed")
 
         if _TQDM_AVAILABLE:
             pbar.close()
@@ -1072,7 +1069,7 @@ class DataProcessor:
                 self.num_uploaders,
                 self.delete_cached_files,
                 self.reader,
-                self.writer_starting_index_dict[worker_idx],
+                self.state_dict[worker_idx],
             )
             worker.start()
             workers.append(worker)

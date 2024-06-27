@@ -212,6 +212,7 @@ def read_index_file_content(output_dir: Dir) -> Optional[Dict[str, Any]]:
         if obj.scheme != "s3":
             raise ValueError(f"The provided folder should start with s3://. Found {output_dir.path}.")
 
+        # TODO: Add support for all cloud providers
         s3 = boto3.client("s3")
 
         prefix = obj.path.lstrip("/").rstrip("/") + "/"

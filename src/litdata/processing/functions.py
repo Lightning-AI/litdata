@@ -379,19 +379,16 @@ def optimize(
             num_workers = 1
 
         num_workers = num_workers or _get_default_num_workers()
+        state_dict = {rank: 0 for rank in range(num_workers)}
 
-        writer_starting_index_dict = {rank: 0 for rank in range(num_workers)}
+        existing_index_file_content = read_index_file_content(_output_dir) if mode == "append" else None
 
-        existing_index_file_content = None
-        if mode == "append":
-            existing_index_file_content = read_index_file_content(_output_dir)
+        if existing_index_file_content is not None:
+            for chunk in existing_index_file_content["chunks"]:
+                rank, index = extract_rank_and_index_from_filename(chunk["filename"])
 
-            if existing_index_file_content is not None:
-                for chunk in existing_index_file_content["chunks"]:
-                    rank, index = extract_rank_and_index_from_filename(chunk["filename"])
-
-                    if rank < num_workers and writer_starting_index_dict[rank] <= index:
-                        writer_starting_index_dict[rank] = index + 1  # +1 because we want to start from the next index
+                if rank < num_workers and state_dict[rank] <= index:
+                    state_dict[rank] = index + 1  # +1 because we want to start from the next index
 
         data_processor = DataProcessor(
             input_dir=resolved_dir,
@@ -402,7 +399,7 @@ def optimize(
             num_uploaders=num_uploaders,
             reorder_files=reorder_files,
             reader=reader,
-            writer_starting_index_dict=writer_starting_index_dict,
+            state_dict=state_dict,
         )
 
         with optimize_dns_context(True):

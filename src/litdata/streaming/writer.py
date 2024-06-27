@@ -430,7 +430,13 @@ class BinaryWriter:
 
     def _merge_no_wait(self, node_rank: Optional[int] = None, existing_index: Optional[Dict[str, Any]] = None) -> None:
         """Once all the workers have written their own index, the merge function is responsible to read and merge them
-        into a single index."""
+        into a single index.
+
+        Arguments:
+            node_rank: The node rank of the index file
+            existing_index: Existing index to be added to the newly created one.
+
+        """
         files = os.listdir(self._cache_dir)
         index_files = [f for f in files if f.endswith(_INDEX_FILENAME)]
 

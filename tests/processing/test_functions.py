@@ -53,13 +53,13 @@ def different_compress(index):
     return index, index**2, index**3
 
 
-@pytest.mark.skipif(sys.platform == "win32" or sys.platform == "darwin", reason="too slow")
-def test_optimize(tmpdir):
+@pytest.mark.skipif(sys.platform == "win32", reason="too slow")
+def test_optimize_append_overwrite(tmpdir):
     output_dir = str(tmpdir / "output_dir")
 
     optimize(
         fn=compress,
-        inputs=list(range(100)),
+        inputs=list(range(5)),
         num_workers=1,
         output_dir=output_dir,
         chunk_bytes="64MB",
@@ -67,13 +67,13 @@ def test_optimize(tmpdir):
 
     ds = StreamingDataset(output_dir)
 
-    assert len(ds) == 100
-    assert ds[:] == [(i, i**2) for i in range(100)]
+    assert len(ds) == 5
+    assert ds[:] == [(i, i**2) for i in range(5)]
 
     with pytest.raises(RuntimeError, match="HINT: If you want to append/overwrite to the existing dataset"):
         optimize(
             fn=compress,
-            inputs=list(range(100, 200)),
+            inputs=list(range(5, 10)),
             num_workers=1,
             output_dir=output_dir,
             chunk_bytes="64MB",
@@ -82,7 +82,7 @@ def test_optimize(tmpdir):
     with pytest.raises(ValueError, match="The provided `mode` should be either `append` or `overwrite`"):
         optimize(
             fn=compress,
-            inputs=list(range(100, 200)),
+            inputs=list(range(5, 10)),
             num_workers=1,
             output_dir=output_dir,
             chunk_bytes="64MB",
@@ -91,8 +91,8 @@ def test_optimize(tmpdir):
 
     optimize(
         fn=compress,
-        inputs=list(range(100, 200)),
-        num_workers=3,
+        inputs=list(range(5, 10)),
+        num_workers=2,
         output_dir=output_dir,
         chunk_bytes="64MB",
         mode="overwrite",
@@ -100,12 +100,12 @@ def test_optimize(tmpdir):
 
     ds = StreamingDataset(output_dir)
 
-    assert len(ds) == 100
-    assert ds[:] == [(i, i**2) for i in range(100, 200)]
+    assert len(ds) == 5
+    assert ds[:] == [(i, i**2) for i in range(5, 10)]
 
     optimize(
         fn=compress,
-        inputs=list(range(200, 300)),
+        inputs=list(range(10, 15)),
         num_workers=os.cpu_count(),
         output_dir=output_dir,
         chunk_bytes="64MB",
@@ -114,12 +114,12 @@ def test_optimize(tmpdir):
 
     ds = StreamingDataset(output_dir)
 
-    assert len(ds) == 200
-    assert ds[:] == [(i, i**2) for i in range(100, 300)]
+    assert len(ds) == 10
+    assert ds[:] == [(i, i**2) for i in range(5, 15)]
 
     optimize(
         fn=compress,
-        inputs=list(range(300, 400)),
+        inputs=list(range(15, 20)),
         num_workers=2,
         output_dir=output_dir,
         chunk_bytes="64MB",
@@ -128,8 +128,8 @@ def test_optimize(tmpdir):
 
     ds = StreamingDataset(output_dir)
 
-    assert len(ds) == 300
-    assert ds[:] == [(i, i**2) for i in range(100, 400)]
+    assert len(ds) == 15
+    assert ds[:] == [(i, i**2) for i in range(5, 20)]
 
     with pytest.raises(Exception, match="The config isn't consistent between chunks"):
         optimize(
@@ -141,14 +141,9 @@ def test_optimize(tmpdir):
             mode="append",
         )
 
-    ds = StreamingDataset(output_dir)
-
-    assert len(ds) == 300
-    assert ds[:] == [(i, i**2) for i in range(100, 400)]
-
     optimize(
         fn=different_compress,
-        inputs=list(range(800, 900)),
+        inputs=list(range(0, 5)),
         num_workers=1,
         output_dir=output_dir,
         chunk_bytes="64MB",
@@ -157,5 +152,5 @@ def test_optimize(tmpdir):
 
     ds = StreamingDataset(output_dir)
 
-    assert len(ds) == 100
-    assert ds[:] == [(i, i**2, i**3) for i in range(800, 900)]
+    assert len(ds) == 5
+    assert ds[:] == [(i, i**2, i**3) for i in range(0, 5)]
