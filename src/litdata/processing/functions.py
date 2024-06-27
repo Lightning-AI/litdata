@@ -13,17 +13,22 @@
 
 import concurrent.futures
 import inspect
+import json
 import os
+import shutil
+import tempfile
+from dataclasses import dataclass
 from datetime import datetime
 from functools import partial
 from pathlib import Path
 from types import FunctionType
 from typing import Any, Callable, Dict, List, Literal, Optional, Sequence, Tuple, Union
 from urllib import parse
-from dataclasses import dataclass
+
 import torch
-import shutil
-from litdata.constants import _IS_IN_STUDIO, _INDEX_FILENAME
+from tqdm.auto import tqdm
+
+from litdata.constants import _INDEX_FILENAME, _IS_IN_STUDIO
 from litdata.processing.data_processor import DataChunkRecipe, DataProcessor, DataTransformRecipe
 from litdata.processing.readers import BaseReader
 from litdata.processing.utilities import (
@@ -31,9 +36,7 @@ from litdata.processing.utilities import (
     optimize_dns_context,
     read_index_file_content,
 )
-import tempfile
 from litdata.streaming.client import S3Client
-import json
 from litdata.streaming.dataloader import StreamingDataLoader
 from litdata.streaming.resolver import (
     Dir,
@@ -42,9 +45,7 @@ from litdata.streaming.resolver import (
     _execute,
     _resolve_dir,
 )
-from io import BytesIO
 from litdata.utilities._pytree import tree_flatten
-from tqdm.auto import tqdm
 
 
 def _is_remote_file(path: str) -> bool:
@@ -496,15 +497,15 @@ def merge_datasets(input_dirs: List[str], output_dir: str) -> None:
 
     input_dirs_file_content = [read_index_file_content(input_dir) for input_dir in resolved_input_dirs]
     output_dir_file_content = read_index_file_content(resolved_output_dir)
-    
+
     if output_dir_file_content is not None:
         raise ValueError("The output_dir already contains an optimized dataset")
 
     for input_dir_file_content in input_dirs_file_content[1:]:
-        if input_dirs_file_content[0]['config']['data_format'] != input_dir_file_content['config']['data_format']:
+        if input_dirs_file_content[0]["config"]["data_format"] != input_dir_file_content["config"]["data_format"]:
             raise ValueError("Your are trying to merge datasets with different data formats")
 
-        if input_dirs_file_content[0]['config']['compression'] != input_dir_file_content['config']['compression']:
+        if input_dirs_file_content[0]["config"]["compression"] != input_dir_file_content["config"]["compression"]:
             raise ValueError("Your are trying to merge datasets with different compression configuration.")
 
     chunks = []
@@ -515,14 +516,11 @@ def merge_datasets(input_dirs: List[str], output_dir: str) -> None:
             old_filename = chunk["filename"]
             new_filename = f"chunk-0-{counter}.bin"
             copy_infos.append(CopyInfo(input_dir=input_dir, old_filename=old_filename, new_filename=new_filename))
-            chunk['filename'] = new_filename
+            chunk["filename"] = new_filename
             chunks.append(chunk)
             counter += 1
 
-    index_json = {
-        "config": input_dirs_file_content[0]['config'],
-        "chunks": chunks
-    }
+    index_json = {"config": input_dirs_file_content[0]["config"], "chunks": chunks}
 
     for copy_info in tqdm(copy_infos):
         _apply_copy(copy_info, resolved_output_dir)
@@ -549,6 +547,7 @@ def _apply_copy(copy_info: CopyInfo, output_dir: Dir) -> None:
         )
     else:
         raise NotImplementedError
+
 
 def _save_index(index_json: Dict, output_dir: Dir) -> None:
     if output_dir.url is None:
