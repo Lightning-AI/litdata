@@ -53,7 +53,7 @@ def different_compress(index):
     return index, index**2, index**3
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="too slow")
+@pytest.mark.skipif(sys.platform == "win32" and sys.platform == "darwin", reason="too slow")
 def test_optimize_append_overwrite(tmpdir):
     output_dir = str(tmpdir / "output_dir")
 
