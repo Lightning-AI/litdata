@@ -71,7 +71,7 @@ class ChunksConfig:
         assert self._chunks is not None
         self._item_loader.setup(self._config, self._chunks, serializers, region_of_interest)
         self._intervals = self._item_loader.generate_intervals()
-        self._length = self._intervals[-1][-1]
+        self._length = self._intervals[-1][-1] if len(self._intervals) > 0 else 0
         self._downloader = None
 
         if remote_dir:

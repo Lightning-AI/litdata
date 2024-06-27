@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 from copy import deepcopy
 from typing import Any, Dict, List
@@ -36,8 +37,11 @@ def train_test_split(
     if any(not isinstance(split, float) for split in splits):
         raise ValueError("Each split should be a float.")
 
-    if not all(0 < _f <= 1 for _f in splits):
+    if not all(0 <= _f <= 1 for _f in splits):
         raise ValueError("Each Split should be a float with each value in [0,1].")
+
+    if any(split == 0 for split in splits):
+        logging.warning("Warning: some splits are 0, this will lead to empty datasets")
 
     if sum(splits) > 1:
         raise ValueError("Splits' sum must be less than 1.")
