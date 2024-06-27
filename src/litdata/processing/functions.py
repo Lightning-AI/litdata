@@ -13,7 +13,11 @@
 
 import concurrent.futures
 import inspect
+import json
 import os
+import shutil
+import tempfile
+from dataclasses import dataclass
 from datetime import datetime
 from functools import partial
 from pathlib import Path
@@ -23,7 +27,7 @@ from urllib import parse
 
 import torch
 
-from litdata.constants import _IS_IN_STUDIO
+from litdata.constants import _INDEX_FILENAME, _IS_IN_STUDIO, _TQDM_AVAILABLE
 from litdata.processing.data_processor import DataChunkRecipe, DataProcessor, DataTransformRecipe
 from litdata.processing.readers import BaseReader
 from litdata.processing.utilities import (
@@ -31,6 +35,7 @@ from litdata.processing.utilities import (
     optimize_dns_context,
     read_index_file_content,
 )
+from litdata.streaming.client import S3Client
 from litdata.streaming.dataloader import StreamingDataLoader
 from litdata.streaming.resolver import (
     Dir,
@@ -40,6 +45,13 @@ from litdata.streaming.resolver import (
     _resolve_dir,
 )
 from litdata.utilities._pytree import tree_flatten
+
+if _TQDM_AVAILABLE:
+    from tqdm.auto import tqdm as _tqdm
+else:
+
+    def _tqdm(iterator: Any) -> Any:
+        yield from iterator
 
 
 def _is_remote_file(path: str) -> bool:
@@ -470,3 +482,115 @@ class walk:
                         future = executor.submit(_listdir, folder)
                         self.futures.append(future)
         return
+
+
+@dataclass
+class CopyInfo:
+    input_dir: Dir
+    old_filename: str
+    new_filename: str
+
+
+def merge_datasets(input_dirs: List[str], output_dir: str) -> None:
+    """The merge_datasets utility enables to merge multiple existing optimized datasets into a single optimized
+    dataset.
+
+    Arguments:
+        input_dirs: A list of directories pointing to the existing optimized datasets.
+        output_dir: The directory where the merged dataset would be stored.
+
+    """
+    if len(input_dirs) == 0:
+        raise ValueError("The input directories needs to be defined.")
+
+    if len(input_dirs) == 1:
+        raise ValueError("There should be more than 1 input directory")
+
+    resolved_input_dirs = [_resolve_dir(input_dir) for input_dir in input_dirs]
+    resolved_output_dir = _resolve_dir(output_dir)
+
+    if any(input_dir == resolved_output_dir for input_dir in resolved_input_dirs):
+        raise ValueError("The provided output_dir was found within the input_dirs. This isn't supported.")
+
+    input_dirs_file_content = [read_index_file_content(input_dir) for input_dir in resolved_input_dirs]
+
+    if any(file_content is None for file_content in input_dirs_file_content):
+        raise ValueError("One of the provided input_dir doesn't have an index file.")
+
+    output_dir_file_content = read_index_file_content(resolved_output_dir)
+
+    if output_dir_file_content is not None:
+        raise ValueError("The output_dir already contains an optimized dataset")
+
+    assert input_dirs_file_content
+
+    for input_dir_file_content in input_dirs_file_content[1:]:
+        if input_dirs_file_content[0]["config"]["data_format"] != input_dir_file_content["config"]["data_format"]:  # type: ignore
+            raise ValueError("Your are trying to merge datasets with different data formats")
+
+        if input_dirs_file_content[0]["config"]["compression"] != input_dir_file_content["config"]["compression"]:  # type: ignore
+            raise ValueError("Your are trying to merge datasets with different compression configuration.")
+
+    chunks = []
+    copy_infos: List[CopyInfo] = []
+    counter = 0
+    for input_dir, input_dir_file_content in zip(resolved_input_dirs, input_dirs_file_content):
+        for chunk in input_dir_file_content["chunks"]:  # type: ignore
+            assert isinstance(chunk, dict)
+            old_filename = chunk["filename"]
+            new_filename = f"chunk-0-{counter}.bin"
+            copy_infos.append(CopyInfo(input_dir=input_dir, old_filename=old_filename, new_filename=new_filename))
+            chunk["filename"] = new_filename
+            chunks.append(chunk)
+            counter += 1
+
+    index_json = {"config": input_dirs_file_content[0]["config"], "chunks": chunks}  # type: ignore
+
+    for copy_info in _tqdm(copy_infos):
+        _apply_copy(copy_info, resolved_output_dir)
+
+    _save_index(index_json, resolved_output_dir)
+
+
+def _apply_copy(copy_info: CopyInfo, output_dir: Dir) -> None:
+    if output_dir.url is None and copy_info.input_dir.url is None:
+        assert copy_info.input_dir.path
+        assert output_dir.path
+        input_filepath = os.path.join(copy_info.input_dir.path, copy_info.old_filename)
+        output_filepath = os.path.join(output_dir.path, copy_info.new_filename)
+        os.makedirs(os.path.dirname(output_filepath), exist_ok=True)
+        shutil.copyfile(input_filepath, output_filepath)
+
+    elif output_dir.url and copy_info.input_dir.url:
+        input_obj = parse.urlparse(os.path.join(copy_info.input_dir.url, copy_info.old_filename))
+        output_obj = parse.urlparse(os.path.join(output_dir.url, copy_info.new_filename))
+
+        s3 = S3Client()
+        s3.client.copy(
+            {"Bucket": input_obj.netloc, "Key": input_obj.path.lstrip("/")},
+            output_obj.netloc,
+            output_obj.path.lstrip("/"),
+        )
+    else:
+        raise NotImplementedError
+
+
+def _save_index(index_json: Dict, output_dir: Dir) -> None:
+    if output_dir.url is None:
+        assert output_dir.path
+        with open(os.path.join(output_dir.path, _INDEX_FILENAME), "w") as f:
+            json.dump(index_json, f)
+    else:
+        with tempfile.NamedTemporaryFile("w") as f:
+            json.dump(index_json, f)
+
+            f.flush()
+
+            obj = parse.urlparse(os.path.join(output_dir.url, _INDEX_FILENAME))
+
+            s3 = S3Client()
+            s3.client.upload_file(
+                f.name,
+                obj.netloc,
+                obj.path.lstrip("/"),
+            )

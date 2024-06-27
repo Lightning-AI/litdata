@@ -32,6 +32,7 @@ _BOTO3_AVAILABLE = RequirementCache("boto3")
 _TORCH_AUDIO_AVAILABLE = RequirementCache("torchaudio")
 _ZSTD_AVAILABLE = RequirementCache("zstd")
 _GOOGLE_STORAGE_AVAILABLE = RequirementCache("google.cloud.storage")
+_TQDM_AVAILABLE = RequirementCache("tqdm")
 
 
 # DON'T CHANGE ORDER
