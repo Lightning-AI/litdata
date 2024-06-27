@@ -59,8 +59,6 @@ class CombinedStreamingDataset(IterableDataset):
         self._weights = weights
         self._iterate_over_all = iterate_over_all
 
-        num_datasets = len(datasets)
-
         if iterate_over_all and weights:
             raise ValueError(
                 "When `iterate_over_all` is set to True, the weights argument shouldn't be provided.",
@@ -70,10 +68,14 @@ class CombinedStreamingDataset(IterableDataset):
         self._iterate_over_all = iterate_over_all
 
         if weights is None:
-            # Inversely weighted based on length
-            self._weights = [1 / float(num_datasets)] * num_datasets
+            # Weighted based on the dataset length
+            dataset_lens = [len(d) for d in datasets]
+            total_len = sum(dataset_lens)
+            assert total_len > 0
+            self._weights = [len / total_len for len in dataset_lens]
         else:
-            self._weights = [w / sum(weights) for w in weights]
+            weights_sum = sum(weights)
+            self._weights = [w / weights_sum for w in weights]
 
         self._iterator: Optional[_CombinedDatasetIterator] = None
         self._use_streaming_dataloader = False
