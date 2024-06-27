@@ -18,7 +18,7 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 from time import sleep
-from typing import Any, Optional, Union
+from typing import Any, Literal, Optional, Union
 from urllib import parse
 
 from litdata.constants import _LIGHTNING_CLOUD_AVAILABLE
@@ -246,11 +246,38 @@ def _assert_dir_is_empty(output_dir: Dir, append: bool = False, overwrite: bool 
         )
 
 
-def _assert_dir_has_index_file(output_dir: Dir) -> None:
+def _assert_dir_has_index_file(output_dir: Dir, mode: Optional[Literal["append", "overwrite"]] = None) -> None:
+    if mode is not None and mode not in ["append", "overwrite"]:
+        raise ValueError(f"The provided `mode` should be either `append` or `overwrite`. Found {mode}.")
+
+    if mode == "append":
+        # in append mode, we neither need to delete the index file nor the chunks
+        return
+
     if not isinstance(output_dir, Dir):
         raise ValueError("The provided output_dir isn't a Dir Object.")
 
     if output_dir.url is None:
+        # this is a local directory
+        assert output_dir.path
+
+        if os.path.exists(output_dir.path):
+            # we need to delete the index file
+            index_file = os.path.join(output_dir.path, "index.json")
+            if os.path.exists(index_file) and mode is None:
+                raise RuntimeError(
+                    f"The provided output_dir `{output_dir.path}` already contains an optimized immutable datasets."
+                    " HINT: Did you consider changing the `output_dir` with your own versioning as a suffix?"
+                    " HINT: If you want to append/overwrite to the existing dataset, use `mode='append | overwrite'`."
+                )
+
+            # delete index.json file and chunks
+            if os.path.exists(os.path.join(output_dir.path, "index.json")):
+                os.remove(os.path.join(output_dir.path, "index.json"))
+            for file in os.listdir(output_dir.path):
+                if file.endswith(".bin"):
+                    os.remove(os.path.join(output_dir.path, file))
+
         return
 
     obj = parse.urlparse(output_dir.url)
@@ -279,12 +306,14 @@ def _assert_dir_has_index_file(output_dir: Dir) -> None:
     except botocore.exceptions.ClientError:
         has_index_file = False
 
-    if has_index_file:
+    if has_index_file and mode is None:
         raise RuntimeError(
             f"The provided output_dir `{output_dir.path}` already contains an optimized immutable datasets."
             " HINT: Did you consider changing the `output_dir` with your own versioning as a suffix?"
+            " HINT: If you want to append/overwrite to the existing dataset, use `mode='append | overwrite'`."
         )
 
+    # Delete all the files (including the index file in overwrite mode)
     bucket_name = obj.netloc
     s3 = boto3.resource("s3")
     for obj in s3.Bucket(bucket_name).objects.filter(Prefix=prefix):

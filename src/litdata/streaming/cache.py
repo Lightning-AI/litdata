@@ -42,6 +42,7 @@ class Cache:
         item_loader: Optional[BaseItemLoader] = None,
         max_cache_size: Union[int, str] = "100GB",
         serializers: Optional[Dict[str, Serializer]] = None,
+        writer_chunk_index: Optional[int] = None,
     ):
         """The Cache enables to optimise dataset format for cloud training. This is done by grouping several elements
         together in order to accelerate fetching.
@@ -56,6 +57,7 @@ class Cache:
             item_loader: The object responsible to generate the chunk intervals and load an item froma chunk.
             max_cache_size: The maximum cache size used by the reader when fetching the chunks.
             serializers: Provide your own serializers.
+            writer_chunk_index: The index of the chunk to start from when writing.
 
         """
         super().__init__()
@@ -68,6 +70,7 @@ class Cache:
             chunk_bytes=chunk_bytes,
             compression=compression,
             serializers=serializers,
+            chunk_index=writer_chunk_index or 0,
         )
         self._reader = BinaryReader(
             self._cache_dir,
@@ -137,9 +140,9 @@ class Cache:
         """Inform the writer the chunking phase is finished."""
         self._writer.merge(num_workers, node_rank=node_rank)
 
-    def _merge_no_wait(self, node_rank: Optional[int] = None) -> None:
+    def _merge_no_wait(self, node_rank: Optional[int] = None, existing_index: Optional[Dict[str, Any]] = None) -> None:
         """Inform the writer the chunking phase is finished."""
-        self._writer._merge_no_wait(node_rank=node_rank)
+        self._writer._merge_no_wait(node_rank=node_rank, existing_index=existing_index)
 
     def __len__(self) -> int:
         return self._reader.get_length()

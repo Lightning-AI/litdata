@@ -50,6 +50,7 @@ class BinaryWriter:
         compression: Optional[str] = None,
         follow_tensor_dimension: bool = True,
         serializers: Optional[Dict[str, Serializer]] = None,
+        chunk_index: Optional[int] = None,
     ):
         """The BinaryWriter enables to chunk dataset into an efficient streaming format for cloud training.
 
@@ -59,6 +60,7 @@ class BinaryWriter:
             chunk_size: The maximum number of items within a chunk.
             compression: The compression algorithm to use.
             serializers: Provide your own serializers.
+            chunk_index: The index of the chunk to start from.
 
         """
         self._cache_dir = cache_dir
@@ -89,7 +91,7 @@ class BinaryWriter:
             self._compressor: Compressor = _COMPRESSORS[self._compression]
 
         self._serialized_items: Dict[int, Item] = {}
-        self._chunk_index = 0
+        self._chunk_index = chunk_index or 0
         self._min_index: Optional[int] = None
         self._max_index: Optional[int] = None
         self._chunks_info: List[Dict[str, Any]] = []
@@ -426,14 +428,25 @@ class BinaryWriter:
 
         self._merge_no_wait(node_rank=node_rank)
 
-    def _merge_no_wait(self, node_rank: Optional[int] = None) -> None:
+    def _merge_no_wait(self, node_rank: Optional[int] = None, existing_index: Optional[Dict[str, Any]] = None) -> None:
         """Once all the workers have written their own index, the merge function is responsible to read and merge them
-        into a single index."""
+        into a single index.
+
+        Arguments:
+            node_rank: The node rank of the index file
+            existing_index: Existing index to be added to the newly created one.
+
+        """
         files = os.listdir(self._cache_dir)
         index_files = [f for f in files if f.endswith(_INDEX_FILENAME)]
 
         chunks_info = []
         config = None
+
+        if existing_index is not None:
+            chunks_info.extend(existing_index["chunks"])
+            config = existing_index["config"]
+
         for index_filename in sorted(index_files):
             chunk_path = os.path.join(self._cache_dir, index_filename)
             with open(chunk_path) as f:

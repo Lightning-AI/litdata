@@ -18,7 +18,7 @@ from datetime import datetime
 from functools import partial
 from pathlib import Path
 from types import FunctionType
-from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, Dict, List, Literal, Optional, Sequence, Tuple, Union
 from urllib import parse
 
 import torch
@@ -26,7 +26,11 @@ import torch
 from litdata.constants import _IS_IN_STUDIO
 from litdata.processing.data_processor import DataChunkRecipe, DataProcessor, DataTransformRecipe
 from litdata.processing.readers import BaseReader
-from litdata.processing.utilities import optimize_dns_context
+from litdata.processing.utilities import (
+    extract_rank_and_index_from_filename,
+    optimize_dns_context,
+    read_index_file_content,
+)
 from litdata.streaming.dataloader import StreamingDataLoader
 from litdata.streaming.resolver import (
     Dir,
@@ -136,11 +140,13 @@ class LambdaDataChunkRecipe(DataChunkRecipe):
         chunk_size: Optional[int],
         chunk_bytes: Optional[Union[int, str]],
         compression: Optional[str],
+        existing_index: Optional[Dict[str, Any]] = None,
     ):
         super().__init__(chunk_size=chunk_size, chunk_bytes=chunk_bytes, compression=compression)
         self._fn = fn
         self._inputs = inputs
         self.is_generator = False
+        self.existing_index = existing_index
 
         self.check_fn()
 
@@ -292,6 +298,7 @@ def optimize(
     reorder_files: bool = True,
     reader: Optional[BaseReader] = None,
     batch_size: Optional[int] = None,
+    mode: Optional[Literal["append", "overwrite"]] = None,
 ) -> None:
     """This function converts a dataset into chunks possibly in a distributed way.
 
@@ -315,8 +322,13 @@ def optimize(
         reorder_files: By default, reorders the files by file size to distribute work equally among all workers.
             Set this to ``False`` if the order in which samples are processed should be preserved.
         batch_size: Group the inputs into batches of batch_size length.
+        mode: The mode to use when writing the data. Accepts either ``append`` or ``overwrite`` or None.
+            Defaults to None.
 
     """
+    if mode is not None and mode not in ["append", "overwrite"]:
+        raise ValueError(f"The provided `mode` should be either `append` or `overwrite`. Found {mode}.")
+
     if isinstance(inputs, StreamingDataLoader) and batch_size is not None:
         raise ValueError("When providing a streaming dataloader, pass the batch_size to the dataloader directly.")
 
@@ -353,7 +365,7 @@ def optimize(
                 " HINT: You can either use `/teamspace/s3_connections/...` or `/teamspace/datasets/...`."
             )
 
-        _assert_dir_has_index_file(_output_dir)
+        _assert_dir_has_index_file(_output_dir, mode=mode)
 
         if not isinstance(inputs, StreamingDataLoader):
             resolved_dir = _resolve_dir(input_dir or _get_input_dir(inputs))
@@ -366,6 +378,18 @@ def optimize(
         if num_workers == 0:
             num_workers = 1
 
+        num_workers = num_workers or _get_default_num_workers()
+        state_dict = {rank: 0 for rank in range(num_workers)}
+
+        existing_index_file_content = read_index_file_content(_output_dir) if mode == "append" else None
+
+        if existing_index_file_content is not None:
+            for chunk in existing_index_file_content["chunks"]:
+                rank, index = extract_rank_and_index_from_filename(chunk["filename"])
+
+                if rank < num_workers and state_dict[rank] <= index:
+                    state_dict[rank] = index + 1  # +1 because we want to start from the next index
+
         data_processor = DataProcessor(
             input_dir=resolved_dir,
             output_dir=_output_dir,
@@ -375,6 +399,7 @@ def optimize(
             num_uploaders=num_uploaders,
             reorder_files=reorder_files,
             reader=reader,
+            state_dict=state_dict,
         )
 
         with optimize_dns_context(True):
@@ -385,6 +410,7 @@ def optimize(
                     chunk_size=chunk_size,
                     chunk_bytes=chunk_bytes,
                     compression=compression,
+                    existing_index=existing_index_file_content,
                 )
             )
         return None

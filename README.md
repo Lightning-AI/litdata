@@ -122,6 +122,7 @@ dataloader = StreamingDataLoader(dataset)
 
 - [Multi-GPU / Multi-Node Support](#multi-gpu--multi-node-support)
 - [Subsample and split your datasets](#subsample-and-split-your-datasets)
+- [Append or Overwrite optimized datasets](#append-or-overwrite-optimized-datasets)
 - [Access any item](#access-any-item)
 - [Use any data transforms](#use-any-data-transforms)
 - [The Map Operator](#the-map-operator)
@@ -176,6 +177,52 @@ dataset = StreamingDataset("s3://my-bucket/my-data", subsample=0.01) # data are 
 print(len(dataset)) # display the length of your data
 # out: 1000
 ```
+
+Or simply subsample them
+
+```python
+from litdata import StreamingDataset, train_test_split
+
+dataset = StreamingDataset("s3://my-bucket/my-data", subsample=0.01) # data are stored in the cloud
+
+print(len(dataset)) # display the length of your data
+# out: 1000
+```
+
+## Append or overwrite optimized datasets
+
+LitData optimized datasets are assumed to be immutable. However, you can make the decision to modify them by changing the mode to either `append` or `overwrite`.
+
+```python
+from litdata import optimize, StreamingDataset
+
+def compress(index):
+    return index, index**2
+
+if __name__ == "__main__":
+    # Add some data
+    optimize(
+        fn=compress,
+        inputs=list(range(100)),
+        output_dir="./my_optimized_dataset",
+        chunk_bytes="64MB",
+    )
+
+    # Later on, you add more data
+    optimize(
+        fn=compress,
+        inputs=list(range(100, 200)),
+        output_dir="./my_optimized_dataset",
+        chunk_bytes="64MB",
+        mode="append",
+    )
+
+    ds = StreamingDataset("./my_optimized_dataset")
+    assert len(ds) == 200
+    assert ds[:] == [(i, i**2) for i in range(200)]
+```
+
+The `overwrite` mode will delete the existing data and start from fresh.
 
 ## Access any item
 
