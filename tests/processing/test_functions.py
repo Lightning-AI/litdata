@@ -45,14 +45,17 @@ def test_get_input_dir_with_s3_path():
     assert input_dir.url == "s3://my_bucket/my_folder"
 
 
+def compress(index):
+    return index, index**2
+
+
+def different_compress(index):
+    return index, index**2, index**3
+
+
+@pytest.mark.skipif(sys.platform == "win32" or sys.platform == "darwin", reason="too slow")
 def test_optimize(tmpdir):
     output_dir = str(tmpdir / "output_dir")
-
-    def compress(index):
-        return index, index**2
-
-    def different_compress(index):
-        return index, index**2, index**3
 
     optimize(
         fn=compress,
