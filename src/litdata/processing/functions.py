@@ -509,6 +509,9 @@ def merge_datasets(input_dirs: List[str], output_dir: str) -> None:
     resolved_input_dirs = [_resolve_dir(input_dir) for input_dir in input_dirs]
     resolved_output_dir = _resolve_dir(output_dir)
 
+    if any(input_dir == resolved_output_dir for input_dir in resolved_input_dirs):
+        raise ValueError("The provided output_dir was found within the input_dirs. This isn't supported.")
+
     input_dirs_file_content = [read_index_file_content(input_dir) for input_dir in resolved_input_dirs]
 
     if any(file_content is None for file_content in input_dirs_file_content):
