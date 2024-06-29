@@ -146,4 +146,36 @@ def test_custom_collate():
     assert dataset._datasets[1].shuffle
     dataloader_iter = iter(dataloader)
     assert next(dataloader_iter) == "received"
-    assert dataloader._num_samples_yielded_combined[0] == [2]
+    assert dataloader._num_samples_yielded_combined[0] == [dataset._datasets[0].counter, dataset._datasets[1].counter]
+
+def test_custom_collate_multiworker():
+    dataset = TestCombinedStreamingDataset(
+        [TestStatefulDatasetDict(10, 1), TestStatefulDatasetDict(10, -1)],
+        42,
+        weights=(0.5, 0.5),
+        iterate_over_all=False,
+    )
+    assert dataset._datasets[0].shuffle is None
+    assert dataset._datasets[1].shuffle is None
+    dataloader = StreamingDataLoader(dataset, batch_size=2, num_workers=3, shuffle=True, collate_fn=custom_collate_fn)
+    assert dataset._datasets[0].shuffle
+    assert dataset._datasets[1].shuffle
+    dataloader_iter = iter(dataloader)
+    assert next(dataloader_iter) == "received"
+    assert dataloader._num_samples_yielded_combined[0] == [1, 1]
+    assert next(dataloader_iter) == "received"
+    assert dataloader._num_samples_yielded_combined[1] == [1, 1]
+    assert next(dataloader_iter) == "received"
+    assert dataloader._num_samples_yielded_combined[2] == [1, 1]
+    assert next(dataloader_iter) == "received"
+    assert dataloader._num_samples_yielded_combined[0] == [3, 1]
+
+    # Iterate through the remaining samples
+    try:
+        while next(dataloader_iter) == "received":
+            continue
+    except AssertionError:
+        assert dataloader._num_samples_yielded_combined == {0: [10, 8], 1: [10, 8], 2: [10, 8]}
+
+    # Try calling the state_dict. No error should follow
+    _state_dict = dataloader.state_dict()
