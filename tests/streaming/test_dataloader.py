@@ -148,6 +148,7 @@ def test_custom_collate():
     assert next(dataloader_iter) == "received"
     assert dataloader._num_samples_yielded_combined[0] == [dataset._datasets[0].counter, dataset._datasets[1].counter]
 
+
 def test_custom_collate_multiworker():
     dataset = TestCombinedStreamingDataset(
         [TestStatefulDatasetDict(10, 1), TestStatefulDatasetDict(10, -1)],
