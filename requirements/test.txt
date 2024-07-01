@@ -1,4 +1,4 @@
-coverage ==7.5.4
+coverage ==7.5.*
 pytest ==8.2.1
 pytest-cov ==5.0.0
 pytest-timeout ==2.3.1
