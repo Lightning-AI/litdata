@@ -280,7 +280,7 @@ def _assert_dir_has_index_file(
                 # only possible if mode = "overwrite"
                 os.remove(os.path.join(output_dir.path, "index.json"))
 
-            if mode == "overwrite" or (mode is None and use_checkpoint == False):
+            if mode == "overwrite" or (mode is None and not use_checkpoint):
                 for file in os.listdir(output_dir.path):
                     if file.endswith(".bin"):
                         os.remove(os.path.join(output_dir.path, file))
@@ -328,7 +328,7 @@ def _assert_dir_has_index_file(
     bucket_name = obj.netloc
     s3 = boto3.resource("s3")
 
-    if mode == "overwrite" or (mode is None and use_checkpoint == False):
+    if mode == "overwrite" or (mode is None and not use_checkpoint):
         for obj in s3.Bucket(bucket_name).objects.filter(Prefix=prefix):
             s3.Object(bucket_name, obj.key).delete()
 
