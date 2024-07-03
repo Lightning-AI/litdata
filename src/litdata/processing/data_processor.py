@@ -540,18 +540,20 @@ class BaseWorker:
         self.cache._reader._rank = _get_node_rank() * self.num_workers + self.worker_index
 
         # return
-        if self.use_checkpoint and all([
+        if self.use_checkpoint and all(
+            [
                 self.checkpoint_chunks_info is not None,
                 self.checkpoint_next_index is not None,
-            ]):
-                assert isinstance(self.checkpoint_next_index, int)
-                assert isinstance(self.checkpoint_chunks_info, list)
+            ]
+        ):
+            assert isinstance(self.checkpoint_next_index, int)
+            assert isinstance(self.checkpoint_chunks_info, list)
 
-                self.cache._writer._chunks_info = self.checkpoint_chunks_info
-                if (self.writer_starting_chunk_index is None) or (
-                    self.checkpoint_next_index >= self.writer_starting_chunk_index
-                ):
-                    self.cache._writer._chunk_index = self.checkpoint_next_index
+            self.cache._writer._chunks_info = self.checkpoint_chunks_info
+            if (self.writer_starting_chunk_index is None) or (
+                self.checkpoint_next_index >= self.writer_starting_chunk_index
+            ):
+                self.cache._writer._chunk_index = self.checkpoint_next_index
 
     def _try_upload(self, data: Optional[Union[str, Tuple[str, str]]]) -> None:
         if not data or (self.output_dir.url if self.output_dir.url else self.output_dir.path) is None:
@@ -1236,28 +1238,27 @@ class DataProcessor:
 
                 return
 
-            else:
-                obj = parse.urlparse(self.output_dir.url)
+            obj = parse.urlparse(self.output_dir.url)
 
-                if obj.scheme != "s3":
-                    raise ValueError(f"The provided folder should start with s3://. Found {self.output_dir.path}.")
+            if obj.scheme != "s3":
+                raise ValueError(f"The provided folder should start with s3://. Found {self.output_dir.path}.")
 
-                # TODO: Add support for all cloud providers
+            # TODO: Add support for all cloud providers
 
-                s3 = S3Client()
+            s3 = S3Client()
 
-                prefix = obj.path.lstrip("/").rstrip("/") + "/" + ".checkpoints/"
+            prefix = obj.path.lstrip("/").rstrip("/") + "/" + ".checkpoints/"
 
-                # write config.json file to temp directory and upload it to s3
-                with tempfile.TemporaryDirectory() as temp_dir:
-                    temp_file_name = os.path.join(temp_dir, "config.json")
-                    with open(temp_file_name, "w") as f:
-                        json.dump(config, f)
-                    s3.client.upload_file(
-                        temp_file_name,
-                        obj.netloc,
-                        os.path.join(prefix, "config.json"),
-                    )
+            # write config.json file to temp directory and upload it to s3
+            with tempfile.TemporaryDirectory() as temp_dir:
+                temp_file_name = os.path.join(temp_dir, "config.json")
+                with open(temp_file_name, "w") as f:
+                    json.dump(config, f)
+                s3.client.upload_file(
+                    temp_file_name,
+                    obj.netloc,
+                    os.path.join(prefix, "config.json"),
+                )
         except Exception as e:
             print(e)
 
@@ -1280,49 +1281,50 @@ class DataProcessor:
                 # if the config.json file doesn't exist, we don't have any checkpoint saved
                 return
 
-            with open(os.path.join(self.output_dir.path, ".checkpoints", "config.json"), "r") as f:
+            with open(os.path.join(self.output_dir.path, ".checkpoints", "config.json")) as f:
                 config = json.load(f)
 
             if config["num_workers"] != self.num_workers:
-                raise ValueError("The number of workers in the checkpoints doesn't match the current number of workers.")
+                raise ValueError(
+                    "The number of workers in the checkpoints doesn't match the current number of workers."
+                )
 
             if config["workers_user_items"] != workers_user_items:
                 raise ValueError("Existing checkpoints are not compatible with the current configuration.")
 
-            checkpoint_file_names = [f'checkpoint-{worker_idx}.json' for worker_idx in range(self.num_workers)]
+            checkpoint_file_names = [f"checkpoint-{worker_idx}.json" for worker_idx in range(self.num_workers)]
 
             for i, checkpoint_file_name in enumerate(checkpoint_file_names):
                 if not os.path.exists(os.path.join(self.output_dir.path, ".checkpoints", checkpoint_file_name)):
                     # if the checkpoint file doesn't exist, we don't have any checkpoint saved for this worker
                     continue
 
-                with open(os.path.join(self.output_dir.path, ".checkpoints", checkpoint_file_name), "r") as f:
+                with open(os.path.join(self.output_dir.path, ".checkpoints", checkpoint_file_name)) as f:
                     checkpoint = json.load(f)
 
                 self.checkpoint_chunks_info[i] = checkpoint["chunks"]
                 self.checkpoint_next_index[i] = checkpoint["done_till_index"]
             return
 
-        else:
-            obj = parse.urlparse(self.output_dir.url)
+        obj = parse.urlparse(self.output_dir.url)
 
-            if obj.scheme != "s3":
-                raise ValueError(f"The provided folder should start with s3://. Found {self.output_dir.path}.")
+        if obj.scheme != "s3":
+            raise ValueError(f"The provided folder should start with s3://. Found {self.output_dir.path}.")
 
-            # TODO: Add support for all cloud providers
-            s3 = S3Client()
-            prefix = obj.path.lstrip("/").rstrip("/") + "/" + ".checkpoints/"
+        # TODO: Add support for all cloud providers
+        s3 = S3Client()
+        prefix = obj.path.lstrip("/").rstrip("/") + "/" + ".checkpoints/"
 
-            # write config.json file to temp directory and upload it to s3
-            with tempfile.TemporaryDirectory() as temp_dir:
-                temp_file_name = os.path.join(temp_dir, "config.json")
-                with open(temp_file_name, "w") as f:
-                    json.dump(config, f)
-                s3.client.upload_file(
-                    temp_file_name,
-                    obj.netloc,
-                    os.path.join(prefix, "config.json"),
-                )
+        # write config.json file to temp directory and upload it to s3
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_file_name = os.path.join(temp_dir, "config.json")
+            with open(temp_file_name, "w") as f:
+                json.dump(config, f)
+            s3.client.upload_file(
+                temp_file_name,
+                obj.netloc,
+                os.path.join(prefix, "config.json"),
+            )
 
     def _load_checkpoint_config(self, workers_user_items: List[List[Any]]) -> None:
         if not self.use_checkpoint:
