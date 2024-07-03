@@ -311,6 +311,7 @@ def optimize(
     reader: Optional[BaseReader] = None,
     batch_size: Optional[int] = None,
     mode: Optional[Literal["append", "overwrite"]] = None,
+    use_checkpoint: bool = False,
 ) -> None:
     """This function converts a dataset into chunks possibly in a distributed way.
 
@@ -336,6 +337,8 @@ def optimize(
         batch_size: Group the inputs into batches of batch_size length.
         mode: The mode to use when writing the data. Accepts either ``append`` or ``overwrite`` or None.
             Defaults to None.
+        use_checkpoint: Whether to create checkpoints while processing the data, which can be used to resume the
+            processing from the last checkpoint if the process is interrupted. (`Default: False`)
 
     """
     if mode is not None and mode not in ["append", "overwrite"]:
@@ -377,7 +380,7 @@ def optimize(
                 " HINT: You can either use `/teamspace/s3_connections/...` or `/teamspace/datasets/...`."
             )
 
-        _assert_dir_has_index_file(_output_dir, mode=mode)
+        _assert_dir_has_index_file(_output_dir, mode=mode, use_checkpoint=use_checkpoint)
 
         if not isinstance(inputs, StreamingDataLoader):
             resolved_dir = _resolve_dir(input_dir or _get_input_dir(inputs))
@@ -412,6 +415,7 @@ def optimize(
             reorder_files=reorder_files,
             reader=reader,
             state_dict=state_dict,
+            use_checkpoint=use_checkpoint,
         )
 
         with optimize_dns_context(True):

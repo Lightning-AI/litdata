@@ -152,3 +152,7 @@ class Cache:
 
     def _get_chunk_index_from_index(self, index: int) -> Tuple[int, int]:
         return self._reader._get_chunk_index_from_index(index)
+
+    def save_checkpoint(self, checkpoint_dir: str = ".checkpoints") -> Optional[str]:
+        """Save the current state of the writer to a checkpoint."""
+        return self._writer.save_checkpoint(checkpoint_dir=checkpoint_dir)

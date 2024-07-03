@@ -13,6 +13,7 @@
 
 import json
 import os
+import uuid
 import warnings
 from dataclasses import dataclass
 from time import sleep
@@ -103,6 +104,7 @@ class BinaryWriter:
 
         self._per_sample_num_bytes = 0
         self._per_sample_num_items = 0
+        self.last_checkpoint_chunk_info: List[Dict[str, Any]] = []
 
     @property
     def filled(self) -> bool:
@@ -494,3 +496,27 @@ class BinaryWriter:
                 data=b"",
             )
         return out
+
+
+    def save_checkpoint(self, checkpoint_dir: str = ".checkpoints") -> Optional[str]:
+        """Save the current state of the writer to a checkpoint."""
+        checkpoint_dir = os.path.join(self._cache_dir, checkpoint_dir)
+        if not os.path.exists(checkpoint_dir):
+            os.makedirs(checkpoint_dir)
+
+        if self._chunks_info == self.last_checkpoint_chunk_info:
+            # to avoid saving the same checkpoint twice
+            return None
+
+        unique_id = uuid.uuid4().hex
+        done_till_index = sum(chnk_info["chunk_size"] for chnk_info in self._chunks_info)
+
+        checkpoint_filepath = os.path.join(
+            checkpoint_dir, f"checkpoint-{self.rank}-{unique_id}.json")
+
+        checkPoint = {"chunks": self._chunks_info, "config": self.get_config(), "done_till_index": done_till_index}
+
+        with open(checkpoint_filepath, "w") as f:
+            json.dump(checkPoint, f)
+
+        return checkpoint_filepath
