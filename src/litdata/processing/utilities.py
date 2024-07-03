@@ -252,11 +252,12 @@ def extract_rank_and_index_from_filename(chunk_filename: str) -> Tuple[int, int]
 
 
 def remove_uuid_from_filename(filepath: str) -> str:
-    """
-    Remove the unique id from the filepath.
-    Expects the filepath to be in the format `checkpoint-<rank>-<uuid>.json`.
+    """Remove the unique id from the filepath. Expects the filepath to be in the format
+    `checkpoint-<rank>-<uuid>.json`.
+
     e.g.: `checkpoint-0-9fe2c4e93f654fdbb24c02b15259716c.json`
         -> `checkpoint-0.json`
+
     """
 
     if not filepath.__contains__(".checkpoints"):
@@ -264,18 +265,19 @@ def remove_uuid_from_filename(filepath: str) -> str:
 
     return filepath[:-38] + ".json"
 
-def downloadDirectoryFromS3(bucketName: str, remoteDirectoryName: str, localDirectoryName: str)->str:
-    s3_resource = boto3.resource('s3')
+
+def downloadDirectoryFromS3(bucketName: str, remoteDirectoryName: str, localDirectoryName: str) -> str:
+    s3_resource = boto3.resource("s3")
     bucket = s3_resource.Bucket(bucketName)
 
     saved_file_dir = "."
 
-    for obj in bucket.objects.filter(Prefix = remoteDirectoryName):
+    for obj in bucket.objects.filter(Prefix=remoteDirectoryName):
         local_filename = os.path.join(localDirectoryName, obj.key)
 
         if not os.path.exists(os.path.dirname(local_filename)):
             os.makedirs(os.path.dirname(local_filename))
-        with open(local_filename, 'wb') as f:
+        with open(local_filename, "wb") as f:
             s3_resource.meta.client.download_fileobj(bucketName, obj.key, f)
             saved_file_dir = os.path.dirname(local_filename)
 

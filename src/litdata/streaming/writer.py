@@ -497,7 +497,6 @@ class BinaryWriter:
             )
         return out
 
-
     def save_checkpoint(self, checkpoint_dir: str = ".checkpoints") -> Optional[str]:
         """Save the current state of the writer to a checkpoint."""
         checkpoint_dir = os.path.join(self._cache_dir, checkpoint_dir)
@@ -511,8 +510,7 @@ class BinaryWriter:
         unique_id = uuid.uuid4().hex
         done_till_index = sum(chnk_info["chunk_size"] for chnk_info in self._chunks_info)
 
-        checkpoint_filepath = os.path.join(
-            checkpoint_dir, f"checkpoint-{self.rank}-{unique_id}.json")
+        checkpoint_filepath = os.path.join(checkpoint_dir, f"checkpoint-{self.rank}-{unique_id}.json")
 
         checkPoint = {"chunks": self._chunks_info, "config": self.get_config(), "done_till_index": done_till_index}
 
