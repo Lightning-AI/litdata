@@ -264,12 +264,19 @@ def remove_uuid_from_filename(filepath: str) -> str:
 
     return filepath[:-38] + ".json"
 
-def downloadDirectoryFromS3(bucketName: str, remoteDirectoryName: str, localDirectoryName: str)->None:
+def downloadDirectoryFromS3(bucketName: str, remoteDirectoryName: str, localDirectoryName: str)->str:
     s3_resource = boto3.resource('s3')
-    bucket = s3_resource.Bucket(bucketName) 
+    bucket = s3_resource.Bucket(bucketName)
+
+    saved_file_dir = "."
+
     for obj in bucket.objects.filter(Prefix = remoteDirectoryName):
         local_filename = os.path.join(localDirectoryName, obj.key)
+
         if not os.path.exists(os.path.dirname(local_filename)):
             os.makedirs(os.path.dirname(local_filename))
         with open(local_filename, 'wb') as f:
             s3_resource.meta.client.download_fileobj(bucketName, obj.key, f)
+            saved_file_dir = os.path.dirname(local_filename)
+
+    return saved_file_dir

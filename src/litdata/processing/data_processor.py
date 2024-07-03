@@ -1010,6 +1010,7 @@ class DataProcessor:
             self._load_checkpoint_config(workers_user_items)
 
             assert isinstance(self.checkpoint_next_index, list)
+            
             if all([self.checkpoint_next_index[i] == 0 for i in range(self.num_workers)]):
                 # save the current configuration in the checkpoints.json file
                 print("No checkpoints found. Saving current configuration...")
@@ -1317,7 +1318,7 @@ class DataProcessor:
 
             if obj.scheme != "s3":
                 raise ValueError(f"The provided folder should start with s3://. Found {self.output_dir.path}.")
-            
+
             # TODO: Add support for all cloud providers
 
             s3 = S3Client()
@@ -1329,32 +1330,32 @@ class DataProcessor:
 
             # download all the checkpoint files in tempdir and read them
             with tempfile.TemporaryDirectory() as temp_dir:
-                downloadDirectoryFromS3(bucket_name, prefix, temp_dir)
-                
-                if not os.path.exists(os.path.join(temp_dir, "config.json")):
+                saved_file_dir = downloadDirectoryFromS3(bucket_name, prefix, temp_dir)
+
+                if not os.path.exists(os.path.join(saved_file_dir, "config.json")):
                     # if the config.json file doesn't exist, we don't have any checkpoint saved
                     return
 
                 # read the config.json file
-                with open(os.path.join(temp_dir, "config.json"), "r") as f:
+                with open(os.path.join(saved_file_dir, "config.json"), "r") as f:
                     config = json.load(f)
-                
+
                 if config["num_workers"] != self.num_workers:
                     raise ValueError("The number of workers in the checkpoints doesn't match the current number of workers.")
-            
+
                 if config["workers_user_items"] != workers_user_items:
                     raise ValueError("Existing checkpoints are not compatible with the current configuration.")
-            
+
                 checkpoint_file_names = [f'checkpoint-{worker_idx}.json' for worker_idx in range(self.num_workers)]
-                
+
                 for i, checkpoint_file_name in enumerate(checkpoint_file_names):
-                    if not os.path.exists(os.path.join(temp_dir, checkpoint_file_name)):
+                    if not os.path.exists(os.path.join(saved_file_dir, checkpoint_file_name)):
                         # if the checkpoint file doesn't exist, we don't have any checkpoint saved for this worker
                         continue
-                
-                    with open(os.path.join(temp_dir, checkpoint_file_name), "r") as f:
+
+                    with open(os.path.join(saved_file_dir, checkpoint_file_name), "r") as f:
                         checkpoint = json.load(f)
-                    
+
                     self.checkpoint_chunks_info[i] = checkpoint["chunks"]
                     self.checkpoint_next_index[i] = checkpoint["done_till_index"]
             return
