@@ -306,7 +306,9 @@ class FileSerializer(Serializer):
         return data
 
     def can_serialize(self, data: Any) -> bool:
-        return isinstance(data, str) and os.path.isfile(data)
+        # return isinstance(data, str) and os.path.isfile(data)
+        print("FileSerializer will be removed in the future.")
+        return False
 
 
 class VideoSerializer(Serializer):
