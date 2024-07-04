@@ -157,6 +157,90 @@ def test_optimize_append_overwrite(tmpdir):
     assert ds[:] == [(i, i**2, i**3) for i in range(0, 5)]
 
 
+@pytest.mark.skipif(sys.platform == "win32" and sys.platform == "darwin", reason="too slow")
+def test_optimize_checkpoint_in_none_and_append_mode(tmpdir):
+    def fn(i: int):
+        if i in [1, 2, 4]:
+            raise ValueError("An error occurred")
+        return i, i**2
+
+    def another_fn(i: int):
+        return i, i**2
+
+    output_dir = str(tmpdir / "output_dir")
+
+    with pytest.raises(RuntimeError, match="We found the following error"):
+        optimize(
+            fn=fn,
+            inputs=list(range(4)),
+            output_dir=output_dir,
+            chunk_size=1,
+            num_workers=2,
+            use_checkpoint=True,
+        )
+
+    # check that the checkpoints are created
+    assert os.path.exists(os.path.join(output_dir, ".checkpoints"))
+    assert os.path.exists(os.path.join(output_dir, ".checkpoints", "config.json"))
+
+    optimize(
+        fn=another_fn,
+        inputs=list(range(4)),
+        output_dir=output_dir,
+        chunk_size=1,
+        num_workers=2,
+        use_checkpoint=True,
+    )
+
+    ds = StreamingDataset(output_dir)
+
+    assert len(ds) == 4
+    assert ds[:] == [(i, i**2) for i in range(4)]
+    # checkpoints should be deleted
+    assert not os.path.exists(os.path.join(output_dir, ".checkpoints"))
+
+    # --------- now test for append mode ---------
+
+    with pytest.raises(RuntimeError, match="We found the following error"):
+        optimize(
+            fn=fn,
+            inputs=list(range(4,8)),
+            output_dir=output_dir,
+            chunk_size=1,
+            num_workers=2,
+            use_checkpoint=True,
+            mode="append",
+        )
+
+    # check that the checkpoints are created
+    assert os.path.exists(os.path.join(output_dir, ".checkpoints"))
+    assert os.path.exists(os.path.join(
+        output_dir, ".checkpoints", "config.json"))
+    print("-"*80)
+    # print all the files in the checkpoints folder
+    for f in os.listdir(os.path.join(output_dir, ".checkpoints")):
+        print(f)
+    print("-"*80)
+
+    optimize(
+        fn=another_fn,
+        inputs=list(range(4, 8)),
+        output_dir=output_dir,
+        chunk_size=1,
+        num_workers=2,
+        use_checkpoint=True,
+        mode="append",
+    )
+
+    ds = StreamingDataset(output_dir)
+
+    assert len(ds) == 8
+    assert ds[:] == [(i, i**2) for i in range(8)]
+    # checkpoints should be deleted
+    assert not os.path.exists(os.path.join(output_dir, ".checkpoints"))
+
+
+
 def test_merge_datasets(tmpdir):
     folder_1 = os.path.join(tmpdir, "folder_1")
     folder_2 = os.path.join(tmpdir, "folder_2")

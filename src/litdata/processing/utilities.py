@@ -263,6 +263,7 @@ def remove_uuid_from_filename(filepath: str) -> str:
     if not filepath.__contains__(".checkpoints"):
         return filepath
 
+    # uuid is of 32 characters, '.json' is 5 characters and '-' is 1 character
     return filepath[:-38] + ".json"
 
 

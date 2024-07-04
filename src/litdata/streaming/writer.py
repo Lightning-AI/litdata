@@ -460,7 +460,7 @@ class BinaryWriter:
                 elif config != data["config"]:
                     raise Exception(
                         "The config isn't consistent between chunks. This shouldn't have happened."
-                        f"Found {config} {data['config']}."
+                        f"Found {config}; {data['config']}."
                     )
 
                 chunks_info.extend(data["chunks"])
