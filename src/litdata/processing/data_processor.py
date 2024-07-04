@@ -444,7 +444,6 @@ class BaseWorker:
             self._loop()
         except Exception:
             traceback_format = traceback.format_exc()
-            print(traceback_format)
             self.error_queue.put(traceback_format)
         print(f"Worker {str(_get_node_rank() * self.num_workers + self.worker_index)} is done.")
 
@@ -550,10 +549,7 @@ class BaseWorker:
             assert isinstance(self.checkpoint_chunks_info, list)
 
             self.cache._writer._chunks_info = self.checkpoint_chunks_info
-            if (self.writer_starting_chunk_index is None) or (
-                self.checkpoint_next_index >= self.writer_starting_chunk_index
-            ):
-                self.cache._writer._chunk_index = self.checkpoint_next_index
+            self.cache._writer._chunk_index += self.checkpoint_next_index
 
     def _try_upload(self, data: Optional[Union[str, Tuple[str, str]]]) -> None:
         if not data or (self.output_dir.url if self.output_dir.url else self.output_dir.path) is None:
@@ -677,9 +673,9 @@ class BaseWorker:
                 chunk_filepath = self.cache._add_item(self._index_counter, item_data_or_generator)
                 self._try_upload(chunk_filepath)
                 self._index_counter += 1
-            if self.use_checkpoint:
-                checkpoint_filepath = self.cache.save_checkpoint()
-                self._try_upload(checkpoint_filepath)
+                if self.use_checkpoint:
+                    checkpoint_filepath = self.cache.save_checkpoint()
+                    self._try_upload(checkpoint_filepath)
         except Exception as e:
             raise RuntimeError(f"Failed processing {self.items[index]=}; {index=}") from e
 
@@ -691,7 +687,7 @@ class BaseWorker:
                 if isinstance(chunk_filepath, str) and os.path.exists(chunk_filepath):
                     self.to_upload_queues[i % self.num_uploaders].put(chunk_filepath)
 
-        if self.use_checkpoint:
+        if self.use_checkpoint and not self.data_recipe.is_generator:
             checkpoint_filepath = self.cache.save_checkpoint()
             self._try_upload(checkpoint_filepath)
 
@@ -1002,6 +998,9 @@ class DataProcessor:
         print(f"Setup finished in {round(time() - t0, 3)} seconds. Found {len(user_items)} items to process.")
 
         if self.use_checkpoint:
+            if hasattr(data_recipe, "is_generator") and data_recipe.is_generator:
+                # Checkpoint feature is not supported for generators for now.
+                raise ValueError("Checkpoint feature is not supported for generators, yet.")
             # get the last checkpoint details
             print("Resuming from last saved checkpoint...")
             self._load_checkpoint_config(workers_user_items)
@@ -1121,7 +1120,8 @@ class DataProcessor:
 
     def _exit_on_error(self, error: str) -> None:
         for w in self.workers:
-            w.join(0)
+            # w.join(0)
+            w.terminate() # already error has occurred. So, no benefit of processing further.
         raise RuntimeError(f"We found the following error {error}.")
 
     def _create_process_workers(self, data_recipe: DataRecipe, workers_user_items: List[List[Any]]) -> None:
@@ -1261,70 +1261,6 @@ class DataProcessor:
                 )
         except Exception as e:
             print(e)
-
-    def _load_checkpoint_config(self, workers_user_items: List[List[Any]]) -> None:
-        if not self.use_checkpoint:
-            return
-
-        default_chunk_info: List[Dict[str, Any]] = []
-
-        self.checkpoint_chunks_info = [default_chunk_info for _ in range(self.num_workers)]
-        self.checkpoint_next_index = [0 for _ in range(self.num_workers)]
-
-        if self.output_dir.url is None:
-            assert self.output_dir.path
-
-            if not os.path.exists(os.path.join(self.output_dir.path, ".checkpoints")):
-                return
-
-            if not os.path.exists(os.path.join(self.output_dir.path, ".checkpoints", "config.json")):
-                # if the config.json file doesn't exist, we don't have any checkpoint saved
-                return
-
-            with open(os.path.join(self.output_dir.path, ".checkpoints", "config.json")) as f:
-                config = json.load(f)
-
-            if config["num_workers"] != self.num_workers:
-                raise ValueError(
-                    "The number of workers in the checkpoints doesn't match the current number of workers."
-                )
-
-            if config["workers_user_items"] != workers_user_items:
-                raise ValueError("Existing checkpoints are not compatible with the current configuration.")
-
-            checkpoint_file_names = [f"checkpoint-{worker_idx}.json" for worker_idx in range(self.num_workers)]
-
-            for i, checkpoint_file_name in enumerate(checkpoint_file_names):
-                if not os.path.exists(os.path.join(self.output_dir.path, ".checkpoints", checkpoint_file_name)):
-                    # if the checkpoint file doesn't exist, we don't have any checkpoint saved for this worker
-                    continue
-
-                with open(os.path.join(self.output_dir.path, ".checkpoints", checkpoint_file_name)) as f:
-                    checkpoint = json.load(f)
-
-                self.checkpoint_chunks_info[i] = checkpoint["chunks"]
-                self.checkpoint_next_index[i] = checkpoint["done_till_index"]
-            return
-
-        obj = parse.urlparse(self.output_dir.url)
-
-        if obj.scheme != "s3":
-            raise ValueError(f"The provided folder should start with s3://. Found {self.output_dir.path}.")
-
-        # TODO: Add support for all cloud providers
-        s3 = S3Client()
-        prefix = obj.path.lstrip("/").rstrip("/") + "/" + ".checkpoints/"
-
-        # write config.json file to temp directory and upload it to s3
-        with tempfile.TemporaryDirectory() as temp_dir:
-            temp_file_name = os.path.join(temp_dir, "config.json")
-            with open(temp_file_name, "w") as f:
-                json.dump(config, f)
-            s3.client.upload_file(
-                temp_file_name,
-                obj.netloc,
-                os.path.join(prefix, "config.json"),
-            )
 
     def _load_checkpoint_config(self, workers_user_items: List[List[Any]]) -> None:
         if not self.use_checkpoint:
