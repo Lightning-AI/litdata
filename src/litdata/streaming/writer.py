@@ -65,7 +65,7 @@ class BinaryWriter:
 
         """
         self._cache_dir = cache_dir
-
+        os.makedirs(self._cache_dir, exist_ok=True)
         if (isinstance(self._cache_dir, str) and not os.path.exists(self._cache_dir)) or self._cache_dir is None:
             raise FileNotFoundError(f"The provided cache directory `{self._cache_dir}` doesn't exist.")
 
