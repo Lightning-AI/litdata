@@ -54,6 +54,15 @@ def different_compress(index):
     return index, index**2, index**3
 
 
+def fn(i: int):
+    if i in [1, 2, 4]:
+        raise ValueError("An error occurred")
+    return i, i**2
+
+def another_fn(i: int):
+    return i, i**2
+
+
 @pytest.mark.skipif(sys.platform == "win32" and sys.platform == "darwin", reason="too slow")
 def test_optimize_append_overwrite(tmpdir):
     output_dir = str(tmpdir / "output_dir")
@@ -159,13 +168,6 @@ def test_optimize_append_overwrite(tmpdir):
 
 @pytest.mark.skipif(sys.platform == "win32" and sys.platform == "darwin", reason="too slow")
 def test_optimize_checkpoint_in_none_and_append_mode(tmpdir):
-    def fn(i: int):
-        if i in [1, 2, 4]:
-            raise ValueError("An error occurred")
-        return i, i**2
-
-    def another_fn(i: int):
-        return i, i**2
 
     output_dir = str(tmpdir / "output_dir")
 
