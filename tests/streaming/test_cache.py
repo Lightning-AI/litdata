@@ -337,6 +337,6 @@ def test_cache_checkpoint(tmpdir):
     cache.merge()
     cache.save_checkpoint()
 
-    for file in os.listdir(os.path.join(cache_dir,".checkpoints")):
+    for file in os.listdir(os.path.join(cache_dir, ".checkpoints")):
         assert file.__contains__("checkpoint-0")
         assert file.endswith(".json")
