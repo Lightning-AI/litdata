@@ -1121,7 +1121,7 @@ class DataProcessor:
     def _exit_on_error(self, error: str) -> None:
         for w in self.workers:
             # w.join(0)
-            w.terminate() # already error has occurred. So, no benefit of processing further.
+            w.terminate()  # already error has occurred. So, no benefit of processing further.
         raise RuntimeError(f"We found the following error {error}.")
 
     def _create_process_workers(self, data_recipe: DataRecipe, workers_user_items: List[List[Any]]) -> None:
