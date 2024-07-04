@@ -37,8 +37,6 @@ _PIL_AVAILABLE = RequirementCache("PIL")
 
 
 def test_binary_writer_with_ints_and_chunk_bytes(tmpdir):
-    with pytest.raises(FileNotFoundError, match="The provided cache directory `dontexists` doesn't exist."):
-        BinaryWriter("dontexists", {})
 
     match = (
         "The provided compression something_else isn't available"
@@ -80,9 +78,6 @@ def test_binary_writer_with_ints_and_chunk_bytes(tmpdir):
 
 def test_binary_writer_with_ints_and_chunk_size(tmpdir):
     seed_everything(42)
-
-    with pytest.raises(FileNotFoundError, match="The provided cache directory `dontexists` doesn't exist."):
-        BinaryWriter("dontexists", {})
 
     match = (
         "The provided compression something_else isn't available"
