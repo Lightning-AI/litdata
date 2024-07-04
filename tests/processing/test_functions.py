@@ -204,7 +204,7 @@ def test_optimize_checkpoint_in_none_and_append_mode(tmpdir):
     with pytest.raises(RuntimeError, match="We found the following error"):
         optimize(
             fn=fn,
-            inputs=list(range(4,8)),
+            inputs=list(range(4, 8)),
             output_dir=output_dir,
             chunk_size=1,
             num_workers=2,
@@ -214,13 +214,12 @@ def test_optimize_checkpoint_in_none_and_append_mode(tmpdir):
 
     # check that the checkpoints are created
     assert os.path.exists(os.path.join(output_dir, ".checkpoints"))
-    assert os.path.exists(os.path.join(
-        output_dir, ".checkpoints", "config.json"))
-    print("-"*80)
+    assert os.path.exists(os.path.join(output_dir, ".checkpoints", "config.json"))
+    print("-" * 80)
     # print all the files in the checkpoints folder
     for f in os.listdir(os.path.join(output_dir, ".checkpoints")):
         print(f)
-    print("-"*80)
+    print("-" * 80)
 
     optimize(
         fn=another_fn,
@@ -238,7 +237,6 @@ def test_optimize_checkpoint_in_none_and_append_mode(tmpdir):
     assert ds[:] == [(i, i**2) for i in range(8)]
     # checkpoints should be deleted
     assert not os.path.exists(os.path.join(output_dir, ".checkpoints"))
-
 
 
 def test_merge_datasets(tmpdir):

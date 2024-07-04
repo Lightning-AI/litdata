@@ -86,6 +86,7 @@ def test_read_index_file_content(tmpdir):
 
     assert read_index_file_content(_resolve_dir(str(output_dir))) == dummy_dict
 
+
 def test_remove_uuid_from_filename():
     filepaths = [
         "checkpoint-0-9fe2c4e93f654fdbb24c02b15259716c.json",
@@ -106,6 +107,6 @@ def test_remove_uuid_from_filename():
     ]
 
     for idx, filepath in enumerate(filepaths):
-        filepath = '.checkpoints/' + filepath
+        filepath = ".checkpoints/" + filepath
         result = remove_uuid_from_filename(filepath)
-        assert result == '.checkpoints/' + expected[idx]
+        assert result == ".checkpoints/" + expected[idx]
