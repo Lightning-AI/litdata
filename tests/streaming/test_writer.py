@@ -37,7 +37,6 @@ _PIL_AVAILABLE = RequirementCache("PIL")
 
 
 def test_binary_writer_with_ints_and_chunk_bytes(tmpdir):
-
     match = (
         "The provided compression something_else isn't available"
         if _ZSTD_AVAILABLE
