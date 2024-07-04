@@ -59,6 +59,7 @@ def fn(i: int):
         raise ValueError("An error occurred")
     return i, i**2
 
+
 def another_fn(i: int):
     return i, i**2
 
@@ -168,7 +169,6 @@ def test_optimize_append_overwrite(tmpdir):
 
 @pytest.mark.skipif(sys.platform == "win32" and sys.platform == "darwin", reason="too slow")
 def test_optimize_checkpoint_in_none_and_append_mode(tmpdir):
-
     output_dir = str(tmpdir / "output_dir")
 
     with pytest.raises(RuntimeError, match="We found the following error"):
