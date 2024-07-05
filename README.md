@@ -46,8 +46,8 @@ Transform                              Optimize
 # Transform datasets at scale. Optimize to speed up model training.   
 LitData enables two key data workflows [transform datasets](#transform-datasets) and [optimize to speed up AI model training](#speed-up-model-training):   
 
-**Transform** datasets across 1000s of machines.     
-**Optimize** datasets for fast loading to speed up AI training by 20x.    
+[Transform](#transform-datasets) - datasets across 1000s of machines.     
+[Optimize](#speed-up-model-training)  - datasets for fast loading to speed up AI training by 20x.    
 
 LitData supports all data types and enables large-scale processing across thousands of cloud machines.
 
