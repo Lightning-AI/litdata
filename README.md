@@ -67,9 +67,10 @@ First, install LitData:
 pip install litdata
 ``` 
 
-Next, choose your workflow:    
-- 🚀 [Speed up model training](#speed-up-model-training)
-- 🚀 [Transform datasets](#transform-datasets)
+Choose your workflow:     
+    
+🚀 [Speed up model training](#speed-up-model-training)    
+🚀 [Transform datasets](#transform-datasets)
 
 &nbsp;
 
@@ -82,6 +83,8 @@ pip install 'litdata[extras]'
 ```
 
 </details>   
+
+&nbsp;
 
 ----
 
@@ -683,7 +686,7 @@ Below are templates for real-world applications of LitData at scale.
 ## Templates: Transform datasets 
 
 | Studio | Data type | Time (minutes) | Machines | Dataset |    
-| ------ | ----------------- | ----------------- | -------------- | -------------- |
+| ------------------------------------ | ----------------- | ----------------- | -------------- | -------------- |
 | [Download LAION-400MILLION dataset](https://lightning.ai/lightning-ai/studios/use-or-explore-laion-400million-dataset) | Image & Text | 120 | 32 |[LAION-400M](https://laion.ai/blog/laion-400-open-dataset/) |
 | [Tokenize 2M Swedish Wikipedia Articles](https://lightning.ai/lightning-ai/studios/tokenize-2m-swedish-wikipedia-articles) | Text | 7 | 4 | [Swedish Wikipedia](https://huggingface.co/datasets/wikipedia) |
 | [Embed English Wikipedia under 5 dollars](https://lightning.ai/lightning-ai/studios/embed-english-wikipedia-under-5-dollars) | Text | 15 | 3 | [English Wikipedia](https://huggingface.co/datasets/wikipedia) |
@@ -691,11 +694,11 @@ Below are templates for real-world applications of LitData at scale.
 ## Templates: Optimize + stream data    
 
 | Studio | Data type | Time (minutes) | Machines | Dataset |     
-| ------ | ----------------- | ----------------- | -------------- | -------------- |
-| [Convert GeoSpatial data to Lightning Streaming](https://lightning.ai/lightning-ai/studios/convert-spatial-data-to-lightning-streaming) | Image & Mask | 120 | 32 | [Chesapeake Roads Spatial Context](https://github.com/isaaccorley/chesapeakersc) |
+| -------------------------------- | ----------------- | ----------------- | -------------- | -------------- |
 | [Benchmark cloud data-loading libraries](https://lightning.ai/lightning-ai/studios/benchmark-cloud-data-loading-libraries) | Image & Label | 10 | 1 | [Imagenet 1M](https://paperswithcode.com/sota/image-classification-on-imagenet?tag_filter=171) |
-| [Prepare the TinyLlama 1T token dataset](https://lightning.ai/lightning-ai/studios/prepare-the-tinyllama-1t-token-dataset) | Text | 240 | 32 | [SlimPajama](https://huggingface.co/datasets/cerebras/SlimPajama-627B) & [StarCoder](https://huggingface.co/datasets/bigcode/starcoderdata) |
-| [Convert parquets to Lightning Streaming](https://lightning.ai/lightning-ai/studios/convert-parquets-to-lightning-streaming) | Parquet Files | 12 | 16 | Randomly Generated data |
+| [Optimize GeoSpatial data for model training](https://lightning.ai/lightning-ai/studios/convert-spatial-data-to-lightning-streaming) | Image & Mask | 120 | 32 | [Chesapeake Roads Spatial Context](https://github.com/isaaccorley/chesapeakersc) |
+| [Optimize TinyLlama 1T dataset for training](https://lightning.ai/lightning-ai/studios/prepare-the-tinyllama-1t-token-dataset) | Text | 240 | 32 | [SlimPajama](https://huggingface.co/datasets/cerebras/SlimPajama-627B) & [StarCoder](https://huggingface.co/datasets/bigcode/starcoderdata) |
+| [Optimize parquet files for model training](https://lightning.ai/lightning-ai/studios/convert-parquets-to-lightning-streaming) | Parquet Files | 12 | 16 | Randomly Generated data |
 
 &nbsp;
 
@@ -704,5 +707,5 @@ Below are templates for real-world applications of LitData at scale.
 # Community
 LitData is a community project accepting contributions -  Let's make the world's most advanced AI data processing framework.
 
-- [Get help from 5,0000+ developers on our Discord](https://discord.com/invite/XncpTy7DSt)
-- [Licensed under the Apache 2.0 License](https://github.com/Lightning-AI/litdata/blob/main/LICENSE)
+💬 [Get help from 5,0000+ developers on our Discord](https://discord.com/invite/XncpTy7DSt)
+📋 [Licensed under the Apache 2.0 License](https://github.com/Lightning-AI/litdata/blob/main/LICENSE)
