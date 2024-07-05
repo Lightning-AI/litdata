@@ -50,9 +50,7 @@ LitData optimizes datasets for fast loading, speeding up AI training by 20x. It 
 &nbsp;
 
 # Quick start
-Let's create an optimized dataset for lightning-fast training:
-
-Install LitData:   
+First, install LitData:   
 
 ```bash
 pip install litdata
@@ -66,9 +64,13 @@ Install all the extras
 pip install 'litdata[extras]'
 ```
 
-</details>
+</details>    
 
-&nbsp;
+Next, choose your goal:    
+- 🚀 [Speed up model training](#speed-up-model-training)
+
+# Speed up model training
+Datasets optimized with LitData can make model training at least 20x faster.   
 
 **Step 1: Optimize the data**
 This step will format the dataset for fast loading (binary, chunked, etc...)    
