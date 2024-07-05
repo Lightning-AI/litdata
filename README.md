@@ -38,7 +38,7 @@
 
 &nbsp;
 
-# Maximize AI training speeds with Lightning fast data loading
+# Maximize AI training speeds with fast data loading
 LitData optimizes datasets for fast loading, speeding up AI training by 20x. It supports all data types and enables large-scale processing across thousands of cloud machines.
 
 - ✅ **Framework agnostic -** Works with PyTorch Lightning, Lightning Fabric, and PyTorch.    
