@@ -206,7 +206,7 @@ for batch in dataloader:
 </details>  
 
 <details>
-  <summary> ✅ Multi-GPU / Multi-Node Support</summary>
+  <summary> ✅ Scale across multiple GPUs or machines</summary>
 
 &nbsp;
 
@@ -295,7 +295,7 @@ for batch in tqdm(train_dataloader):
 </details>  
 
 <details>
-  <summary> ✅ Split datasets</summary>
+  <summary> ✅ Split datasets for training, validation, and testing</summary>
 
 &nbsp;
 
@@ -324,7 +324,7 @@ print(test_dataset)
 </details>  
 
 <details>
-  <summary> ✅ Load a dataset subsample</summary>
+  <summary> ✅ Work with smaller subsets of a dataset</summary>
 
 Work on a smaller, manageable portion of your data to save time and resources.   
 &nbsp;
@@ -341,7 +341,7 @@ print(len(dataset)) # display the length of your data
 </details>  
 
 <details>
-  <summary> ✅ Append or overwrite optimized datasets</summary>
+  <summary> ✅ Add or replace data in an optimized dataset</summary>
 &nbsp;
 
 Add new data to an existing dataset or start fresh if needed, providing flexibility in data management.
@@ -382,7 +382,7 @@ The `overwrite` mode will delete the existing data and start from fresh.
 </details>  
 
 <details>
-  <summary> ✅ Access subsets of large cloud datasets</summary>
+  <summary> ✅ Access dataset parts without downloading everything</summary>
 &nbsp;
 
 Look at specific parts of a large dataset without downloading the whole thing or loading it on a local machine.    
@@ -428,7 +428,7 @@ for batch in dataloader:
 </details>  
 
 <details>
-  <summary> ✅ Profile loading speed</summary>
+  <summary> ✅ Measure and optimize data loading speed</summary>
 &nbsp;
 
 Measure and optimize how fast your data is being loaded, improving efficiency.   
@@ -446,7 +446,7 @@ This generates a Chrome trace called `result.json`. Then, visualize this trace b
 </details>  
 
 <details>
-  <summary> ✅ Reduce memory footprint</summary>
+  <summary> ✅ Reduce memory use for large files</summary>
 &nbsp;
 
 Handle large data files efficiently without using too much of your computer's memory.
@@ -500,7 +500,7 @@ dataset = StreamingDataset(..., max_cache_size="10GB")
 </details>  
 
 <details>
-  <summary> ✅ On-Prem Optimizations</summary>
+  <summary> ✅ Optimize data loading on networked drives</summary>
 &nbsp;
 
 Optimize data handling for computers on a local network to improve performance for on-site setups.
@@ -553,7 +553,7 @@ map(
 </details>  
 
 <details>
-  <summary> ✅ Support S3-Compatible Object Storage</summary>
+  <summary> ✅ Support S3-Compatible cloud object storage</summary>
 &nbsp;
 
 Use different cloud storage services, offering data storage flexibility and cost-saving options.   
