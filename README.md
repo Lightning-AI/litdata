@@ -4,7 +4,7 @@
 &nbsp;
 &nbsp;
 
-**Optimize massive datasets for Lightning fast AI model training and inference.**
+**Optimize massive datasets for lightning-fast AI model training and inference.**
 
 
 <pre>
