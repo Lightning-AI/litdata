@@ -43,7 +43,7 @@ from litdata.constants import (
     _TQDM_AVAILABLE,
 )
 from litdata.processing.readers import BaseReader, StreamingDataLoaderReader
-from litdata.processing.utilities import _create_dataset, downloadDirectoryFromS3, remove_uuid_from_filename
+from litdata.processing.utilities import _create_dataset, download_directory_from_S3, remove_uuid_from_filename
 from litdata.streaming import Cache
 from litdata.streaming.cache import Dir
 from litdata.streaming.client import S3Client
@@ -1320,7 +1320,7 @@ class DataProcessor:
 
         # download all the checkpoint files in tempdir and read them
         with tempfile.TemporaryDirectory() as temp_dir:
-            saved_file_dir = downloadDirectoryFromS3(bucket_name, prefix, temp_dir)
+            saved_file_dir = download_directory_from_S3(bucket_name, prefix, temp_dir)
 
             if not os.path.exists(os.path.join(saved_file_dir, "config.json")):
                 # if the config.json file doesn't exist, we don't have any checkpoint saved
