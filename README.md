@@ -11,7 +11,7 @@ Optimize datasets for fast AI model training.**
 <pre>
 Transform                              Optimize
   
-✅ Run distributed inference         ✅ Optimize datasets             
+✅ Run distributed inference         ✅ Optimize datasets for training
 ✅ Create vector embeddings          ✅ Speed up model training by 20x
 ✅ Scale data pipelines              ✅ Data fault tolerance          
 </pre>
