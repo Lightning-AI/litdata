@@ -170,8 +170,13 @@ ld.map(
 )
 ```
 
+&nbsp;
+
+----
 
 # Key Features
+
+## Features for transforming datasets  
 
 <details>
   <summary> ✅ Multi-GPU / Multi-Node Support</summary>
@@ -185,6 +190,153 @@ Here you can see an illustration showing how the Streaming Dataset works with mu
 ![An illustration showing how the Streaming Dataset works with multi node.](https://pl-flash-data.s3.amazonaws.com/streaming_dataset.gif)
 
 </details>  
+
+<details>
+  <summary> ✅ Map transformations</summary>
+&nbsp;
+
+
+The `map` operator can be used to apply a function over a list of inputs.
+
+Here is an example where the `map` operator is used to apply a `resize_image` function over a folder of large images.
+
+```python
+from litdata import map
+from PIL import Image
+
+# Note: Inputs could also refer to files on s3 directly.
+input_dir = "my_large_images"
+inputs = [os.path.join(input_dir, f) for f in os.listdir(input_dir)]
+
+# The resize image takes one of the input (image_path) and the output directory. 
+# Files written to output_dir are persisted.
+def resize_image(image_path, output_dir):
+  output_image_path = os.path.join(output_dir, os.path.basename(image_path))
+  Image.open(image_path).resize((224, 224)).save(output_image_path)
+  
+map(
+    fn=resize_image,
+    inputs=inputs, 
+    output_dir="s3://my-bucket/my_resized_images",
+)
+```
+
+</details>  
+
+<details>
+  <summary> ✅ Stream datasets</summary>
+&nbsp;
+</details>  
+
+<details>
+  <summary> ✅ Combine datasets</summary>
+&nbsp;
+
+
+Easily experiment with dataset mixtures using the `CombinedStreamingDataset` class. 
+
+As an example, this mixture of [Slimpajama](https://huggingface.co/datasets/cerebras/SlimPajama-627B) & [StarCoder](https://huggingface.co/datasets/bigcode/starcoderdata) was used in the [TinyLLAMA](https://github.com/jzhang38/TinyLlama) project to pretrain a 1.1B Llama model on 3 trillion tokens. 
+
+```python
+from litdata import StreamingDataset, CombinedStreamingDataset, StreamingDataLoader, TokensLoader
+from tqdm import tqdm
+import os
+
+train_datasets = [
+    StreamingDataset(
+        input_dir="s3://tinyllama-template/slimpajama/train/",
+        item_loader=TokensLoader(block_size=2048 + 1), # Optimized loader for tokens used by LLMs 
+        shuffle=True,
+        drop_last=True,
+    ),
+    StreamingDataset(
+        input_dir="s3://tinyllama-template/starcoder/",
+        item_loader=TokensLoader(block_size=2048 + 1), # Optimized loader for tokens used by LLMs 
+        shuffle=True,
+        drop_last=True,
+    ),
+]
+
+# Mix SlimPajama data and Starcoder data with these proportions:
+weights = (0.693584, 0.306416)
+combined_dataset = CombinedStreamingDataset(datasets=train_datasets, seed=42, weights=weights)
+
+train_dataloader = StreamingDataLoader(combined_dataset, batch_size=8, pin_memory=True, num_workers=os.cpu_count())
+
+# Iterate over the combined datasets
+for batch in tqdm(train_dataloader):
+    pass
+```
+</details>  
+
+<details>
+  <summary> ✅ Pause & Resume data streaming</summary>
+&nbsp;
+
+
+LitData provides a stateful `Streaming DataLoader` e.g. you can `pause` and `resume` your training whenever you want.
+
+Info: The `Streaming DataLoader` was used by [Lit-GPT](https://github.com/Lightning-AI/lit-gpt/blob/main/pretrain/tinyllama.py) to pretrain LLMs. Restarting from an older checkpoint was critical to get to pretrain the full model due to several failures (network, CUDA Errors, etc..).
+
+```python
+import os
+import torch
+from litdata import StreamingDataset, StreamingDataLoader
+
+dataset = StreamingDataset("s3://my-bucket/my-data", shuffle=True)
+dataloader = StreamingDataLoader(dataset, num_workers=os.cpu_count(), batch_size=64)
+
+# Restore the dataLoader state if it exists
+if os.path.isfile("dataloader_state.pt"):
+    state_dict = torch.load("dataloader_state.pt")
+    dataloader.load_state_dict(state_dict)
+
+# Iterate over the data
+for batch_idx, batch in enumerate(dataloader):
+  
+    # Store the state every 1000 batches
+    if batch_idx % 1000 == 0:
+        torch.save(dataloader.state_dict(), "dataloader_state.pt")
+```
+
+</details>  
+
+<details>
+  <summary> ✅ Support S3-Compatible Object Storage</summary>
+&nbsp;
+
+Integrate S3-compatible object storage servers like [MinIO](https://min.io/) with litdata, ideal for on-premises infrastructure setups. Configure the endpoint and credentials using environment variables or configuration files. 
+
+Set up the environment variables to connect to MinIO:
+
+```bash
+export AWS_ACCESS_KEY_ID=access_key
+export AWS_SECRET_ACCESS_KEY=secret_key
+export AWS_ENDPOINT_URL=http://localhost:9000  # MinIO endpoint
+```
+
+Alternatively, configure credentials and endpoint in `~/.aws/{credentials,config}`:
+
+```bash
+mkdir -p ~/.aws && \
+cat <<EOL >> ~/.aws/credentials
+[default]
+aws_access_key_id = access_key
+aws_secret_access_key = secret_key
+EOL
+
+cat <<EOL >> ~/.aws/config
+[default]
+endpoint_url = http://localhost:9000  # MinIO endpoint
+EOL
+```
+Explore an example setup of litdata with MinIO in the [LitData with MinIO](https://github.com/bhimrazy/litdata-with-minio) repository for practical implementation details.
+
+</details>  
+
+&nbsp;
+
+## Features for optimizing datasets       
 
 <details>
   <summary> ✅ Subsample and split datasets</summary>
@@ -323,116 +475,6 @@ for batch in dataloader:
 </details>  
 
 <details>
-  <summary> ✅ Map transformations</summary>
-&nbsp;
-
-
-The `map` operator can be used to apply a function over a list of inputs.
-
-Here is an example where the `map` operator is used to apply a `resize_image` function over a folder of large images.
-
-```python
-from litdata import map
-from PIL import Image
-
-# Note: Inputs could also refer to files on s3 directly.
-input_dir = "my_large_images"
-inputs = [os.path.join(input_dir, f) for f in os.listdir(input_dir)]
-
-# The resize image takes one of the input (image_path) and the output directory. 
-# Files written to output_dir are persisted.
-def resize_image(image_path, output_dir):
-  output_image_path = os.path.join(output_dir, os.path.basename(image_path))
-  Image.open(image_path).resize((224, 224)).save(output_image_path)
-  
-map(
-    fn=resize_image,
-    inputs=inputs, 
-    output_dir="s3://my-bucket/my_resized_images",
-)
-```
-
-</details>  
-
-<details>
-  <summary> ✅ Stream datasets</summary>
-&nbsp;
-</details>  
-
-<details>
-  <summary> ✅ Combine datasets</summary>
-&nbsp;
-
-
-Easily experiment with dataset mixtures using the `CombinedStreamingDataset` class. 
-
-As an example, this mixture of [Slimpajama](https://huggingface.co/datasets/cerebras/SlimPajama-627B) & [StarCoder](https://huggingface.co/datasets/bigcode/starcoderdata) was used in the [TinyLLAMA](https://github.com/jzhang38/TinyLlama) project to pretrain a 1.1B Llama model on 3 trillion tokens. 
-
-```python
-from litdata import StreamingDataset, CombinedStreamingDataset, StreamingDataLoader, TokensLoader
-from tqdm import tqdm
-import os
-
-train_datasets = [
-    StreamingDataset(
-        input_dir="s3://tinyllama-template/slimpajama/train/",
-        item_loader=TokensLoader(block_size=2048 + 1), # Optimized loader for tokens used by LLMs 
-        shuffle=True,
-        drop_last=True,
-    ),
-    StreamingDataset(
-        input_dir="s3://tinyllama-template/starcoder/",
-        item_loader=TokensLoader(block_size=2048 + 1), # Optimized loader for tokens used by LLMs 
-        shuffle=True,
-        drop_last=True,
-    ),
-]
-
-# Mix SlimPajama data and Starcoder data with these proportions:
-weights = (0.693584, 0.306416)
-combined_dataset = CombinedStreamingDataset(datasets=train_datasets, seed=42, weights=weights)
-
-train_dataloader = StreamingDataLoader(combined_dataset, batch_size=8, pin_memory=True, num_workers=os.cpu_count())
-
-# Iterate over the combined datasets
-for batch in tqdm(train_dataloader):
-    pass
-```
-</details>  
-
-<details>
-  <summary> ✅ Pause & Resume data streaming</summary>
-&nbsp;
-
-
-LitData provides a stateful `Streaming DataLoader` e.g. you can `pause` and `resume` your training whenever you want.
-
-Info: The `Streaming DataLoader` was used by [Lit-GPT](https://github.com/Lightning-AI/lit-gpt/blob/main/pretrain/tinyllama.py) to pretrain LLMs. Restarting from an older checkpoint was critical to get to pretrain the full model due to several failures (network, CUDA Errors, etc..).
-
-```python
-import os
-import torch
-from litdata import StreamingDataset, StreamingDataLoader
-
-dataset = StreamingDataset("s3://my-bucket/my-data", shuffle=True)
-dataloader = StreamingDataLoader(dataset, num_workers=os.cpu_count(), batch_size=64)
-
-# Restore the dataLoader state if it exists
-if os.path.isfile("dataloader_state.pt"):
-    state_dict = torch.load("dataloader_state.pt")
-    dataloader.load_state_dict(state_dict)
-
-# Iterate over the data
-for batch_idx, batch in enumerate(dataloader):
-  
-    # Store the state every 1000 batches
-    if batch_idx % 1000 == 0:
-        torch.save(dataloader.state_dict(), "dataloader_state.pt")
-```
-
-</details>  
-
-<details>
   <summary> ✅ Support Profiling</summary>
 &nbsp;
 
@@ -513,39 +555,9 @@ dataset = StreamingDataset(input_dir="local:/data/shared-drive/some-data")
 
 </details>  
 
-<details>
-  <summary> ✅ Support S3-Compatible Object Storage</summary>
 &nbsp;
 
-Integrate S3-compatible object storage servers like [MinIO](https://min.io/) with litdata, ideal for on-premises infrastructure setups. Configure the endpoint and credentials using environment variables or configuration files. 
-
-Set up the environment variables to connect to MinIO:
-
-```bash
-export AWS_ACCESS_KEY_ID=access_key
-export AWS_SECRET_ACCESS_KEY=secret_key
-export AWS_ENDPOINT_URL=http://localhost:9000  # MinIO endpoint
-```
-
-Alternatively, configure credentials and endpoint in `~/.aws/{credentials,config}`:
-
-```bash
-mkdir -p ~/.aws && \
-cat <<EOL >> ~/.aws/credentials
-[default]
-aws_access_key_id = access_key
-aws_secret_access_key = secret_key
-EOL
-
-cat <<EOL >> ~/.aws/config
-[default]
-endpoint_url = http://localhost:9000  # MinIO endpoint
-EOL
-```
-Explore an example setup of litdata with MinIO in the [LitData with MinIO](https://github.com/bhimrazy/litdata-with-minio) repository for practical implementation details.
-
-</details>  
-
+----
 
 # Benchmarks
 
