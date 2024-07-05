@@ -707,5 +707,5 @@ Below are templates for real-world applications of LitData at scale.
 # Community
 LitData is a community project accepting contributions -  Let's make the world's most advanced AI data processing framework.
 
-💬 [Get help from 5,0000+ developers on our Discord](https://discord.com/invite/XncpTy7DSt)
+💬 [Get help from 5,0000+ developers on our Discord](https://discord.com/invite/XncpTy7DSt)    
 📋 [Licensed under the Apache 2.0 License](https://github.com/Lightning-AI/litdata/blob/main/LICENSE)
