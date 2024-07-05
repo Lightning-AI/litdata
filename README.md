@@ -11,9 +11,9 @@ Optimize data for fast AI model training.**
 <pre>
 Transform                              Optimize
   
-✅ Run distributed inference         ✅ Optimize datasets for training
-✅ Create vector embeddings          ✅ Speed up model training by 20x
-✅ Scale data pipelines              ✅ Data fault tolerance          
+✅ Parallelize data processing       ✅ Stream large cloud datasets    
+✅ Create vector embeddings          ✅ Accelerate training by 20x     
+✅ Transform any data type           ✅ Pause and resume data streaming
 </pre>
 
 ---
