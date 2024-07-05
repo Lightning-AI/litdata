@@ -152,8 +152,10 @@ Here's an example that resizes and crops a large image dataset:
 from PIL import Image
 import litdata as ld
 
-# use a local or s3 path    
-input_dir = "my_large_images" 
+# use a local or S3 folder    
+input_dir = "my_large_images"     # or "s3://my-bucket/my_large_images"
+output_dir = "my_resized_images"  # or "s3://my-bucket/my_resized_images"
+
 inputs = [os.path.join(input_dir, f) for f in os.listdir(input_dir)]
 
 # resize the input image
@@ -164,7 +166,7 @@ def resize_image(image_path, output_dir):
 ld.map(
     fn=resize_image,
     inputs=inputs, 
-    output_dir="s3://my-bucket/my_resized_images",
+    output_dir="output_dir",
 )
 ```
 
