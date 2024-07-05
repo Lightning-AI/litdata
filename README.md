@@ -179,19 +179,6 @@ ld.map(
 ## Features for transforming datasets  
 
 <details>
-  <summary> ✅ Multi-GPU / Multi-Node Support</summary>
-
-&nbsp;
-
-The `StreamingDataset` and `StreamingDataLoader` automatically make sure each rank receives the same quantity of varied batches of data, so it works out of the box with your favorite frameworks ([PyTorch Lightning](https://lightning.ai/docs/pytorch/stable/), [Lightning Fabric](https://lightning.ai/docs/fabric/stable/), or [PyTorch](https://pytorch.org/docs/stable/index.html)) to do distributed training. 
-
-Here you can see an illustration showing how the Streaming Dataset works with multi node / multi gpu under the hood.
-
-![An illustration showing how the Streaming Dataset works with multi node.](https://pl-flash-data.s3.amazonaws.com/streaming_dataset.gif)
-
-</details>  
-
-<details>
   <summary> ✅ Map transformations</summary>
 &nbsp;
 
@@ -224,6 +211,44 @@ map(
 </details>  
 
 <details>
+  <summary> ✅ Support S3-Compatible Object Storage</summary>
+&nbsp;
+
+Integrate S3-compatible object storage servers like [MinIO](https://min.io/) with litdata, ideal for on-premises infrastructure setups. Configure the endpoint and credentials using environment variables or configuration files. 
+
+Set up the environment variables to connect to MinIO:
+
+```bash
+export AWS_ACCESS_KEY_ID=access_key
+export AWS_SECRET_ACCESS_KEY=secret_key
+export AWS_ENDPOINT_URL=http://localhost:9000  # MinIO endpoint
+```
+
+Alternatively, configure credentials and endpoint in `~/.aws/{credentials,config}`:
+
+```bash
+mkdir -p ~/.aws && \
+cat <<EOL >> ~/.aws/credentials
+[default]
+aws_access_key_id = access_key
+aws_secret_access_key = secret_key
+EOL
+
+cat <<EOL >> ~/.aws/config
+[default]
+endpoint_url = http://localhost:9000  # MinIO endpoint
+EOL
+```
+Explore an example setup of litdata with MinIO in the [LitData with MinIO](https://github.com/bhimrazy/litdata-with-minio) repository for practical implementation details.
+
+</details>  
+
+&nbsp;
+
+## Features for optimizing and streaming datasets for model training           
+
+
+<details>
   <summary> ✅ Stream datasets</summary>
 &nbsp;
 
@@ -242,6 +267,51 @@ for batch in dataloader:
 ```
 
 </details>  
+
+<details>
+  <summary> ✅ Multi-GPU / Multi-Node Support</summary>
+
+&nbsp;
+
+The `StreamingDataset` and `StreamingDataLoader` automatically make sure each rank receives the same quantity of varied batches of data, so it works out of the box with your favorite frameworks ([PyTorch Lightning](https://lightning.ai/docs/pytorch/stable/), [Lightning Fabric](https://lightning.ai/docs/fabric/stable/), or [PyTorch](https://pytorch.org/docs/stable/index.html)) to do distributed training. 
+
+Here you can see an illustration showing how the Streaming Dataset works with multi node / multi gpu under the hood.
+
+![An illustration showing how the Streaming Dataset works with multi node.](https://pl-flash-data.s3.amazonaws.com/streaming_dataset.gif)
+
+</details>  
+
+<details>
+  <summary> ✅ Pause & Resume data streaming</summary>
+&nbsp;
+
+LitData provides a stateful `Streaming DataLoader` e.g. you can `pause` and `resume` your training whenever you want.
+
+Info: The `Streaming DataLoader` was used by [Lit-GPT](https://github.com/Lightning-AI/lit-gpt/blob/main/pretrain/tinyllama.py) to pretrain LLMs. Restarting from an older checkpoint was critical to get to pretrain the full model due to several failures (network, CUDA Errors, etc..).
+
+```python
+import os
+import torch
+from litdata import StreamingDataset, StreamingDataLoader
+
+dataset = StreamingDataset("s3://my-bucket/my-data", shuffle=True)
+dataloader = StreamingDataLoader(dataset, num_workers=os.cpu_count(), batch_size=64)
+
+# Restore the dataLoader state if it exists
+if os.path.isfile("dataloader_state.pt"):
+    state_dict = torch.load("dataloader_state.pt")
+    dataloader.load_state_dict(state_dict)
+
+# Iterate over the data
+for batch_idx, batch in enumerate(dataloader):
+  
+    # Store the state every 1000 batches
+    if batch_idx % 1000 == 0:
+        torch.save(dataloader.state_dict(), "dataloader_state.pt")
+```
+
+</details>  
+
 
 <details>
   <summary> ✅ Combine datasets</summary>
@@ -285,80 +355,11 @@ for batch in tqdm(train_dataloader):
 </details>  
 
 <details>
-  <summary> ✅ Pause & Resume data streaming</summary>
-&nbsp;
-
-
-LitData provides a stateful `Streaming DataLoader` e.g. you can `pause` and `resume` your training whenever you want.
-
-Info: The `Streaming DataLoader` was used by [Lit-GPT](https://github.com/Lightning-AI/lit-gpt/blob/main/pretrain/tinyllama.py) to pretrain LLMs. Restarting from an older checkpoint was critical to get to pretrain the full model due to several failures (network, CUDA Errors, etc..).
-
-```python
-import os
-import torch
-from litdata import StreamingDataset, StreamingDataLoader
-
-dataset = StreamingDataset("s3://my-bucket/my-data", shuffle=True)
-dataloader = StreamingDataLoader(dataset, num_workers=os.cpu_count(), batch_size=64)
-
-# Restore the dataLoader state if it exists
-if os.path.isfile("dataloader_state.pt"):
-    state_dict = torch.load("dataloader_state.pt")
-    dataloader.load_state_dict(state_dict)
-
-# Iterate over the data
-for batch_idx, batch in enumerate(dataloader):
-  
-    # Store the state every 1000 batches
-    if batch_idx % 1000 == 0:
-        torch.save(dataloader.state_dict(), "dataloader_state.pt")
-```
-
-</details>  
-
-<details>
-  <summary> ✅ Support S3-Compatible Object Storage</summary>
-&nbsp;
-
-Integrate S3-compatible object storage servers like [MinIO](https://min.io/) with litdata, ideal for on-premises infrastructure setups. Configure the endpoint and credentials using environment variables or configuration files. 
-
-Set up the environment variables to connect to MinIO:
-
-```bash
-export AWS_ACCESS_KEY_ID=access_key
-export AWS_SECRET_ACCESS_KEY=secret_key
-export AWS_ENDPOINT_URL=http://localhost:9000  # MinIO endpoint
-```
-
-Alternatively, configure credentials and endpoint in `~/.aws/{credentials,config}`:
-
-```bash
-mkdir -p ~/.aws && \
-cat <<EOL >> ~/.aws/credentials
-[default]
-aws_access_key_id = access_key
-aws_secret_access_key = secret_key
-EOL
-
-cat <<EOL >> ~/.aws/config
-[default]
-endpoint_url = http://localhost:9000  # MinIO endpoint
-EOL
-```
-Explore an example setup of litdata with MinIO in the [LitData with MinIO](https://github.com/bhimrazy/litdata-with-minio) repository for practical implementation details.
-
-</details>  
-
-&nbsp;
-
-## Features for optimizing datasets       
-
-<details>
   <summary> ✅ Subsample and split datasets</summary>
 
 &nbsp;
 
-You can split your dataset with more ease with `train_test_split`.
+Split a dataset into train, val, test splits with `train_test_split`.
 
 ```python
 from litdata import StreamingDataset, train_test_split
@@ -405,7 +406,7 @@ print(len(dataset)) # display the length of your data
 </details>  
 
 <details>
-  <summary> ✅ Append or Overwrite optimized datasets</summary>
+  <summary> ✅ Append or overwrite optimized datasets</summary>
 &nbsp;
 
 
@@ -490,7 +491,7 @@ for batch in dataloader:
 </details>  
 
 <details>
-  <summary> ✅ Support Profiling</summary>
+  <summary> ✅ Profile loading speed</summary>
 &nbsp;
 
 The `StreamingDataLoader` supports profiling of your data loading process. Simply use the `profile_batches` argument to specify the number of batches you want to profile:
@@ -543,7 +544,7 @@ outputs = optimize(
 </details>  
 
 <details>
-  <summary> ✅ Configure Cache Size Limit</summary>
+  <summary> ✅ Reduce disk space with caching limits</summary>
 &nbsp;
 
 Adapt the local caching limit of the `StreamingDataset`. This is useful to make sure the downloaded data chunks are deleted when used and the disk usage stays low.
