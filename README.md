@@ -49,14 +49,14 @@ LitData enables two key data workflows [transform datasets](#transform-datasets)
 [Transform](#transform-datasets) - datasets across 1000s of machines.     
 [Optimize](#speed-up-model-training)  - datasets for fast loading to speed up AI training by 20x.    
 
-LitData supports all data types and enables large-scale processing across thousands of cloud machines.
-
-- ✅ **Framework agnostic -** Works with PyTorch Lightning, Lightning Fabric, and PyTorch.    
-- ✅ **Supports cloud storage -** Stream from S3, GCS and Azure.    
-- ✅ **Optimized data format -** Datasets stream faster, improving training speed by 20x.  
-- ✅ **Scale across GPUs -** Process data on 1 to 1000+ GPUs.    
-- ✅ **Run local or cloud-** Auto-scale to 1000s of cloud GPUs with Lightning Studios.     
-
+✅ **Any data type -** Text, images, videos, audio, objects, files, etc...    
+✅ **Framework agnostic -** Works with PyTorch Lightning, Lightning Fabric, and PyTorch.    
+✅ **Supports cloud storage -** Stream from S3, GCS and Azure.    
+✅ **Optimized data format -** Datasets stream faster, improving training speed by 20x.  
+✅ **Scale across GPUs -** Process data on 1 to 1000+ GPUs.    
+✅ **Run local or cloud-** Auto-scale to 1000s of cloud GPUs with Lightning Studios.     
+✅ **Own VPC or cloud account-** Self host or process data on your cloud account with Lightning Studios.    
+    
 &nbsp;
 
 # Quick start
