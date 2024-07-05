@@ -1,121 +1,128 @@
 <div align="center">
+<img src="https://pl-flash-data.s3.amazonaws.com/lit_data_logo.webp" alt="LitData" width="800px"/>
 
-<img alt="Lightning" src="https://pl-flash-data.s3.amazonaws.com/lit_data_logo.webp" width="800px" style="max-width: 100%;">
+&nbsp;
+&nbsp;
 
-<br/>
-<br/>
+**Process and optimize massive datasets for Lightning fast, AI model training.**
 
-## Blazingly fast, distributed streaming of training data from any cloud storage
+
+<pre>
+✅ All data types                     ✅ Multi-GPU/Multi-Node                   
+✅ S3 or custom storage               ✅ Efficient data optimization            
+✅ Easy subsampling and splitting     ✅ Customizable data access and transforms
+</pre>
+
+---
+
+![PyPI](https://img.shields.io/pypi/v/litdata)
+![Downloads](https://img.shields.io/pypi/dm/litdata)
+![License](https://img.shields.io/github/license/Lightning-AI/litdata)
+[![Discord](https://img.shields.io/discord/822497400078196796?label=Join%20Discord)](https://discord.com/invite/XncpTy7DSt)
+
+<p align="center">
+  <a href="https://lightning.ai/">Homepage</a> •
+  <a href="#quick-start">Quick start</a> •
+  <a href="#key-features">Key features</a> •
+  <a href="#benchmarks">Benchmarks</a> •
+  <a href="#runnable-templates">Runnable Templates</a> •
+</p>
+
+&nbsp;
+
+<a target="_blank" href="https://lightning.ai/docs/overview/prep-data/optimize-datasets-for-model-training-speed">
+  <img src="https://pl-bolts-doc-images.s3.us-east-2.amazonaws.com/app-2/get-started-badge.svg" height="36px" alt="Get started"/>
+</a>
 
 </div>
 
-# ⚡ Welcome to LitData
+&nbsp;
 
-With LitData, users can transform and optimize their data in cloud storage environments efficiently and intuitively, at any scale. 
+# Maximize AI training speeds with Lightning fast data loading
+LitData optimizes datasets for fast loading, speeding up AI training by 20x. It supports all data types and enables large-scale processing across thousands of cloud machines.
 
-Once optimized, efficient distributed training becomes practical regardless of where the data is located, enabling users to seamlessly stream data of any size to one or multiple machines.
+- ✅ **Framework agnostic -** Works with PyTorch Lightning, Lightning Fabric, and PyTorch.    
+- ✅ **Supports cloud storage -** Stream from S3, GCS and Azure.    
+- ✅ **Optimized data format -** Optimized datasets stream faster and improve model training speed by at least 20x.    
+- ✅ **Scale across GPUs -** Process data on 1 or 1000s of GPUs.    
+- ✅ **Run local or cloud-** Leverage Lightning Studios for auto-scaling to 1000s of GPUs. 
 
-LitData supports **images, text, video, audio, geo-spatial, and multimodal data** types, is already adopted by frameworks such as [LitGPT](https://github.com/Lightning-AI/litgpt/blob/main/litgpt/data/lit_data.py) to pretrain LLMs and integrates smoothly with [PyTorch Lightning](https://lightning.ai/docs/pytorch/stable/), [Lightning Fabric](https://lightning.ai/docs/fabric/stable/), and [PyTorch](https://pytorch.org/docs/stable/index.html).
 
-[Runnable templates](#runnable-templates) published on the [Lightning.AI Platform](https://lightning.ai) are available at the end, **reproducible in 1-click**.
+&nbsp;
 
-### Table of Contents
+# Quick start
+Let's create an optimized dataset for lightning-fast training:
 
-- [Getting started](#getting-started)
-    - [Installation](#installation)
-    - [Quick Start](#quick-start)
-        - [1. Prepare Your Data](#1-prepare-your-data)
-        - [2. Upload Your Data to Cloud Storage](#2-upload-your-data-to-cloud-storage)
-        - [3. Use StreamingDataset](#3-use-streamingdataset)
-- [Key Features](#key-features)
-- [Benchmarks](#benchmarks)
-- [Runnable Templates](#runnable-templates)
-- [Infinite cloud data processing](#infinite-cloud-data-processing)
-- [Contributors](#-contributors)
-
-# Getting Started
-
-## Installation
-
-Install **LitData** with `pip`
+Install LitData:   
 
 ```bash
 pip install litdata
 ```
 
-Install **LitData** with the extras
+<details>
+  <summary>Advanced install</summary>
 
+Install all the extras
 ```bash
 pip install 'litdata[extras]'
 ```
 
-## Quick Start
+</details>
 
-### 1. Prepare Your Data
+&nbsp;
 
-Convert your raw dataset into **LitData Optimized Streaming Format** using the `optimize` operator.
-
-Here is an example with some random images. 
+**Step 1: Optimize the data**
+This step will format the dataset for fast loading (binary, chunked, etc...)    
 
 ```python
 import numpy as np
-from litdata import optimize
 from PIL import Image
-
-
-# Store random images into the data chunks
+import litdata as ld
+    
 def random_images(index):
+    fake_images = Image.fromarray(np.random.randint(0, 256, (32, 32, 3), dtype=np.uint8))
+    fake_labels = np.random.randint(10) 
     data = {
-        "index": index, # int data type
-        "image": Image.fromarray(np.random.randint(0, 256, (32, 32, 3), np.uint8)), # PIL image data type
-        "class": np.random.randint(10), # numpy array data type
+        "index": index,
+        "image": fake_images,
+        "class": fake_labels
     }
+
     # The data is serialized into bytes and stored into data chunks by the optimize operator.
-    return data # The data is serialized into bytes and stored into data chunks by the optimize operator.
+    return data
 
 if __name__ == "__main__":
-    optimize(
+    # optimize supports any data structures and types
+    ld.optimize(
         fn=random_images,  # The function applied over each input.
         inputs=list(range(1000)),  # Provide any inputs. The fn is applied on each item.
         output_dir="my_optimized_dataset",  # The directory where the optimized data are stored.
         num_workers=4,  # The number of workers. The inputs are distributed among them.
         chunk_bytes="64MB"  # The maximum number of bytes to write into a data chunk.
     )
-
 ```
+&nbsp;
 
-The `optimize` operator supports any data structures and types. Serialize whatever you want. The optimized data is stored under the output directory `my_optimized_dataset`.
+**Step 2: Put the data on the cloud**
 
-### 2. Upload your Data to Cloud Storage
-
-Cloud providers such as [AWS](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html), [Google Cloud](https://cloud.google.com/storage/docs/uploading-objects?hl=en#upload-object-cli), [Azure](https://learn.microsoft.com/en-us/azure/import-export/storage-import-export-data-to-files?tabs=azure-portal-preview) provide command line clients to upload your data to their storage solutions.
-
-Here is how to upload the optimized dataset using the [AWS CLI](https://aws.amazon.com/cli/) to [AWS S3](https://aws.amazon.com/s3/).
-
+Upload the data to a [Lightning Studio](https://lightning.ai) (backed by S3) or your own S3 bucket:   
 ```bash
-⚡ aws s3 cp --recursive my_optimized_dataset s3://my-bucket/my_optimized_dataset
+aws s3 cp --recursive my_optimized_dataset s3://my-bucket/my_optimized_dataset
 ```
+&nbsp;
 
-### 3. Use StreamingDataset
+**Step 3: Stream the data during training**    
 
-Then, the Streaming Dataset can read the data directly from [AWS S3](https://aws.amazon.com/s3/).
+Load the data by replacing the PyTorch DataSet and DataLoader with the StreamingDataset and StreamingDataloader
 
 ```python
-from litdata import StreamingDataset, StreamingDataLoader
+import litdata as ld
 
-# Remote path where full dataset is stored
-input_dir = 's3://my-bucket/my_optimized_dataset'
+dataset = ld.StreamingDataset('s3://my-bucket/my_optimized_dataset', shuffle=True)
+dataloader = ld.StreamingDataLoader(dataset)
 
-# Create the Streaming Dataset
-dataset = StreamingDataset(input_dir, shuffle=True)
-
-# Access any elements of the dataset
-sample = dataset[50]
-img = sample['image']
-cls = sample['class']
-
-# Create dataLoader and iterate over it to train your AI models.
-dataloader = StreamingDataLoader(dataset)
+for sample in dataloader:
+    img, cls = sample['image'], sample['class']
 ```
 
 # Key Features
