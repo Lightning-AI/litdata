@@ -297,6 +297,7 @@ class PickleSerializer(Serializer):
 
 class FileSerializer(Serializer):
     def serialize(self, filepath: str) -> Tuple[bytes, Optional[str]]:
+        print("FileSerializer will be removed in the future.")
         _, file_extension = os.path.splitext(filepath)
         with open(filepath, "rb") as f:
             file_extension = file_extension.replace(".", "").lower()
@@ -306,7 +307,9 @@ class FileSerializer(Serializer):
         return data
 
     def can_serialize(self, data: Any) -> bool:
-        return isinstance(data, str) and os.path.isfile(data)
+        # return isinstance(data, str) and os.path.isfile(data)
+        # FileSerializer will be removed in the future.
+        return False
 
 
 class VideoSerializer(Serializer):

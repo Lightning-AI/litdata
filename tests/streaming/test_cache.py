@@ -95,7 +95,8 @@ def _cache_for_image_dataset(num_workers, tmpdir, fabric=None):
         original_data = dataset.data[i]
         assert cached_data["class"] == original_data["class"]
         original_array = PILToTensor()(Image.open(original_data["image"]))
-        assert torch.equal(original_array, cached_data["image"])
+        cached_array = PILToTensor()(Image.open(cached_data["image"]))
+        assert torch.equal(original_array, cached_array)
 
     if distributed_env.world_size == 1:
         indexes = []
@@ -129,7 +130,8 @@ def _cache_for_image_dataset(num_workers, tmpdir, fabric=None):
         original_data = dataset.data[i]
         assert cached_data["class"] == original_data["class"]
         original_array = PILToTensor()(Image.open(original_data["image"]))
-        assert torch.equal(original_array, cached_data["image"])
+        cached_array = PILToTensor()(Image.open(cached_data["image"]))
+        assert torch.equal(original_array, cached_array)
 
     streaming_dataset_iter = iter(streaming_dataset)
     for _ in streaming_dataset_iter:
