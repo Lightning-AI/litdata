@@ -184,7 +184,7 @@ ld.map(
 
 
 <details>
-  <summary> ✅ Stream datasets</summary>
+  <summary> ✅ Stream large cloud datasets</summary>
 &nbsp;
 
 Most large datasets are stored on the cloud and may not fit on local disks. Streaming enables fast data transfer from remote locations to training machines. With optimized formatting like chunking in litserve, data transfer can be faster than local disk access.
@@ -290,7 +290,7 @@ for batch in tqdm(train_dataloader):
 </details>  
 
 <details>
-  <summary> ✅ Subsample and split datasets</summary>
+  <summary> ✅ Split datasets</summary>
 
 &nbsp;
 
@@ -316,18 +316,12 @@ print(test_dataset)
 # out: 50,000
 ```
 
-Or simply subsample them
+</details>  
 
-```python
-from litdata import StreamingDataset, train_test_split
+<details>
+  <summary> ✅ Subsample datasets</summary>
 
-dataset = StreamingDataset("s3://my-bucket/my-data", subsample=0.01) # data are stored in the cloud
-
-print(len(dataset)) # display the length of your data
-# out: 1000
-```
-
-Or simply subsample them
+&nbsp;
 
 ```python
 from litdata import StreamingDataset, train_test_split
@@ -381,10 +375,10 @@ The `overwrite` mode will delete the existing data and start from fresh.
 </details>  
 
 <details>
-  <summary> ✅ Access any item</summary>
+  <summary> ✅ Access subsets of large cloud datasets</summary>
 &nbsp;
 
-Access the data you need, whenever you need it, regardless of where it is stored.
+Access a subset of a dataset or individual items without loading all data on the local machine.    
 
 ```python
 from litdata import StreamingDataset
@@ -590,24 +584,16 @@ Speed to stream Imagenet 1.2M from AWS S3:
 
 | Framework | Images / sec  1st Epoch (float32)  | Images / sec   2nd Epoch (float32) | Images / sec 1st Epoch (torch16) | Images / sec 2nd Epoch (torch16) |
 |---|---|---|---|---|
-| PL Data  | **5800.34** | **6589.98**  | **6282.17**  | **7221.88**  |
-| Web Dataset  | 3134.42 | 3924.95 | 3343.40 | 4424.62 |
-| Mosaic ML  | 2898.61 | 5099.93 | 2809.69 | 5158.98 |
+| PL Data  | **5800** | **6589**  | **6282**  | **7221**  |
+| Web Dataset  | 3134 | 3924 | 3343 | 4424 |
+| Mosaic ML  | 2898 | 5099 | 2809 | 5158 |
 
 <details>
   <summary> Benchmark details</summary>
 &nbsp;
 
-The [Imagenet-1.2M dataset](https://www.image-net.org/) contains `1,281,167 images`.    
-To align with other benchmarks, we measured the streaming speed (`images per second`) loaded from [AWS S3](https://aws.amazon.com/s3/) for several frameworks. 
-
-**Streaming Imagenet-1.2M from AWS S3** (Higher is better)    
-
-| Framework | Images / sec  1st Epoch (float32)  | Images / sec   2nd Epoch (float32) | Images / sec 1st Epoch (torch16) | Images / sec 2nd Epoch (torch16) |
-|---|---|---|---|---|
-| PL Data  | **5800.34** | **6589.98**  | **6282.17**  | **7221.88**  |
-| Web Dataset  | 3134.42 | 3924.95 | 3343.40 | 4424.62 |
-| Mosaic ML  | 2898.61 | 5099.93 | 2809.69 | 5158.98 |
+- [Imagenet-1.2M dataset](https://www.image-net.org/) contains `1,281,167 images`.    
+- To align with other benchmarks, we measured the streaming speed (`images per second`) loaded from [AWS S3](https://aws.amazon.com/s3/) for several frameworks. 
 
 </details>  
 
