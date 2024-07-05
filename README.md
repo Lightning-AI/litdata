@@ -4,13 +4,13 @@
 &nbsp;
 &nbsp;
 
-**Optimize massive datasets for lightning-fast AI model training and inference.**
+**Transform datasets at scale. Optimize datasets for fast AI model training.**
 
 
 <pre>
-✅ All data types                     ✅ Multi-GPU/Multi-Node                   
-✅ S3 or custom storage               ✅ Efficient data optimization            
-✅ Easy subsampling and splitting     ✅ Customizable data access and transforms
+✅ Run distributed inference     ✅ Optimize datasets             
+✅ Create vector embeddings      ✅ Speed up model training by 20x
+✅ Scale data pipelines          ✅ Training fault tolerance      
 </pre>
 
 ---
@@ -21,11 +21,13 @@
 [![Discord](https://img.shields.io/discord/822497400078196796?label=Join%20Discord)](https://discord.com/invite/XncpTy7DSt)
 
 <p align="center">
-  <a href="https://lightning.ai/">Homepage</a> •
+  <a href="https://lightning.ai/">Lightning AI</a> •
   <a href="#quick-start">Quick start</a> •
+  <a href="#speed-up-model-training">Optimize datasets</a> •
+  <a href="#transform-datasets">Transform datasets</a> •
   <a href="#key-features">Key features</a> •
   <a href="#benchmarks">Benchmarks</a> •
-  <a href="#runnable-templates">Runnable Templates</a> •
+  <a href="#runnable-templates">Templates</a>
 </p>
 
 &nbsp;
@@ -38,8 +40,13 @@
 
 &nbsp;
 
-# Maximize AI training speeds with fast data loading
-LitData optimizes datasets for fast loading, speeding up AI training by 20x. It supports all data types and enables large-scale processing across thousands of cloud machines.
+# Transform datasets at scale. Optimize to speed up model training.   
+LitData enables two key data workflows transform datasets and optimize for training:   
+
+**Transform** datasets across 1000s of machines.     
+**Optimize** datasets for fast loading to speed up AI training by 20x.    
+
+LitData supports all data types and enables large-scale processing across thousands of cloud machines.
 
 - ✅ **Framework agnostic -** Works with PyTorch Lightning, Lightning Fabric, and PyTorch.    
 - ✅ **Supports cloud storage -** Stream from S3, GCS and Azure.    
@@ -56,8 +63,9 @@ First, install LitData:
 pip install litdata
 ``` 
 
-Next, choose your goal:    
+Next, choose your workflow:    
 - 🚀 [Speed up model training](#speed-up-model-training)
+- 🚀 [Transform datasets](#transform-datasets)
 
 &nbsp;
 
@@ -71,10 +79,12 @@ pip install 'litdata[extras]'
 
 </details>   
 
+----
+
 # Speed up model training
 Datasets optimized with LitData can make model training at least 20x faster.   
 
-#### Step 1: Optimize the data      
+**Step 1: Optimize the data**         
 This step will format the dataset for fast loading (binary, chunked, etc...)    
 
 ```python
@@ -103,18 +113,16 @@ if __name__ == "__main__":
         num_workers=4,  # The number of workers. The inputs are distributed among them.
         chunk_bytes="64MB"  # The maximum number of bytes to write into a data chunk.
     )
-```
-&nbsp;
+```    
 
-#### Step 2: Put the data on the cloud
+**Step 2: Put the data on the cloud**
 
 Upload the data to a [Lightning Studio](https://lightning.ai) (backed by S3) or your own S3 bucket:   
 ```bash
 aws s3 cp --recursive my_optimized_dataset s3://my-bucket/my_optimized_dataset
-```
-&nbsp;
+```    
 
-#### Step 3: Stream the data during training     
+**Step 3: Stream the data during training**     
 
 Load the data by replacing the PyTorch DataSet and DataLoader with the StreamingDataset and StreamingDataloader
 
@@ -127,6 +135,36 @@ dataloader = ld.StreamingDataLoader(dataset)
 for sample in dataloader:
     img, cls = sample['image'], sample['class']
 ```
+
+&nbsp;
+
+----    
+
+# Transform datasets
+Use LitData to apply transforms to large datasets across 1000s of machines in parallel. Common usecases are to create vector embeddings, run distributed inference and more.   
+
+Here's an example that resizes and crops a large image dataset:
+
+```python
+from PIL import Image
+import litdata as ld
+
+# use a local or s3 path    
+input_dir = "my_large_images" 
+inputs = [os.path.join(input_dir, f) for f in os.listdir(input_dir)]
+
+# resize the input image
+def resize_image(image_path, output_dir):
+  output_image_path = os.path.join(output_dir, os.path.basename(image_path))
+  Image.open(image_path).resize((224, 224)).save(output_image_path)
+  
+ld.map(
+    fn=resize_image,
+    inputs=inputs, 
+    output_dir="s3://my-bucket/my_resized_images",
+)
+```
+
 
 # Key Features
 
