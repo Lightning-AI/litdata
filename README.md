@@ -43,7 +43,7 @@ Transform                              Optimize
 
 &nbsp;
 
-# Transform datasets at scale. Optimize to speed up model training.   
+# Transform datasets at scale. Optimize for fast model training.   
 LitData enables two key data workflows [transform datasets](#transform-datasets) and [optimize to speed up AI model training](#speed-up-model-training):   
 
 [Transform](#transform-datasets) - datasets across 1000s of machines.     
