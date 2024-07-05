@@ -5,7 +5,7 @@
 &nbsp;
 
 **Transform datasets at scale.   
-Optimize for fast AI model training.**
+Optimize data for fast AI model training.**
 
 
 <pre>
