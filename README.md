@@ -226,6 +226,21 @@ map(
 <details>
   <summary> ✅ Stream datasets</summary>
 &nbsp;
+
+Most large datasets are stored on the cloud and may not fit on local disks. Streaming enables fast data transfer from remote locations to training machines. With optimized formatting like chunking in litserve, data transfer can be faster than local disk access.
+
+Once you've optimized the dataset with LitData, stream it as follows:   
+```python
+from litdata import StreamingDataset, StreamingDataLoader
+
+dataset = StreamingDataset('s3://my-bucket/my-data', shuffle=True)
+dataloader = StreamingDataLoader(dataset, batch_size=64)
+
+for batch in dataloader:
+    process(batch)  # Replace with your data processing logic
+
+```
+
 </details>  
 
 <details>
