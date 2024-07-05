@@ -28,7 +28,7 @@ Transform                              Optimize
   <a href="#quick-start">Quick start</a> •
   <a href="#speed-up-model-training">Optimize datasets</a> •
   <a href="#transform-datasets">Transform datasets</a> •
-  <a href="#key-features">Key features</a> •
+  <a href="#key-features">Features</a> •
   <a href="#benchmarks">Benchmarks</a> •
   <a href="#start-from-a-template">Templates</a> •
   <a href="#community">Community</a>
