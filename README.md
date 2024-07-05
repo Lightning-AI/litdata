@@ -173,22 +173,10 @@ ld.map(
 
 # Key Features
 
-- [Multi-GPU / Multi-Node Support](#multi-gpu--multi-node-support)
-- [Subsample and split your datasets](#subsample-and-split-your-datasets)
-- [Append or Overwrite optimized datasets](#append-or-overwrite-optimized-datasets)
-- [Access any item](#access-any-item)
-- [Use any data transforms](#use-any-data-transforms)
-- [The Map Operator](#the-map-operator)
-- [Easy Data Mixing with the Combined Streaming Dataset](#easy-data-mixing-with-the-combined-streaming-dataset)
-- [Pause & Resume Made simple](#pause--resume-made-simple)
-- [Support Profiling](#support-profiling)
-- [Reduce your memory footprint](#reduce-your-memory-footprint)
-- [Configure Cache Size Limit](#configure-cache-size-limit)
-- [On-Prem Optimizations](#on-prem-optimizations)
-- [Support S3-Compatible Object Storage](#support-s3-compatible-object-storage)
+<details>
+  <summary> ✅ Multi-GPU / Multi-Node Support</summary>
 
-
-## Multi-GPU / Multi-Node Support
+&nbsp;
 
 The `StreamingDataset` and `StreamingDataLoader` automatically make sure each rank receives the same quantity of varied batches of data, so it works out of the box with your favorite frameworks ([PyTorch Lightning](https://lightning.ai/docs/pytorch/stable/), [Lightning Fabric](https://lightning.ai/docs/fabric/stable/), or [PyTorch](https://pytorch.org/docs/stable/index.html)) to do distributed training. 
 
@@ -196,7 +184,12 @@ Here you can see an illustration showing how the Streaming Dataset works with mu
 
 ![An illustration showing how the Streaming Dataset works with multi node.](https://pl-flash-data.s3.amazonaws.com/streaming_dataset.gif)
 
-## Subsample and split your datasets
+</details>  
+
+<details>
+  <summary> ✅ Subsample and split datasets</summary>
+
+&nbsp;
 
 You can split your dataset with more ease with `train_test_split`.
 
@@ -242,7 +235,12 @@ print(len(dataset)) # display the length of your data
 # out: 1000
 ```
 
-## Append or overwrite optimized datasets
+</details>  
+
+<details>
+  <summary> ✅ Append or Overwrite optimized datasets</summary>
+&nbsp;
+
 
 LitData optimized datasets are assumed to be immutable. However, you can make the decision to modify them by changing the mode to either `append` or `overwrite`.
 
@@ -277,7 +275,11 @@ if __name__ == "__main__":
 
 The `overwrite` mode will delete the existing data and start from fresh.
 
-## Access any item
+</details>  
+
+<details>
+  <summary> ✅ Access any item</summary>
+&nbsp;
 
 Access the data you need, whenever you need it, regardless of where it is stored.
 
@@ -291,7 +293,12 @@ print(len(dataset)) # display the length of your data
 print(dataset[42]) # show the 42th element of the dataset
 ```
 
-## Use any data transforms
+</details>  
+
+<details>
+  <summary> ✅ Use any data transforms</summary>
+&nbsp;
+
 
 Subclass the `StreamingDataset` and override its `__getitem__` method to add any extra data transformations.
 
@@ -313,7 +320,12 @@ for batch in dataloader:
     # Out: (4, 3, 224, 224)
 ```
 
-## The Map Operator
+</details>  
+
+<details>
+  <summary> ✅ Map transformations</summary>
+&nbsp;
+
 
 The `map` operator can be used to apply a function over a list of inputs.
 
@@ -340,7 +352,17 @@ map(
 )
 ```
 
-## Easy Data Mixing with the Combined Streaming Dataset
+</details>  
+
+<details>
+  <summary> ✅ Stream datasets</summary>
+&nbsp;
+</details>  
+
+<details>
+  <summary> ✅ Combine datasets</summary>
+&nbsp;
+
 
 Easily experiment with dataset mixtures using the `CombinedStreamingDataset` class. 
 
@@ -376,8 +398,12 @@ train_dataloader = StreamingDataLoader(combined_dataset, batch_size=8, pin_memor
 for batch in tqdm(train_dataloader):
     pass
 ```
+</details>  
 
-## Pause & Resume Made Simple
+<details>
+  <summary> ✅ Pause & Resume data streaming</summary>
+&nbsp;
+
 
 LitData provides a stateful `Streaming DataLoader` e.g. you can `pause` and `resume` your training whenever you want.
 
@@ -404,7 +430,11 @@ for batch_idx, batch in enumerate(dataloader):
         torch.save(dataloader.state_dict(), "dataloader_state.pt")
 ```
 
-## Support Profiling
+</details>  
+
+<details>
+  <summary> ✅ Support Profiling</summary>
+&nbsp;
 
 The `StreamingDataLoader` supports profiling of your data loading process. Simply use the `profile_batches` argument to specify the number of batches you want to profile:
 
@@ -416,7 +446,12 @@ StreamingDataLoader(..., profile_batches=5)
 
 This generates a Chrome trace called `result.json`. Then, visualize this trace by opening Chrome browser at the `chrome://tracing` URL and load the trace inside.
 
-## Reduce your memory footprint
+</details>  
+
+<details>
+  <summary> ✅ Reduce memory footprint</summary>
+&nbsp;
+
 
 When processing large files like compressed [parquet files](https://en.wikipedia.org/wiki/Apache_Parquet), use the Python yield keyword to process and store one item at the time, reducing the memory footprint of the entire program. 
 
@@ -448,7 +483,11 @@ outputs = optimize(
 )
 ```
 
-## Configure Cache Size Limit
+</details>  
+
+<details>
+  <summary> ✅ Configure Cache Size Limit</summary>
+&nbsp;
 
 Adapt the local caching limit of the `StreamingDataset`. This is useful to make sure the downloaded data chunks are deleted when used and the disk usage stays low.
 
@@ -458,8 +497,12 @@ from litdata import StreamingDataset
 dataset = StreamingDataset(..., max_cache_size="10GB")
 ```
 
-## On-Prem Optimizations
+</details>  
 
+<details>
+  <summary> ✅ On-Prem Optimizations</summary>
+&nbsp;
+  
 On-prem compute nodes can mount and use a network drive. A network drive is a shared storage device on a local area network. In order to reduce their network overload, the `StreamingDataset` supports `caching` the data chunks.
 
 ```python
@@ -468,7 +511,11 @@ from litdata import StreamingDataset
 dataset = StreamingDataset(input_dir="local:/data/shared-drive/some-data")
 ```
 
-## Support S3-Compatible Object Storage
+</details>  
+
+<details>
+  <summary> ✅ Support S3-Compatible Object Storage</summary>
+&nbsp;
 
 Integrate S3-compatible object storage servers like [MinIO](https://min.io/) with litdata, ideal for on-premises infrastructure setups. Configure the endpoint and credentials using environment variables or configuration files. 
 
@@ -496,6 +543,9 @@ endpoint_url = http://localhost:9000  # MinIO endpoint
 EOL
 ```
 Explore an example setup of litdata with MinIO in the [LitData with MinIO](https://github.com/bhimrazy/litdata-with-minio) repository for practical implementation details.
+
+</details>  
+
 
 # Benchmarks
 
