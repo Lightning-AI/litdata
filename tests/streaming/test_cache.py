@@ -322,3 +322,23 @@ def test_cache_for_text_tokens(tmpdir):
 
     with pytest.raises(ValueError, match="TokensLoader"):
         len(Cache(str(tmpdir), chunk_size=block_size * 11))
+
+
+def test_cache_checkpoint(tmpdir):
+    cache_dir = os.path.join(tmpdir, "cache_checkpoint")
+    os.makedirs(cache_dir)
+
+    cache = Cache(cache_dir, chunk_bytes=90)
+
+    # you encode data
+    for i in range(100):
+        cache[i] = i
+
+    # I am done, write the index ...
+    cache.done()
+    cache.merge()
+    cache.save_checkpoint()
+
+    for file in os.listdir(os.path.join(cache_dir, ".checkpoints")):
+        assert file.__contains__("checkpoint-0")
+        assert file.endswith(".json")

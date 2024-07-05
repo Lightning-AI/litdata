@@ -6,6 +6,7 @@ from litdata.processing.utilities import (
     extract_rank_and_index_from_filename,
     optimize_dns_context,
     read_index_file_content,
+    remove_uuid_from_filename,
 )
 from litdata.streaming.resolver import _resolve_dir
 
@@ -84,3 +85,28 @@ def test_read_index_file_content(tmpdir):
         json.dump(dummy_dict, f)
 
     assert read_index_file_content(_resolve_dir(str(output_dir))) == dummy_dict
+
+
+def test_remove_uuid_from_filename():
+    filepaths = [
+        "checkpoint-0-9fe2c4e93f654fdbb24c02b15259716c.json",
+        "checkpoint-1-9fe2c4e93f654fdbb24c02b15259716c.json",
+        "checkpoint-2-9fe2c4e93f654fdbb24c02b15259716c.json",
+        "checkpoint-101-9fe2c4e93f654fdbb24c02b15259716c.json",
+        "checkpoint-12-9fe2c4e93f654fdbb24c02b15259716c.json",
+        "checkpoint-267-9fe2c4e93f654fdbb24c02b15259716c.json",
+    ]
+
+    expected = [
+        "checkpoint-0.json",
+        "checkpoint-1.json",
+        "checkpoint-2.json",
+        "checkpoint-101.json",
+        "checkpoint-12.json",
+        "checkpoint-267.json",
+    ]
+
+    for idx, filepath in enumerate(filepaths):
+        filepath = ".checkpoints/" + filepath
+        result = remove_uuid_from_filename(filepath)
+        assert result == ".checkpoints/" + expected[idx]
