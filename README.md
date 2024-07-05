@@ -176,75 +176,6 @@ ld.map(
 
 # Key Features
 
-## Features for transforming datasets  
-
-<details>
-  <summary> ✅ Map transformations</summary>
-&nbsp;
-
-
-The `map` operator can be used to apply a function over a list of inputs.
-
-Here is an example where the `map` operator is used to apply a `resize_image` function over a folder of large images.
-
-```python
-from litdata import map
-from PIL import Image
-
-# Note: Inputs could also refer to files on s3 directly.
-input_dir = "my_large_images"
-inputs = [os.path.join(input_dir, f) for f in os.listdir(input_dir)]
-
-# The resize image takes one of the input (image_path) and the output directory. 
-# Files written to output_dir are persisted.
-def resize_image(image_path, output_dir):
-  output_image_path = os.path.join(output_dir, os.path.basename(image_path))
-  Image.open(image_path).resize((224, 224)).save(output_image_path)
-  
-map(
-    fn=resize_image,
-    inputs=inputs, 
-    output_dir="s3://my-bucket/my_resized_images",
-)
-```
-
-</details>  
-
-<details>
-  <summary> ✅ Support S3-Compatible Object Storage</summary>
-&nbsp;
-
-Integrate S3-compatible object storage servers like [MinIO](https://min.io/) with litdata, ideal for on-premises infrastructure setups. Configure the endpoint and credentials using environment variables or configuration files. 
-
-Set up the environment variables to connect to MinIO:
-
-```bash
-export AWS_ACCESS_KEY_ID=access_key
-export AWS_SECRET_ACCESS_KEY=secret_key
-export AWS_ENDPOINT_URL=http://localhost:9000  # MinIO endpoint
-```
-
-Alternatively, configure credentials and endpoint in `~/.aws/{credentials,config}`:
-
-```bash
-mkdir -p ~/.aws && \
-cat <<EOL >> ~/.aws/credentials
-[default]
-aws_access_key_id = access_key
-aws_secret_access_key = secret_key
-EOL
-
-cat <<EOL >> ~/.aws/config
-[default]
-endpoint_url = http://localhost:9000  # MinIO endpoint
-EOL
-```
-Explore an example setup of litdata with MinIO in the [LitData with MinIO](https://github.com/bhimrazy/litdata-with-minio) repository for practical implementation details.
-
-</details>  
-
-&nbsp;
-
 ## Features for optimizing and streaming datasets for model training           
 
 
@@ -568,6 +499,75 @@ from litdata import StreamingDataset
 
 dataset = StreamingDataset(input_dir="local:/data/shared-drive/some-data")
 ```
+
+</details>  
+
+&nbsp;
+
+## Features for transforming datasets  
+
+<details>
+  <summary> ✅ Map transformations</summary>
+&nbsp;
+
+
+The `map` operator can be used to apply a function over a list of inputs.
+
+Here is an example where the `map` operator is used to apply a `resize_image` function over a folder of large images.
+
+```python
+from litdata import map
+from PIL import Image
+
+# Note: Inputs could also refer to files on s3 directly.
+input_dir = "my_large_images"
+inputs = [os.path.join(input_dir, f) for f in os.listdir(input_dir)]
+
+# The resize image takes one of the input (image_path) and the output directory. 
+# Files written to output_dir are persisted.
+def resize_image(image_path, output_dir):
+  output_image_path = os.path.join(output_dir, os.path.basename(image_path))
+  Image.open(image_path).resize((224, 224)).save(output_image_path)
+  
+map(
+    fn=resize_image,
+    inputs=inputs, 
+    output_dir="s3://my-bucket/my_resized_images",
+)
+```
+
+</details>  
+
+<details>
+  <summary> ✅ Support S3-Compatible Object Storage</summary>
+&nbsp;
+
+Integrate S3-compatible object storage servers like [MinIO](https://min.io/) with litdata, ideal for on-premises infrastructure setups. Configure the endpoint and credentials using environment variables or configuration files. 
+
+Set up the environment variables to connect to MinIO:
+
+```bash
+export AWS_ACCESS_KEY_ID=access_key
+export AWS_SECRET_ACCESS_KEY=secret_key
+export AWS_ENDPOINT_URL=http://localhost:9000  # MinIO endpoint
+```
+
+Alternatively, configure credentials and endpoint in `~/.aws/{credentials,config}`:
+
+```bash
+mkdir -p ~/.aws && \
+cat <<EOL >> ~/.aws/credentials
+[default]
+aws_access_key_id = access_key
+aws_secret_access_key = secret_key
+EOL
+
+cat <<EOL >> ~/.aws/config
+[default]
+endpoint_url = http://localhost:9000  # MinIO endpoint
+EOL
+```
+Explore an example setup of litdata with MinIO in the [LitData with MinIO](https://github.com/bhimrazy/litdata-with-minio) repository for practical implementation details.
 
 </details>  
 
