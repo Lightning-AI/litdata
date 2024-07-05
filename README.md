@@ -21,7 +21,7 @@ Transform                              Optimize
 ![PyPI](https://img.shields.io/pypi/v/litdata)
 ![Downloads](https://img.shields.io/pypi/dm/litdata)
 ![License](https://img.shields.io/github/license/Lightning-AI/litdata)
-[![Discord](https://img.shields.io/discord/822497400078196796?label=Join%20Discord)](https://discord.com/invite/XncpTy7DSt)
+[![Discord](https://img.shields.io/discord/822497400078196796?label=Join%20Discord)](https://discord.gg/VptPCZkGNa)
 
 <p align="center">
   <a href="https://lightning.ai/">Lightning AI</a> •
