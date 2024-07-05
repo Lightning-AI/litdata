@@ -49,12 +49,13 @@ LitData enables two key data workflows [transform datasets](#transform-datasets)
 
 [Transform](#transform-datasets) - datasets across 1000s of machines.     
 [Optimize](#speed-up-model-training)  - datasets for fast loading to speed up AI training by 20x.    
-
-✅ **Any data type -** Text, images, videos, audio, objects, files, etc...    
-✅ **Framework agnostic -** Works with PyTorch Lightning, Lightning Fabric, and PyTorch.    
-✅ **Supports cloud storage -** Stream from S3, GCS and Azure.    
-✅ **Optimized data format -** Datasets stream faster, improving training speed by 20x.  
-✅ **Scale across GPUs -** Process data on 1 to 1000+ GPUs.    
+    
+✅ **Blazing fast training** - Speed up model training by 20x with optimized datasets.   
+✅ **Stream from the cloud** - Work with huge datasets directly from cloud storage without downloading.    
+✅ **Pytorch-first** - Works with PyTorch Lightning, Lightning Fabric, and PyTorch.    
+✅ **Easy collaboration** - Works with PyTorch Lightning, Lightning Fabric, and PyTorch.    
+✅ **Scale across GPUs** - Share and access datasets in the cloud, streamlining team projects.    
+✅ **Flexible storage options** - Use S3, GCS, Azure, or your own cloud account for data storage.    
 ✅ **Run local or cloud-** Auto-scale to 1000s of cloud GPUs with Lightning Studios.     
 ✅ **Own VPC or cloud account-** Self host or process data on your cloud account with Lightning Studios.    
     
@@ -89,7 +90,7 @@ pip install 'litdata[extras]'
 ----
 
 # Speed up model training
-Datasets optimized with LitData can make model training at least 20x faster.   
+Significantly speed up model training by optimizing datasets for fast loading (20x faster) and streaming from cloud storage.    
 
 **Step 1: Optimize the data**         
 This step will format the dataset for fast loading (binary, chunked, etc...)    
@@ -147,8 +148,8 @@ for sample in dataloader:
 
 ----    
 
-# Transform datasets
-Use LitData to apply transforms to large datasets across 1000s of machines in parallel. Common usecases are to create vector embeddings, run distributed inference and more.   
+# Transform datasets    
+Use LitData to apply transforms to large datasets across multiple machines in parallel. Common usecases are to create vector embeddings, run distributed inference and more.   
 
 Here's an example that resizes and crops a large image dataset:
 
