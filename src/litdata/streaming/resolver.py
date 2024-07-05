@@ -14,7 +14,9 @@
 import datetime
 import os
 import re
+import shutil
 import sys
+from contextlib import suppress
 from dataclasses import dataclass
 from pathlib import Path
 from time import sleep
@@ -246,7 +248,9 @@ def _assert_dir_is_empty(output_dir: Dir, append: bool = False, overwrite: bool 
         )
 
 
-def _assert_dir_has_index_file(output_dir: Dir, mode: Optional[Literal["append", "overwrite"]] = None) -> None:
+def _assert_dir_has_index_file(
+    output_dir: Dir, mode: Optional[Literal["append", "overwrite"]] = None, use_checkpoint: bool = False
+) -> None:
     if mode is not None and mode not in ["append", "overwrite"]:
         raise ValueError(f"The provided `mode` should be either `append` or `overwrite`. Found {mode}.")
 
@@ -273,10 +277,17 @@ def _assert_dir_has_index_file(output_dir: Dir, mode: Optional[Literal["append",
 
             # delete index.json file and chunks
             if os.path.exists(os.path.join(output_dir.path, "index.json")):
+                # only possible if mode = "overwrite"
                 os.remove(os.path.join(output_dir.path, "index.json"))
-            for file in os.listdir(output_dir.path):
-                if file.endswith(".bin"):
-                    os.remove(os.path.join(output_dir.path, file))
+
+            if mode == "overwrite" or (mode is None and not use_checkpoint):
+                for file in os.listdir(output_dir.path):
+                    if file.endswith(".bin"):
+                        os.remove(os.path.join(output_dir.path, file))
+
+                # delete checkpoints
+                with suppress(FileNotFoundError):
+                    shutil.rmtree(os.path.join(output_dir.path, ".checkpoints"))
 
         return
 
@@ -316,8 +327,10 @@ def _assert_dir_has_index_file(output_dir: Dir, mode: Optional[Literal["append",
     # Delete all the files (including the index file in overwrite mode)
     bucket_name = obj.netloc
     s3 = boto3.resource("s3")
-    for obj in s3.Bucket(bucket_name).objects.filter(Prefix=prefix):
-        s3.Object(bucket_name, obj.key).delete()
+
+    if mode == "overwrite" or (mode is None and not use_checkpoint):
+        for obj in s3.Bucket(bucket_name).objects.filter(Prefix=prefix):
+            s3.Object(bucket_name, obj.key).delete()
 
 
 def _get_lightning_cloud_url() -> str:

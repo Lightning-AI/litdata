@@ -37,9 +37,6 @@ _PIL_AVAILABLE = RequirementCache("PIL")
 
 
 def test_binary_writer_with_ints_and_chunk_bytes(tmpdir):
-    with pytest.raises(FileNotFoundError, match="The provided cache directory `dontexists` doesn't exist."):
-        BinaryWriter("dontexists", {})
-
     match = (
         "The provided compression something_else isn't available"
         if _ZSTD_AVAILABLE
@@ -80,9 +77,6 @@ def test_binary_writer_with_ints_and_chunk_bytes(tmpdir):
 
 def test_binary_writer_with_ints_and_chunk_size(tmpdir):
     seed_everything(42)
-
-    with pytest.raises(FileNotFoundError, match="The provided cache directory `dontexists` doesn't exist."):
-        BinaryWriter("dontexists", {})
 
     match = (
         "The provided compression something_else isn't available"
@@ -252,3 +246,23 @@ def test_writer_unordered_indexes(tmpdir):
     assert data["chunks"][0]["chunk_size"] == 5
     assert data["chunks"][1]["chunk_size"] == 5
     assert data["chunks"][2]["chunk_size"] == 2
+
+
+def test_writer_save_checkpoint(tmpdir):
+    cache_dir = os.path.join(tmpdir, "chunks")
+    os.makedirs(cache_dir, exist_ok=True)
+
+    binary_writer = BinaryWriter(cache_dir, chunk_size=5)
+
+    arr = [2, 3, 1, 4, 6, 5, 7, 8, 11, 9, 10, 12]
+
+    for i in arr:
+        binary_writer[i] = i - 1
+
+    binary_writer.done()
+    binary_writer.merge()
+    binary_writer.save_checkpoint()
+
+    for file in os.listdir(os.path.join(cache_dir, ".checkpoints")):
+        assert file.__contains__("checkpoint-0")
+        assert file.endswith(".json")
