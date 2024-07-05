@@ -30,7 +30,8 @@ Transform                              Optimize
   <a href="#transform-datasets">Transform datasets</a> •
   <a href="#key-features">Key features</a> •
   <a href="#benchmarks">Benchmarks</a> •
-  <a href="#runnable-templates">Templates</a>
+  <a href="#start-from-a-template">Templates</a> •
+  <a href="#community">Community</a>
 </p>
 
 &nbsp;
@@ -576,16 +577,13 @@ Explore an example setup of litdata with MinIO in the [LitData with MinIO](https
 ----
 
 # Benchmarks
+In this section we show benchmarks for speed to optimize a dataset and the resulting streaming speed ([Reproduce the benchmark](https://lightning.ai/lightning-ai/studios/benchmark-cloud-data-loading-libraries)).    
 
-In order to measure the effectiveness of LitData, we used a commonly used dataset for benchmarks: [Imagenet-1.2M](https://www.image-net.org/) where the training set contains `1,281,167 images`. 
+## Streaming speed
 
-To align with other benchmarks, we measured the streaming speed (`images per second`) loaded from [AWS S3](https://aws.amazon.com/s3/) for several frameworks. 
+Data optimized and streamed with LitData achieves a 20x speed up over non optimized data and 2x speed up over other streaming solutions.     
 
-Reproduce our benchmark **by running** this [Studio](https://lightning.ai/lightning-ai/studios/benchmark-cloud-data-loading-libraries). 
-
-### Imagenet-1.2M Streaming from AWS S3
-
-We can observe LitData is up to 85 % faster than the second best. Higher is better in the table below. 
+Speed to stream Imagenet 1.2M from AWS S3:    
 
 | Framework | Images / sec  1st Epoch (float32)  | Images / sec   2nd Epoch (float32) | Images / sec 1st Epoch (torch16) | Images / sec 2nd Epoch (torch16) |
 |---|---|---|---|---|
@@ -593,44 +591,60 @@ We can observe LitData is up to 85 % faster than the second best. Higher is bett
 | Web Dataset  | 3134.42 | 3924.95 | 3343.40 | 4424.62 |
 | Mosaic ML  | 2898.61 | 5099.93 | 2809.69 | 5158.98 |
 
-### Imagenet-1.2M Conversion
+<details>
+  <summary> Benchmark details</summary>
+&nbsp;
 
-We measured how fast the 1.2 million images can converted into a streamable format. Faster is better in the table below.
+The [Imagenet-1.2M dataset](https://www.image-net.org/) contains `1,281,167 images`.    
+To align with other benchmarks, we measured the streaming speed (`images per second`) loaded from [AWS S3](https://aws.amazon.com/s3/) for several frameworks. 
 
+**Streaming Imagenet-1.2M from AWS S3** (Higher is better)    
+
+| Framework | Images / sec  1st Epoch (float32)  | Images / sec   2nd Epoch (float32) | Images / sec 1st Epoch (torch16) | Images / sec 2nd Epoch (torch16) |
+|---|---|---|---|---|
+| PL Data  | **5800.34** | **6589.98**  | **6282.17**  | **7221.88**  |
+| Web Dataset  | 3134.42 | 3924.95 | 3343.40 | 4424.62 |
+| Mosaic ML  | 2898.61 | 5099.93 | 2809.69 | 5158.98 |
+
+</details>  
+
+&nbsp;          
+
+## Time to optimize data    
+LitData optimizes the Imagenet dataset for fast training 3-5x faster than other frameworks:   
+
+Time to optimize 1.2 million ImageNet images (Faster is better):    
 | Framework |Train Conversion Time | Val Conversion Time | Dataset Size | # Files |
 |---|---|---|---|---|
 | PL Data  |  **10:05 min** | **00:30 min** | **143.1 GB**  | 2.339  |
 | Web Dataset  | 32:36 min | 01:22 min | 147.8 GB | 1.144 |
 | Mosaic ML  | 49:49 min | 01:04 min | **143.1 GB** | 2.298 |
 
+&nbsp;
 
-# Runnable Templates
+----
 
-Fastest way to learn is with [Studios](https://lightning.ai/studios).  
+# Paralellize transforms and data optimization on cloud machines   
+<div align="center">
+<img alt="Lightning" src="https://pl-flash-data.s3.amazonaws.com/data-prep.jpg" width="700px">
+</div> 
 
-[Studios](https://lightning.ai/studios) are reproducible cloud IDE with data, code, dependencies, e.g. so redo everything yourself with ease!
+## Parallelize data transforms    
 
-We've published [public templates](https://lightning.ai/studios) that demonstrates how best to use the LitData framework at scale and with several data types.
+Transformations with LitServe are linearly parallelizable across machines.      
+    
+For example, let's say that it takes 56 hours to embed a dataset on a single A10G machine. With LitServe, 
+this can be speed up by adding more machines in parallel
 
-Sign up [here](https://lightning.ai/) and run your first Studio for free.
+| Number of machines | Hours |
+|-----------------|--------------|
+| 1               | 56           |
+| 2               | 28           |
+| 4               | 14           |
+| ...               | ...            |
+| 64              | 0.875        |
 
-| Studio | Data type | Dataset |
-| -------------------------------------------------------------------------------------------------------------------------------------------- | :-----------------: | --------------------------------------------------------------------------------------------------------------------------------------: |
-| [Use or explore LAION-400MILLION dataset](https://lightning.ai/lightning-ai/studios/use-or-explore-laion-400million-dataset)                                                                                  | Image & Text |[LAION-400M](https://laion.ai/blog/laion-400-open-dataset/) |
-| [Convert GeoSpatial data to Lightning Streaming](https://lightning.ai/lightning-ai/studios/convert-spatial-data-to-lightning-streaming) |    Image & Mask     |  [Chesapeake Roads Spatial Context](https://github.com/isaaccorley/chesapeakersc) |
-| [Benchmark cloud data-loading libraries](https://lightning.ai/lightning-ai/studios/benchmark-cloud-data-loading-libraries)                                               |    Image & Label    | [Imagenet 1M](https://paperswithcode.com/sota/image-classification-on-imagenet?tag_filter=171) |
-| [Prepare the TinyLlama 1T token dataset](https://lightning.ai/lightning-ai/studios/prepare-the-tinyllama-1t-token-dataset) |        Text         |              [SlimPajama](https://huggingface.co/datasets/cerebras/SlimPajama-627B) & [StarCoder](https://huggingface.co/datasets/bigcode/starcoderdata) |
-| [Tokenize 2M Swedish Wikipedia Articles](https://lightning.ai/lightning-ai/studios/tokenize-2m-swedish-wikipedia-articles) |        Text         |              [Swedish Wikipedia](https://huggingface.co/datasets/wikipedia) |
-| [Embed English Wikipedia under 5 dollars](https://lightning.ai/lightning-ai/studios/embed-english-wikipedia-under-5-dollars)                                                                               |        Text         |            [English Wikipedia](https://huggingface.co/datasets/wikipedia) |
-| [Convert parquets to Lightning Streaming](https://lightning.ai/lightning-ai/studios/convert-parquets-to-lightning-streaming)                                                                                                                                    |    Parquet Files    | Randomly Generated data |
-
-# Infinite cloud data processing
-
-If you want to scale data processing, you typically need more machines and if you do this yourself, this becomes very tedious and can take a long time to get there.
-
-Instead, create a free account on the [Lightning.ai](https://lightning.ai/) platform and use as many machines as you need from code.
-
-On the platform, simply specify the number of nodes and the machine type you need as follows:
+To scale the number of machines, run the processing script on [Lightning Studios](https://lightning.ai/):   
 
 ```python
 from litdata import map, Machine
@@ -642,7 +656,8 @@ map(
 )
 ```
 
-Also, the `optimize` operator can do the same to make immense datasets streamable as follows:
+## Parallelize data optimization   
+To scale the number of machines for data optimization, use [Lightning Studios](https://lightning.ai/):   
 
 ```python
 from litdata import optimize, Machine
@@ -654,15 +669,40 @@ optimize(
 )
 ```
 
+&nbsp;
 
-Within the [LAION 400 MILLION Studio](https://lightning.ai/lightning-ai/studios/use-or-explore-laion-400million-dataset), we utilized 32 machines, each equipped with 32 CPUs, to execute the `optimize` operator, enabling the download of 400 million images in just 2 hours. Below is a screenshot of that job within the [Lightning.ai](https://lightning.ai/) platform. You can execute it yourself [here](https://lightning.ai/lightning-ai/studios/use-or-explore-laion-400million-dataset).
+Example: [Process the LAION 400 million image dataset in 2 hours on 32 machines, each with 32 CPUs](https://lightning.ai/lightning-ai/studios/use-or-explore-laion-400million-dataset).     
 
-<div align="center">
+&nbsp;
 
-<img alt="Lightning" src="https://pl-flash-data.s3.amazonaws.com/data-prep.jpg" width="800px" style="max-width: 100%;">
+----
 
-</div> 
+# Start from a template    
+Below are templates for real-world applications of LitData at scale.   
 
-# ⚡ Contributors
+## Templates: Transform datasets 
 
-We welcome any contributions, pull requests, or issues. If you use the Streaming Dataset for your own project, please reach out to us on [Discord](https://discord.com/invite/XncpTy7DSt).
+| Studio | Data type | Time (minutes) | Machines | Dataset |    
+| ------ | ----------------- | ----------------- | -------------- | -------------- |
+| [Download LAION-400MILLION dataset](https://lightning.ai/lightning-ai/studios/use-or-explore-laion-400million-dataset) | Image & Text | 120 | 32 |[LAION-400M](https://laion.ai/blog/laion-400-open-dataset/) |
+| [Tokenize 2M Swedish Wikipedia Articles](https://lightning.ai/lightning-ai/studios/tokenize-2m-swedish-wikipedia-articles) | Text | 7 | 4 | [Swedish Wikipedia](https://huggingface.co/datasets/wikipedia) |
+| [Embed English Wikipedia under 5 dollars](https://lightning.ai/lightning-ai/studios/embed-english-wikipedia-under-5-dollars) | Text | 15 | 3 | [English Wikipedia](https://huggingface.co/datasets/wikipedia) |
+
+## Templates: Optimize + stream data    
+
+| Studio | Data type | Time (minutes) | Machines | Dataset |     
+| ------ | ----------------- | ----------------- | -------------- | -------------- |
+| [Convert GeoSpatial data to Lightning Streaming](https://lightning.ai/lightning-ai/studios/convert-spatial-data-to-lightning-streaming) | Image & Mask | 120 | 32 | [Chesapeake Roads Spatial Context](https://github.com/isaaccorley/chesapeakersc) |
+| [Benchmark cloud data-loading libraries](https://lightning.ai/lightning-ai/studios/benchmark-cloud-data-loading-libraries) | Image & Label | 10 | 1 | [Imagenet 1M](https://paperswithcode.com/sota/image-classification-on-imagenet?tag_filter=171) |
+| [Prepare the TinyLlama 1T token dataset](https://lightning.ai/lightning-ai/studios/prepare-the-tinyllama-1t-token-dataset) | Text | 240 | 32 | [SlimPajama](https://huggingface.co/datasets/cerebras/SlimPajama-627B) & [StarCoder](https://huggingface.co/datasets/bigcode/starcoderdata) |
+| [Convert parquets to Lightning Streaming](https://lightning.ai/lightning-ai/studios/convert-parquets-to-lightning-streaming) | Parquet Files | 12 | 16 | Randomly Generated data |
+
+&nbsp;
+
+----
+
+# Community
+LitData is a community project accepting contributions -  Let's make the world's most advanced AI data processing framework.
+
+- [Get help from 5,0000+ developers on our Discord](https://discord.com/invite/XncpTy7DSt)
+- [Licensed under the Apache 2.0 License](https://github.com/Lightning-AI/litdata/blob/main/LICENSE)
