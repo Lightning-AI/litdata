@@ -165,7 +165,7 @@ def test_binary_writer_with_jpeg_filepath_and_int(tmpdir):
 
     cache_dir = os.path.join(tmpdir, "chunks")
     os.makedirs(cache_dir, exist_ok=True)
-    binary_writer = BinaryWriter(cache_dir, chunk_size=7) # each chunk will have 7 items
+    binary_writer = BinaryWriter(cache_dir, chunk_size=7)  # each chunk will have 7 items
 
     imgs = []
 
@@ -178,10 +178,10 @@ def test_binary_writer_with_jpeg_filepath_and_int(tmpdir):
         imgs.append(img)
         binary_writer[i] = {"x": path, "y": i}
 
-    assert len(os.listdir(cache_dir)) == 14 # 100 items / 7 items per chunk = 14 chunks
+    assert len(os.listdir(cache_dir)) == 14  # 100 items / 7 items per chunk = 14 chunks
     binary_writer.done()
     binary_writer.merge()
-    assert len(os.listdir(cache_dir)) == 16 # 2 items in last chunk and index.json file
+    assert len(os.listdir(cache_dir)) == 16  # 2 items in last chunk and index.json file
 
     with open(os.path.join(cache_dir, "index.json")) as f:
         data = json.load(f)
