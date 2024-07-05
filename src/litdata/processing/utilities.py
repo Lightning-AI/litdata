@@ -267,7 +267,7 @@ def remove_uuid_from_filename(filepath: str) -> str:
     return filepath[:-38] + ".json"
 
 
-def downloadDirectoryFromS3(bucketName: str, remoteDirectoryName: str, localDirectoryName: str) -> str:
+def download_directory_from_S3(bucketName: str, remoteDirectoryName: str, localDirectoryName: str) -> str:
     s3_resource = boto3.resource("s3")
     bucket = s3_resource.Bucket(bucketName)
 
