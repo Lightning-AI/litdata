@@ -54,7 +54,12 @@ First, install LitData:
 
 ```bash
 pip install litdata
-```
+``` 
+
+Next, choose your goal:    
+- 🚀 [Speed up model training](#speed-up-model-training)
+
+&nbsp;
 
 <details>
   <summary>Advanced install</summary>
@@ -64,15 +69,12 @@ Install all the extras
 pip install 'litdata[extras]'
 ```
 
-</details>    
-
-Next, choose your goal:    
-- 🚀 [Speed up model training](#speed-up-model-training)
+</details>   
 
 # Speed up model training
 Datasets optimized with LitData can make model training at least 20x faster.   
 
-**Step 1: Optimize the data**
+#### Step 1: Optimize the data      
 This step will format the dataset for fast loading (binary, chunked, etc...)    
 
 ```python
@@ -104,7 +106,7 @@ if __name__ == "__main__":
 ```
 &nbsp;
 
-**Step 2: Put the data on the cloud**
+#### Step 2: Put the data on the cloud
 
 Upload the data to a [Lightning Studio](https://lightning.ai) (backed by S3) or your own S3 bucket:   
 ```bash
@@ -112,7 +114,7 @@ aws s3 cp --recursive my_optimized_dataset s3://my-bucket/my_optimized_dataset
 ```
 &nbsp;
 
-**Step 3: Stream the data during training**    
+#### Step 3: Stream the data during training     
 
 Load the data by replacing the PyTorch DataSet and DataLoader with the StreamingDataset and StreamingDataloader
 
