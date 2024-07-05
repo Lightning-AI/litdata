@@ -43,10 +43,9 @@ LitData optimizes datasets for fast loading, speeding up AI training by 20x. It 
 
 - ✅ **Framework agnostic -** Works with PyTorch Lightning, Lightning Fabric, and PyTorch.    
 - ✅ **Supports cloud storage -** Stream from S3, GCS and Azure.    
-- ✅ **Optimized data format -** Optimized datasets stream faster and improve model training speed by at least 20x.    
-- ✅ **Scale across GPUs -** Process data on 1 or 1000s of GPUs.    
-- ✅ **Run local or cloud-** Leverage Lightning Studios for auto-scaling to 1000s of GPUs. 
-
+- ✅ **Optimized data format -** Datasets stream faster, improving training speed by 20x.  
+- ✅ **Scale across GPUs -** Process data on 1 to 1000+ GPUs.    
+- ✅ **Run local or cloud-** Auto-scale to 1000s of cloud GPUs with Lightning Studios.     
 
 &nbsp;
 
