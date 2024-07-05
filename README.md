@@ -26,8 +26,8 @@ Transform                              Optimize
 <p align="center">
   <a href="https://lightning.ai/">Lightning AI</a> •
   <a href="#quick-start">Quick start</a> •
-  <a href="#speed-up-model-training">Optimize datasets</a> •
-  <a href="#transform-datasets">Transform datasets</a> •
+  <a href="#speed-up-model-training">Optimize data</a> •
+  <a href="#transform-datasets">Transform data</a> •
   <a href="#key-features">Features</a> •
   <a href="#benchmarks">Benchmarks</a> •
   <a href="#start-from-a-template">Templates</a> •
