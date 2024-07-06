@@ -21,7 +21,7 @@ Transform                              Optimize
 ![PyPI](https://img.shields.io/pypi/v/litdata)
 ![Downloads](https://img.shields.io/pypi/dm/litdata)
 ![License](https://img.shields.io/github/license/Lightning-AI/litdata)
-[![Discord](https://img.shields.io/discord/822497400078196796?label=Get%20Help%20on%20Discord)](https://discord.gg/VptPCZkGNa)
+[![Discord](https://img.shields.io/discord/1077906959069626439?label=Get%20Help%20on%20Discord)](https://discord.gg/VptPCZkGNa)
 
 <p align="center">
   <a href="https://lightning.ai/">Lightning AI</a> •
@@ -45,20 +45,22 @@ Transform                              Optimize
 &nbsp;
 
 # Transform data at scale. Optimize for fast model training.   
-LitData enables two key data workflows [transform datasets](#transform-datasets) and [optimize to speed up AI model training](#speed-up-model-training):   
+LitData helps scale and speed up two key data workflows:    
 
-[Transform](#transform-datasets) - datasets across 1000s of machines.     
-[Optimize](#speed-up-model-training)  - datasets for fast loading to speed up AI training by 20x.    
-    
-✅ **Blazing fast training** - Speed up model training by 20x with optimized datasets.   
-✅ **Stream from the cloud** - Work with huge datasets directly from cloud storage without downloading.    
-✅ **Pytorch-first** - Works with PyTorch Lightning, Lightning Fabric, and PyTorch.    
-✅ **Easy collaboration** - Works with PyTorch Lightning, Lightning Fabric, and PyTorch.    
-✅ **Scale across GPUs** - Share and access datasets in the cloud, streamlining team projects.    
-✅ **Flexible storage options** - Use S3, GCS, Azure, or your own cloud account for data storage.    
-✅ **Run local or cloud-** Auto-scale to 1000s of cloud GPUs with Lightning Studios.     
-✅ **Own VPC or cloud account-** Self host or process data on your cloud account with Lightning Studios.    
-    
+[Transform datasets](#transform-datasets) - Parallelize (map) transforms across 1000s of machines.     
+[Optimize datasets](#speed-up-model-training) &nbsp;  - Accelerate AI model training by 20x.    
+
+<pre style="background-color: transparent !important;">
+✅ Speed up training:         Speed up model training by 20x with optimized datasets.   
+✅ Stream cloud datasets:     Work with huge datasets directly from cloud storage without downloading.    
+✅ Pytorch-first:             Works with PyTorch libraries like PyTorch Lightning, Lightning Fabric, Hugging Face.    
+✅ Easy collaboration:        Share and access datasets in the cloud, streamlining team projects.     
+✅ Scale across GPUs:         Streamed data automatically scales to all GPUs.      
+✅ Flexible storage:          Use S3, GCS, Azure, or your own cloud account for data storage.    
+✅ Run local or cloud:        Auto-scale to 1000s of cloud GPUs with Lightning Studios.     
+✅ Enterprise security:       Self host or process data on your cloud account with Lightning Studios.  
+</pre>
+
 &nbsp;
 
 # Quick start
@@ -207,7 +209,7 @@ for batch in dataloader:
 </details>  
 
 <details>
-  <summary> ✅ Scale across multiple GPUs or machines</summary>
+  <summary> ✅ Streams on multi-GPU, multi-node</summary>
 
 &nbsp;
 
@@ -222,7 +224,7 @@ Here you can see an illustration showing how the Streaming Dataset works with mu
 </details>  
 
 <details>
-  <summary> ✅ Pause & Resume data streaming</summary>
+  <summary> ✅ Pause, resume data streaming</summary>
 &nbsp;
 
 Stream data during long training, if interrupted, pick up right where you left off without any issues.
@@ -296,7 +298,7 @@ for batch in tqdm(train_dataloader):
 </details>  
 
 <details>
-  <summary> ✅ Split datasets for training, validation, and testing</summary>
+  <summary> ✅ Split datasets for train, val, test</summary>
 
 &nbsp;
 
@@ -325,10 +327,11 @@ print(test_dataset)
 </details>  
 
 <details>
-  <summary> ✅ Work with smaller subsets of a dataset</summary>
+  <summary> ✅ Load a subset of the remote dataset</summary>
 
-Work on a smaller, manageable portion of your data to save time and resources.   
 &nbsp;
+Work on a smaller, manageable portion of your data to save time and resources.   
+
 
 ```python
 from litdata import StreamingDataset, train_test_split
@@ -342,7 +345,7 @@ print(len(dataset)) # display the length of your data
 </details>  
 
 <details>
-  <summary> ✅ Add or replace data in an optimized dataset</summary>
+  <summary> ✅ Easily modify optimized cloud datasets</summary>
 &nbsp;
 
 Add new data to an existing dataset or start fresh if needed, providing flexibility in data management.
@@ -383,7 +386,7 @@ The `overwrite` mode will delete the existing data and start from fresh.
 </details>  
 
 <details>
-  <summary> ✅ Access dataset parts without downloading everything</summary>
+  <summary> ✅ Access samples without full data download</summary>
 &nbsp;
 
 Look at specific parts of a large dataset without downloading the whole thing or loading it on a local machine.    
@@ -429,7 +432,7 @@ for batch in dataloader:
 </details>  
 
 <details>
-  <summary> ✅ Measure and optimize data loading speed</summary>
+  <summary> ✅ Profile data loading speed</summary>
 &nbsp;
 
 Measure and optimize how fast your data is being loaded, improving efficiency.   
@@ -485,7 +488,7 @@ outputs = optimize(
 </details>  
 
 <details>
-  <summary> ✅ Reduce disk space with caching limits</summary>
+  <summary> ✅ Limit local cache space</summary>
 &nbsp;
 
 Limit the amount of disk space used by temporary files, preventing storage issues.   
@@ -501,7 +504,7 @@ dataset = StreamingDataset(..., max_cache_size="10GB")
 </details>  
 
 <details>
-  <summary> ✅ Optimize data loading on networked drives</summary>
+  <summary> ✅ Optimize loading on networked drives</summary>
 &nbsp;
 
 Optimize data handling for computers on a local network to improve performance for on-site setups.
@@ -521,7 +524,7 @@ dataset = StreamingDataset(input_dir="local:/data/shared-drive/some-data")
 ## Features for transforming datasets  
 
 <details>
-  <summary> ✅ Map transformations</summary>
+  <summary> ✅ Parallelize data transformations (map)</summary>
 &nbsp;
 
 Apply the same change to different parts of the dataset at once to save time and effort.
@@ -712,5 +715,5 @@ Below are templates for real-world applications of LitData at scale.
 # Community
 LitData is a community project accepting contributions -  Let's make the world's most advanced AI data processing framework.
 
-💬 [Get help from 5,0000+ developers on our Discord](https://discord.com/invite/XncpTy7DSt)    
-📋 [Licensed under the Apache 2.0 License](https://github.com/Lightning-AI/litdata/blob/main/LICENSE)
+💬 [Get help on Discord](https://discord.com/invite/XncpTy7DSt)    
+📋 [License: Apache 2.0](https://github.com/Lightning-AI/litdata/blob/main/LICENSE)
