@@ -11,7 +11,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
 import os
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -22,6 +21,7 @@ from litdata.streaming.item_loader import BaseItemLoader, Interval, PyTreeLoader
 from litdata.streaming.sampler import ChunkedIndex
 from litdata.streaming.serializers import Serializer
 from litdata.utilities._pytree import tree_unflatten, treespec_loads
+from litdata.utilities.dataset_utilities import load_index_file
 
 
 class ChunksConfig:
@@ -53,18 +53,18 @@ class ChunksConfig:
         self._remote_dir = remote_dir
         self._item_loader = item_loader or PyTreeLoader()
 
-        with open(os.path.join(self._cache_dir, _INDEX_FILENAME)) as f:
-            data = json.load(f)
-            _original_chunks = data["chunks"]
-            self._config = data["config"]
-            self._validate_item_loader()
+        # load data from `index.json` file
+        data = load_index_file(self._cache_dir)
+        _original_chunks = data["chunks"]
+        self._config = data["config"]
+        self._validate_item_loader()
 
-            assert _original_chunks is not None
+        assert _original_chunks is not None
 
-            if subsampled_files is None:
-                self._chunks = _original_chunks
-            else:
-                self._chunks = load_subsampled_chunks(subsampled_files, _original_chunks)
+        if subsampled_files is None:
+            self._chunks = _original_chunks
+        else:
+            self._chunks = load_subsampled_chunks(subsampled_files, _original_chunks)
 
         self._config["data_spec"] = treespec_loads(self._config["data_spec"])
 
