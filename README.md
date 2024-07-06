@@ -46,34 +46,7 @@ Transform                              Optimize
 &nbsp;
 
 # Transform data at scale. Optimize for fast model training.   
-LitData scales data processing tasks (data scraping, image resizing, distributed inference, embedding creation) on local or cloud machines. It also enables optimizing datasets to accelerate AI model training and work with large remote datasets without local loading.
-
-### Transform datasets
-Accelerate data processing tasks (data scraping, image resizing, embedding creation) by parallelizing (map) the work across many machines at once.   
-
-<pre>
-✅ Paralellize processing:    Reduce processing time by transforming data across multiple machines simultaneously.    
-✅ Scale to large data:       Increase the size of datasets you can efficiently handle.    
-✅ Flexible usecases:         Resize images, create embeddings, scrape the internet, etc...    
-✅ Run local or cloud:        Run on your own machines or auto-scale to 1000s of cloud GPUs with Lightning Studios.         
-✅ Enterprise security:       Self host or process data on your cloud account with Lightning Studios.  
-</pre>
-
-&nbsp;
-
-### Optimize datasets   
-Accelerate model training (20x faster) by optimizing datasets for streaming directly from cloud storage. Work with remote data without local downloads with features like loading data subsets, accessing individual samples, and resumable streaming.
-
-<pre>
-✅ Speed up training:         Speed up model training by 20x with optimized datasets.   
-✅ Stream cloud datasets:     Work with cloud data without downloading it.    
-✅ Pytorch-first:             Works with PyTorch libraries like PyTorch Lightning, Lightning Fabric, Hugging Face.    
-✅ Easy collaboration:        Share and access datasets in the cloud, streamlining team projects.     
-✅ Scale across GPUs:         Streamed data automatically scales to all GPUs.      
-✅ Flexible storage:          Use S3, GCS, Azure, or your own cloud account for data storage.    
-✅ Run local or cloud:        Run on your own machines or auto-scale to 1000s of cloud GPUs with Lightning Studios.         
-✅ Enterprise security:       Self host or process data on your cloud account with Lightning Studios.  
-</pre>
+LitData scales [data processing tasks](#transform-datasets) (data scraping, image resizing, distributed inference, embedding creation) on local or cloud machines. It also enables [optimizing datasets](#speed-up-model-training) to accelerate AI model training and work with large remote datasets without local loading.
 
 &nbsp;
 
@@ -107,7 +80,6 @@ pip install 'litdata[extras]'
 
 # Speed up model training
 Accelerate model training (20x faster) by optimizing datasets for streaming directly from cloud storage. Work with remote data without local downloads with features like loading data subsets, accessing individual samples, and resumable streaming.
-
 
 **Step 1: Optimize the data**         
 This step will format the dataset for fast loading (binary, chunked, etc...)    
@@ -161,6 +133,17 @@ for sample in dataloader:
     img, cls = sample['image'], sample['class']
 ```
 
+**Key benefits:**
+
+✅ Speed up training:         Speed up model training by 20x with optimized datasets.   
+✅ Stream cloud datasets:     Work with cloud data without downloading it.    
+✅ Pytorch-first:             Works with PyTorch libraries like PyTorch Lightning, Lightning Fabric, Hugging Face.    
+✅ Easy collaboration:        Share and access datasets in the cloud, streamlining team projects.     
+✅ Scale across GPUs:         Streamed data automatically scales to all GPUs.      
+✅ Flexible storage:          Use S3, GCS, Azure, or your own cloud account for data storage.    
+✅ Run local or cloud:        Run on your own machines or auto-scale to 1000s of cloud GPUs with Lightning Studios.         
+✅ Enterprise security:       Self host or process data on your cloud account with Lightning Studios.  
+
 &nbsp;
 
 ----    
@@ -191,6 +174,14 @@ ld.map(
     output_dir="output_dir",
 )
 ```
+
+**Key benefits:**
+
+✅ Paralellize processing:    Reduce processing time by transforming data across multiple machines simultaneously.    
+✅ Scale to large data:       Increase the size of datasets you can efficiently handle.    
+✅ Flexible usecases:         Resize images, create embeddings, scrape the internet, etc...    
+✅ Run local or cloud:        Run on your own machines or auto-scale to 1000s of cloud GPUs with Lightning Studios.         
+✅ Enterprise security:       Self host or process data on your cloud account with Lightning Studios.  
 
 &nbsp;
 
