@@ -789,7 +789,7 @@ class DataChunkRecipe(DataRecipe):
         self._upload_index(output_dir, cache_dir, num_nodes, node_rank)
 
         if num_nodes == node_rank + 1:
-            config = load_index_file(self._cache_dir)
+            config = load_index_file(cache_dir)
 
             size = sum([c["dim"] if c["dim"] is not None else c["chunk_size"] for c in config["chunks"]])
             num_bytes = sum([c["chunk_bytes"] for c in config["chunks"]])
