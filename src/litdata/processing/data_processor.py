@@ -51,8 +51,8 @@ from litdata.streaming.dataloader import StreamingDataLoader
 from litdata.streaming.resolver import _resolve_dir
 from litdata.utilities._pytree import tree_flatten, tree_unflatten, treespec_loads
 from litdata.utilities.broadcast import broadcast_object
+from litdata.utilities.dataset_utilities import load_index_file
 from litdata.utilities.packing import _pack_greedily
-from litdata.utilities.streaming import load_index_file
 
 if _TQDM_AVAILABLE:
     from tqdm.auto import tqdm as _tqdm

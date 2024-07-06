@@ -7,7 +7,7 @@ import numpy as np
 
 from litdata import StreamingDataset
 from litdata.constants import _INDEX_FILENAME
-from litdata.utilities.streaming import load_index_file
+from litdata.utilities.dataset_utilities import load_index_file
 from litdata.utilities.subsample import shuffle_lists_together, subsample_filenames_and_roi
 
 
