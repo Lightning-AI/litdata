@@ -46,10 +46,10 @@ Transform                              Optimize
 &nbsp;
 
 # Transform data at scale. Optimize for fast model training.   
-Use LitData to speed up data processing (resizing, embedding, etc) or to optimize datasets to speed up model training.
+LitData scales data processing tasks (data scraping, image resizing, distributed inference, embedding creation) on local or cloud machines. It also enables optimizing datasets to accelerate AI model training and work with large remote datasets without local loading.
 
-### Transform datasets   
-Parallelize (map) transforms across many machines at once to process large datasets much faster.
+### Transform datasets
+Accelerate data processing tasks (data scraping, image resizing, embedding creation) by parallelizing (map) the work across many machines at once.   
 
 <pre>
 ✅ Paralellize processing:    Reduce processing time by transforming data across multiple machines simultaneously.    
@@ -166,7 +166,7 @@ for sample in dataloader:
 ----    
 
 # Transform datasets    
-Use LitData to apply transforms to large datasets across multiple machines in parallel. Common usecases are to create vector embeddings, run distributed inference and more.   
+Accelerate data processing tasks (data scraping, image resizing, embedding creation, distributed inference) by parallelizing (map) the work across many machines at once.   
 
 Here's an example that resizes and crops a large image dataset:
 
