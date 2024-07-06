@@ -98,17 +98,16 @@ def random_images(index):
         "class": fake_labels
     }
 
-    # The data is serialized into bytes and stored into data chunks by the optimize operator.
     return data
 
 if __name__ == "__main__":
-    # optimize supports any data structures and types
+    # the optimize function formats data in an optimized format (chunked, binerized, etc...)   
     ld.optimize(
-        fn=random_images,  # The function applied over each input.
-        inputs=list(range(1000)),  # Provide any inputs. The fn is applied on each item.
-        output_dir="my_optimized_dataset",  # The directory where the optimized data are stored.
-        num_workers=4,  # The number of workers. The inputs are distributed among them.
-        chunk_bytes="64MB"  # The maximum number of bytes to write into a data chunk.
+        fn=random_images,                   # the function applied to each input
+        inputs=list(range(1000)),           # the inputs to the function (here it's a list of numbers)
+        output_dir="my_optimized_dataset",  # optimized data is stored here
+        num_workers=4,                      # The number of workers on the same machine
+        chunk_bytes="64MB"                  # size of each chunk
     )
 ```    
 
