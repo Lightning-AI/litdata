@@ -116,7 +116,7 @@ def generate_roi(chunks: List[Dict[str, Any]], item_loader: Optional[BaseItemLoa
     return roi
 
 
-def load_index_file(input_dir: str) -> Dict[str, Any]:
+def load_index_file(input_dir: str) -> Dict[str, Any] or None:
     """Load index file from the input_dir."""
 
     index_filepath = os.path.join(input_dir, _INDEX_FILENAME)
