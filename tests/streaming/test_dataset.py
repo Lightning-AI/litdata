@@ -995,3 +995,27 @@ def test_subsample_streaming_dataset_with_token_loader(tmpdir, monkeypatch):
     )
 
     assert len(dataset2) == int(len(dataset1) * 0.4)
+
+
+def test_dataset_with_mosaic_mds_data(tmpdir):
+    from PIL import Image
+    from streaming import MDSWriter
+    # example taken from: https://github.com/mosaicml/streaming
+
+    # A dictionary mapping input fields to their data types
+    columns = {"image": "jpeg", "class": "int"}
+    # Shard compression, if any
+    compression = "zstd"
+    # Save the samples as shards using MDSWriter
+    with MDSWriter(out=str(tmpdir), columns=columns, compression=compression) as out:
+        for i in range(100):
+            sample = {
+                "image": Image.fromarray(np.random.randint(0, 256, (32, 32, 3), np.uint8)),
+                "class": i,
+            }
+            out.write(sample)
+    dataset = StreamingDataset(input_dir=str(tmpdir))
+    assert len(dataset) == 100
+    for i in range(100):
+        sample = dataset[i]
+        assert sample["class"] == i
