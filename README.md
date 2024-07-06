@@ -91,17 +91,15 @@ import litdata as ld
     
 def random_images(index):
     fake_images = Image.fromarray(np.random.randint(0, 256, (32, 32, 3), dtype=np.uint8))
-    fake_labels = np.random.randint(10) 
-    data = {
-        "index": index,
-        "image": fake_images,
-        "class": fake_labels
-    }
+    fake_labels = np.random.randint(10)
+
+    # use any key:value pairs
+    data = {"index": index, "image": fake_images, "class": fake_labels}
 
     return data
 
 if __name__ == "__main__":
-    # the optimize function formats data in an optimized format (chunked, binerized, etc...)   
+    # the optimize function outputs data in an optimized format (chunked, binerized, etc...)   
     ld.optimize(
         fn=random_images,                   # the function applied to each input
         inputs=list(range(1000)),           # the inputs to the function (here it's a list of numbers)
