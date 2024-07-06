@@ -132,7 +132,7 @@ for sample in dataloader:
 
 **Key benefits:**
 
-✅ Speed up training:         Speed up model training by 20x with optimized datasets.   
+✅ Accelerate training:       Optimized datasets load 20x faster.      
 ✅ Stream cloud datasets:     Work with cloud data without downloading it.    
 ✅ Pytorch-first:             Works with PyTorch libraries like PyTorch Lightning, Lightning Fabric, Hugging Face.    
 ✅ Easy collaboration:        Share and access datasets in the cloud, streamlining team projects.     
