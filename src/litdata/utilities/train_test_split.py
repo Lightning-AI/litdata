@@ -59,9 +59,7 @@ def train_test_split(
 
         original_chunks = data["chunks"]
         subsampled_chunks = [
-            _org_chunk
-            for _org_chunk in original_chunks
-            if _org_chunk["filename"] in dummy_subsampled_chunk_filename
+            _org_chunk for _org_chunk in original_chunks if _org_chunk["filename"] in dummy_subsampled_chunk_filename
         ]
     else:
         raise ValueError("Couldn't load original chunk file.")

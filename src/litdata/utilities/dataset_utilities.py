@@ -122,7 +122,7 @@ def load_index_file(input_dir: str) -> Dict[str, Any]:
     index_filepath = os.path.join(input_dir, _INDEX_FILENAME)
     try:
         # load index.json file
-        with open(index_filepath, "r") as f:
+        with open(index_filepath) as f:
             data = json.load(f)
             if "chunks" not in data:
                 raise KeyError(f"'chunks' not found in the index file at {index_filepath}.")
