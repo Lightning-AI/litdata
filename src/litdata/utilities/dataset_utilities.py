@@ -126,6 +126,7 @@ def load_index_file(input_dir: str) -> Dict[str, Any]:
             data = json.load(f)
             if "chunks" not in data:
                 raise KeyError(f"'chunks' not found in the index file at {index_filepath}.")
+            return data
     except KeyError as e:
         # Verify the presence of MDS shards
         # For more details, refer to the MosaicML Streaming documentation: https://github.com/mosaicml/streaming
