@@ -1,4 +1,3 @@
-import json
 import logging
 import os
 from copy import deepcopy
@@ -8,6 +7,7 @@ import numpy as np
 
 from litdata import StreamingDataset
 from litdata.constants import _INDEX_FILENAME
+from litdata.utilities.streaming import load_index_file
 from litdata.utilities.subsample import shuffle_lists_together, subsample_filenames_and_roi
 
 
@@ -55,14 +55,14 @@ def train_test_split(
 
     if os.path.exists(os.path.join(input_dir.path, _INDEX_FILENAME)):
         # load chunks from `index.json` file
-        with open(os.path.join(input_dir.path, _INDEX_FILENAME)) as f:
-            data = json.load(f)
-            original_chunks = data["chunks"]
-            subsampled_chunks = [
-                _org_chunk
-                for _org_chunk in original_chunks
-                if _org_chunk["filename"] in dummy_subsampled_chunk_filename
-            ]
+        data = load_index_file(input_dir.path)
+
+        original_chunks = data["chunks"]
+        subsampled_chunks = [
+            _org_chunk
+            for _org_chunk in original_chunks
+            if _org_chunk["filename"] in dummy_subsampled_chunk_filename
+        ]
     else:
         raise ValueError("Couldn't load original chunk file.")
 
