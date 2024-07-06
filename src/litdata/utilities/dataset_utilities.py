@@ -51,9 +51,8 @@ def subsample_streaming_dataset(
 
     if os.path.exists(os.path.join(input_dir.path, _INDEX_FILENAME)):
         # load chunks from `index.json` file
-        with open(os.path.join(input_dir.path, _INDEX_FILENAME)) as f:
-            data = json.load(f)
-            original_chunks = data["chunks"]
+        data = load_index_file(input_dir.path)
+        original_chunks = data["chunks"]
     else:
         raise ValueError(
             f"The provided dataset `{input_dir.path}` doesn't contain any {_INDEX_FILENAME} file."
@@ -115,3 +114,56 @@ def generate_roi(chunks: List[Dict[str, Any]], item_loader: Optional[BaseItemLoa
             roi.append((0, end))
 
     return roi
+
+
+def load_index_file(input_dir: str) -> Dict[str, Any]:
+    """Load index file from the input_dir."""
+
+    index_filepath = os.path.join(input_dir, _INDEX_FILENAME)
+    try:
+        # load index.json file
+        with open(index_filepath, "r") as f:
+            data = json.load(f)
+            if "chunks" not in data:
+                raise KeyError(f"'chunks' not found in the index file at {index_filepath}.")
+    except KeyError as e:
+        # Verify the presence of MDS shards
+        # For more details, refer to the MosaicML Streaming documentation: https://github.com/mosaicml/streaming
+        if "shards" in data:
+            # adapt mosiac index to litdata index
+            chunks = []
+            shards = data["shards"]
+            for shard in shards:
+                chunks.append(
+                    {
+                        "chunk_bytes": shard["zip_data"]["bytes"],
+                        "chunk_size": shard["samples"],
+                        "column_sizes": shard["column_sizes"],
+                        "dim": None,
+                        "filename": shard["zip_data"]["basename"],
+                    }
+                )
+            data["chunks"] = chunks
+            # TODO: create a robust data_spec
+            data_spec = [
+                1,
+                {
+                    "type": "builtins.dict",
+                    "context": json.dumps(shards[0]["column_names"]),
+                    "children_spec": [
+                        {"type": None, "context": None, "children_spec": []} for _ in shards[0]["column_names"]
+                    ],
+                },
+            ]
+            data["config"] = {
+                "chunk_bytes": sum([shard["zip_data"]["bytes"] for shard in shards]),
+                "chunk_size": sum([shard["samples"] for shard in shards]),
+                "compression": shards[0]["compression"],
+                "data_format": shards[0]["column_encodings"],
+                "format": shards[0]["format"],
+                "data_spec": json.dumps(data_spec),
+            }
+            return data
+        raise e
+    except FileNotFoundError:
+        raise FileNotFoundError(f"Index file not found at {index_filepath}.")
