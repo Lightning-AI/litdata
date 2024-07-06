@@ -11,9 +11,10 @@ Optimize data for fast AI model training.**
 <pre>
 Transform                              Optimize
   
-✅ Parallelize data processing       ✅ Stream large cloud datasets    
-✅ Create vector embeddings          ✅ Accelerate training by 20x     
-✅ Transform any data type           ✅ Pause and resume data streaming
+✅ Parallelize data processing       ✅ Stream large cloud datasets                
+✅ Create vector embeddings          ✅ Accelerate training by 20x                 
+✅ Chain transforms                  ✅ Pause and resume data streaming            
+✅ Transform any data type           ✅ Work with remote data without local loading
 </pre>
 
 ---
@@ -45,19 +46,32 @@ Transform                              Optimize
 &nbsp;
 
 # Transform data at scale. Optimize for fast model training.   
-LitData helps scale and speed up two key data workflows:    
+Use LitData to speed up data processing (resizing, embedding, etc) or to optimize datasets to speed up model training.
 
-[Transform datasets](#transform-datasets) - Parallelize (map) transforms across 1000s of machines.     
-[Optimize datasets](#speed-up-model-training) &nbsp;  - Accelerate AI model training by 20x.    
+### Transform datasets   
+Parallelize (map) transforms across many machines at once to process large datasets much faster.
 
-<pre style="background-color: transparent !important;">
+<pre>
+✅ Paralellize processing:    Reduce processing time by transforming data across multiple machines simultaneously.    
+✅ Scale to large data:       Increase the size of datasets you can efficiently handle.    
+✅ Flexible usecases:         Resize images, create embeddings, scrape the internet, etc...    
+✅ Run local or cloud:        Run on your own machines or auto-scale to 1000s of cloud GPUs with Lightning Studios.         
+✅ Enterprise security:       Self host or process data on your cloud account with Lightning Studios.  
+</pre>
+
+&nbsp;
+
+### Optimize datasets   
+Accelerate model training (20x faster) by optimizing datasets for streaming directly from cloud storage. Work with remote data without local downloads with features like loading data subsets, accessing individual samples, and resumable streaming.
+
+<pre>
 ✅ Speed up training:         Speed up model training by 20x with optimized datasets.   
-✅ Stream cloud datasets:     Work with huge datasets directly from cloud storage without downloading.    
+✅ Stream cloud datasets:     Work with cloud data without downloading it.    
 ✅ Pytorch-first:             Works with PyTorch libraries like PyTorch Lightning, Lightning Fabric, Hugging Face.    
 ✅ Easy collaboration:        Share and access datasets in the cloud, streamlining team projects.     
 ✅ Scale across GPUs:         Streamed data automatically scales to all GPUs.      
 ✅ Flexible storage:          Use S3, GCS, Azure, or your own cloud account for data storage.    
-✅ Run local or cloud:        Auto-scale to 1000s of cloud GPUs with Lightning Studios.     
+✅ Run local or cloud:        Run on your own machines or auto-scale to 1000s of cloud GPUs with Lightning Studios.         
 ✅ Enterprise security:       Self host or process data on your cloud account with Lightning Studios.  
 </pre>
 
@@ -92,7 +106,8 @@ pip install 'litdata[extras]'
 ----
 
 # Speed up model training
-Significantly speed up model training by optimizing datasets for fast loading (20x faster) and streaming from cloud storage.    
+Accelerate model training (20x faster) by optimizing datasets for streaming directly from cloud storage. Work with remote data without local downloads with features like loading data subsets, accessing individual samples, and resumable streaming.
+
 
 **Step 1: Optimize the data**         
 This step will format the dataset for fast loading (binary, chunked, etc...)    
