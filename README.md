@@ -13,8 +13,8 @@ Transform                              Optimize
   
 ✅ Parallelize data processing       ✅ Stream large cloud datasets          
 ✅ Create vector embeddings          ✅ Accelerate training by 20x           
-✅ Chain transforms                  ✅ Pause and resume data streaming      
-✅ Transform any data type           ✅ Use remote data without local loading
+✅ Run distributed inference         ✅ Pause and resume data streaming      
+✅ Scrape websites at scale          ✅ Use remote data without local loading
 </pre>
 
 ---
