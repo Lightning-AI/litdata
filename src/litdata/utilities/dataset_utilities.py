@@ -117,54 +117,74 @@ def generate_roi(chunks: List[Dict[str, Any]], item_loader: Optional[BaseItemLoa
 
 
 def load_index_file(input_dir: str) -> Dict[str, Any]:
-    """Load index file from the input_dir."""
+    """Load index file from the specified input directory.
 
+    This function supports loading both chunk-based and mds shard-based index files.
+    For shard-based files, it adapts the format to be compatible with chunk-based processing.
+
+    Args:
+        input_dir (str): The directory containing the index file.
+
+    Returns:
+        Dict[str, Any]: The loaded and possibly adapted index data.
+
+    Raises:
+        ValueError: If the index file format is invalid.
+        FileNotFoundError: If the index file does not exist in the input directory.
+    """
     index_filepath = os.path.join(input_dir, _INDEX_FILENAME)
     try:
-        # load index.json file
         with open(index_filepath) as f:
             data = json.load(f)
-            if "chunks" not in data:
-                raise KeyError(f"'chunks' not found in the index file at {index_filepath}.")
+
+        if "chunks" in data:
             return data
-    except KeyError as e:
-        # Verify the presence of MDS shards
-        # For more details, refer to the MosaicML Streaming documentation: https://github.com/mosaicml/streaming
-        if "shards" in data:
-            # adapt mosiac index to litdata index
-            chunks = []
-            shards = data["shards"]
-            for shard in shards:
-                chunks.append(
-                    {
-                        "chunk_bytes": shard["zip_data"]["bytes"],
-                        "chunk_size": shard["samples"],
-                        "column_sizes": shard["column_sizes"],
-                        "dim": None,
-                        "filename": shard["zip_data"]["basename"],
-                    }
-                )
-            data["chunks"] = chunks
-            # TODO: create a robust data_spec
-            data_spec = [
-                1,
-                {
-                    "type": "builtins.dict",
-                    "context": json.dumps(shards[0]["column_names"]),
-                    "children_spec": [
-                        {"type": None, "context": None, "children_spec": []} for _ in shards[0]["column_names"]
-                    ],
-                },
-            ]
-            data["config"] = {
-                "chunk_bytes": sum([shard["zip_data"]["bytes"] for shard in shards]),
-                "chunk_size": sum([shard["samples"] for shard in shards]),
-                "compression": shards[0]["compression"],
-                "data_format": shards[0]["column_encodings"],
-                "format": shards[0]["format"],
-                "data_spec": json.dumps(data_spec),
-            }
-            return data
-        raise e
+        elif "shards" in data:
+            return adapt_mds_shards_to_chunks(data)
+        else:
+            raise ValueError(f"Invalid index file format at {index_filepath}.")
     except FileNotFoundError:
         raise FileNotFoundError(f"Index file not found at {index_filepath}.")
+
+
+def adapt_mds_shards_to_chunks(data: Dict[str, Any]) -> Dict[str, Any]:
+    """Adapt mds shard-based index data to chunk-based format for compatibility.
+    For more details about MDS, refer to the MosaicML Streaming documentation: https://github.com/mosaicml/streaming
+
+    Args:
+        data (Dict[str, Any]): The original index data containing shards.
+
+    Returns:
+        Dict[str, Any]: Adapted index data with chunks format.
+    """
+    chunks = []
+    shards = data["shards"]
+    for shard in shards:
+        chunks.append(
+            {
+                "chunk_bytes": shard["zip_data"]["bytes"],
+                "chunk_size": shard["samples"],
+                "column_sizes": shard["column_sizes"],
+                "dim": None,
+                "filename": shard["zip_data"]["basename"],
+            }
+        )
+    data["chunks"] = chunks
+
+    data_spec = [
+        1,
+        {
+            "type": "builtins.dict",
+            "context": json.dumps(shards[0]["column_names"]),
+            "children_spec": [{"type": None, "context": None, "children_spec": []} for _ in shards[0]["column_names"]],
+        },
+    ]
+    data["config"] = {
+        "chunk_bytes": sum(shard["zip_data"]["bytes"] for shard in shards),
+        "chunk_size": sum(shard["samples"] for shard in shards),
+        "compression": shards[0]["compression"],
+        "data_format": shards[0]["column_encodings"],
+        "format": shards[0]["format"],
+        "data_spec": json.dumps(data_spec),
+    }
+    return data
