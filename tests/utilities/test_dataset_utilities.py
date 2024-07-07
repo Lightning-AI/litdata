@@ -6,6 +6,7 @@ from litdata.constants import _INDEX_FILENAME
 from litdata.utilities.dataset_utilities import (
     _should_replace_path,
     _try_create_cache_dir,
+    adapt_mds_shards_to_chunks,
     generate_roi,
     load_index_file,
 )
@@ -56,3 +57,10 @@ def test_load_index_file(tmpdir, mosaic_mds_index_data):
     assert "chunks" in index_data
     assert "config" in index_data
     assert len(mosaic_mds_index_data["shards"]) == len(index_data["chunks"])
+
+
+def test_adapt_mds_shards_to_chunks(mosaic_mds_index_data):
+    adapted_data = adapt_mds_shards_to_chunks(mosaic_mds_index_data)
+    assert "chunks" in adapted_data
+    assert "config" in adapted_data
+    assert len(mosaic_mds_index_data["shards"]) == len(adapted_data["chunks"])
