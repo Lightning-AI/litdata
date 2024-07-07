@@ -174,7 +174,7 @@ ld.map(
 
 **Key benefits:**
 
-✅ Paralellize processing:    Reduce processing time by transforming data across multiple machines simultaneously.    
+✅ Parallelize processing:    Reduce processing time by transforming data across multiple machines simultaneously.    
 ✅ Scale to large data:       Increase the size of datasets you can efficiently handle.    
 ✅ Flexible usecases:         Resize images, create embeddings, scrape the internet, etc...    
 ✅ Run local or cloud:        Run on your own machines or auto-scale to 1000s of cloud GPUs with Lightning Studios.         
@@ -638,7 +638,7 @@ Time to optimize 1.2 million ImageNet images (Faster is better):
 
 ----
 
-# Paralellize transforms and data optimization on cloud machines   
+# Parallelize transforms and data optimization on cloud machines   
 <div align="center">
 <img alt="Lightning" src="https://pl-flash-data.s3.amazonaws.com/data-prep.jpg" width="700px">
 </div> 
