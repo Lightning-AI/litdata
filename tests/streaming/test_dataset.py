@@ -996,7 +996,7 @@ def test_subsample_streaming_dataset_with_token_loader(tmpdir, monkeypatch):
 
     assert len(dataset2) == int(len(dataset1) * 0.4)
 
-
+@pytest.mark.skipif(sys.platform == "win32", reason="Not tested on windows")
 def test_dataset_with_mosaic_mds_data(tmpdir):
     from PIL import Image
     from streaming import MDSWriter
