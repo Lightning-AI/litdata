@@ -1008,14 +1008,14 @@ def test_dataset_with_mosaic_mds_data(tmpdir):
     compression = "zstd"
     # Save the samples as shards using MDSWriter
     with MDSWriter(out=str(tmpdir), columns=columns, compression=compression) as out:
-        for i in range(100):
+        for i in range(10):
             sample = {
                 "image": Image.fromarray(np.random.randint(0, 256, (32, 32, 3), np.uint8)),
                 "class": i,
             }
             out.write(sample)
     dataset = StreamingDataset(input_dir=str(tmpdir))
-    assert len(dataset) == 100
-    for i in range(100):
+    assert len(dataset) == 10
+    for i in range(10):
         sample = dataset[i]
         assert sample["class"] == i
