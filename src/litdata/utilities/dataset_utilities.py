@@ -131,6 +131,7 @@ def load_index_file(input_dir: str) -> Dict[str, Any]:
     Raises:
         ValueError: If the index file format is invalid.
         FileNotFoundError: If the index file does not exist in the input directory.
+
     """
     index_filepath = os.path.join(input_dir, _INDEX_FILENAME)
     try:
@@ -139,10 +140,9 @@ def load_index_file(input_dir: str) -> Dict[str, Any]:
 
         if "chunks" in data:
             return data
-        elif "shards" in data:
+        if "shards" in data:
             return adapt_mds_shards_to_chunks(data)
-        else:
-            raise ValueError(f"Invalid index file format at {index_filepath}.")
+        raise ValueError(f"Invalid index file format at {index_filepath}.")
     except FileNotFoundError:
         raise FileNotFoundError(f"Index file not found at {index_filepath}.")
 
