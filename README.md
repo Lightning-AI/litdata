@@ -645,9 +645,9 @@ Time to optimize 1.2 million ImageNet images (Faster is better):
 
 ## Parallelize data transforms    
 
-Transformations with LitServe are linearly parallelizable across machines.      
+Transformations with LitData are linearly parallelizable across machines.      
     
-For example, let's say that it takes 56 hours to embed a dataset on a single A10G machine. With LitServe, 
+For example, let's say that it takes 56 hours to embed a dataset on a single A10G machine. With LitData, 
 this can be speed up by adding more machines in parallel
 
 | Number of machines | Hours |
