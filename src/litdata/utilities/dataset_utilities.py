@@ -138,11 +138,11 @@ def load_index_file(input_dir: str) -> Dict[str, Any]:
         with open(index_filepath) as f:
             data = json.load(f)
 
-        if "chunks" in data:
-            return data
-        if "shards" in data:
+        if "chunks" not in data and "shards" in data:
+            # load mds shard-based index file and adapt to chunks format
             return adapt_mds_shards_to_chunks(data)
-        raise ValueError(f"Invalid index file format at {index_filepath}.")
+
+        return data
     except FileNotFoundError:
         raise FileNotFoundError(f"Index file not found at {index_filepath}.")
 
