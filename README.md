@@ -46,34 +46,7 @@ Transform                              Optimize
 &nbsp;
 
 # Transform data at scale. Optimize for fast model training.   
-LitData scales data processing tasks (data scraping, image resizing, distributed inference, embedding creation) on local or cloud machines. It also enables optimizing datasets to accelerate AI model training and work with large remote datasets without local loading.
-
-### Transform datasets
-Accelerate data processing tasks (data scraping, image resizing, embedding creation) by parallelizing (map) the work across many machines at once.   
-
-<pre>
-✅ Paralellize processing:    Reduce processing time by transforming data across multiple machines simultaneously.    
-✅ Scale to large data:       Increase the size of datasets you can efficiently handle.    
-✅ Flexible usecases:         Resize images, create embeddings, scrape the internet, etc...    
-✅ Run local or cloud:        Run on your own machines or auto-scale to 1000s of cloud GPUs with Lightning Studios.         
-✅ Enterprise security:       Self host or process data on your cloud account with Lightning Studios.  
-</pre>
-
-&nbsp;
-
-### Optimize datasets   
-Accelerate model training (20x faster) by optimizing datasets for streaming directly from cloud storage. Work with remote data without local downloads with features like loading data subsets, accessing individual samples, and resumable streaming.
-
-<pre>
-✅ Speed up training:         Speed up model training by 20x with optimized datasets.   
-✅ Stream cloud datasets:     Work with cloud data without downloading it.    
-✅ Pytorch-first:             Works with PyTorch libraries like PyTorch Lightning, Lightning Fabric, Hugging Face.    
-✅ Easy collaboration:        Share and access datasets in the cloud, streamlining team projects.     
-✅ Scale across GPUs:         Streamed data automatically scales to all GPUs.      
-✅ Flexible storage:          Use S3, GCS, Azure, or your own cloud account for data storage.    
-✅ Run local or cloud:        Run on your own machines or auto-scale to 1000s of cloud GPUs with Lightning Studios.         
-✅ Enterprise security:       Self host or process data on your cloud account with Lightning Studios.  
-</pre>
+LitData scales [data processing tasks](#transform-datasets) (data scraping, image resizing, distributed inference, embedding creation) on local or cloud machines. It also enables [optimizing datasets](#speed-up-model-training) to accelerate AI model training and work with large remote datasets without local loading.
 
 &nbsp;
 
@@ -108,7 +81,6 @@ pip install 'litdata[extras]'
 # Speed up model training
 Accelerate model training (20x faster) by optimizing datasets for streaming directly from cloud storage. Work with remote data without local downloads with features like loading data subsets, accessing individual samples, and resumable streaming.
 
-
 **Step 1: Optimize the data**         
 This step will format the dataset for fast loading (binary, chunked, etc...)    
 
@@ -119,24 +91,21 @@ import litdata as ld
     
 def random_images(index):
     fake_images = Image.fromarray(np.random.randint(0, 256, (32, 32, 3), dtype=np.uint8))
-    fake_labels = np.random.randint(10) 
-    data = {
-        "index": index,
-        "image": fake_images,
-        "class": fake_labels
-    }
+    fake_labels = np.random.randint(10)
 
-    # The data is serialized into bytes and stored into data chunks by the optimize operator.
+    # use any key:value pairs
+    data = {"index": index, "image": fake_images, "class": fake_labels}
+
     return data
 
 if __name__ == "__main__":
-    # optimize supports any data structures and types
+    # the optimize function outputs data in an optimized format (chunked, binerized, etc...)   
     ld.optimize(
-        fn=random_images,  # The function applied over each input.
-        inputs=list(range(1000)),  # Provide any inputs. The fn is applied on each item.
-        output_dir="my_optimized_dataset",  # The directory where the optimized data are stored.
-        num_workers=4,  # The number of workers. The inputs are distributed among them.
-        chunk_bytes="64MB"  # The maximum number of bytes to write into a data chunk.
+        fn=random_images,                   # the function applied to each input
+        inputs=list(range(1000)),           # the inputs to the function (here it's a list of numbers)
+        output_dir="my_optimized_dataset",  # optimized data is stored here
+        num_workers=4,                      # The number of workers on the same machine
+        chunk_bytes="64MB"                  # size of each chunk
     )
 ```    
 
@@ -160,6 +129,17 @@ dataloader = ld.StreamingDataLoader(dataset)
 for sample in dataloader:
     img, cls = sample['image'], sample['class']
 ```
+
+**Key benefits:**
+
+✅ Accelerate training:       Optimized datasets load 20x faster.      
+✅ Stream cloud datasets:     Work with cloud data without downloading it.    
+✅ Pytorch-first:             Works with PyTorch libraries like PyTorch Lightning, Lightning Fabric, Hugging Face.    
+✅ Easy collaboration:        Share and access datasets in the cloud, streamlining team projects.     
+✅ Scale across GPUs:         Streamed data automatically scales to all GPUs.      
+✅ Flexible storage:          Use S3, GCS, Azure, or your own cloud account for data storage.    
+✅ Run local or cloud:        Run on your own machines or auto-scale to 1000s of cloud GPUs with Lightning Studios.         
+✅ Enterprise security:       Self host or process data on your cloud account with Lightning Studios.  
 
 &nbsp;
 
@@ -191,6 +171,14 @@ ld.map(
     output_dir="output_dir",
 )
 ```
+
+**Key benefits:**
+
+✅ Paralellize processing:    Reduce processing time by transforming data across multiple machines simultaneously.    
+✅ Scale to large data:       Increase the size of datasets you can efficiently handle.    
+✅ Flexible usecases:         Resize images, create embeddings, scrape the internet, etc...    
+✅ Run local or cloud:        Run on your own machines or auto-scale to 1000s of cloud GPUs with Lightning Studios.         
+✅ Enterprise security:       Self host or process data on your cloud account with Lightning Studios.  
 
 &nbsp;
 
@@ -657,9 +645,9 @@ Time to optimize 1.2 million ImageNet images (Faster is better):
 
 ## Parallelize data transforms    
 
-Transformations with LitServe are linearly parallelizable across machines.      
+Transformations with LitData are linearly parallelizable across machines.      
     
-For example, let's say that it takes 56 hours to embed a dataset on a single A10G machine. With LitServe, 
+For example, let's say that it takes 56 hours to embed a dataset on a single A10G machine. With LitData, 
 this can be speed up by adding more machines in parallel
 
 | Number of machines | Hours |
