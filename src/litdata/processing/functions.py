@@ -378,12 +378,14 @@ def optimize(
 
         if (
             _output_dir.url is None
+            and _output_dir.path
             and _output_dir.path.startswith("/teamspace/studios/this_studio")
             and DATA_OPTIMIZER_NUM_NODES > 0
         ):
-            _output_dir = _output_dir.path.replace("/teamspace/studios/this_studio", "")
-            _output_dir = _get_work_dir().lstrip("/").rstrip("/") + "/" + _output_dir.lstrip("/").rstrip("/")
-            _output_dir = _resolve_dir(_output_dir)
+            assert _output_dir.path
+            output_dir = _output_dir.path.replace("/teamspace/studios/this_studio", "")
+            output_dir = _get_work_dir().lstrip("/").rstrip("/") + "/" + output_dir.lstrip("/").rstrip("/")
+            _output_dir = _resolve_dir(output_dir)
 
         if _output_dir.url is not None and "cloudspaces" in _output_dir.url:
             raise ValueError(
