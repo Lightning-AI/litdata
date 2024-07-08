@@ -1046,7 +1046,7 @@ def test_dataset_with_mosaic_mds_data(tmpdir):
     for batch in dataloader:
         assert len(batch["class"]) == 4
         assert len(batch["image"]) == 4
-        assert list(_class for _class in batch["class"]) == [4 * i, 4 * i + 1, 4 * i + 2, 4 * i + 3]
+        assert (_class for _class in batch["class"]) == [4 * i, 4 * i + 1, 4 * i + 2, 4 * i + 3]
         i += 1
 
     dataloader = DataLoader(dataset, batch_size=4, drop_last=False)
@@ -1056,9 +1056,9 @@ def test_dataset_with_mosaic_mds_data(tmpdir):
             # last batch is smaller than batch_size
             assert len(batch["class"]) == 2
             assert len(batch["image"]) == 2
-            assert list(_class for _class in batch["class"]) == [4 * i, 4 * i + 1]
+            assert (_class for _class in batch["class"]) == [4 * i, 4 * i + 1]
             break
         assert len(batch["class"]) == 4
         assert len(batch["image"]) == 4
-        assert list(_class for _class in batch["class"]) == [4 * i, 4 * i + 1, 4 * i + 2, 4 * i + 3]
+        assert (_class for _class in batch["class"]) == [4 * i, 4 * i + 1, 4 * i + 2, 4 * i + 3]
         i += 1
