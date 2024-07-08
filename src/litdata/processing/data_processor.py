@@ -1097,20 +1097,20 @@ class DataProcessor:
         result = data_recipe._done(len(user_items), self.delete_cached_files, self.output_dir)
 
         if num_nodes == node_rank + 1 and self.output_dir.url and self.output_dir.path is not None and _IS_IN_STUDIO:
-                _create_dataset(
-                    input_dir=self.input_dir.path,
-                    storage_dir=self.output_dir.path,
-                    dataset_type=V1DatasetType.CHUNKED
-                    if isinstance(data_recipe, DataChunkRecipe)
-                    else V1DatasetType.TRANSFORMED,
-                    empty=False,
-                    size=result.size,
-                    num_bytes=result.num_bytes,
-                    data_format=result.data_format,
-                    compression=result.compression,
-                    num_chunks=result.num_chunks,
-                    num_bytes_per_chunk=result.num_bytes_per_chunk,
-                )
+            _create_dataset(
+                input_dir=self.input_dir.path,
+                storage_dir=self.output_dir.path,
+                dataset_type=V1DatasetType.CHUNKED
+                if isinstance(data_recipe, DataChunkRecipe)
+                else V1DatasetType.TRANSFORMED,
+                empty=False,
+                size=result.size,
+                num_bytes=result.num_bytes,
+                data_format=result.data_format,
+                compression=result.compression,
+                num_chunks=result.num_chunks,
+                num_bytes_per_chunk=result.num_bytes_per_chunk,
+            )
 
         print("Finished data processing!")
         if self.use_checkpoint and isinstance(data_recipe, DataChunkRecipe):
