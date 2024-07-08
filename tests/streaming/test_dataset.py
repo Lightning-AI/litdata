@@ -1021,8 +1021,8 @@ def test_dataset_with_mosaic_mds_data(tmpdir):
     for i in range(10):
         sample = dataset[i]
         assert sample["class"] == i
-    
-    assert [sample["class"] for sample in dataset[:]] == list(range(10)) # test slicing
+
+    assert [sample["class"] for sample in dataset[:]] == list(range(10))  # test slicing
 
     # -------------- train_test_split --------------
 
@@ -1046,19 +1046,19 @@ def test_dataset_with_mosaic_mds_data(tmpdir):
     for batch in dataloader:
         assert len(batch["class"]) == 4
         assert len(batch["image"]) == 4
-        assert [_class for _class in batch["class"]] == [4*i, 4*i+1, 4*i+2, 4*i+3]
+        assert [_class for _class in batch["class"]] == [4 * i, 4 * i + 1, 4 * i + 2, 4 * i + 3]
         i += 1
-    
+
     dataloader = DataLoader(dataset, batch_size=4, drop_last=False)
     i = 0
     for batch in dataloader:
-        if (i == 2):
+        if i == 2:
             # last batch is smaller than batch_size
             assert len(batch["class"]) == 2
             assert len(batch["image"]) == 2
-            assert [_class for _class in batch["class"]] == [4*i, 4*i+1]
+            assert [_class for _class in batch["class"]] == [4 * i, 4 * i + 1]
             break
         assert len(batch["class"]) == 4
         assert len(batch["image"]) == 4
-        assert [_class for _class in batch["class"]] == [4*i, 4*i+1, 4*i+2, 4*i+3]
+        assert [_class for _class in batch["class"]] == [4 * i, 4 * i + 1, 4 * i + 2, 4 * i + 3]
         i += 1
