@@ -142,7 +142,31 @@ class PyTreeLoader(BaseItemLoader):
             fp.seek(begin)
             data = fp.read(end - begin)
 
+        # check for mosaic mds format
+        if "format" in self._config and self._config["format"] == "mds":
+            return self.mds_deserialize(data, chunk_index)
         return self.deserialize(data)
+
+    def mds_deserialize(self, raw_item_data: bytes, chunk_index: int) -> "PyTree":
+        """Deserialize the mds raw bytes into their python equivalent."""
+        idx = 0
+        sizes = []
+        column_sizes = self._chunks[chunk_index]["column_sizes"]
+        # adapted from: MDSReader.deserialize : https://github.com/mosaicml/streaming/blob/main/streaming/base/format/mds/reader.py
+        for size in column_sizes:
+            if size:
+                sizes.append(size)
+            else:
+                (size,) = np.frombuffer(raw_item_data[idx : idx + 4], np.uint32)
+                sizes.append(size)
+                idx += 4
+        data = []
+        for size, data_format in zip(sizes, self._data_format):
+            serializer = self._serializers[data_format]
+            data_bytes = raw_item_data[idx : idx + size]
+            data.append(serializer.deserialize(data_bytes))
+            idx += size
+        return tree_unflatten(data, self._config["data_spec"])
 
     def deserialize(self, raw_item_data: bytes) -> "PyTree":
         """Deserialize the raw bytes into their python equivalent."""

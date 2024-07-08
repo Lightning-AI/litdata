@@ -51,9 +51,8 @@ def subsample_streaming_dataset(
 
     if os.path.exists(os.path.join(input_dir.path, _INDEX_FILENAME)):
         # load chunks from `index.json` file
-        with open(os.path.join(input_dir.path, _INDEX_FILENAME)) as f:
-            data = json.load(f)
-            original_chunks = data["chunks"]
+        data = load_index_file(input_dir.path)
+        original_chunks = data["chunks"]
     else:
         raise ValueError(
             f"The provided dataset `{input_dir.path}` doesn't contain any {_INDEX_FILENAME} file."
@@ -115,3 +114,76 @@ def generate_roi(chunks: List[Dict[str, Any]], item_loader: Optional[BaseItemLoa
             roi.append((0, end))
 
     return roi
+
+
+def load_index_file(input_dir: str) -> Dict[str, Any]:
+    """Load index file from the specified input directory.
+
+    This function supports loading both chunk-based and mds shard-based index files.
+    For shard-based files, it adapts the format to be compatible with chunk-based processing.
+
+    Args:
+        input_dir (str): The directory containing the index file.
+
+    Returns:
+        Dict[str, Any]: The loaded and possibly adapted index data.
+
+    Raises:
+        FileNotFoundError: If the index file does not exist in the input directory.
+
+    """
+    index_filepath = os.path.join(input_dir, _INDEX_FILENAME)
+    try:
+        with open(index_filepath) as f:
+            data = json.load(f)
+
+        if "chunks" not in data and "shards" in data:
+            # load mds shard-based index file and adapt to chunks format
+            return adapt_mds_shards_to_chunks(data)
+
+        return data
+    except FileNotFoundError:
+        raise FileNotFoundError(f"Index file not found at {index_filepath}.")
+
+
+def adapt_mds_shards_to_chunks(data: Dict[str, Any]) -> Dict[str, Any]:
+    """Adapt mds shard-based index data to chunk-based format for compatibility.
+    For more details about MDS, refer to the MosaicML Streaming documentation: https://github.com/mosaicml/streaming
+
+    Args:
+        data (Dict[str, Any]): The original index data containing shards.
+
+    Returns:
+        Dict[str, Any]: Adapted index data with chunks format.
+    """
+    chunks = []
+    shards = data["shards"]
+    for shard in shards:
+        chunks.append(
+            {
+                "chunk_bytes": shard["zip_data"]["bytes"],
+                "chunk_size": shard["samples"],
+                "column_sizes": shard["column_sizes"],
+                "dim": None,
+                "filename": shard["zip_data"]["basename"],
+            }
+        )
+    data["chunks"] = chunks
+
+    data_spec = [
+        1,
+        {
+            "type": "builtins.dict",
+            "context": json.dumps(shards[0]["column_names"]),
+            "children_spec": [{"type": None, "context": None, "children_spec": []} for _ in shards[0]["column_names"]],
+        },
+    ]
+    data["config"] = {
+        "chunk_bytes": sum(shard["zip_data"]["bytes"] for shard in shards),
+        "chunk_size": sum(shard["samples"] for shard in shards),
+        "compression": shards[0]["compression"],
+        "data_format": shards[0]["column_encodings"],
+        "format": shards[0]["format"],
+        "data_spec": json.dumps(data_spec),
+    }
+    return data

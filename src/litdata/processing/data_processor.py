@@ -51,6 +51,7 @@ from litdata.streaming.dataloader import StreamingDataLoader
 from litdata.streaming.resolver import _resolve_dir
 from litdata.utilities._pytree import tree_flatten, tree_unflatten, treespec_loads
 from litdata.utilities.broadcast import broadcast_object
+from litdata.utilities.dataset_utilities import load_index_file
 from litdata.utilities.packing import _pack_greedily
 
 if _TQDM_AVAILABLE:
@@ -788,8 +789,7 @@ class DataChunkRecipe(DataRecipe):
         self._upload_index(output_dir, cache_dir, num_nodes, node_rank)
 
         if num_nodes == node_rank + 1:
-            with open(os.path.join(cache_dir, _INDEX_FILENAME)) as f:
-                config = json.load(f)
+            config = load_index_file(cache_dir)
 
             size = sum([c["dim"] if c["dim"] is not None else c["chunk_size"] for c in config["chunks"]])
             num_bytes = sum([c["chunk_bytes"] for c in config["chunks"]])
