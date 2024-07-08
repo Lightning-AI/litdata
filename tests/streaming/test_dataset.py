@@ -21,6 +21,7 @@ from unittest import mock
 import numpy as np
 import pytest
 import torch
+from litdata import train_test_split
 from litdata.constants import _ZSTD_AVAILABLE
 from litdata.processing import functions
 from litdata.streaming import Cache
@@ -1020,3 +1021,44 @@ def test_dataset_with_mosaic_mds_data(tmpdir):
     for i in range(10):
         sample = dataset[i]
         assert sample["class"] == i
+    
+    assert [sample["class"] for sample in dataset[:]] == list(range(10)) # test slicing
+
+    # -------------- train_test_split --------------
+
+    train_ds, test_ds, val_ds = train_test_split(dataset, splits=[0.7, 0.2, 0.1])
+
+    assert len(train_ds) == 7
+    assert len(test_ds) == 2
+    assert len(val_ds) == 1
+
+    # -------------- subsample --------------
+
+    dataset = StreamingDataset(input_dir=str(tmpdir), subsample=0.4)
+    assert len(dataset) == 4
+    assert [sample["class"] for sample in dataset[:]] == [0, 1, 2, 3]
+
+    # -------------- works with dataloader --------------
+
+    dataset = StreamingDataset(input_dir=str(tmpdir))
+    dataloader = DataLoader(dataset, batch_size=4, drop_last=True)
+    i = 0
+    for batch in dataloader:
+        assert len(batch["class"]) == 4
+        assert len(batch["image"]) == 4
+        assert [_class for _class in batch["class"]] == [4*i, 4*i+1, 4*i+2, 4*i+3]
+        i += 1
+    
+    dataloader = DataLoader(dataset, batch_size=4, drop_last=False)
+    i = 0
+    for batch in dataloader:
+        if (i == 2):
+            # last batch is smaller than batch_size
+            assert len(batch["class"]) == 2
+            assert len(batch["image"]) == 2
+            assert [_class for _class in batch["class"]] == [4*i, 4*i+1]
+            break
+        assert len(batch["class"]) == 4
+        assert len(batch["image"]) == 4
+        assert [_class for _class in batch["class"]] == [4*i, 4*i+1, 4*i+2, 4*i+3]
+        i += 1
