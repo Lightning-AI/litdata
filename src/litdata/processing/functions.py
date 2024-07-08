@@ -32,6 +32,7 @@ from litdata.processing.data_processor import DataChunkRecipe, DataProcessor, Da
 from litdata.processing.readers import BaseReader
 from litdata.processing.utilities import (
     extract_rank_and_index_from_filename,
+    _get_work_dir,
     optimize_dns_context,
     read_index_file_content,
 )
@@ -372,7 +373,13 @@ def optimize(
         )
 
     if num_nodes is None or int(os.getenv("DATA_OPTIMIZER_NUM_NODES", 0)) > 0:
+        DATA_OPTIMIZER_NUM_NODES = int(os.getenv("DATA_OPTIMIZER_NUM_NODES", 0))
         _output_dir: Dir = _resolve_dir(output_dir)
+
+        if _output_dir.url is None and _output_dir.path.startswith("/teamspace/studios/this_studio") and DATA_OPTIMIZER_NUM_NODES > 0:
+            _output_dir = _output_dir.path.replace("/teamspace/studios/this_studio", "")
+            _output_dir = _get_work_dir().lstrip("/").rstrip("/") + "/" + _output_dir.lstrip("/").rstrip("/")
+            _output_dir = _resolve_dir(_output_dir)
 
         if _output_dir.url is not None and "cloudspaces" in _output_dir.url:
             raise ValueError(
