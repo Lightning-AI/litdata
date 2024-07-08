@@ -129,7 +129,6 @@ def load_index_file(input_dir: str) -> Dict[str, Any]:
         Dict[str, Any]: The loaded and possibly adapted index data.
 
     Raises:
-        ValueError: If the index file format is invalid.
         FileNotFoundError: If the index file does not exist in the input directory.
 
     """
