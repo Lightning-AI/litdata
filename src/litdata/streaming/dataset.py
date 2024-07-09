@@ -370,6 +370,8 @@ class StreamingDataset(IterableDataset):
         if state_dict:
             # the state is restored within the workers
             self._state_dict = state_dict
+            self.subsampled_files = state_dict["subsampled_files"]
+            self.region_of_interest = state_dict["region_of_interest"]
 
     def _validate_state_dict(self) -> None:
         assert self._state_dict

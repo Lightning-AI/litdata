@@ -690,7 +690,7 @@ class StreamingDataLoader(DataLoader):
             self._num_samples_yielded_combined = obj["num_samples_yielded"]
 
         # Used to restart on the next DataLoader worker from the previous run.
-        self._latest_worker_idx = obj["latest_worker_idx"] + 1
+        self._latest_worker_idx = (obj["latest_worker_idx"] + 1) % (self.num_workers if self.num_workers > 0 else 1)
         self._worker_idx_iter = iter(self._worker_idx)
         for _ in range(self._latest_worker_idx):
             next(self._worker_idx_iter)
