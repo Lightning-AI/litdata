@@ -982,8 +982,8 @@ def test_replay_chunks_sampling():
     assert _replay_chunks_sampling(workers_intervals, {0: 15, 1: 12}) == ({0: 3, 1: 2}, {0: 0, 1: 2})
 
     # Test that replay stops at the right chunk
-    workers_intervals={0: [(0, 0, 10, 10), (10, 10, 20, 20), (20, 20, 21, 21), (21, 21, 30, 30)]}
-    indexes={0: 15}
+    workers_intervals = {0: [(0, 0, 10, 10), (10, 10, 20, 20), (20, 20, 21, 21), (21, 21, 30, 30)]}
+    indexes = {0: 15}
     # Replay should stop at chunk index 1, because 15 - 10 = 5, which fits into with chunk idx 1
     chunk_indexes, indexes = _replay_chunks_sampling(workers_intervals, indexes)
     assert chunk_indexes == {0: 1}
