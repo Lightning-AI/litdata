@@ -22,7 +22,9 @@ class Encryption(ABC):
 
 class FernetEncryption(Encryption):
     """Encryption for the Fernet package.
+
     Adapted from: https://cryptography.io/en/latest/fernet/
+
     """
 
     def __init__(self, passsword: str) -> None:
@@ -50,7 +52,9 @@ class FernetEncryption(Encryption):
 
 class RSAEncryption:
     """Encryption for the RSA package.
+
     Adapted from: https://cryptography.io/en/latest/hazmat/primitives/asymmetric/rsa/
+
     """
 
     def __init__(self, private_key_path: str = None, public_key_path: str = None) -> None:
