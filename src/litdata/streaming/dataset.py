@@ -520,9 +520,11 @@ def _replay_chunks_sampling(
 
     for worker_idx, intervals in workers_intervals.items():
         for interval in intervals:
-            size = interval[-1] - interval[0]
+            size = (interval[2] - interval[1])
             if indexes[worker_idx] >= size:
                 indexes[worker_idx] -= size
                 chunks_index[worker_idx] += 1
+            else:
+                break
 
     return chunks_index, indexes
