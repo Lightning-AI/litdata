@@ -968,14 +968,14 @@ def test_replay_sampling():
 
 def test_replay_chunks_sampling():
     chunks_replica = range(10)
-    intervals_replica = [(i, i + 5) for i in range(0, 50, 5)]
+    intervals_replica = [(i, i, i + 5, i + 5) for i in range(0, 50, 5)]
     workers_chunks, workers_intervals = _associate_chunks_to_workers(
         _WorkerEnv(2, 0), chunks_replica, intervals_replica
     )
     assert workers_chunks == {0: [0, 2, 4, 6, 8], 1: [1, 3, 5, 7, 9]}
     assert workers_intervals == {
-        0: [(0, 5), (10, 15), (20, 25), (30, 35), (40, 45)],
-        1: [(5, 10), (15, 20), (25, 30), (35, 40), (45, 50)],
+        0: [(0, 0, 5, 5), (10, 10, 15, 15), (20, 20, 25, 25), (30, 30, 35, 35), (40, 40, 45, 45)],
+        1: [(5, 5, 10, 10), (15, 15, 20, 20), (25, 25, 30, 30), (35, 35, 40, 40), (45, 45, 50, 50)],
     }
     assert _replay_chunks_sampling(workers_intervals, {0: 16, 1: 11}) == ({0: 3, 1: 2}, {0: 1, 1: 1})
     assert _replay_chunks_sampling(workers_intervals, {0: 14, 1: 13}) == ({0: 2, 1: 2}, {0: 4, 1: 3})
