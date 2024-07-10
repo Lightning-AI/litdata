@@ -525,7 +525,7 @@ def _replay_chunks_sampling(
                 indexes[worker_idx] -= size
                 chunks_index[worker_idx] += 1
             else:
-                # We've reached the chunk where resuming needs to take place
+                # We've reached the chunk where resuming needs to take place (for this worker)
                 break
 
     return chunks_index, indexes
