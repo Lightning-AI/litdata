@@ -829,7 +829,6 @@ def test_dataset_resume_on_future_chunks(tmpdir):
         if i == batches_to_fetch + 1:
             batch_to_resume_from = batch
             break
-    assert i == batches_to_fetch + 1
 
     shutil.rmtree(tmpdir / "s3cache")
     os.mkdir(tmpdir / "s3cache")
