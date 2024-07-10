@@ -807,6 +807,7 @@ def _get_simulated_s3_dataloader(tmpdir):
     return StreamingDataLoader(dataset, batch_size=2, num_workers=1)
 
 
+@mock.patch.dict(os.environ, {}, clear=True)
 def test_dataset_resume_on_future_chunks(tmpdir):
     optimize(
         fn=_simple_preprocess,
