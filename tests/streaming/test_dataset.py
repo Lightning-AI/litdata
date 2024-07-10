@@ -14,15 +14,15 @@
 import json
 import os
 import random
-import sys
 import shutil
+import sys
 from time import sleep
 from unittest import mock
 
 import numpy as np
 import pytest
 import torch
-from litdata import train_test_split, optimize
+from litdata import optimize, train_test_split
 from litdata.constants import _ZSTD_AVAILABLE
 from litdata.processing import functions
 from litdata.streaming import Cache
@@ -809,17 +809,17 @@ def _get_simulated_s3_dataloader(tmpdir):
 
 def test_dataset_resume_on_future_chunks(tmpdir):
     optimize(
-        fn=_simple_preprocess, 
-        inputs=list(range(8)), 
-        output_dir=str(tmpdir / "optimized"), 
-        chunk_size=190, 
-        num_workers=4, 
+        fn=_simple_preprocess,
+        inputs=list(range(8)),
+        output_dir=str(tmpdir / "optimized"),
+        chunk_size=190,
+        num_workers=4,
     )
-    assert len(os.listdir(tmpdir / "optimized")) == 9 # 8 chunks + 1 index file
+    assert len(os.listdir(tmpdir / "optimized")) == 9  # 8 chunks + 1 index file
 
     os.mkdir(tmpdir / "s3cache")
     shutil.rmtree("/cache/chunks", ignore_errors=True)  # TODO
-    
+
     train_dataloader = _get_simulated_s3_dataloader(tmpdir)
     batches_to_fetch = 16
     batch_to_resume_from = None
