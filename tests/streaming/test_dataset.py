@@ -807,7 +807,7 @@ def _get_simulated_s3_dataloader(cache_dir, data_dir):
     return StreamingDataLoader(dataset, batch_size=2, num_workers=1)
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="Not tested on windows and MacOs")
+@pytest.mark.skipif(sys.platform in ("win32", "darwin"), reason="Not tested on windows and MacOs")
 @mock.patch.dict(os.environ, {}, clear=True)
 def test_dataset_resume_on_future_chunks(tmpdir):
     """This test is constructed to test resuming from a chunk past the first chunk, when subsequent chunks don't have
