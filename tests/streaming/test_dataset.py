@@ -15,13 +15,14 @@ import json
 import os
 import random
 import sys
+import shutil
 from time import sleep
 from unittest import mock
 
 import numpy as np
 import pytest
 import torch
-from litdata import train_test_split
+from litdata import train_test_split, optimize
 from litdata.constants import _ZSTD_AVAILABLE
 from litdata.processing import functions
 from litdata.streaming import Cache
@@ -791,6 +792,51 @@ def test_resumable_dataset_two_workers_2_epochs(tmpdir):
 
     for batch_1, batch_2 in zip(batches_epoch_1, batches_epoch_2):
         assert not torch.equal(batch_1, batch_2)
+
+
+def _simple_preprocess(_):
+    for _ in range(10):
+        yield torch.randint(0, 100, size=(10,), dtype=torch.int64)
+
+
+def _get_simulated_s3_dataloader(tmpdir):
+    dataset = EmulateS3StreamingDataset(
+        input_dir=Dir(str(tmpdir / "s3cache"), str(tmpdir / "optimized")),
+        item_loader=TokensLoader(block_size=10),
+    )
+    return StreamingDataLoader(dataset, batch_size=2, num_workers=1)
+
+
+def test_dataset_resume_on_future_chunks(tmpdir):
+    optimize(
+        fn=_simple_preprocess, 
+        inputs=list(range(8)), 
+        output_dir=str(tmpdir / "optimized"), 
+        chunk_size=190, 
+        num_workers=4, 
+    )
+    assert len(os.listdir(tmpdir / "optimized")) == 9 # 8 chunks + 1 index file
+
+    os.mkdir(tmpdir / "s3cache")
+    shutil.rmtree("/cache/chunks", ignore_errors=True)  # TODO
+    
+    train_dataloader = _get_simulated_s3_dataloader(tmpdir)
+    batches_to_fetch = 16
+    batch_to_resume_from = None
+    for i, batch in enumerate(train_dataloader):
+        if i == batches_to_fetch:
+            dataloader_state = train_dataloader.state_dict()
+        if i == batches_to_fetch + 1:
+            batch_to_resume_from = batch
+            break
+    assert i == batches_to_fetch + 1
+
+    shutil.rmtree(tmpdir / "s3cache")
+    os.mkdir(tmpdir / "s3cache")
+    shutil.rmtree("/cache/chunks", ignore_errors=True)
+    train_dataloader = _get_simulated_s3_dataloader(tmpdir)
+    train_dataloader.load_state_dict(dataloader_state)
+    assert torch.equal(next(iter(train_dataloader)), batch_to_resume_from)
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="Not tested on windows and MacOs")
