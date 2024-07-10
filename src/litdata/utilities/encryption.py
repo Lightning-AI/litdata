@@ -57,9 +57,9 @@ class RSAEncryption:
 
     """
 
-    def __init__(self, private_key_path: str = None, public_key_path: str = None) -> None:
+    def __init__(self, private_key_path: str = None, public_key_path: str = None, passsword: str = None) -> None:
         if private_key_path:
-            self.private_key = self._load_private_key(private_key_path)
+            self.private_key = self._load_private_key(private_key_path, passsword)
         else:
             self.private_key = None
 
@@ -72,11 +72,11 @@ class RSAEncryption:
             self.private_key, self.public_key = self._generate_keys()
         self.extension = "rsa"
 
-    def _load_private_key(self, path: str):
+    def _load_private_key(self, path: str, password: str = None):
         with open(path, "rb") as key_file:
             return serialization.load_pem_private_key(
                 key_file.read(),
-                password=None,
+                password=password.encode() if password else None,
             )
 
     def _load_public_key(self, path: str):
