@@ -28,10 +28,10 @@ class FernetEncryption(Encryption):
 
     """
 
-    def __init__(self, passsword: str) -> None:
+    def __init__(self, password: str) -> None:
         super().__init__()
-        self.passsword = passsword
-        self.fernet = Fernet(self._derive_key(passsword))
+        self.password = password
+        self.fernet = Fernet(self._derive_key(password))
         self.extension = "fernet"
 
     def encrypt(self, data: bytes) -> bytes:
@@ -62,10 +62,10 @@ class RSAEncryption:
         self,
         private_key_path: Optional[str] = None,
         public_key_path: Optional[str] = None,
-        passsword: Optional[str] = None,
+        password: Optional[str] = None,
     ):
         if private_key_path:
-            self.private_key = self._load_private_key(private_key_path, passsword)
+            self.private_key = self._load_private_key(private_key_path, password)
         else:
             self.private_key = None
 
