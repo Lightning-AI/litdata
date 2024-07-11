@@ -10,6 +10,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from typing import Any
+
+from litdata.constants import _TQDM_AVAILABLE
 
 _FORMAT_TO_RATIO = {
     "kb": 1000,
@@ -40,3 +43,15 @@ def _human_readable_bytes(num_bytes: float) -> str:
             return f"{num_bytes:3.1f} {unit}"
         num_bytes /= 1000.0
     return f"{num_bytes:.1f} PB"
+
+
+def _get_tqdm_iterator_if_available():
+    if _TQDM_AVAILABLE:
+        from tqdm.auto import tqdm as _tqdm
+
+        return _tqdm
+
+    def _tqdm(iterator: Any) -> Any:
+        yield from iterator
+
+    return _tqdm

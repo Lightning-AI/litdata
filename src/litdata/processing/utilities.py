@@ -21,23 +21,11 @@ from subprocess import DEVNULL, Popen
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 from urllib import parse
 
-from litdata.constants import _INDEX_FILENAME, _IS_IN_STUDIO, _LIGHTNING_CLOUD_AVAILABLE
+from litdata.constants import _INDEX_FILENAME, _IS_IN_STUDIO
 from litdata.streaming.cache import Dir
 
-if _LIGHTNING_CLOUD_AVAILABLE:
-    from lightning_cloud.openapi import (
-        ProjectIdDatasetsBody,
-    )
-    from lightning_cloud.openapi.rest import ApiException
-    from lightning_cloud.rest_client import LightningClient
-
-try:
-    import boto3
-    import botocore
-
-    _BOTO3_AVAILABLE = True
-except Exception:
-    _BOTO3_AVAILABLE = False
+import boto3
+import botocore
 
 
 def _create_dataset(
@@ -66,6 +54,10 @@ def _create_dataset(
 
     if not storage_dir:
         raise ValueError("The storage_dir should be defined.")
+
+    from lightning_cloud.openapi import ProjectIdDatasetsBody
+    from lightning_cloud.openapi.rest import ApiException
+    from lightning_cloud.rest_client import LightningClient
 
     client = LightningClient(retry=False)
 

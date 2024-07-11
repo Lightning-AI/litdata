@@ -15,13 +15,12 @@ import os
 from time import time
 from typing import Any, Optional
 
-from litdata.constants import _BOTO3_AVAILABLE, _IS_IN_STUDIO
+from litdata.constants import _IS_IN_STUDIO
 
-if _BOTO3_AVAILABLE:
-    import boto3
-    import botocore
-    from botocore.credentials import InstanceMetadataProvider
-    from botocore.utils import InstanceMetadataFetcher
+import boto3
+import botocore
+from botocore.credentials import InstanceMetadataProvider
+from botocore.utils import InstanceMetadataFetcher
 
 
 class S3Client:

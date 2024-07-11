@@ -20,33 +20,16 @@ from contextlib import suppress
 from dataclasses import dataclass
 from pathlib import Path
 from time import sleep
-from typing import Any, Literal, Optional, Union
+from typing import Any, Literal, Optional, Union, TYPE_CHECKING
 from urllib import parse
 
-from litdata.constants import _LIGHTNING_CLOUD_AVAILABLE
+from litdata.constants import _LIGHTNING_SDK_AVAILABLE
 
-if _LIGHTNING_CLOUD_AVAILABLE:
-    from lightning_cloud.rest_client import LightningClient
+import boto3
+import botocore
 
-try:
-    import boto3
-    import botocore
-
-    _BOTO3_AVAILABLE = True
-except Exception:
-    _BOTO3_AVAILABLE = False
-
-
-try:
-    from lightning_sdk import Machine, Studio
-
-    _LIGHTNING_SDK_AVAILABLE = True
-except (ImportError, ModuleNotFoundError):
-
-    class Machine:  # type: ignore
-        pass
-
-    _LIGHTNING_SDK_AVAILABLE = False
+if TYPE_CHECKING:
+    from lightning_sdk import Machine
 
 
 @dataclass
@@ -115,6 +98,8 @@ def _match_studio(target_id: Optional[str], target_name: Optional[str], cloudspa
 
 
 def _resolve_studio(dir_path: str, target_name: Optional[str], target_id: Optional[str]) -> Dir:
+    from lightning_cloud.rest_client import LightningClient
+
     client = LightningClient(max_tries=2)
 
     # Get the ids from env variables
@@ -154,6 +139,8 @@ def _resolve_studio(dir_path: str, target_name: Optional[str], target_id: Option
 
 
 def _resolve_s3_connections(dir_path: str) -> Dir:
+    from lightning_cloud.rest_client import LightningClient
+
     client = LightningClient(max_tries=2)
 
     # Get the ids from env variables
@@ -174,6 +161,8 @@ def _resolve_s3_connections(dir_path: str) -> Dir:
 
 
 def _resolve_datasets(dir_path: str) -> Dir:
+    from lightning_cloud.rest_client import LightningClient
+
     client = LightningClient(max_tries=2)
 
     # Get the ids from env variables
@@ -361,6 +350,8 @@ def _execute(
 
     if not _LIGHTNING_SDK_AVAILABLE:
         raise ModuleNotFoundError("The `lightning_sdk` is required.")
+
+    from lightning_sdk import Studio
 
     lightning_skip_install = os.getenv("LIGHTNING_SKIP_INSTALL", "")
     if lightning_skip_install:
