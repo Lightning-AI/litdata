@@ -331,7 +331,7 @@ class StreamingDataset(IterableDataset):
                 index=index,
                 chunk_index=self.worker_chunks[self.chunk_index - 1],
                 # We provide the chunks indexes only one the first
-                chunk_indexes=None if self.has_triggered_download else self.worker_chunks,
+                chunk_indexes=None if self.has_triggered_download else self.worker_chunks[self.chunk_index - 1 :],
                 is_last_index=(self.chunk_index - 1) == len(self.worker_intervals) and len(self.current_indexes) == 1,
             )
         )
@@ -520,9 +520,12 @@ def _replay_chunks_sampling(
 
     for worker_idx, intervals in workers_intervals.items():
         for interval in intervals:
-            size = interval[-1] - interval[0]
+            size = interval[2] - interval[1]
             if indexes[worker_idx] >= size:
                 indexes[worker_idx] -= size
                 chunks_index[worker_idx] += 1
+            else:
+                # We've reached the chunk where resuming needs to take place (for this worker)
+                break
 
     return chunks_index, indexes
