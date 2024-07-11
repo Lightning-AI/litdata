@@ -1,5 +1,6 @@
 import sys
 from pathlib import Path
+from types import ModuleType
 from unittest import mock
 
 import pytest
@@ -256,11 +257,12 @@ def test_execute(phase, monkeypatch):
     job.status.phase = phase
     studio._studio_api.create_data_prep_machine_job.return_value = job
     studio._studio_api._client.lightningapp_instance_service_get_lightningapp_instance.return_value = job
-    if not hasattr(resolver, "Studio"):
-        resolver.Studio = mock.MagicMock(return_value=studio)
-        resolver._LIGHTNING_SDK_AVAILABLE = True
-    else:
-        monkeypatch.setattr(resolver, "Studio", mock.MagicMock(return_value=studio))
+
+    # Mock local import of lightning_sdk
+    lightning_sdk = ModuleType("lightning_sdk")
+    monkeypatch.setitem(sys.modules, "lightning_sdk", lightning_sdk)
+    monkeypatch.setattr(resolver, "_LIGHTNING_SDK_AVAILABLE", True)
+    lightning_sdk.Studio = mock.MagicMock(return_value=studio)
 
     called = False
 

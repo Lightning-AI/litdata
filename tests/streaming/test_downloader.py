@@ -1,4 +1,7 @@
 import os
+import sys
+from types import ModuleType
+from unittest import mock
 from unittest.mock import MagicMock
 
 from litdata.streaming.downloader import (
@@ -19,8 +22,17 @@ def test_s3_downloader_fast(tmpdir, monkeypatch):
     popen_mock.wait.assert_called()
 
 
+@mock.patch("litdata.streaming.downloader._GOOGLE_STORAGE_AVAILABLE", True)
 def test_gcp_downloader(tmpdir, monkeypatch):
-    from litdata.streaming.downloader import storage
+    # Mocks for local imports
+    google = ModuleType("google")
+    monkeypatch.setitem(sys.modules, "google", google)
+    google_cloud = ModuleType("cloud")
+    monkeypatch.setitem(sys.modules, "google.cloud", google_cloud)
+    google_cloud_storage = ModuleType("storage")
+    monkeypatch.setitem(sys.modules, "google.cloud.storage", google_cloud_storage)
+    google.cloud = google_cloud
+    google.cloud.storage = google_cloud_storage
 
     # Create mock objects
     mock_client = MagicMock()
@@ -29,7 +41,7 @@ def test_gcp_downloader(tmpdir, monkeypatch):
     mock_blob.download_to_filename = MagicMock()
 
     # Patch the storage client to return the mock client
-    monkeypatch.setattr(storage, "Client", MagicMock(return_value=mock_client))
+    google_cloud_storage.Client = MagicMock(return_value=mock_client)
 
     # Configure the mock client to return the mock bucket and blob
     mock_client.bucket = MagicMock(return_value=mock_bucket)
