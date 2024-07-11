@@ -90,18 +90,18 @@ class RSAEncryption:
         self.password = password
         self.extension = "rsa"
 
-    def _load_private_key(self, path: str) -> rsa.RSAPrivateKey:
+    def _load_private_key(self, path: str) -> Any:  # TODO: Fix Any
         with open(path, "rb") as key_file:
             return serialization.load_pem_private_key(
                 key_file.read(),
                 password=self.password.encode() if self.password else None,
             )
 
-    def _load_public_key(self, path: str) -> rsa.RSAPublicKey:
+    def _load_public_key(self, path: str) -> Any:  # TODO: Fix Any
         with open(path, "rb") as key_file:
             return serialization.load_pem_public_key(key_file.read())
 
-    def _generate_keys(self) -> Tuple[rsa.RSAPrivateKey, rsa.RSAPublicKey]:
+    def _generate_keys(self) -> Tuple[Any, Any]:  # TODO: Fix Any
         private_key = rsa.generate_private_key(
             public_exponent=65537,
             key_size=2048,
