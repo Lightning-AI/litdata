@@ -45,13 +45,13 @@ def _human_readable_bytes(num_bytes: float) -> str:
     return f"{num_bytes:.1f} PB"
 
 
-def _get_tqdm_iterator_if_available():
+def _get_tqdm_iterator_if_available() -> Any:
     if _TQDM_AVAILABLE:
         from tqdm.auto import tqdm as _tqdm
 
         return _tqdm
 
-    def _tqdm(iterator: Any) -> Any:
+    def _pass_through(iterator: Any) -> Any:
         yield from iterator
 
-    return _tqdm
+    return _pass_through
