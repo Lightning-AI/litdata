@@ -3,10 +3,13 @@ import os
 from abc import ABC, abstractmethod
 from typing import Optional
 
-from cryptography.fernet import Fernet
-from cryptography.hazmat.primitives import hashes, serialization
-from cryptography.hazmat.primitives.asymmetric import padding, rsa
-from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+from litdata.constants import _CRYPTOGRAPHY_AVAILABLE
+
+if _CRYPTOGRAPHY_AVAILABLE:
+    from cryptography.fernet import Fernet
+    from cryptography.hazmat.primitives import hashes, serialization
+    from cryptography.hazmat.primitives.asymmetric import padding, rsa
+    from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
 
 class Encryption(ABC):
