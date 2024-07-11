@@ -343,7 +343,7 @@ def _resolve_time_template(path: str) -> str:
 def _execute(
     name: str,
     num_nodes: int,
-    machine: Optional[Machine] = None,
+    machine: Optional["Machine"] = None,
     command: Optional[str] = None,
 ) -> None:
     """Remotely execute the current operator."""
