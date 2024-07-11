@@ -24,6 +24,7 @@ from litdata.streaming.config import ChunksConfig, Interval
 from litdata.streaming.item_loader import BaseItemLoader, PyTreeLoader
 from litdata.streaming.sampler import ChunkedIndex
 from litdata.streaming.serializers import Serializer, _get_serializers
+from litdata.utilities.encryption import Encryption
 from litdata.utilities.env import _DistributedEnv, _WorkerEnv
 
 warnings.filterwarnings("ignore", message=".*The given buffer is not writable.*")
@@ -165,6 +166,7 @@ class BinaryReader:
         max_cache_size: Optional[Union[int, str]] = None,
         remote_input_dir: Optional[str] = None,
         compression: Optional[str] = None,
+        encryption: Optional[Encryption] = None,
         item_loader: Optional[BaseItemLoader] = None,
         serializers: Optional[Dict[str, Serializer]] = None,
     ) -> None:
@@ -192,6 +194,7 @@ class BinaryReader:
             raise FileNotFoundError(f"The provided cache_dir `{self._cache_dir}` doesn't exist.")
 
         self._compression = compression
+        self._encryption = encryption
         self._intervals: Optional[List[str]] = None
         self.subsampled_files = subsampled_files
         self.region_of_interest = region_of_interest

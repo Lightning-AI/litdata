@@ -46,6 +46,7 @@ from litdata.streaming.resolver import (
     _resolve_dir,
 )
 from litdata.utilities._pytree import tree_flatten
+from litdata.utilities.encryption import Encryption
 
 if _TQDM_AVAILABLE:
     from tqdm.auto import tqdm as _tqdm
@@ -153,9 +154,10 @@ class LambdaDataChunkRecipe(DataChunkRecipe):
         chunk_size: Optional[int],
         chunk_bytes: Optional[Union[int, str]],
         compression: Optional[str],
+        encryption: Optional[Encryption] = None,
         existing_index: Optional[Dict[str, Any]] = None,
     ):
-        super().__init__(chunk_size=chunk_size, chunk_bytes=chunk_bytes, compression=compression)
+        super().__init__(chunk_size=chunk_size, chunk_bytes=chunk_bytes, compression=compression, encryption=encryption)
         self._fn = fn
         self._inputs = inputs
         self.is_generator = False
@@ -302,6 +304,7 @@ def optimize(
     chunk_size: Optional[int] = None,
     chunk_bytes: Optional[Union[int, str]] = None,
     compression: Optional[str] = None,
+    encryption: Optional[Encryption] = None,
     num_workers: Optional[int] = None,
     fast_dev_run: bool = False,
     num_nodes: Optional[int] = None,
@@ -327,6 +330,7 @@ def optimize(
         chunk_size: The maximum number of elements to hold within a chunk.
         chunk_bytes: The maximum number of bytes to hold within a chunk.
         compression: The compression algorithm to use over the chunks.
+        encryption: The encryption algorithm to use over the chunks.
         num_workers: The number of workers to use during processing
         fast_dev_run: Whether to use process only a sub part of the inputs
         num_nodes: When doing remote execution, the number of nodes to use. Only supported on https://lightning.ai/.
@@ -356,7 +360,6 @@ def optimize(
 
     if len(inputs) == 0:
         raise ValueError(f"The provided inputs should be non empty. Found {inputs}.")
-
     if chunk_size is None and chunk_bytes is None:
         raise ValueError("Either `chunk_size` or `chunk_bytes` needs to be defined.")
 
@@ -439,6 +442,7 @@ def optimize(
                     chunk_size=chunk_size,
                     chunk_bytes=chunk_bytes,
                     compression=compression,
+                    encryption=encryption,
                     existing_index=existing_index_file_content,
                 )
             )
