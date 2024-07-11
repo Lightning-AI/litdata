@@ -30,6 +30,8 @@ from time import sleep, time
 from typing import Any, Dict, List, Optional, Tuple, TypeVar, Union
 from urllib import parse
 
+import boto3
+import botocore
 import numpy as np
 import torch
 
@@ -51,8 +53,6 @@ from litdata.utilities._pytree import tree_flatten, tree_unflatten, treespec_loa
 from litdata.utilities.broadcast import broadcast_object
 from litdata.utilities.dataset_utilities import load_index_file
 from litdata.utilities.packing import _pack_greedily
-import boto3
-import botocore
 
 logger = logging.Logger(__name__)
 

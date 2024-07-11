@@ -20,13 +20,13 @@ from contextlib import suppress
 from dataclasses import dataclass
 from pathlib import Path
 from time import sleep
-from typing import Any, Literal, Optional, Union, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Literal, Optional, Union
 from urllib import parse
-
-from litdata.constants import _LIGHTNING_SDK_AVAILABLE
 
 import boto3
 import botocore
+
+from litdata.constants import _LIGHTNING_SDK_AVAILABLE
 
 if TYPE_CHECKING:
     from lightning_sdk import Machine

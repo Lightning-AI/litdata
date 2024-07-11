@@ -21,11 +21,11 @@ from subprocess import DEVNULL, Popen
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 from urllib import parse
 
-from litdata.constants import _INDEX_FILENAME, _IS_IN_STUDIO
-from litdata.streaming.cache import Dir
-
 import boto3
 import botocore
+
+from litdata.constants import _INDEX_FILENAME, _IS_IN_STUDIO
+from litdata.streaming.cache import Dir
 
 
 def _create_dataset(
