@@ -14,7 +14,7 @@ def test_fernet_encryption():
     assert isinstance(decrypted_data, bytes)
     assert isinstance(fernet.extension, str)
     assert fernet.extension == "fernet"
-    assert fernet.passsword == password
+    assert fernet.password == password
     assert isinstance(fernet._derive_key(password), bytes)
     assert isinstance(fernet._derive_key(password), bytes)
 
