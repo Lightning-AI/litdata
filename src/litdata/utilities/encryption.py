@@ -1,6 +1,7 @@
 import base64
 import os
 from abc import ABC, abstractmethod
+from typing import Optional
 
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes, serialization
@@ -57,7 +58,12 @@ class RSAEncryption:
 
     """
 
-    def __init__(self, private_key_path: str = None, public_key_path: str = None, passsword: str = None) -> None:
+    def __init__(
+        self,
+        private_key_path: Optional[str] = None,
+        public_key_path: Optional[str] = None,
+        passsword: Optional[str] = None,
+    ):
         if private_key_path:
             self.private_key = self._load_private_key(private_key_path, passsword)
         else:
