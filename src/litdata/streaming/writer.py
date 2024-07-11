@@ -27,6 +27,7 @@ from litdata.processing.utilities import get_worker_rank
 from litdata.streaming.compression import _COMPRESSORS, Compressor
 from litdata.streaming.serializers import Serializer, _get_serializers
 from litdata.utilities._pytree import PyTree, tree_flatten, treespec_dumps
+from litdata.utilities.encryption import Encryption
 from litdata.utilities.env import _DistributedEnv, _WorkerEnv
 from litdata.utilities.format import _convert_bytes_to_int, _human_readable_bytes
 
@@ -49,6 +50,7 @@ class BinaryWriter:
         chunk_size: Optional[int] = None,
         chunk_bytes: Optional[Union[int, str]] = None,
         compression: Optional[str] = None,
+        encryption: Optional[Encryption] = None,
         follow_tensor_dimension: bool = True,
         serializers: Optional[Dict[str, Serializer]] = None,
         chunk_index: Optional[int] = None,
@@ -79,6 +81,7 @@ class BinaryWriter:
         self._chunk_size = chunk_size
         self._chunk_bytes = _convert_bytes_to_int(chunk_bytes) if isinstance(chunk_bytes, str) else chunk_bytes
         self._compression = compression
+        self._encryption = encryption
 
         self._data_format: Optional[List[str]] = None
         self._data_spec: Optional[PyTree] = None
@@ -139,6 +142,7 @@ class BinaryWriter:
         """Returns the config of the writer."""
         return {
             "compression": self._compression,
+            "encryption": self._encryption.extension if self._encryption else None,
             "chunk_size": self._chunk_size,
             "chunk_bytes": self._chunk_bytes,
             "data_format": self._data_format,
@@ -369,6 +373,10 @@ class BinaryWriter:
         # Whether to compress the raw bytes
         if self._compression:
             raw_data = self._compressor.compress(raw_data)
+
+        # Whether to encrypt the raw bytes
+        if self._encryption:
+            raw_data = self._encryption.encrypt(raw_data)
 
         # Write the binary chunk file
         with open(os.path.join(self._cache_dir, filename), "wb") as out:
