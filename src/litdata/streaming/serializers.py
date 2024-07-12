@@ -18,7 +18,7 @@ import tempfile
 from abc import ABC, abstractmethod
 from collections import OrderedDict
 from copy import deepcopy
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Union
 
 import numpy as np
 import torch
@@ -26,34 +26,12 @@ import torch
 from litdata.constants import _NUMPY_DTYPES_MAPPING, _TORCH_DTYPES_MAPPING
 from litdata.imports import RequirementCache
 
+if TYPE_CHECKING:
+    from PIL.JpegImagePlugin import JpegImageFile
+
 _PIL_AVAILABLE = RequirementCache("PIL")
 _TORCH_VISION_AVAILABLE = RequirementCache("torchvision")
 _AV_AVAILABLE = RequirementCache("av")
-
-if _PIL_AVAILABLE:
-    from PIL import Image
-    from PIL.GifImagePlugin import GifImageFile
-    from PIL.JpegImagePlugin import JpegImageFile
-    from PIL.PngImagePlugin import PngImageFile
-    from PIL.WebPImagePlugin import WebPImageFile
-else:
-
-    class Image:  # type: ignore
-        Image = None
-
-    class JpegImageFile:  # type: ignore
-        pass
-
-    class PngImageFile:  # type: ignore
-        pass
-
-    class WebPImageFile:  # type: ignore
-        pass
-
-
-if _TORCH_VISION_AVAILABLE:
-    from torchvision.io import decode_jpeg
-    from torchvision.transforms.functional import pil_to_tensor
 
 
 class Serializer(ABC):
@@ -91,6 +69,8 @@ class PILSerializer(Serializer):
 
     @classmethod
     def deserialize(cls, data: bytes) -> Any:
+        from PIL import Image
+
         idx = 3 * 4
         width, height, mode_size = np.frombuffer(data[:idx], np.uint32)
         idx2 = idx + mode_size
@@ -100,6 +80,9 @@ class PILSerializer(Serializer):
         return Image.frombytes(mode, size, raw)  # pyright: ignore
 
     def can_serialize(self, item: Any) -> bool:
+        from PIL import Image
+        from PIL.JpegImagePlugin import JpegImageFile
+
         return bool(_PIL_AVAILABLE) and isinstance(item, Image.Image) and not isinstance(item, JpegImageFile)
 
 
@@ -107,6 +90,12 @@ class JPEGSerializer(Serializer):
     """The JPEGSerializer serialize and deserialize JPEG image to and from bytes."""
 
     def serialize(self, item: Any) -> Tuple[bytes, Optional[str]]:
+        from PIL import Image
+        from PIL.GifImagePlugin import GifImageFile
+        from PIL.JpegImagePlugin import JpegImageFile
+        from PIL.PngImagePlugin import PngImageFile
+        from PIL.WebPImagePlugin import WebPImageFile
+
         if isinstance(item, JpegImageFile):
             if not hasattr(item, "filename"):
                 raise ValueError(
@@ -130,8 +119,11 @@ class JPEGSerializer(Serializer):
 
         raise TypeError(f"The provided item should be of type {JpegImageFile}. Found {item}.")
 
-    def deserialize(self, data: bytes) -> Union[JpegImageFile, torch.Tensor]:
+    def deserialize(self, data: bytes) -> Union["JpegImageFile", torch.Tensor]:
         if _TORCH_VISION_AVAILABLE:
+            from torchvision.io import decode_jpeg
+            from torchvision.transforms.functional import pil_to_tensor
+
             array = torch.frombuffer(data, dtype=torch.uint8)
             try:
                 return decode_jpeg(array)
@@ -145,6 +137,8 @@ class JPEGSerializer(Serializer):
         return img
 
     def can_serialize(self, item: Any) -> bool:
+        from PIL.JpegImagePlugin import JpegImageFile
+
         return bool(_PIL_AVAILABLE) and isinstance(item, JpegImageFile)
 
 

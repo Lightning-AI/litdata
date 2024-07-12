@@ -23,13 +23,6 @@ from filelock import FileLock, Timeout
 from litdata.constants import _GOOGLE_STORAGE_AVAILABLE, _INDEX_FILENAME
 from litdata.streaming.client import S3Client
 
-if _GOOGLE_STORAGE_AVAILABLE:
-    from google.cloud import storage
-else:
-
-    class storage:  # type: ignore
-        Client = None
-
 
 class Downloader(ABC):
     def __init__(self, remote_dir: str, cache_dir: str, chunks: List[Dict[str, Any]]):
@@ -96,9 +89,14 @@ class S3Downloader(Downloader):
 
 class GCPDownloader(Downloader):
     def __init__(self, remote_dir: str, cache_dir: str, chunks: List[Dict[str, Any]]):
+        if not _GOOGLE_STORAGE_AVAILABLE:
+            raise ModuleNotFoundError(str(_GOOGLE_STORAGE_AVAILABLE))
+
         super().__init__(remote_dir, cache_dir, chunks)
 
     def download_file(self, remote_filepath: str, local_filepath: str) -> None:
+        from google.cloud import storage
+
         obj = parse.urlparse(remote_filepath)
 
         if obj.scheme != "gs":

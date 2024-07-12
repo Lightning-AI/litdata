@@ -30,16 +30,16 @@ from time import sleep, time
 from typing import Any, Dict, List, Optional, Tuple, TypeVar, Union
 from urllib import parse
 
+import boto3
+import botocore
 import numpy as np
 import torch
 
 from litdata.constants import (
-    _BOTO3_AVAILABLE,
     _DEFAULT_FAST_DEV_RUN_ITEMS,
     _ENABLE_STATUS,
     _INDEX_FILENAME,
     _IS_IN_STUDIO,
-    _LIGHTNING_CLOUD_AVAILABLE,
     _TQDM_AVAILABLE,
 )
 from litdata.processing.readers import BaseReader, StreamingDataLoaderReader
@@ -53,16 +53,6 @@ from litdata.utilities._pytree import tree_flatten, tree_unflatten, treespec_loa
 from litdata.utilities.broadcast import broadcast_object
 from litdata.utilities.dataset_utilities import load_index_file
 from litdata.utilities.packing import _pack_greedily
-
-if _TQDM_AVAILABLE:
-    from tqdm.auto import tqdm as _tqdm
-
-if _LIGHTNING_CLOUD_AVAILABLE:
-    from lightning_cloud.openapi import V1DatasetType
-
-if _BOTO3_AVAILABLE:
-    import boto3
-    import botocore
 
 logger = logging.Logger(__name__)
 
@@ -1043,6 +1033,8 @@ class DataProcessor:
 
         current_total = 0
         if _TQDM_AVAILABLE:
+            from tqdm.auto import tqdm as _tqdm
+
             pbar = _tqdm(
                 desc="Progress",
                 total=num_items,
@@ -1097,6 +1089,8 @@ class DataProcessor:
         result = data_recipe._done(len(user_items), self.delete_cached_files, self.output_dir)
 
         if num_nodes == node_rank + 1 and self.output_dir.url and self.output_dir.path is not None and _IS_IN_STUDIO:
+            from lightning_cloud.openapi import V1DatasetType
+
             _create_dataset(
                 input_dir=self.input_dir.path,
                 storage_dir=self.output_dir.path,
