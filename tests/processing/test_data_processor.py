@@ -391,6 +391,10 @@ def test_data_processsor(fast_dev_run, delete_cached_files, tmpdir, monkeypatch)
     home_dir = os.path.join(tmpdir, "home")
     cache_dir = os.path.join(tmpdir, "cache", "chunks")
     cache_data_dir = os.path.join(tmpdir, "cache", "data")
+    _dirs = [home_dir, cache_dir, cache_data_dir]
+    for d in _dirs:
+        if not os.path.exists(d):
+            os.makedirs(d, exist_ok=True)
     monkeypatch.setenv("DATA_OPTIMIZER_HOME_FOLDER", home_dir)
     monkeypatch.setenv("DATA_OPTIMIZER_CACHE_FOLDER", cache_dir)
     monkeypatch.setenv("DATA_OPTIMIZER_DATA_CACHE_FOLDER", cache_data_dir)
