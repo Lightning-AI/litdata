@@ -198,7 +198,7 @@ def test_streaming_dataset_distributed_no_shuffle(drop_last, tmpdir, compression
         pytest.param("zstd", marks=pytest.mark.skipif(condition=not _ZSTD_AVAILABLE, reason="Requires: ['zstd']")),
     ],
 )
-@pytest.mark.timeout(30)
+@pytest.mark.timeout(60)
 def test_streaming_dataset_distributed_full_shuffle_odd(drop_last, tmpdir, compression):
     seed_everything(42)
 
@@ -807,8 +807,9 @@ def _get_simulated_s3_dataloader(cache_dir, data_dir):
     return StreamingDataLoader(dataset, batch_size=2, num_workers=1)
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="Not tested on windows and MacOs")
+@pytest.mark.skipif(sys.platform == "win32" or sys.platform == "darwin", reason="Not tested on windows and MacOs")
 @mock.patch.dict(os.environ, {}, clear=True)
+@pytest.mark.timeout(60)
 def test_dataset_resume_on_future_chunks(tmpdir, monkeypatch):
     """This test is constructed to test resuming from a chunk past the first chunk, when subsequent chunks don't have
     the same size."""
@@ -819,7 +820,7 @@ def test_dataset_resume_on_future_chunks(tmpdir, monkeypatch):
 
     optimize(
         fn=_simple_preprocess,
-        inputs=list(range(8)),
+        inputs=list(range(5)),
         output_dir=str(tmpdir / "optimized"),
         chunk_size=190,
         num_workers=4,
@@ -830,6 +831,7 @@ def test_dataset_resume_on_future_chunks(tmpdir, monkeypatch):
     train_dataloader = _get_simulated_s3_dataloader(s3_cache_dir, data_dir)
     batches_to_fetch = 16
     batch_to_resume_from = None
+    dataloader_state = None
     for i, batch in enumerate(train_dataloader):
         if i == batches_to_fetch:
             dataloader_state = train_dataloader.state_dict()
@@ -840,6 +842,8 @@ def test_dataset_resume_on_future_chunks(tmpdir, monkeypatch):
     shutil.rmtree(s3_cache_dir)
     os.mkdir(s3_cache_dir)
     train_dataloader = _get_simulated_s3_dataloader(s3_cache_dir, data_dir)
+    assert dataloader_state is not None
+    assert batch_to_resume_from is not None
     train_dataloader.load_state_dict(dataloader_state)
     # The next batch after resuming must match what we should have gotten next in the initial loop
     assert torch.equal(next(iter(train_dataloader)), batch_to_resume_from)

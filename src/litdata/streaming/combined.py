@@ -139,7 +139,7 @@ class CombinedStreamingDataset(IterableDataset):
         num_samples_yielded = None
 
         if self._num_samples_yielded is not None and worker_env.rank in self._num_samples_yielded:
-            num_samples_yielded = self._num_samples_yielded[worker_env.rank]
+            num_samples_yielded = self._num_samples_yielded.get(worker_env.rank, 0)
 
         self._iterator = _CombinedDatasetIterator(
             self._datasets,
