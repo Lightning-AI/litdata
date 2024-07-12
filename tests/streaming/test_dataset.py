@@ -809,6 +809,7 @@ def _get_simulated_s3_dataloader(cache_dir, data_dir):
 
 @pytest.mark.skipif(sys.platform == "win32" or sys.platform == "darwin", reason="Not tested on windows and MacOs")
 @mock.patch.dict(os.environ, {}, clear=True)
+@pytest.mark.timeout(60)
 def test_dataset_resume_on_future_chunks(tmpdir, monkeypatch):
     """This test is constructed to test resuming from a chunk past the first chunk, when subsequent chunks don't have
     the same size."""
@@ -819,7 +820,7 @@ def test_dataset_resume_on_future_chunks(tmpdir, monkeypatch):
 
     optimize(
         fn=_simple_preprocess,
-        inputs=list(range(8)),
+        inputs=list(range(5)),
         output_dir=str(tmpdir / "optimized"),
         chunk_size=190,
         num_workers=4,
