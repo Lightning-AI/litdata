@@ -18,9 +18,6 @@ from litdata.constants import _ZSTD_AVAILABLE
 
 TCompressor = TypeVar("TCompressor", bound="Compressor")
 
-if _ZSTD_AVAILABLE:
-    import zstd
-
 
 class Compressor(ABC):
     """Base class for compression algorithm."""
@@ -45,7 +42,7 @@ class ZSTDCompressor(Compressor):
     def __init__(self, level: int) -> None:
         super().__init__()
         if not _ZSTD_AVAILABLE:
-            raise ModuleNotFoundError()
+            raise ModuleNotFoundError(str(_ZSTD_AVAILABLE))
         self.level = level
         self.extension = "zstd"
 
@@ -54,9 +51,13 @@ class ZSTDCompressor(Compressor):
         return f"{self.extension}:{self.level}"
 
     def compress(self, data: bytes) -> bytes:
+        import zstd
+
         return zstd.compress(data, self.level)
 
     def decompress(self, data: bytes) -> bytes:
+        import zstd
+
         return zstd.decompress(data)
 
     @classmethod
