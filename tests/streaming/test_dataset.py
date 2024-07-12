@@ -56,7 +56,7 @@ def seed_everything(random_seed):
         pytest.param("zstd", marks=pytest.mark.skipif(condition=not _ZSTD_AVAILABLE, reason="Requires: ['zstd']")),
     ],
 )
-@pytest.mark.timeout(30)
+@pytest.mark.timeout(15)
 def test_streaming_dataset(tmpdir, monkeypatch, compression):
     seed_everything(42)
 
@@ -198,7 +198,7 @@ def test_streaming_dataset_distributed_no_shuffle(drop_last, tmpdir, compression
         pytest.param("zstd", marks=pytest.mark.skipif(condition=not _ZSTD_AVAILABLE, reason="Requires: ['zstd']")),
     ],
 )
-@pytest.mark.timeout(60)
+@pytest.mark.timeout(30)
 def test_streaming_dataset_distributed_full_shuffle_odd(drop_last, tmpdir, compression):
     seed_everything(42)
 
