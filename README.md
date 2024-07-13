@@ -507,6 +507,24 @@ dataset = StreamingDataset(..., max_cache_size="10GB")
 </details>  
 
 <details>
+  <summary> ✅ Specify cache directory</summary>
+&nbsp;
+
+Specify the directory where cached files should be stored, ensuring efficient data retrieval and management. This is particularly useful for organizing your data storage and improving access times.
+
+```python
+from litdata import StreamingDataset
+from litdata.streaming.cache import Dir
+
+cache_dir = "/path/to/your/cache"
+data_dir = "s3://my-bucket/my_optimized_dataset"
+
+dataset = StreamingDataset(input_dir=Dir(path=cache_dir, url=data_dir))
+```
+
+</details>
+
+<details>
   <summary> ✅ Optimize loading on networked drives</summary>
 &nbsp;
 
