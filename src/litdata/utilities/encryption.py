@@ -195,7 +195,7 @@ class RSAEncryption(Encryption):
     def __setstate__(self, state: Dict[str, Union[str, Any]]) -> None:
         # Restore the state from the serialized data
         self.password = state["password"]
-        self.level = state["level"]
+        self.level = state["level"] if state["level"] in get_args(EncryptionLevel) else "sample"
         self.extension = state["extension"]
 
         if state["private_key"]:
