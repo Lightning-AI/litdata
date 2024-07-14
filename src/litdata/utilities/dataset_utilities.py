@@ -185,5 +185,6 @@ def adapt_mds_shards_to_chunks(data: Dict[str, Any]) -> Dict[str, Any]:
         "data_format": shards[0]["column_encodings"],
         "format": shards[0]["format"],
         "data_spec": json.dumps(data_spec),
+        "encryption": None,
     }
     return data
