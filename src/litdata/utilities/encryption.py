@@ -158,6 +158,8 @@ class RSAEncryption(Encryption):
 
     def save_keys(self, private_key_path: str, public_key_path: str) -> None:
         state = self.state_dict()
+        if not state["private_key"] or not state["public_key"]:
+            raise AttributeError("Keys not found.")
         with open(private_key_path, "wb") as key_file:
             key_file.write(state["private_key"].encode("utf-8"))
 
@@ -189,14 +191,14 @@ class RSAEncryption(Encryption):
             "extension": self.extension,
         }
 
-    def __getstate__(self) -> Dict[str, Union[str, Any]]:
+    def __getstate__(self) -> Dict[str, Union[str, None]]:
         return self.state_dict()
 
-    def __setstate__(self, state: Dict[str, Union[str, Any]]) -> None:
+    def __setstate__(self, state: Dict[str, Union[str, None]]) -> None:
         # Restore the state from the serialized data
         self.password = state["password"]
-        self.level = state["level"] if state["level"] in get_args(EncryptionLevel) else "sample"
-        self.extension = state["extension"]
+        self.level = state["level"]  # type: ignore
+        self.extension = state["extension"] if state["extension"] else "rsa"
 
         if state["private_key"]:
             self.private_key = serialization.load_pem_private_key(
