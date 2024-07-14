@@ -179,6 +179,7 @@ class BinaryReader:
             remote_input_dir: The path to a remote folder where the data are located.
                 The scheme needs to be added to the path.
             compression: The algorithm to decompress the chunks.
+            encryption: The algorithm to decrypt the chunks or samples.
             item_loader: The chunk sampler to create sub arrays from a chunk.
             max_cache_size: The maximum cache size used by the reader when fetching the chunks.
             serializers: Provide your own serializers.
@@ -276,7 +277,7 @@ class BinaryReader:
         # Fetch the element
         chunk_filepath, begin, chunk_bytes = self.config[index]
         item = self._item_loader.load_item_from_chunk(
-            index.index, index.chunk_index, chunk_filepath, begin, chunk_bytes
+            index.index, index.chunk_index, chunk_filepath, begin, chunk_bytes, self._encryption
         )
 
         # We need to request deletion after the latest element has been loaded.
