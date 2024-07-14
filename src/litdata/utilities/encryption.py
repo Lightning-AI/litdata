@@ -192,7 +192,7 @@ class RSAEncryption(Encryption):
     def __getstate__(self) -> Dict[str, Union[str, None]]:
         return self.state_dict()
 
-    def __setstate__(self, state) -> None:
+    def __setstate__(self, state: Dict[str, Union[str, None]]) -> None:
         # Restore the state from the serialized data
         self.password = state["password"]
         self.level = state["level"]
