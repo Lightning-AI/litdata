@@ -391,4 +391,13 @@ def test_optimize_with_rsa_encryption(tmpdir):
     assert ds[:] == [(i, i**2) for i in range(5)]
 
     # ----------------- test with random images  -----------------
-    # RSA Encryption throws an error when trying to encrypt large data
+    # RSA Encryption throws an error: ValueError: Encryption failed, when trying to encrypt large data
+    # optimize(
+    #     fn=random_image,
+    #     inputs=list(range(5)),
+    #     num_workers=1,
+    #     output_dir=output_dir,
+    #     chunk_bytes="64MB",
+    #     encryption=rsa,
+    #     mode="overwrite",
+    # )
