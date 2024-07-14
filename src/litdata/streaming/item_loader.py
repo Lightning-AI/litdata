@@ -16,6 +16,7 @@ import os
 from abc import ABC, abstractmethod
 from collections import namedtuple
 from copy import deepcopy
+from io import BytesIO
 from time import sleep
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -27,6 +28,7 @@ from litdata.constants import (
 )
 from litdata.streaming.serializers import Serializer
 from litdata.utilities._pytree import PyTree, tree_unflatten
+from litdata.utilities.encryption import Encryption
 
 Interval = namedtuple("Interval", ["chunk_start", "roi_start_idx", "roi_end_idx", "chunk_end"])
 
@@ -83,7 +85,13 @@ class BaseItemLoader(ABC):
 
     @abstractmethod
     def load_item_from_chunk(
-        self, index: int, chunk_index: int, chunk_filepath: str, begin: int, chunk_bytes: int
+        self,
+        index: int,
+        chunk_index: int,
+        chunk_filepath: str,
+        begin: int,
+        chunk_bytes: int,
+        encryption: Optional[Encryption] = None,
     ) -> Any:
         """Returns an item loaded from a chunk."""
         pass
@@ -119,7 +127,13 @@ class PyTreeLoader(BaseItemLoader):
         pass
 
     def load_item_from_chunk(
-        self, index: int, chunk_index: int, chunk_filepath: str, begin: int, chunk_bytes: int
+        self,
+        index: int,
+        chunk_index: int,
+        chunk_filepath: str,
+        begin: int,
+        chunk_bytes: int,
+        encryption: Optional[Encryption] = None,
     ) -> bytes:
         offset = (1 + (index - begin) if index >= begin else index + 1) * 4
 
@@ -136,16 +150,43 @@ class PyTreeLoader(BaseItemLoader):
             self._chunk_filepaths[chunk_filepath] = True
 
         with open(chunk_filepath, "rb", 0) as fp:
-            fp.seek(offset)
-            pair = fp.read(8)
-            begin, end = np.frombuffer(pair, np.uint32)
-            fp.seek(begin)
-            data = fp.read(end - begin)
+            if self._config["encryption"]:
+                data = self._load_encrypted_data(fp, offset, encryption)
+            else:
+                data = self._load_data(fp, offset)
 
         # check for mosaic mds format
         if "format" in self._config and self._config["format"] == "mds":
             return self.mds_deserialize(data, chunk_index)
         return self.deserialize(data)
+
+    def _load_encrypted_data(self, fp: BytesIO, offset: int, encryption: Encryption) -> bytes:
+        """Load and decrypt data from a file pointer based on the encryption configuration."""
+
+        # Validate the provided encryption object against the expected configuration.
+        self._validate_encryption(encryption)
+
+        # If the encryption level is set to 'chunk', decrypt the entire chunk first.
+        if self._config["encryption"]["level"] == "chunk":
+            encrypted_data = fp.read()
+            decrypted_data = encryption.decrypt(encrypted_data)
+            fp = BytesIO(decrypted_data)
+
+        data = self._load_data(fp, offset)
+
+        # If the encryption level is set to 'sample', decrypt each individual sample after loading.
+        if self._config["encryption"]["level"] == "sample":
+            data = encryption.decrypt(data)
+
+        return data
+
+    def _load_data(self, fp: BytesIO, offset: int) -> bytes:
+        """Load the data from the file pointer."""
+        fp.seek(offset)
+        pair = fp.read(8)
+        begin, end = np.frombuffer(pair, np.uint32)
+        fp.seek(begin)
+        return fp.read(end - begin)
 
     def mds_deserialize(self, raw_item_data: bytes, chunk_index: int) -> "PyTree":
         """Deserialize the mds raw bytes into their python equivalent."""
@@ -183,6 +224,15 @@ class PyTreeLoader(BaseItemLoader):
     def delete(self, chunk_index: int, chunk_filepath: str) -> None:
         if os.path.exists(chunk_filepath):
             os.remove(chunk_filepath)
+
+    def _validate_encryption(self, encryption: Encryption) -> None:
+        """Validate the encryption object."""
+        if not encryption or not self._config["encryption"]:
+            raise ValueError("Encryption configuration mismatch.")
+        if encryption.level != self._config["encryption"]["level"]:
+            raise ValueError("Encryption level mismatch.")
+        if encryption.extension != self._config["encryption"]["name"]:
+            raise ValueError("Encryption algorithm mismatch.")
 
 
 class TokensLoader(BaseItemLoader):
