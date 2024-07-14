@@ -1,3 +1,7 @@
+import sys
+from types import ModuleType
+from unittest.mock import Mock
+
 import pytest
 import torch.distributed
 
@@ -30,3 +34,34 @@ def mosaic_mds_index_data():
         ],
         "version": 2,
     }
+
+
+@pytest.fixture()
+def google_mock(monkeypatch):
+    google = ModuleType("google")
+    monkeypatch.setitem(sys.modules, "google", google)
+    google_cloud = ModuleType("cloud")
+    monkeypatch.setitem(sys.modules, "google.cloud", google_cloud)
+    google_cloud_storage = ModuleType("storage")
+    monkeypatch.setitem(sys.modules, "google.cloud.storage", google_cloud_storage)
+    google.cloud = google_cloud
+    google.cloud.storage = google_cloud_storage
+    return google
+
+
+@pytest.fixture()
+def lightning_cloud_mock(monkeypatch):
+    lightning_cloud = ModuleType("lightning_cloud")
+    monkeypatch.setitem(sys.modules, "lightning_cloud", lightning_cloud)
+    rest_client = ModuleType("rest_client")
+    monkeypatch.setitem(sys.modules, "lightning_cloud.rest_client", rest_client)
+    lightning_cloud.rest_client = rest_client
+    rest_client.LightningClient = Mock()
+    return lightning_cloud
+
+
+@pytest.fixture()
+def lightning_sdk_mock(monkeypatch):
+    lightning_sdk = ModuleType("lightning_sdk")
+    monkeypatch.setitem(sys.modules, "lightning_sdk", lightning_sdk)
+    return lightning_sdk

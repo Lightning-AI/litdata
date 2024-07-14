@@ -34,7 +34,7 @@ _ZSTD_AVAILABLE = RequirementCache("zstd")
 _CRYPTOGRAPHY_AVAILABLE = RequirementCache("cryptography")
 _GOOGLE_STORAGE_AVAILABLE = RequirementCache("google.cloud.storage")
 _TQDM_AVAILABLE = RequirementCache("tqdm")
-
+_LIGHTNING_SDK_AVAILABLE = RequirementCache("lightning_sdk")
 
 # DON'T CHANGE ORDER
 _TORCH_DTYPES_MAPPING = {

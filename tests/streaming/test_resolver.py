@@ -19,7 +19,7 @@ from litdata.streaming import resolver
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="windows isn't supported")
-def test_src_resolver_s3_connections(monkeypatch):
+def test_src_resolver_s3_connections(monkeypatch, lightning_cloud_mock):
     auth = login.Auth()
     auth.save(user_id="7c8455e3-7c5f-4697-8a6d-105971d6b9bd", api_key="e63fae57-2b50-498b-bc46-d6204cbf330e")
 
@@ -35,7 +35,7 @@ def test_src_resolver_s3_connections(monkeypatch):
 
     client_cls_mock = mock.MagicMock()
     client_cls_mock.return_value = client_mock
-    resolver.LightningClient = client_cls_mock
+    lightning_cloud_mock.rest_client.LightningClient = client_cls_mock
 
     assert resolver._resolve_dir("/teamspace/s3_connections/imagenet").url == "s3://imagenet-bucket"
     assert resolver._resolve_dir("/teamspace/s3_connections/imagenet/train").url == "s3://imagenet-bucket/train"
@@ -47,7 +47,7 @@ def test_src_resolver_s3_connections(monkeypatch):
 
     client_cls_mock = mock.MagicMock()
     client_cls_mock.return_value = client_mock
-    resolver.LightningClient = client_cls_mock
+    lightning_cloud_mock.rest_client.LightningClient = client_cls_mock
 
     with pytest.raises(ValueError, match="name `imagenet`"):
         assert resolver._resolve_dir("/teamspace/s3_connections/imagenet")
@@ -56,7 +56,7 @@ def test_src_resolver_s3_connections(monkeypatch):
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="windows isn't supported")
-def test_src_resolver_studios(monkeypatch):
+def test_src_resolver_studios(monkeypatch, lightning_cloud_mock):
     auth = login.Auth()
     auth.save(user_id="7c8455e3-7c5f-4697-8a6d-105971d6b9bd", api_key="e63fae57-2b50-498b-bc46-d6204cbf330e")
 
@@ -85,7 +85,7 @@ def test_src_resolver_studios(monkeypatch):
 
     client_cls_mock = mock.MagicMock()
     client_cls_mock.return_value = client_mock
-    resolver.LightningClient = client_cls_mock
+    lightning_cloud_mock.rest_client.LightningClient = client_cls_mock
 
     expected = "s3://my_bucket/projects/project_id/cloudspaces/other_studio_id/code/content"
     assert resolver._resolve_dir("/teamspace/studios/other_studio").url == expected
@@ -123,7 +123,7 @@ def test_src_resolver_studios(monkeypatch):
 
     client_cls_mock = mock.MagicMock()
     client_cls_mock.return_value = client_mock
-    resolver.LightningClient = client_cls_mock
+    lightning_cloud_mock.rest_client.LightningClient = client_cls_mock
 
     with pytest.raises(ValueError, match="other_studio`"):
         resolver._resolve_dir("/teamspace/studios/other_studio")
@@ -132,7 +132,7 @@ def test_src_resolver_studios(monkeypatch):
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="windows isn't supported")
-def test_src_resolver_datasets(monkeypatch):
+def test_src_resolver_datasets(monkeypatch, lightning_cloud_mock):
     auth = login.Auth()
     auth.save(user_id="7c8455e3-7c5f-4697-8a6d-105971d6b9bd", api_key="e63fae57-2b50-498b-bc46-d6204cbf330e")
 
@@ -168,7 +168,7 @@ def test_src_resolver_datasets(monkeypatch):
 
     client_cls_mock = mock.MagicMock()
     client_cls_mock.return_value = client_mock
-    resolver.LightningClient = client_cls_mock
+    lightning_cloud_mock.rest_client.LightningClient = client_cls_mock
 
     expected = "s3://my_bucket/projects/project_id/datasets/imagenet"
     assert resolver._resolve_dir("/teamspace/datasets/imagenet").url == expected
@@ -185,7 +185,7 @@ def test_src_resolver_datasets(monkeypatch):
 
     client_cls_mock = mock.MagicMock()
     client_cls_mock.return_value = client_mock
-    resolver.LightningClient = client_cls_mock
+    lightning_cloud_mock.rest_client.LightningClient = client_cls_mock
 
     with pytest.raises(ValueError, match="cloud_space_id`"):
         resolver._resolve_dir("/teamspace/datasets/imagenet")
@@ -194,7 +194,7 @@ def test_src_resolver_datasets(monkeypatch):
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="windows isn't supported")
-def test_dst_resolver_dataset_path(monkeypatch):
+def test_dst_resolver_dataset_path(monkeypatch, lightning_cloud_mock):
     auth = login.Auth()
     auth.save(user_id="7c8455e3-7c5f-4697-8a6d-105971d6b9bd", api_key="e63fae57-2b50-498b-bc46-d6204cbf330e")
 
@@ -218,7 +218,7 @@ def test_dst_resolver_dataset_path(monkeypatch):
 
     client_cls_mock = mock.MagicMock()
     client_cls_mock.return_value = client_mock
-    resolver.LightningClient = client_cls_mock
+    lightning_cloud_mock.rest_client.LightningClient = client_cls_mock
 
     boto3 = mock.MagicMock()
     client_s3_mock = mock.MagicMock()
@@ -240,7 +240,7 @@ def test_dst_resolver_dataset_path(monkeypatch):
 
 @pytest.mark.skipif(sys.platform == "win32", reason="windows isn't supported")
 @pytest.mark.parametrize("phase", ["LIGHTNINGAPP_INSTANCE_STATE_STOPPED", "LIGHTNINGAPP_INSTANCE_STATE_COMPLETED"])
-def test_execute(phase, monkeypatch):
+def test_execute(phase, monkeypatch, lightning_sdk_mock):
     studio = mock.MagicMock()
     studio._studio.id = "studio_id"
     studio._teamspace.id = "teamspace_id"
@@ -256,11 +256,9 @@ def test_execute(phase, monkeypatch):
     job.status.phase = phase
     studio._studio_api.create_data_prep_machine_job.return_value = job
     studio._studio_api._client.lightningapp_instance_service_get_lightningapp_instance.return_value = job
-    if not hasattr(resolver, "Studio"):
-        resolver.Studio = mock.MagicMock(return_value=studio)
-        resolver._LIGHTNING_SDK_AVAILABLE = True
-    else:
-        monkeypatch.setattr(resolver, "Studio", mock.MagicMock(return_value=studio))
+
+    monkeypatch.setattr(resolver, "_LIGHTNING_SDK_AVAILABLE", True)
+    lightning_sdk_mock.Studio = mock.MagicMock(return_value=studio)
 
     called = False
 

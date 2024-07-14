@@ -507,6 +507,24 @@ dataset = StreamingDataset(..., max_cache_size="10GB")
 </details>  
 
 <details>
+  <summary> ✅ Specify cache directory</summary>
+&nbsp;
+
+Specify the directory where cached files should be stored, ensuring efficient data retrieval and management. This is particularly useful for organizing your data storage and improving access times.
+
+```python
+from litdata import StreamingDataset
+from litdata.streaming.cache import Dir
+
+cache_dir = "/path/to/your/cache"
+data_dir = "s3://my-bucket/my_optimized_dataset"
+
+dataset = StreamingDataset(input_dir=Dir(path=cache_dir, url=data_dir))
+```
+
+</details>
+
+<details>
   <summary> ✅ Optimize loading on networked drives</summary>
 &nbsp;
 
@@ -518,6 +536,48 @@ On-prem compute nodes can mount and use a network drive. A network drive is a sh
 from litdata import StreamingDataset
 
 dataset = StreamingDataset(input_dir="local:/data/shared-drive/some-data")
+```
+
+</details>
+
+<details>
+  <summary> ✅ Optimize dataset in distributed environment</summary>
+&nbsp;
+
+Lightning can distribute large workloads across hundreds of machines in parallel. This can reduce the time to complete a data processing task from weeks to minutes by scaling to enough machines.
+
+To apply the optimize operator across multiple machines, simply provide the num_nodes and machine arguments to it as follows:
+
+```python
+import os
+from litdata import optimize, Machine
+
+def compress(index):
+    return (index, index ** 2)
+
+optimize(
+    fn=compress,
+    inputs=list(range(100)),
+    num_workers=2,
+    output_dir="my_output",
+    chunk_bytes="64MB",
+    num_nodes=2,
+    machine=Machine.DATA_PREP, # You can select between dozens of optimized machines
+)
+```
+
+If the `output_dir` is a local path, the optimized dataset will be present in: `/teamspace/jobs/{job_name}/nodes-0/my_output`. Otherwise, it will be stored in the specified `output_dir`.
+
+Read the optimized dataset:
+
+```python
+from litdata import StreamingDataset
+
+output_dir = "/teamspace/jobs/litdata-optimize-2024-07-08/nodes.0/my_output"
+
+dataset = StreamingDataset(output_dir)
+
+print(dataset[:])
 ```
 
 </details>  

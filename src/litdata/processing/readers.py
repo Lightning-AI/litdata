@@ -16,18 +16,11 @@ import os
 from abc import ABC, abstractmethod
 from typing import Any, List
 
-from litdata.constants import _TQDM_AVAILABLE
 from litdata.imports import RequirementCache
 from litdata.streaming.dataloader import StreamingDataLoader
+from litdata.utilities.format import _get_tqdm_iterator_if_available
 
 _PYARROW_AVAILABLE = RequirementCache("pyarrow")
-
-if _TQDM_AVAILABLE:
-    from tqdm.auto import tqdm as _tqdm
-else:
-
-    def _tqdm(iterator: Any) -> Any:
-        yield from iterator
 
 
 class BaseReader(ABC):
@@ -91,6 +84,8 @@ class ParquetReader(BaseReader):
 
         cache_folder = os.path.join(self.cache_folder, f"{self.num_rows}")
         os.makedirs(cache_folder, exist_ok=True)
+
+        _tqdm = _get_tqdm_iterator_if_available()
 
         for filepath in filepaths:
             num_rows = self._get_num_rows(filepath)
