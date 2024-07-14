@@ -91,7 +91,6 @@ class BaseItemLoader(ABC):
         chunk_filepath: str,
         begin: int,
         chunk_bytes: int,
-        encryption: Optional[Encryption] = None,
     ) -> Any:
         """Returns an item loaded from a chunk."""
         pass
@@ -306,7 +305,12 @@ class TokensLoader(BaseItemLoader):
             self._load_chunk(chunk_index, chunk_filepath)
 
     def load_item_from_chunk(
-        self, index: int, chunk_index: int, chunk_filepath: str, begin: int, chunk_bytes: int
+        self,
+        index: int,
+        chunk_index: int,
+        chunk_filepath: str,
+        begin: int,
+        chunk_bytes: int,
     ) -> torch.Tensor:
         if chunk_filepath in self._chunk_filepaths and not os.path.isfile(chunk_filepath):
             del self._chunk_filepaths[chunk_filepath]
