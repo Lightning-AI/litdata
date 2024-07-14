@@ -1,7 +1,7 @@
 import base64
 import os
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Literal, Optional, Tuple, get_args
+from typing import Any, Dict, Literal, Optional, Tuple, Union, get_args
 
 from litdata.constants import _CRYPTOGRAPHY_AVAILABLE
 
@@ -76,7 +76,7 @@ class FernetEncryption(Encryption):
         return {"key": self.key, "password": self.password, "level": self.level}
 
 
-class RSAEncryption:
+class RSAEncryption(Encryption):
     """Encryption for the RSA package.
 
     Adapted from: https://cryptography.io/en/latest/hazmat/primitives/asymmetric/rsa/
@@ -157,32 +157,58 @@ class RSAEncryption:
         )
 
     def save_keys(self, private_key_path: str, public_key_path: str) -> None:
+        state = self.state_dict()
+        with open(private_key_path, "wb") as key_file:
+            key_file.write(state["private_key"].encode("utf-8"))
+
+        with open(public_key_path, "wb") as key_file:
+            key_file.write(state["public_key"].encode("utf-8"))
+
+    def state_dict(self) -> Dict[str, Union[str, None]]:
         encryption_algorithm = (
             serialization.BestAvailableEncryption(self.password.encode())
             if self.password
             else serialization.NoEncryption()
         )
-
-        with open(private_key_path, "wb") as f:
-            f.write(
-                self.private_key.private_bytes(
-                    encoding=serialization.Encoding.PEM,
-                    format=serialization.PrivateFormat.PKCS8,
-                    encryption_algorithm=encryption_algorithm,
-                )
-            )
-        with open(public_key_path, "wb") as f:
-            f.write(
-                self.public_key.public_bytes(
-                    encoding=serialization.Encoding.PEM,
-                    format=serialization.PublicFormat.SubjectPublicKeyInfo,
-                )
-            )
-
-    def state_dict(self) -> Dict[str, Any]:
         return {
-            "private_key": self.private_key,
-            "public_key": self.public_key,
+            "private_key": self.private_key.private_bytes(
+                encoding=serialization.Encoding.PEM,
+                format=serialization.PrivateFormat.TraditionalOpenSSL,
+                encryption_algorithm=encryption_algorithm,
+            ).decode("utf-8")
+            if self.private_key
+            else None,
+            "public_key": self.public_key.public_bytes(
+                encoding=serialization.Encoding.PEM,
+                format=serialization.PublicFormat.SubjectPublicKeyInfo,
+            ).decode("utf-8")
+            if self.public_key
+            else None,
             "password": self.password,
             "level": self.level,
+            "extension": self.extension,
         }
+
+    def __getstate__(self):
+        return self.state_dict()
+
+    def __setstate__(self, state):
+        # Restore the state from the serialized data
+        self.password = state["password"]
+        self.level = state["level"]
+        self.extension = state["extension"]
+
+        if state["private_key"]:
+            self.private_key = serialization.load_pem_private_key(
+                state["private_key"].encode("utf-8"),
+                password=self.password.encode() if self.password else None,
+            )
+        else:
+            self.private_key = None
+
+        if state["public_key"]:
+            self.public_key = serialization.load_pem_public_key(
+                state["public_key"].encode("utf-8"),
+            )
+        else:
+            self.public_key = None
