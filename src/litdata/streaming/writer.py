@@ -62,6 +62,7 @@ class BinaryWriter:
             chunk_bytes: The maximum number of bytes within a chunk.
             chunk_size: The maximum number of items within a chunk.
             compression: The compression algorithm to use.
+            encryption: The encryption algorithm to use.
             serializers: Provide your own serializers.
             chunk_index: The index of the chunk to start from.
 
@@ -142,11 +143,13 @@ class BinaryWriter:
         """Returns the config of the writer."""
         return {
             "compression": self._compression,
-            "encryption": self._encryption.extension if self._encryption else None,
             "chunk_size": self._chunk_size,
             "chunk_bytes": self._chunk_bytes,
             "data_format": self._data_format,
             "data_spec": treespec_dumps(self._data_spec) if self._data_spec else None,
+            "encryption": {"name": self._encryption.extension, "level": self._encryption.level}
+            if self._encryption
+            else None,
         }
 
     def serialize(self, items: Any) -> Tuple[bytes, Optional[int]]:
@@ -242,6 +245,11 @@ class BinaryWriter:
 
         current_chunk_bytes = sum([item.bytes for item in items])
 
+        # Whether to encrypt the data at the chunk level
+        if self._encryption and self._encryption.level == "chunk":
+            data = self._encryption.encrypt(data)
+            current_chunk_bytes = len(data)
+
         if self._chunk_bytes and current_chunk_bytes > self._chunk_bytes:
             warnings.warn(
                 f"An item was larger than the target chunk size ({_human_readable_bytes(self._chunk_bytes)})."
@@ -297,6 +305,11 @@ class BinaryWriter:
             raise ValueError(f"The provided index {index} already exists in the cache.")
 
         data, dim = self.serialize(items)
+
+        # Whether to encrypt the data at the sample level
+        if self._encryption and self._encryption.level == "sample":
+            data = self._encryption.encrypt(data)
+
         self._serialized_items[index] = Item(
             index=index,
             data=data,
@@ -373,10 +386,6 @@ class BinaryWriter:
         # Whether to compress the raw bytes
         if self._compression:
             raw_data = self._compressor.compress(raw_data)
-
-        # Whether to encrypt the raw bytes
-        if self._encryption:
-            raw_data = self._encryption.encrypt(raw_data)
 
         # Write the binary chunk file
         with open(os.path.join(self._cache_dir, filename), "wb") as out:
