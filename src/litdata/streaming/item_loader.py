@@ -229,10 +229,10 @@ class PyTreeLoader(BaseItemLoader):
         """Validate the encryption object."""
         if not encryption or not self._config["encryption"]:
             raise ValueError("Encryption configuration mismatch.")
-        if encryption.level != self._config["encryption"]["level"]:
-            raise ValueError("Encryption level mismatch.")
         if encryption.extension != self._config["encryption"]["name"]:
             raise ValueError("Encryption algorithm mismatch.")
+        if encryption.level != self._config["encryption"]["level"]:
+            raise ValueError("Encryption level mismatch.")
 
 
 class TokensLoader(BaseItemLoader):
