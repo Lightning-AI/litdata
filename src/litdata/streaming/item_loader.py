@@ -149,7 +149,7 @@ class PyTreeLoader(BaseItemLoader):
             self._chunk_filepaths[chunk_filepath] = True
 
         with open(chunk_filepath, "rb", 0) as fp:
-            if self._config["encryption"]:
+            if encryption and self._config["encryption"]:
                 data = self._load_encrypted_data(fp, offset, encryption)
             else:
                 data = self._load_data(fp, offset)
@@ -159,7 +159,7 @@ class PyTreeLoader(BaseItemLoader):
             return self.mds_deserialize(data, chunk_index)
         return self.deserialize(data)
 
-    def _load_encrypted_data(self, fp: FileIO, offset: int, encryption: Optional[Encryption]) -> bytes:
+    def _load_encrypted_data(self, fp: Union[FileIO, BytesIO], offset: int, encryption: Encryption) -> bytes:
         """Load and decrypt data from a file pointer based on the encryption configuration."""
 
         # Validate the provided encryption object against the expected configuration.
@@ -224,7 +224,7 @@ class PyTreeLoader(BaseItemLoader):
         if os.path.exists(chunk_filepath):
             os.remove(chunk_filepath)
 
-    def _validate_encryption(self, encryption: Optional[Encryption]) -> None:
+    def _validate_encryption(self, encryption: Encryption) -> None:
         """Validate the encryption object."""
         if not encryption or not self._config["encryption"]:
             raise ValueError("Encryption configuration mismatch.")
