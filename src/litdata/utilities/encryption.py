@@ -48,7 +48,7 @@ class FernetEncryption(Encryption):
             raise ModuleNotFoundError(str(_CRYPTOGRAPHY_AVAILABLE))
 
         if level not in get_args(EncryptionLevel):
-            raise ValueError(f"Invalid encryption level: '{level}'. Valid levels are: {get_args(EncryptionLevel)}.")
+            raise ValueError("The provided `level` should be either `sample` or `chunk`")
 
         self.password = password
         self.key = self._derive_key(password)
@@ -94,7 +94,7 @@ class RSAEncryption:
             raise ModuleNotFoundError(str(_CRYPTOGRAPHY_AVAILABLE))
 
         if level not in get_args(EncryptionLevel):
-            raise ValueError(f"Invalid encryption level: '{level}'. Valid levels are: {get_args(EncryptionLevel)}.")
+            raise ValueError("The provided `level` should be either `sample` or `chunk`")
 
         if private_key_path:
             self.private_key = self._load_private_key(private_key_path)
