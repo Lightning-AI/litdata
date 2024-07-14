@@ -1,3 +1,4 @@
+import pytest
 from litdata.utilities.encryption import FernetEncryption, RSAEncryption
 
 
@@ -18,6 +19,10 @@ def test_fernet_encryption():
     assert isinstance(fernet._derive_key(password), bytes)
     assert isinstance(fernet._derive_key(password), bytes)
 
+    # Test for ValueError
+    with pytest.raises(ValueError, match="The provided `level` should be either `sample` or `chunk`"):
+        fernet = FernetEncryption(password, level="test")
+
 
 def test_rsa_encryption():
     data = b"test data"
@@ -31,3 +36,7 @@ def test_rsa_encryption():
     assert isinstance(decrypted_data, bytes)
     assert isinstance(rsa.extension, str)
     assert rsa.extension == "rsa"
+
+    # Test for ValueError
+    with pytest.raises(ValueError, match="The provided `level` should be either `sample` or `chunk`"):
+        rsa = RSAEncryption(level="test")
