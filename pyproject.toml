@@ -61,6 +61,7 @@ lint.extend-select = [
     "SIM",  # see: https://pypi.org/project/flake8-simplify
     "RET",  # see: https://pypi.org/project/flake8-return
     "PT",  # see: https://pypi.org/project/flake8-pytest-style
+    "NPY201",  # see: https://docs.astral.sh/ruff/rules/numpy2-deprecation
     "RUF100" # yesqa
 ]
 lint.ignore = [
