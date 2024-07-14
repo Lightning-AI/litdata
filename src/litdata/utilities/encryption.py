@@ -1,7 +1,7 @@
 import base64
 import os
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Literal, Optional, Tuple, get_args
 
 from litdata.constants import _CRYPTOGRAPHY_AVAILABLE
 
@@ -10,6 +10,9 @@ if _CRYPTOGRAPHY_AVAILABLE:
     from cryptography.hazmat.primitives import hashes, serialization
     from cryptography.hazmat.primitives.asymmetric import padding, rsa
     from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+
+
+EncryptionLevel = Literal["sample", "chunk"]
 
 
 class Encryption(ABC):
@@ -35,10 +38,22 @@ class FernetEncryption(Encryption):
 
     """
 
-    def __init__(self, password: str) -> None:
+    def __init__(
+        self,
+        password: str,
+        level: EncryptionLevel = "sample",
+    ) -> None:
         super().__init__()
+        if not _CRYPTOGRAPHY_AVAILABLE:
+            raise ModuleNotFoundError(str(_CRYPTOGRAPHY_AVAILABLE))
+
+        if level not in get_args(EncryptionLevel):
+            raise ValueError(f"Invalid encryption level: '{level}'. Valid levels are: {get_args(EncryptionLevel)}.")
+
         self.password = password
-        self.fernet = Fernet(self._derive_key(password))
+        self.key = self._derive_key(password)
+        self.fernet = Fernet(self.key)
+        self.level = level
         self.extension = "fernet"
 
     def encrypt(self, data: bytes) -> bytes:
@@ -58,7 +73,7 @@ class FernetEncryption(Encryption):
         return base64.urlsafe_b64encode(kdf.derive(password.encode()))
 
     def state_dict(self) -> Dict[str, Any]:
-        return {"password": self.password}
+        return {"key": self.key, "password": self.password, "level": self.level}
 
 
 class RSAEncryption:
@@ -73,7 +88,14 @@ class RSAEncryption:
         private_key_path: Optional[str] = None,
         public_key_path: Optional[str] = None,
         password: Optional[str] = None,
+        level: EncryptionLevel = "sample",
     ):
+        if not _CRYPTOGRAPHY_AVAILABLE:
+            raise ModuleNotFoundError(str(_CRYPTOGRAPHY_AVAILABLE))
+
+        if level not in get_args(EncryptionLevel):
+            raise ValueError(f"Invalid encryption level: '{level}'. Valid levels are: {get_args(EncryptionLevel)}.")
+
         if private_key_path:
             self.private_key = self._load_private_key(private_key_path)
         else:
@@ -88,6 +110,7 @@ class RSAEncryption:
             self.private_key, self.public_key = self._generate_keys()
 
         self.password = password
+        self.level = level
         self.extension = "rsa"
 
     def _load_private_key(self, path: str) -> Any:  # TODO: Fix Any
@@ -157,4 +180,9 @@ class RSAEncryption:
             )
 
     def state_dict(self) -> Dict[str, Any]:
-        return {"private_key": self.private_key, "public_key": self.public_key, "password": self.password}
+        return {
+            "private_key": self.private_key,
+            "public_key": self.public_key,
+            "password": self.password,
+            "level": self.level,
+        }
