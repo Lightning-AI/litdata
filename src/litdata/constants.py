@@ -59,7 +59,7 @@ _TORCH_DTYPES_MAPPING = {
     19: torch.bool,
 }
 
-_NUMPY_SCTYPES = [v for values in np.sctypes.values() for v in values]
+_NUMPY_SCTYPES = [v for values in np.core.sctypes.values() for v in values]  # All NumPy scalar types
 _NUMPY_DTYPES_MAPPING = {i: np.dtype(v) for i, v in enumerate(_NUMPY_SCTYPES)}
 
 _TIME_FORMAT = "%Y-%m-%d_%H-%M-%S.%fZ"
