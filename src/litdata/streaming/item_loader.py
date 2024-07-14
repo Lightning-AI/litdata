@@ -16,9 +16,9 @@ import os
 from abc import ABC, abstractmethod
 from collections import namedtuple
 from copy import deepcopy
-from io import BytesIO
+from io import BytesIO, FileIO
 from time import sleep
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import torch
@@ -159,7 +159,7 @@ class PyTreeLoader(BaseItemLoader):
             return self.mds_deserialize(data, chunk_index)
         return self.deserialize(data)
 
-    def _load_encrypted_data(self, fp: BytesIO, offset: int, encryption: Encryption) -> bytes:
+    def _load_encrypted_data(self, fp: FileIO, offset: int, encryption: Optional[Encryption]) -> bytes:
         """Load and decrypt data from a file pointer based on the encryption configuration."""
 
         # Validate the provided encryption object against the expected configuration.
@@ -179,7 +179,7 @@ class PyTreeLoader(BaseItemLoader):
 
         return data
 
-    def _load_data(self, fp: BytesIO, offset: int) -> bytes:
+    def _load_data(self, fp: Union[FileIO, BytesIO], offset: int) -> bytes:
         """Load the data from the file pointer."""
         fp.seek(offset)
         pair = fp.read(8)
@@ -224,7 +224,7 @@ class PyTreeLoader(BaseItemLoader):
         if os.path.exists(chunk_filepath):
             os.remove(chunk_filepath)
 
-    def _validate_encryption(self, encryption: Encryption) -> None:
+    def _validate_encryption(self, encryption: Optional[Encryption]) -> None:
         """Validate the encryption object."""
         if not encryption or not self._config["encryption"]:
             raise ValueError("Encryption configuration mismatch.")
