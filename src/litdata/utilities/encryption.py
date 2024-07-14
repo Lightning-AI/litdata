@@ -189,10 +189,10 @@ class RSAEncryption(Encryption):
             "extension": self.extension,
         }
 
-    def __getstate__(self):
+    def __getstate__(self) -> Dict[str, Union[str, None]]:
         return self.state_dict()
 
-    def __setstate__(self, state):
+    def __setstate__(self, state) -> None:
         # Restore the state from the serialized data
         self.password = state["password"]
         self.level = state["level"]
