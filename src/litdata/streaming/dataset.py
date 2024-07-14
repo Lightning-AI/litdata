@@ -67,6 +67,7 @@ class StreamingDataset(IterableDataset):
             max_cache_size: The maximum cache size used by the StreamingDataset.
             subsample: Float representing fraction of the dataset to be randomly sampled (e.g., 0.1 => 10% of dataset).
             encryption: The encryption object to use for decrypting the data.
+
         """
         super().__init__()
         if not isinstance(shuffle, bool):
