@@ -19,6 +19,7 @@ from litdata.streaming.item_loader import Interval
 from litdata.utilities.env import _DistributedEnv
 
 
+# TODO: Logic needs to be updated? chunks_per_ranks -> workers_chunks
 def _intra_node_chunk_shuffle(
     distributed_env: _DistributedEnv,
     chunks_per_ranks: List[List[int]],

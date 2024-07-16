@@ -158,7 +158,7 @@ def test_streaming_dataset_distributed_no_shuffle(drop_last, tmpdir, compression
 
     assert len(process_2_2) == 50 + int(not drop_last)
 
-    _, intervals_per_ranks = dataset.shuffler.get_chunks_and_intervals_per_workers(
+    _, workers_intervals = dataset.shuffler.get_chunks_and_intervals_per_workers(
         dataset.distributed_env, 1, 1, dataset.current_epoch
     )
 
@@ -167,7 +167,7 @@ def test_streaming_dataset_distributed_no_shuffle(drop_last, tmpdir, compression
     found_list = []
     for i in process_1_1:
         found = False
-        for interval in intervals_per_ranks[0]:
+        for interval in workers_intervals[0]:
             if interval[1] <= i <= interval[2]:
                 found = True
                 break
@@ -178,7 +178,7 @@ def test_streaming_dataset_distributed_no_shuffle(drop_last, tmpdir, compression
     found_list = []
     for i in process_2_1:
         found = False
-        for interval in intervals_per_ranks[1]:
+        for interval in workers_intervals[1]:
             if interval[1] <= i <= interval[2]:
                 found = True
                 break

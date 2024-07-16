@@ -34,15 +34,15 @@ def test_associate_chunks_and_internals_to_workers():
         Interval(0, 0, 50, 50),
     ]
 
-    chunks_per_ranks, intervals_per_ranks = _associate_chunks_and_internals_to_workers(
+    workers_chunks, workers_intervals = _associate_chunks_and_internals_to_workers(
         _DistributedEnv(4, 1, 2),
         indexes,
         chunk_intervals,
         drop_last=True,
     )
 
-    assert chunks_per_ranks == [[0, 1], [2, 3], [4, 5], [6, 7]]
-    assert intervals_per_ranks == [
+    assert workers_chunks == [[0, 1], [2, 3], [4, 5], [6, 7]]
+    assert workers_intervals == [
         [[0, 0, 50, 50], [0, 0, 50, 50]],
         [[0, 0, 50, 50], [0, 0, 50, 50]],
         [[0, 0, 50, 50], [0, 0, 50, 50]],
@@ -60,20 +60,20 @@ def test_associate_chunks_and_internals_to_workers():
         Interval(0, 0, 33, 33),
     ]
 
-    chunks_per_ranks, intervals_per_ranks = _associate_chunks_and_internals_to_workers(
+    workers_chunks, workers_intervals = _associate_chunks_and_internals_to_workers(
         _DistributedEnv(4, 1, 2),
         indexes,
         chunk_intervals,
         drop_last=True,
     )
 
-    assert chunks_per_ranks == [[0, 1], [1, 2], [2, 3, 4, 5], [5, 6, 7]]
-    assert sum([interval[2] - interval[1] for interval in intervals_per_ranks[0]]) == 105
-    assert sum([interval[2] - interval[1] for interval in intervals_per_ranks[1]]) == 105
-    assert sum([interval[2] - interval[1] for interval in intervals_per_ranks[2]]) == 105
-    assert sum([interval[2] - interval[1] for interval in intervals_per_ranks[3]]) == 105
+    assert workers_chunks == [[0, 1], [1, 2], [2, 3, 4, 5], [5, 6, 7]]
+    assert sum([interval[2] - interval[1] for interval in workers_intervals[0]]) == 105
+    assert sum([interval[2] - interval[1] for interval in workers_intervals[1]]) == 105
+    assert sum([interval[2] - interval[1] for interval in workers_intervals[2]]) == 105
+    assert sum([interval[2] - interval[1] for interval in workers_intervals[3]]) == 105
 
-    assert intervals_per_ranks == [
+    assert workers_intervals == [
         [[0, 0, 50, 50], [0, 0, 55, 150]],
         [[0, 55, 150, 150], [0, 0, 10, 50]],
         [[0, 10, 50, 50], [0, 0, 12, 12], [0, 0, 50, 50], [0, 0, 3, 27]],
@@ -91,24 +91,24 @@ def test_associate_chunks_and_internals_to_workers():
         Interval(0, 0, 1, 1),
     ]
 
-    chunks_per_ranks, intervals_per_ranks = _associate_chunks_and_internals_to_workers(
+    workers_chunks, workers_intervals = _associate_chunks_and_internals_to_workers(
         _DistributedEnv(4, 1, 2),
         indexes,
         chunk_intervals,
         drop_last=True,
     )
 
-    assert chunks_per_ranks == [[0, 1], [1], [1, 2, 3, 4, 5], [5, 6, 7]]
-    assert sum([interval[2] - interval[1] for interval in intervals_per_ranks[0]]) == 64
-    assert sum([interval[2] - interval[1] for interval in intervals_per_ranks[1]]) == 64
-    assert sum([interval[2] - interval[1] for interval in intervals_per_ranks[2]]) == 64
-    assert sum([interval[2] - interval[1] for interval in intervals_per_ranks[3]]) == 64
-    assert intervals_per_ranks == [
+    assert workers_chunks == [[0, 1], [1], [1, 2, 3, 4, 5], [5, 6, 7]]
+    assert sum([interval[2] - interval[1] for interval in workers_intervals[0]]) == 64
+    assert sum([interval[2] - interval[1] for interval in workers_intervals[1]]) == 64
+    assert sum([interval[2] - interval[1] for interval in workers_intervals[2]]) == 64
+    assert sum([interval[2] - interval[1] for interval in workers_intervals[3]]) == 64
+    assert workers_intervals == [
         [[0, 0, 5, 5], [0, 0, 59, 150]],
         [[0, 59, 123, 150]],
         [[0, 123, 150, 150], [0, 0, 7, 7], [0, 0, 12, 12], [0, 0, 4, 4], [0, 0, 14, 27]],
         [[0, 14, 27, 27], [0, 0, 50, 50], [0, 0, 1, 1]],
     ]
 
-    disable_deletion_ranks = _find_chunks_per_ranks_on_which_to_skip_deletion(1, chunks_per_ranks, intervals_per_ranks)
+    disable_deletion_ranks = _find_chunks_per_ranks_on_which_to_skip_deletion(1, workers_chunks, workers_intervals)
     assert disable_deletion_ranks == {1: [1], 2: [1], 3: [5]}
