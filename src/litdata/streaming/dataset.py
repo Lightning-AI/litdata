@@ -205,7 +205,7 @@ class StreamingDataset(IterableDataset):
             state: Dict[str, Any] = self._state_dict
             self.current_epoch = state["current_epoch"]
 
-        workers_chunks, workers_intervals = self.shuffler.get_chunks_and_intervals_per_ranks(
+        workers_chunks, workers_intervals = self.shuffler.get_chunks_and_intervals_per_workers(
             self.distributed_env, self.worker_env.world_size, self.batch_size or 1, self.current_epoch
         )
 

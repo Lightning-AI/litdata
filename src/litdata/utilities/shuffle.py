@@ -108,67 +108,6 @@ def _associate_chunks_and_internals_to_workers(
     return chunks_per_workers, intervals_per_workers
 
 
-def _associate_chunks_and_internals_to_ranks(
-    distributed_env: _DistributedEnv,
-    indexes: Any,
-    chunk_intervals: List[Interval],
-    drop_last: bool,
-    num_workers: int = 1,
-    batch_size: int = 1,
-) -> Tuple[List[List[int]], List[Any]]:
-    num_items = sum([(interval[2] - interval[1]) for interval in chunk_intervals])
-    num_items_per_ranks: List[int] = [
-        num_items // distributed_env.world_size + num_items % distributed_env.world_size
-        if rank == distributed_env.world_size - 1 and not drop_last
-        else num_items // distributed_env.world_size
-        for rank in range(distributed_env.world_size)
-    ]
-    if drop_last:
-        ratio = num_workers * batch_size
-        num_items_per_ranks = [ratio * int(item // ratio) for item in num_items_per_ranks]
-
-    chunks_per_ranks: List[List[int]] = [[] for _ in range(distributed_env.world_size)]
-    intervals_per_ranks: List[List[List[int]]] = [[] for _ in range(distributed_env.world_size)]
-
-    # 4. Assign the chunk & intervals to each rank
-    for chunk_index, chunk_interval in zip(indexes, chunk_intervals):
-        rank = 0
-
-        while True:
-            if rank == len(num_items_per_ranks):
-                break
-
-            items_left_to_assign = num_items_per_ranks[rank]
-
-            if items_left_to_assign == 0:
-                rank += 1
-                continue
-
-            items_in_chunk = chunk_interval[2] - chunk_interval[1]
-
-            if items_in_chunk == 0:
-                break
-
-            if items_in_chunk > items_left_to_assign:
-                chunks_per_ranks[rank].append(chunk_index)
-
-                chunk_start, chunk_roi_start, chunk_roi_end, chunk_end = chunk_interval
-
-                intervals_per_ranks[rank].append(
-                    [chunk_start, chunk_roi_start, chunk_roi_start + items_left_to_assign, chunk_end]
-                )
-                chunk_interval = Interval(chunk_start, chunk_roi_start + items_left_to_assign, chunk_roi_end, chunk_end)
-                num_items_per_ranks[rank] = 0
-                rank += 1
-            else:
-                chunks_per_ranks[rank].append(chunk_index)
-                intervals_per_ranks[rank].append(list(chunk_interval))
-                num_items_per_ranks[rank] -= items_in_chunk
-                break
-
-    return chunks_per_ranks, intervals_per_ranks
-
-
 def _find_chunks_per_ranks_on_which_to_skip_deletion(
     num_workers: int, chunks_per_ranks: List[List[int]], intervals_per_ranks: List[Any]
 ) -> Dict[int, List[int]]:

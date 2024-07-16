@@ -1,7 +1,7 @@
 from litdata.streaming.item_loader import Interval
 from litdata.utilities.env import _DistributedEnv
 from litdata.utilities.shuffle import (
-    _associate_chunks_and_internals_to_ranks,
+    _associate_chunks_and_internals_to_workers,
     _find_chunks_per_ranks_on_which_to_skip_deletion,
     _intra_node_chunk_shuffle,
 )
@@ -21,7 +21,7 @@ def test_intra_node_chunk_shuffle():
     assert shuffled_indexes == [5, 2, 0, 7, 6, 1, 3, 4, 13, 10, 8, 15, 14, 9, 11, 12]
 
 
-def test_associate_chunks_and_internals_to_ranks():
+def test_associate_chunks_and_internals_to_workers():
     indexes = [0, 1, 2, 3, 4, 5, 6, 7]
     chunk_intervals = [
         Interval(0, 0, 50, 50),
@@ -34,7 +34,7 @@ def test_associate_chunks_and_internals_to_ranks():
         Interval(0, 0, 50, 50),
     ]
 
-    chunks_per_ranks, intervals_per_ranks = _associate_chunks_and_internals_to_ranks(
+    chunks_per_ranks, intervals_per_ranks = _associate_chunks_and_internals_to_workers(
         _DistributedEnv(4, 1, 2),
         indexes,
         chunk_intervals,
@@ -60,7 +60,7 @@ def test_associate_chunks_and_internals_to_ranks():
         Interval(0, 0, 33, 33),
     ]
 
-    chunks_per_ranks, intervals_per_ranks = _associate_chunks_and_internals_to_ranks(
+    chunks_per_ranks, intervals_per_ranks = _associate_chunks_and_internals_to_workers(
         _DistributedEnv(4, 1, 2),
         indexes,
         chunk_intervals,
@@ -91,7 +91,7 @@ def test_associate_chunks_and_internals_to_ranks():
         Interval(0, 0, 1, 1),
     ]
 
-    chunks_per_ranks, intervals_per_ranks = _associate_chunks_and_internals_to_ranks(
+    chunks_per_ranks, intervals_per_ranks = _associate_chunks_and_internals_to_workers(
         _DistributedEnv(4, 1, 2),
         indexes,
         chunk_intervals,

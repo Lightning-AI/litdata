@@ -35,7 +35,7 @@ class Shuffle(ABC):
 
     @lru_cache(maxsize=10)
     def get_len(self, distributed_env: _DistributedEnv, num_workers: int, batch_size: int, current_epoch: int) -> int:
-        _, workers_intervals = self.get_chunks_and_intervals_per_ranks(  # TODO: rename
+        _, workers_intervals = self.get_chunks_and_intervals_per_workers(  # TODO: rename
             distributed_env, num_workers, batch_size, current_epoch
         )
         worker_start = distributed_env.global_rank * num_workers
@@ -47,7 +47,7 @@ class Shuffle(ABC):
         )
 
     @abstractmethod
-    def get_chunks_and_intervals_per_ranks(
+    def get_chunks_and_intervals_per_workers(
         self, distributed_env: _DistributedEnv, num_workers: int, batch_size: int, current_epoch: int
     ) -> Any:
         pass
@@ -62,7 +62,7 @@ class NoShuffle(Shuffle):
     is True."""
 
     @lru_cache(maxsize=10)
-    def get_chunks_and_intervals_per_ranks(
+    def get_chunks_and_intervals_per_workers(
         self, distributed_env: _DistributedEnv, num_workers: int, batch_size: int, current_epoch: int
     ) -> Any:
         # 1. Get the intervals
@@ -73,7 +73,6 @@ class NoShuffle(Shuffle):
         chunks_per_ranks, intervals_per_ranks = _associate_chunks_and_internals_to_workers(
             distributed_env, indexes, chunk_intervals, self.drop_last, num_workers, batch_size
         )
-
         return chunks_per_ranks, intervals_per_ranks
 
     def __call__(self, array: np.ndarray, num_chunks: int, current_epoch: int, chunk_index: int) -> List[int]:
@@ -99,7 +98,7 @@ class FullShuffle(Shuffle):
     """
 
     @lru_cache(maxsize=10)
-    def get_chunks_and_intervals_per_ranks(
+    def get_chunks_and_intervals_per_workers(
         self, distributed_env: _DistributedEnv, num_workers: int, batch_size: int, current_epoch: int
     ) -> Any:
         # 1. Get the intervals
