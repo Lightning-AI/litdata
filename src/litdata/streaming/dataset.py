@@ -174,7 +174,13 @@ class StreamingDataset(IterableDataset):
         return FullShuffle(cache, seed, drop_last) if self.shuffle else NoShuffle(cache, seed, drop_last)
 
     def __len__(self) -> int:
-        return self.get_len(1, 1)
+        return self.get_len(self.num_workers if self.num_workers else 1, self.batch_size if self.batch_size else 1)
+
+    def set_batch_size(self, batch_size: int):
+        self.batch_size = batch_size
+
+    def set_num_workers(self, num_workers: int):
+        self.num_workers = num_workers
 
     def get_len(self, num_workers: int, batch_size: int) -> int:
         self.num_workers = num_workers

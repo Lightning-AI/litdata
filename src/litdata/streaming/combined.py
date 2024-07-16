@@ -118,6 +118,17 @@ class CombinedStreamingDataset(IterableDataset):
         for dataset in self._datasets:
             dataset.set_shuffle(shuffle)
 
+    def set_batch_size(self, batch_size: int) -> None:
+        """Set the current batch size to the datasets."""
+        self.batch_size = batch_size
+        for dataset in self._datasets:
+            dataset.set_batch_size(batch_size)
+
+    def set_num_workers(self, num_workers: int) -> None:
+        """Set the current number of workers to the datasets."""
+        for dataset in self._datasets:
+            dataset.set_num_workers(num_workers)
+
     def set_drop_last(self, drop_last: bool) -> None:
         """Set the current drop_last to the datasets."""
         for dataset in self._datasets:
