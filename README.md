@@ -507,7 +507,7 @@ dataset = StreamingDataset(..., max_cache_size="10GB")
 </details>  
 
 <details>
-  <summary> ✅ Specify cache directory</summary>
+  <summary> ✅ Change cache directory path</summary>
 &nbsp;
 
 Specify the directory where cached files should be stored, ensuring efficient data retrieval and management. This is particularly useful for organizing your data storage and improving access times.
