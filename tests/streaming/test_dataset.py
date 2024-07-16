@@ -32,7 +32,6 @@ from litdata.streaming.dataset import (
     _INDEX_FILENAME,
     Dir,
     StreamingDataset,
-    _associate_chunks_to_workers,
     _replay_chunks_sampling,
     _replay_sampling,
 )
