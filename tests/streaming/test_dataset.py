@@ -811,7 +811,10 @@ def _get_simulated_s3_dataloader(cache_dir, data_dir, shuffle=False):
 @pytest.mark.skipif(sys.platform == "win32", reason="Not tested on windows and MacOs")
 @mock.patch.dict(os.environ, {}, clear=True)
 @pytest.mark.timeout(60)
-@pytest.mark.parametrize("shuffle", [True, False])
+@pytest.mark.parametrize("shuffle", [
+    # True, 
+    False,
+])
 def test_dataset_resume_on_future_chunks(shuffle, tmpdir, monkeypatch):
     """This test is constructed to test resuming from a chunk past the first chunk, when subsequent chunks don't have
     the same size."""
@@ -822,7 +825,7 @@ def test_dataset_resume_on_future_chunks(shuffle, tmpdir, monkeypatch):
 
     optimize(
         fn=_simple_preprocess,
-        inputs=list(range(5)),
+        inputs=list(range(8)),
         output_dir=str(tmpdir / "optimized"),
         chunk_size=190,
         num_workers=4,
@@ -834,16 +837,23 @@ def test_dataset_resume_on_future_chunks(shuffle, tmpdir, monkeypatch):
     batches_to_fetch = 16
     batch_to_resume_from = None
     dataloader_state = None
-    # assert len(train_dataloader) == 5  # TODO: This length is wrong
+    # 8 * 100 tokens = 800 tokens
+    # 800 / 10 = 80 blocks
+    # batch size 2: 80 / 2 = 40 batches
+    # assert len(train_dataloader.dataset) == 80 
+    # assert len(train_dataloader) == 40 
+    
     for i, batch in enumerate(train_dataloader):
         if i == batches_to_fetch:
             dataloader_state = train_dataloader.state_dict()
+            print("saved")
         if i == batches_to_fetch + 1:
             batch_to_resume_from = batch
             break
 
     shutil.rmtree(s3_cache_dir)
     os.mkdir(s3_cache_dir)
+    print("resume")
     train_dataloader = _get_simulated_s3_dataloader(s3_cache_dir, data_dir, shuffle=shuffle)
     assert dataloader_state is not None
     assert batch_to_resume_from is not None

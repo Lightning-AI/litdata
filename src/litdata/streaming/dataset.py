@@ -246,7 +246,6 @@ class StreamingDataset(IterableDataset):
             self.global_index = 0
             self.index = 0
 
-        self.stop_length = sum(interval[2] - interval[1] for interval in self.worker_intervals)
         self.has_triggered_download = False
         self.last_time = time()
 
@@ -266,9 +265,6 @@ class StreamingDataset(IterableDataset):
         num_samples_yielded = self._state_dict["num_samples_yielded"]
 
         # replay sampling from each worker / chunks using the batch size
-        # workers_chunks, workers_intervals = _associate_chunks_to_workers(
-        #     self.worker_env, chunks_replica, intervals_replica
-        # )
         indexes = _replay_sampling(num_samples_yielded, batch_size, num_workers)
         # TODO: Change _replay_chunks_sampling to accept a list
         chunks_index, indexes = _replay_chunks_sampling(
@@ -315,7 +311,10 @@ class StreamingDataset(IterableDataset):
     def __next__(self) -> Any:
         # Prevent to create more batch on a given process
         # print(torch.distributed.get_rank(), self.global_index, len(self), self.stop_length)
-        if self.global_index >= self.stop_length:
+        stop_length = sum(interval[2] - interval[1] for interval in self.worker_intervals)
+        print(f"{self.global_index=}, {stop_length=}")
+        # TODO: This is stopping too early, length is not correct
+        if self.global_index >= stop_length:
             self.current_epoch += 1
             raise StopIteration
 
