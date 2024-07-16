@@ -106,6 +106,7 @@ class PyTreeLoader(BaseItemLoader):
 
     def __init__(self) -> None:
         self._chunk_filepaths: Dict[str, bool] = {}
+        self._decrypted_chunks: Dict[int, bytes] = {}
 
     def generate_intervals(self) -> List[Interval]:
         intervals = []
@@ -149,8 +150,8 @@ class PyTreeLoader(BaseItemLoader):
             self._chunk_filepaths[chunk_filepath] = True
 
         with open(chunk_filepath, "rb", 0) as fp:
-            if encryption and self._config["encryption"]:
-                data = self._load_encrypted_data(fp, offset, encryption)
+            if self._config["encryption"]:
+                data = self._load_encrypted_data(fp, chunk_index, offset, encryption)
             else:
                 data = self._load_data(fp, offset)
 
@@ -159,7 +160,9 @@ class PyTreeLoader(BaseItemLoader):
             return self.mds_deserialize(data, chunk_index)
         return self.deserialize(data)
 
-    def _load_encrypted_data(self, fp: Union[FileIO, BytesIO], offset: int, encryption: Encryption) -> bytes:
+    def _load_encrypted_data(
+        self, fp: Union[FileIO, BytesIO], chunk_index: int, offset: int, encryption: Optional[Encryption]
+    ) -> bytes:
         """Load and decrypt data from a file pointer based on the encryption configuration."""
 
         # Validate the provided encryption object against the expected configuration.
@@ -167,15 +170,19 @@ class PyTreeLoader(BaseItemLoader):
 
         # If the encryption level is set to 'chunk', decrypt the entire chunk first.
         if self._config["encryption"]["level"] == "chunk":
-            encrypted_data = fp.read()
-            decrypted_data = encryption.decrypt(encrypted_data)
+            if chunk_index in self._decrypted_chunks:
+                decrypted_data = self._decrypted_chunks[chunk_index]
+            else:
+                encrypted_data = fp.read()
+                decrypted_data = encryption.decrypt(encrypted_data)  # type: ignore
+                self._decrypted_chunks[chunk_index] = decrypted_data
             fp = BytesIO(decrypted_data)
 
         data = self._load_data(fp, offset)
 
         # If the encryption level is set to 'sample', decrypt each individual sample after loading.
         if self._config["encryption"]["level"] == "sample":
-            data = encryption.decrypt(data)
+            data = encryption.decrypt(data)  # type: ignore
 
         return data
 
@@ -224,10 +231,10 @@ class PyTreeLoader(BaseItemLoader):
         if os.path.exists(chunk_filepath):
             os.remove(chunk_filepath)
 
-    def _validate_encryption(self, encryption: Encryption) -> None:
+    def _validate_encryption(self, encryption: Optional[Encryption]) -> None:
         """Validate the encryption object."""
-        if not encryption or not self._config["encryption"]:
-            raise ValueError("Encryption configuration mismatch.")
+        if not encryption:
+            raise ValueError("Data is encrypted but no encryption object was provided.")
         if encryption.extension != self._config["encryption"]["name"]:
             raise ValueError("Encryption algorithm mismatch.")
         if encryption.level != self._config["encryption"]["level"]:
