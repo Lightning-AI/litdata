@@ -2,7 +2,7 @@ import base64
 import json
 import os
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Literal, Optional, Tuple, Union, get_args
+from typing import Any, Dict, Literal, Tuple, Union, get_args
 
 from litdata.constants import _CRYPTOGRAPHY_AVAILABLE
 
