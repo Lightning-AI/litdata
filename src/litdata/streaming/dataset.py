@@ -29,7 +29,6 @@ from litdata.streaming.resolver import Dir, _resolve_dir
 from litdata.streaming.sampler import ChunkedIndex
 from litdata.streaming.serializers import Serializer
 from litdata.streaming.shuffle import FullShuffle, NoShuffle, Shuffle
-from litdata.utilities.shuffle import _find_chunks_per_ranks_on_which_to_skip_deletion
 from litdata.utilities.dataset_utilities import _should_replace_path, _try_create_cache_dir, subsample_streaming_dataset
 from litdata.utilities.env import _DistributedEnv, _is_in_dataloader_worker, _WorkerEnv
 
@@ -261,15 +260,15 @@ class StreamingDataset(IterableDataset):
 
         # TODO: Implement elastic sampling where the number of workers, ranks can change.
         num_samples_yielded = self._state_dict["num_samples_yielded"]
-        
+
         worker_start = self.distributed_env.global_rank * num_workers
         worker_end = worker_start + num_workers
 
         # replay sampling from each worker / chunks using the batch size
         indexes = _replay_sampling(num_samples_yielded, batch_size, num_workers)
-        
+
         # print(f"indexes1 = {indexes}")
-        
+
         # TODO: Change _replay_chunks_sampling to accept a list
         chunks_index, indexes = _replay_chunks_sampling(
             {i: workers_intervals[i] for i in range(worker_start, worker_end)}, indexes
@@ -278,8 +277,8 @@ class StreamingDataset(IterableDataset):
 
         # select the chunks and intervals associated to this worker
         worker_rank = self.distributed_env.global_rank * self.worker_env.world_size + self.worker_env.rank
-        worker_local_rank =  self.worker_env.rank
-        
+        worker_local_rank = self.worker_env.rank
+
         self.num_chunks = len(workers_intervals[worker_rank])
         self.chunk_index = chunks_index[worker_local_rank]
         self.worker_chunks = workers_chunks[worker_rank]

@@ -20,7 +20,6 @@ import numpy as np
 from litdata.streaming import Cache
 from litdata.utilities.env import _DistributedEnv
 from litdata.utilities.shuffle import (
-    _associate_chunks_and_internals_to_ranks,
     _associate_chunks_and_internals_to_workers,
     _intra_node_chunk_shuffle,
 )
@@ -41,7 +40,11 @@ class Shuffle(ABC):
         )
         worker_start = distributed_env.global_rank * num_workers
         worker_end = worker_start + num_workers
-        return sum((interval[2] - interval[1]) for intervals in workers_intervals[worker_start:worker_end] for interval in intervals)
+        return sum(
+            (interval[2] - interval[1])
+            for intervals in workers_intervals[worker_start:worker_end]
+            for interval in intervals
+        )
 
     @abstractmethod
     def get_chunks_and_intervals_per_ranks(
