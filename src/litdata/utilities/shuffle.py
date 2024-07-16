@@ -41,6 +41,72 @@ def _intra_node_chunk_shuffle(
 
     return [index for chunks in chunk_indexes_per_nodes for index in chunks]
 
+def _associate_chunks_and_internals_to_workers(
+    distributed_env: _DistributedEnv,
+    indexes: Any,
+    chunk_intervals: List[Interval],
+    drop_last: bool,
+    num_workers: int = 1,
+    batch_size: int = 1,
+) -> Tuple[List[List[int]], List[Any]]:
+    
+    num_items = sum([(interval[2] - interval[1]) for interval in chunk_intervals])
+    print(f"{num_items=}")
+    world_size = distributed_env.world_size * num_workers
+    print("WORLD_SIZE=", world_size)
+    num_items_per_workers: List[int] = [
+        num_items // world_size + num_items % world_size
+        if rank == world_size - 1 and not drop_last
+        else num_items // world_size
+        for rank in range(world_size)
+    ]
+    if drop_last:
+        ratio = batch_size
+        num_items_per_workers = [ratio * int(item // ratio) for item in num_items_per_workers]
+
+    print(f"{num_items_per_workers=}")
+    chunks_per_workers: List[List[int]] = [[] for _ in range(world_size)]
+    intervals_per_workers: List[List[List[int]]] = [[] for _ in range(world_size)]
+
+    # 4. Assign the chunk & intervals to each rank
+    for chunk_index, chunk_interval in zip(indexes, chunk_intervals):
+        rank = 0
+
+        while True:
+            if rank == len(num_items_per_workers):
+                break
+
+            items_left_to_assign = num_items_per_workers[rank]
+
+            if items_left_to_assign == 0:
+                rank += 1
+                continue
+
+            items_in_chunk = chunk_interval[2] - chunk_interval[1]
+
+            if items_in_chunk == 0:
+                break
+
+            if items_in_chunk > items_left_to_assign:
+                chunks_per_workers[rank].append(chunk_index)
+
+                chunk_start, chunk_roi_start, chunk_roi_end, chunk_end = chunk_interval
+
+                intervals_per_workers[rank].append(
+                    [chunk_start, chunk_roi_start, chunk_roi_start + items_left_to_assign, chunk_end]
+                )
+                chunk_interval = Interval(chunk_start, chunk_roi_start + items_left_to_assign, chunk_roi_end, chunk_end)
+                num_items_per_workers[rank] = 0
+                rank += 1
+            else:
+                chunks_per_workers[rank].append(chunk_index)
+                intervals_per_workers[rank].append(list(chunk_interval))
+                num_items_per_workers[rank] -= items_in_chunk
+                break
+
+    # print(drop_last, batch_size, num_workers, [sum(interval[2] - interval[1] for interval in intervals) for intervals in intervals_per_workers])
+    return chunks_per_workers, intervals_per_workers
+
 
 def _associate_chunks_and_internals_to_ranks(
     distributed_env: _DistributedEnv,

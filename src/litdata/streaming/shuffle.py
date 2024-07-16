@@ -19,7 +19,7 @@ import numpy as np
 
 from litdata.streaming import Cache
 from litdata.utilities.env import _DistributedEnv
-from litdata.utilities.shuffle import _associate_chunks_and_internals_to_ranks, _intra_node_chunk_shuffle
+from litdata.utilities.shuffle import _associate_chunks_and_internals_to_ranks, _intra_node_chunk_shuffle, _associate_chunks_and_internals_to_workers
 
 
 class Shuffle(ABC):
@@ -120,7 +120,7 @@ class FullShuffle(Shuffle):
         shuffled_chunk_intervals = np.asarray(chunk_intervals)[shuffled_indexes].tolist()
 
         # 3. Compute the items budget of each rank
-        chunks_per_ranks, intervals_per_ranks = _associate_chunks_and_internals_to_ranks(
+        chunks_per_ranks, intervals_per_ranks = _associate_chunks_and_internals_to_workers(
             distributed_env, shuffled_indexes, shuffled_chunk_intervals, self.drop_last, num_workers, batch_size
         )
 
@@ -133,7 +133,7 @@ class FullShuffle(Shuffle):
         shuffled_indexes = _intra_node_chunk_shuffle(distributed_env, chunks_per_ranks, self.seed, current_epoch)
         shuffled_chunk_intervals = np.asarray(chunk_intervals)[shuffled_indexes].tolist()
 
-        chunks_per_ranks, intervals_per_ranks = _associate_chunks_and_internals_to_ranks(
+        chunks_per_ranks, intervals_per_ranks = _associate_chunks_and_internals_to_workers(
             distributed_env, shuffled_indexes, shuffled_chunk_intervals, self.drop_last, num_workers, batch_size
         )
 

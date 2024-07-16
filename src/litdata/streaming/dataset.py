@@ -206,11 +206,14 @@ class StreamingDataset(IterableDataset):
             state: Dict[str, Any] = self._state_dict
             self.current_epoch = state["current_epoch"]
 
-        chunks_per_replica, intervals_per_replica = self.shuffler.get_chunks_and_intervals_per_ranks(
+        workers_chunks, workers_intervals = self.shuffler.get_chunks_and_intervals_per_ranks(
             self.distributed_env, self.worker_env.world_size, self.batch_size or 1, self.current_epoch
         )
-        chunks_replica = chunks_per_replica[self.distributed_env.global_rank % self.distributed_env.world_size]
-        intervals_replica = intervals_per_replica[self.distributed_env.global_rank % self.distributed_env.world_size]
+        worker_rank = self.distributed_env.global_rank * self.worker_env.world_size + self.worker_env.rank
+        # assert worker_rank <= 63
+        print(f"{worker_rank=}, len: {len(workers_chunks)}")
+        worker_chunks = workers_chunks[worker_rank]
+        worker_intervals = workers_intervals[worker_rank]
 
         # Handle restart
         if self._state_dict:
@@ -233,8 +236,8 @@ class StreamingDataset(IterableDataset):
                 intervals_per_replica[self.distributed_env.global_rank],
             )
 
-            self.worker_chunks = workers_chunks[self.worker_env.rank]
-            self.worker_intervals = workers_intervals[self.worker_env.rank]
+            self.worker_chunks = worker_chunks
+            self.worker_intervals = worker_intervals
 
             self.num_chunks = len(self.worker_chunks)
             self.current_indexes = []
