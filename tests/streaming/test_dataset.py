@@ -812,7 +812,7 @@ def _get_simulated_s3_dataloader(cache_dir, data_dir, shuffle=False):
 @mock.patch.dict(os.environ, {}, clear=True)
 @pytest.mark.timeout(60)
 @pytest.mark.parametrize("shuffle", [
-    # True, 
+    True, 
     False,
 ])
 def test_dataset_resume_on_future_chunks(shuffle, tmpdir, monkeypatch):
@@ -837,11 +837,8 @@ def test_dataset_resume_on_future_chunks(shuffle, tmpdir, monkeypatch):
     batches_to_fetch = 16
     batch_to_resume_from = None
     dataloader_state = None
-    # 8 * 100 tokens = 800 tokens
-    # 800 / 10 = 80 blocks
-    # batch size 2: 80 / 2 = 40 batches
-    # assert len(train_dataloader.dataset) == 80 
-    # assert len(train_dataloader) == 40 
+    assert len(train_dataloader.dataset) == 80 
+    assert len(train_dataloader) == 40 
     
     for i, batch in enumerate(train_dataloader):
         if i == batches_to_fetch:
