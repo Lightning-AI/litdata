@@ -208,7 +208,7 @@ def test_assert_no_header_numpy_serializer():
     assert serializer.can_serialize(t)
     data, name = serializer.serialize(t)
     try:
-        assert name == "no_header_numpy:11"
+        assert name == "no_header_numpy:10"
     except AssertionError as e:  # debug what np.core.sctypes looks like on Windows
         raise ValueError(np.core.sctypes) from e
     assert serializer._dtype is None

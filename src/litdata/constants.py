@@ -13,6 +13,7 @@
 
 import os
 from pathlib import Path
+from typing import Dict
 
 import numpy as np
 import torch
@@ -71,17 +72,15 @@ _NUMPY_SCTYPES = [  # All NumPy scalar types from np.core.sctypes.values()
     np.float16,
     np.float32,
     np.float64,
-    np.longdouble,
     np.complex64,
     np.complex128,
-    np.clongdouble,
     bool,
     object,
     bytes,
     str,
     np.void,
 ]
-_NUMPY_DTYPES_MAPPING = {i: np.dtype(v) for i, v in enumerate(_NUMPY_SCTYPES)}
+_NUMPY_DTYPES_MAPPING: Dict[int, np.dtype] = {i: np.dtype(v) for i, v in enumerate(_NUMPY_SCTYPES)}
 
 _TIME_FORMAT = "%Y-%m-%d_%H-%M-%S.%fZ"
 _IS_IN_STUDIO = bool(os.getenv("LIGHTNING_CLOUD_PROJECT_ID", None)) and bool(os.getenv("LIGHTNING_CLUSTER_ID", None))
