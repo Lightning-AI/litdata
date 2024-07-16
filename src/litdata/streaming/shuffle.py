@@ -35,7 +35,7 @@ class Shuffle(ABC):
 
     @lru_cache(maxsize=10)
     def get_len(self, distributed_env: _DistributedEnv, num_workers: int, batch_size: int, current_epoch: int) -> int:
-        _, workers_intervals = self.get_chunks_and_intervals_per_workers(  # TODO: rename
+        _, workers_intervals = self.get_chunks_and_intervals_per_workers(
             distributed_env, num_workers, batch_size, current_epoch
         )
         worker_start = distributed_env.global_rank * num_workers
