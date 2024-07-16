@@ -245,6 +245,7 @@ class StreamingDataset(IterableDataset):
             self.global_index = 0
             self.index = 0
 
+        self.stop_length = sum(interval[2] - interval[1] for interval in self.worker_intervals)
         self.has_triggered_download = False
         self.last_time = time()
 
@@ -309,7 +310,7 @@ class StreamingDataset(IterableDataset):
 
     def __next__(self) -> Any:
         # Prevent to create more batch on a given process
-        if self.global_index >= len(self):
+        if self.global_index >= self.stop_length:
             self.current_epoch += 1
             raise StopIteration
 
