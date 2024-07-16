@@ -1,4 +1,5 @@
 import base64
+import json
 import os
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Literal, Optional, Tuple, Union, get_args
@@ -18,6 +19,11 @@ EncryptionLevel = Literal["sample", "chunk"]
 class Encryption(ABC):
     """Base class for encryption algorithm."""
 
+    @property
+    @abstractmethod
+    def algorithm(self) -> str:
+        pass
+
     @abstractmethod
     def encrypt(self, data: bytes) -> bytes:
         pass
@@ -28,6 +34,15 @@ class Encryption(ABC):
 
     @abstractmethod
     def state_dict(self) -> dict:
+        pass
+
+    @abstractmethod
+    def save(self, file_path: str) -> None:
+        pass
+
+    @classmethod
+    @abstractmethod
+    def load(cls, file_path: str, password: str) -> Any:
         pass
 
 
@@ -51,19 +66,16 @@ class FernetEncryption(Encryption):
             raise ValueError("The provided `level` should be either `sample` or `chunk`")
 
         self.password = password
-        self.key = self._derive_key(password)
-        self.fernet = Fernet(self.key)
         self.level = level
-        self.extension = "fernet"
+        self.salt = os.urandom(16)
+        self.key = self._derive_key(password, self.salt)
+        self.fernet = Fernet(self.key)
 
-    def encrypt(self, data: bytes) -> bytes:
-        return self.fernet.encrypt(data)
+    @property
+    def algorithm(self) -> str:
+        return "fernet"
 
-    def decrypt(self, data: bytes) -> bytes:
-        return self.fernet.decrypt(data)
-
-    def _derive_key(self, password: str) -> bytes:
-        salt = os.urandom(16)
+    def _derive_key(self, password: str, salt: bytes) -> bytes:
         kdf = PBKDF2HMAC(
             algorithm=hashes.SHA256(),
             length=32,
@@ -72,8 +84,34 @@ class FernetEncryption(Encryption):
         )
         return base64.urlsafe_b64encode(kdf.derive(password.encode()))
 
+    def encrypt(self, data: bytes) -> bytes:
+        return self.fernet.encrypt(data)
+
+    def decrypt(self, data: bytes) -> bytes:
+        return self.fernet.decrypt(data)
+
     def state_dict(self) -> Dict[str, Any]:
-        return {"key": self.key, "password": self.password, "level": self.level}
+        return {
+            "algorithm": self.algorithm,
+            "salt": base64.urlsafe_b64encode(self.salt).decode("utf-8"),
+            "level": self.level,
+        }
+
+    def save(self, file_path: str) -> None:
+        with open(file_path, "wb") as file:
+            file.write(json.dumps(self.state_dict()).encode("utf-8"))
+
+    @classmethod
+    def load(cls, file_path: str, password: str) -> "FernetEncryption":
+        with open(file_path, "rb") as file:
+            state = json.load(file)
+
+        salt = base64.urlsafe_b64decode(state["salt"])
+        instance = cls(password=password, level=state["level"])
+        instance.salt = salt
+        instance.key = instance._derive_key(password, salt)
+        instance.fernet = Fernet(instance.key)
+        return instance
 
 
 class RSAEncryption(Encryption):
@@ -85,46 +123,24 @@ class RSAEncryption(Encryption):
 
     def __init__(
         self,
-        private_key_path: Optional[str] = None,
-        public_key_path: Optional[str] = None,
-        password: Optional[str] = None,
+        password: str,
         level: EncryptionLevel = "sample",
-    ):
+    ) -> None:
         if not _CRYPTOGRAPHY_AVAILABLE:
             raise ModuleNotFoundError(str(_CRYPTOGRAPHY_AVAILABLE))
 
         if level not in get_args(EncryptionLevel):
             raise ValueError("The provided `level` should be either `sample` or `chunk`")
 
-        if private_key_path:
-            self.private_key = self._load_private_key(private_key_path)
-        else:
-            self.private_key = None
-
-        if public_key_path:
-            self.public_key = self._load_public_key(public_key_path)
-        else:
-            self.public_key = None
-
-        if not private_key_path and not public_key_path:
-            self.private_key, self.public_key = self._generate_keys()
-
         self.password = password
         self.level = level
-        self.extension = "rsa"
+        self.private_key, self.public_key = self._generate_keys()
 
-    def _load_private_key(self, path: str) -> Any:  # TODO: Fix Any
-        with open(path, "rb") as key_file:
-            return serialization.load_pem_private_key(
-                key_file.read(),
-                password=self.password.encode() if self.password else None,
-            )
+    @property
+    def algorithm(self) -> str:
+        return "rsa"
 
-    def _load_public_key(self, path: str) -> Any:  # TODO: Fix Any
-        with open(path, "rb") as key_file:
-            return serialization.load_pem_public_key(key_file.read())
-
-    def _generate_keys(self) -> Tuple[Any, Any]:  # TODO: Fix Any
+    def _generate_keys(self) -> Tuple[Any, Any]:
         private_key = rsa.generate_private_key(
             public_exponent=65537,
             key_size=2048,
@@ -156,17 +172,13 @@ class RSAEncryption(Encryption):
             ),
         )
 
-    def save_keys(self, private_key_path: str, public_key_path: str) -> None:
-        state = self.state_dict()
-        if not state["private_key"] or not state["public_key"]:
-            raise AttributeError("Keys not found.")
-        with open(private_key_path, "wb") as key_file:
-            key_file.write(state["private_key"].encode("utf-8"))
-
-        with open(public_key_path, "wb") as key_file:
-            key_file.write(state["public_key"].encode("utf-8"))
-
     def state_dict(self) -> Dict[str, Union[str, None]]:
+        return {
+            "algorithm": self.algorithm,
+            "level": self.level,
+        }
+
+    def __getstate__(self) -> Dict[str, Union[str, None]]:
         encryption_algorithm = (
             serialization.BestAvailableEncryption(self.password.encode())
             if self.password
@@ -188,17 +200,12 @@ class RSAEncryption(Encryption):
             else None,
             "password": self.password,
             "level": self.level,
-            "extension": self.extension,
         }
-
-    def __getstate__(self) -> Dict[str, Union[str, None]]:
-        return self.state_dict()
 
     def __setstate__(self, state: Dict[str, Union[str, None]]) -> None:
         # Restore the state from the serialized data
-        self.password = state["password"]
+        self.password = state["password"] if state["password"] else ""
         self.level = state["level"]  # type: ignore
-        self.extension = state["extension"] if state["extension"] else "rsa"
 
         if state["private_key"]:
             self.private_key = serialization.load_pem_private_key(
@@ -214,3 +221,41 @@ class RSAEncryption(Encryption):
             )
         else:
             self.public_key = None
+
+    def _load_private_key(self, key_path: str, password: str) -> Any:
+        with open(key_path, "rb") as key_file:
+            return serialization.load_pem_private_key(
+                key_file.read(),
+                password=password.encode(),
+            )
+
+    def _load_public_key(self, key_path: str) -> Any:
+        with open(key_path, "rb") as key_file:
+            return serialization.load_pem_public_key(key_file.read())
+
+    def save(self, file_path: str) -> None:
+        with open(file_path, "wb") as file:
+            file.write(json.dumps(self.__getstate__()).encode("utf-8"))
+
+    @classmethod
+    def load(cls, file_path: str, password: str) -> "RSAEncryption":
+        with open(file_path, "rb") as file:
+            state = json.load(file)
+
+        instance = cls(password=password, level=state["level"])
+        instance.__setstate__(state)
+        return instance
+
+    def save_keys(self, private_key_path: str, public_key_path: str) -> None:
+        state = self.__getstate__()
+        if not state["private_key"] or not state["public_key"]:
+            raise AttributeError("Keys not found.")
+        with open(private_key_path, "wb") as key_file:
+            key_file.write(state["private_key"].encode("utf-8"))
+
+        with open(public_key_path, "wb") as key_file:
+            key_file.write(state["public_key"].encode("utf-8"))
+
+    def load_keys(self, private_key_path: str, public_key_path: str, password: str) -> None:
+        self.private_key = self._load_private_key(private_key_path, password)
+        self.public_key = self._load_public_key(public_key_path)
