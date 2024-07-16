@@ -204,10 +204,13 @@ def test_assert_no_header_tensor_serializer():
 
 def test_assert_no_header_numpy_serializer():
     serializer = NoHeaderNumpySerializer()
-    t = np.ones((10,))
+    t = np.ones((10,), dtype=np.float64)
     assert serializer.can_serialize(t)
     data, name = serializer.serialize(t)
-    assert name == "no_header_numpy:10"
+    try:
+        assert name == "no_header_numpy:10"
+    except AssertionError as e:  # debug what np.core.sctypes looks like on Windows
+        raise ValueError(np.core.sctypes) from e
     assert serializer._dtype is None
     serializer.setup(name)
     assert serializer._dtype == np.dtype("float64")
