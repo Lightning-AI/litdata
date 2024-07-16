@@ -93,8 +93,15 @@ def test_drop_last_and_shuffle():
 
     dataset_mock_1.set_shuffle.assert_called()
     dataset_mock_2.set_shuffle.assert_called()
+
     dataset_mock_1.set_drop_last.assert_called()
     dataset_mock_2.set_drop_last.assert_called()
+
+    dataset_mock_1.set_num_workers.assert_called()
+    dataset_mock_2.set_num_workers.assert_called()
+
+    dataset_mock_1.set_batch_size.assert_called()
+    dataset_mock_2.set_batch_size.assert_called()
 
 
 class TestStatefulDataset:

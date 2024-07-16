@@ -176,10 +176,10 @@ class StreamingDataset(IterableDataset):
     def __len__(self) -> int:
         return self.get_len(self.num_workers if self.num_workers else 1, self.batch_size if self.batch_size else 1)
 
-    def set_batch_size(self, batch_size: int):
+    def set_batch_size(self, batch_size: int) -> None:
         self.batch_size = batch_size
 
-    def set_num_workers(self, num_workers: int):
+    def set_num_workers(self, num_workers: int) -> None:
         self.num_workers = num_workers
 
     def get_len(self, num_workers: int, batch_size: int) -> int:
