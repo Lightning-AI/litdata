@@ -481,6 +481,7 @@ def is_integer(value: str) -> bool:
         return False
 
 
+# TODO: remove
 def _associate_chunks_to_workers(
     worker_env: _WorkerEnv, chunks_replica: List[int], intervals_replica: List[Any]
 ) -> Any:
@@ -500,13 +501,13 @@ def _associate_chunks_to_workers(
         workers_chunks[worker_idx] = worker_chunks
         workers_intervals[worker_idx] = worker_intervals
 
-    print(
-        "associate",
-        [
-            sum(interval[2] - interval[1] for interval in intervals)
-            for worker_id, intervals in workers_intervals.items()
-        ],
-    )
+    # print(
+    #     "associate",
+    #     [
+    #         sum(interval[2] - interval[1] for interval in intervals)
+    #         for worker_id, intervals in workers_intervals.items()
+    #     ],
+    # )
     return workers_chunks, workers_intervals
 
 

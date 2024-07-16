@@ -65,7 +65,7 @@ class NoShuffle(Shuffle):
         indexes = range(len(chunk_intervals))
 
         # 2. Compute the items budget of each rank
-        chunks_per_ranks, intervals_per_ranks = _associate_chunks_and_internals_to_ranks(
+        chunks_per_ranks, intervals_per_ranks = _associate_chunks_and_internals_to_workers(
             distributed_env, indexes, chunk_intervals, self.drop_last, num_workers, batch_size
         )
 

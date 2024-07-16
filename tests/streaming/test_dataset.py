@@ -799,18 +799,20 @@ def _simple_preprocess(_):
         yield torch.randint(0, 100, size=(10,), dtype=torch.int64)
 
 
-def _get_simulated_s3_dataloader(cache_dir, data_dir):
+def _get_simulated_s3_dataloader(cache_dir, data_dir, shuffle=False):
     dataset = EmulateS3StreamingDataset(
         input_dir=Dir(cache_dir, data_dir),
         item_loader=TokensLoader(block_size=10),
+        shuffle=shuffle,
     )
-    return StreamingDataLoader(dataset, batch_size=2, num_workers=1)
+    return StreamingDataLoader(dataset, batch_size=2, num_workers=2)
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="Not tested on windows and MacOs")
 @mock.patch.dict(os.environ, {}, clear=True)
 @pytest.mark.timeout(60)
-def test_dataset_resume_on_future_chunks(tmpdir, monkeypatch):
+@pytest.mark.parametrize("shuffle", [True, False])
+def test_dataset_resume_on_future_chunks(shuffle, tmpdir, monkeypatch):
     """This test is constructed to test resuming from a chunk past the first chunk, when subsequent chunks don't have
     the same size."""
     s3_cache_dir = str(tmpdir / "s3cache")
@@ -828,10 +830,11 @@ def test_dataset_resume_on_future_chunks(tmpdir, monkeypatch):
     assert len(os.listdir(tmpdir / "optimized")) > 0
 
     os.mkdir(s3_cache_dir)
-    train_dataloader = _get_simulated_s3_dataloader(s3_cache_dir, data_dir)
+    train_dataloader = _get_simulated_s3_dataloader(s3_cache_dir, data_dir, shuffle=shuffle)
     batches_to_fetch = 16
     batch_to_resume_from = None
     dataloader_state = None
+    # assert len(train_dataloader) == 5  # TODO: This length is wrong
     for i, batch in enumerate(train_dataloader):
         if i == batches_to_fetch:
             dataloader_state = train_dataloader.state_dict()
@@ -841,7 +844,7 @@ def test_dataset_resume_on_future_chunks(tmpdir, monkeypatch):
 
     shutil.rmtree(s3_cache_dir)
     os.mkdir(s3_cache_dir)
-    train_dataloader = _get_simulated_s3_dataloader(s3_cache_dir, data_dir)
+    train_dataloader = _get_simulated_s3_dataloader(s3_cache_dir, data_dir, shuffle=shuffle)
     assert dataloader_state is not None
     assert batch_to_resume_from is not None
     train_dataloader.load_state_dict(dataloader_state)
