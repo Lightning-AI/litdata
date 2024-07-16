@@ -318,7 +318,24 @@ def test_optimize_with_fernet_encryption(tmpdir):
     assert len(ds) == 5
     assert ds[:] == [(i, i**2) for i in range(5)]
 
+    # ----------------- test with appending more -----------------
+    optimize(
+        fn=compress,
+        inputs=list(range(5, 10)),
+        num_workers=1,
+        output_dir=output_dir,
+        chunk_bytes="64MB",
+        encryption=fernet,
+        mode="append",
+    )
+    ds = StreamingDataset(output_dir, encryption=fernet)
+    assert len(ds) == 10
+    assert ds[:] == [(i, i**2) for i in range(10)]
+
     # ----------------- decrypt with different conf  -----------------
+    ds = StreamingDataset(output_dir)
+    with pytest.raises(ValueError, match="Data is encrypted but no encryption object was provided."):
+        ds[0]
 
     fernet.level = "sample"
     ds = StreamingDataset(output_dir, encryption=fernet)
@@ -389,6 +406,25 @@ def test_optimize_with_rsa_encryption(tmpdir):
     ds = StreamingDataset(output_dir, encryption=rsa)
     assert len(ds) == 5
     assert ds[:] == [(i, i**2) for i in range(5)]
+
+    # ----------------- test with appending more -----------------
+    optimize(
+        fn=compress,
+        inputs=list(range(5, 10)),
+        num_workers=1,
+        output_dir=output_dir,
+        chunk_bytes="64MB",
+        encryption=rsa,
+        mode="append",
+    )
+    ds = StreamingDataset(output_dir, encryption=rsa)
+    assert len(ds) == 10
+    assert ds[:] == [(i, i**2) for i in range(10)]
+
+    # ----------------- decrypt with different conf  -----------------
+    ds = StreamingDataset(output_dir)
+    with pytest.raises(ValueError, match="Data is encrypted but no encryption object was provided."):
+        ds[0]
 
     # ----------------- test with random images  -----------------
     # RSA Encryption throws an error: ValueError: Encryption failed, when trying to encrypt large data
