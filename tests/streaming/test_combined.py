@@ -227,6 +227,12 @@ class SimpleDataset(IterableDataset):
     def set_drop_last(self, _):
         pass
 
+    def set_batch_size(self, _):
+        pass
+
+    def set_num_workers(self, _):
+        pass
+
 
 def test_combined_dataset():
     dataset1 = SimpleDataset(0, 10)
