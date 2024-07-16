@@ -31,7 +31,6 @@ from litdata.streaming.serializers import Serializer
 from litdata.streaming.shuffle import FullShuffle, NoShuffle, Shuffle
 from litdata.utilities.dataset_utilities import _should_replace_path, _try_create_cache_dir, subsample_streaming_dataset
 from litdata.utilities.env import _DistributedEnv, _is_in_dataloader_worker, _WorkerEnv
-from litdata.utilities.shuffle import _find_chunks_per_ranks_on_which_to_skip_deletion
 
 logger = Logger(__name__)
 
@@ -272,7 +271,9 @@ class StreamingDataset(IterableDataset):
         # )
         indexes = _replay_sampling(num_samples_yielded, batch_size, num_workers)
         # TODO: Change _replay_chunks_sampling to accept a list
-        chunks_index, indexes = _replay_chunks_sampling({i: workers_intervals[i] for i in range(len(workers_intervals))}, indexes)
+        chunks_index, indexes = _replay_chunks_sampling(
+            {i: workers_intervals[i] for i in range(len(workers_intervals))}, indexes
+        )
 
         # select the chunks and intervals associated to this worker
         worker_rank = self.distributed_env.global_rank * self.worker_env.world_size + self.worker_env.rank
@@ -499,7 +500,13 @@ def _associate_chunks_to_workers(
         workers_chunks[worker_idx] = worker_chunks
         workers_intervals[worker_idx] = worker_intervals
 
-    print("associate", [sum(interval[2] - interval[1] for interval in intervals) for worker_id, intervals in workers_intervals.items()])
+    print(
+        "associate",
+        [
+            sum(interval[2] - interval[1] for interval in intervals)
+            for worker_id, intervals in workers_intervals.items()
+        ],
+    )
     return workers_chunks, workers_intervals
 
 

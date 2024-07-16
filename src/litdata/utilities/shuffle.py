@@ -41,6 +41,7 @@ def _intra_node_chunk_shuffle(
 
     return [index for chunks in chunk_indexes_per_nodes for index in chunks]
 
+
 def _associate_chunks_and_internals_to_workers(
     distributed_env: _DistributedEnv,
     indexes: Any,
@@ -49,7 +50,6 @@ def _associate_chunks_and_internals_to_workers(
     num_workers: int = 1,
     batch_size: int = 1,
 ) -> Tuple[List[List[int]], List[Any]]:
-    
     num_items = sum([(interval[2] - interval[1]) for interval in chunk_intervals])
     print(f"{num_items=}")
     world_size = distributed_env.world_size * num_workers

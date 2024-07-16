@@ -19,7 +19,11 @@ import numpy as np
 
 from litdata.streaming import Cache
 from litdata.utilities.env import _DistributedEnv
-from litdata.utilities.shuffle import _associate_chunks_and_internals_to_ranks, _intra_node_chunk_shuffle, _associate_chunks_and_internals_to_workers
+from litdata.utilities.shuffle import (
+    _associate_chunks_and_internals_to_ranks,
+    _associate_chunks_and_internals_to_workers,
+    _intra_node_chunk_shuffle,
+)
 
 
 class Shuffle(ABC):
