@@ -35,16 +35,6 @@ class Shuffle(ABC):
         _, intervals_per_ranks = self.get_chunks_and_intervals_per_ranks(
             distributed_env, num_workers, batch_size, current_epoch
         )
-
-        if self.drop_last:
-            items_per_process = [
-                sum((interval[2] - interval[1]) for interval in intervals) for intervals in intervals_per_ranks
-            ]
-            # Validate each processes gets the exact number of elements
-            if len(items_per_process) > 1:
-                assert all(items_per_process[0] == items_to_process for items_to_process in items_per_process[:1])
-            return items_per_process[0]
-
         return sum((interval[2] - interval[1]) for interval in intervals_per_ranks[distributed_env.global_rank])
 
     @abstractmethod
