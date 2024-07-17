@@ -992,7 +992,7 @@ def test_replay_chunks_sampling():
     assert workers_chunks == [[0, 1, 2, 3, 4], [5, 6, 7, 8, 9]]
     assert workers_intervals == [
         [[0, 0, 5, 5], [5, 5, 10, 10], [10, 10, 15, 15], [15, 15, 20, 20], [20, 20, 25, 25]],
-        [[25, 25, 30, 30], [30, 30, 35, 35], [35, 35, 40, 40], [40, 40, 45, 45], [45, 45, 50, 50]]
+        [[25, 25, 30, 30], [30, 30, 35, 35], [35, 35, 40, 40], [40, 40, 45, 45], [45, 45, 50, 50]],
     ]
     workers_intervals = {i: workers_intervals[i] for i in range(len(workers_intervals))}
     assert _replay_chunks_sampling(workers_intervals, {0: 16, 1: 11}) == ({0: 3, 1: 2}, {0: 1, 1: 1})
