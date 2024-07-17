@@ -634,7 +634,7 @@ def test_dataset_for_text_tokens_distributed_num_workers_end_to_end(tmpdir, monk
     assert dataset.drop_last  # in distributed setting, this is forced automatically
 
     assert len(dataloader) == 4
-    
+
     expected = [[80, 90], [120, 130], [100, 110], [140, 150]]
     returned = []
     for batch_idx, batch in enumerate(dataloader):
