@@ -2,6 +2,7 @@ import base64
 import json
 import os
 from abc import ABC, abstractmethod
+from enum import Enum
 from typing import Any, Dict, Literal, Tuple, Union, get_args
 
 from litdata.constants import _CRYPTOGRAPHY_AVAILABLE
@@ -13,7 +14,15 @@ if _CRYPTOGRAPHY_AVAILABLE:
     from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
 
-EncryptionLevel = Literal["sample", "chunk"]
+class EncryptionLevel(Enum):
+    SAMPLE = "sample"
+    CHUNK = "chunk"
+
+    def __str__(self):
+        return self.value
+
+
+EncryptionLevelType = Literal[EncryptionLevel.SAMPLE.value, EncryptionLevel.CHUNK.value]
 
 
 class Encryption(ABC):
@@ -56,13 +65,13 @@ class FernetEncryption(Encryption):
     def __init__(
         self,
         password: str,
-        level: EncryptionLevel = "sample",
+        level: EncryptionLevelType = EncryptionLevel.SAMPLE.value,
     ) -> None:
         super().__init__()
         if not _CRYPTOGRAPHY_AVAILABLE:
             raise ModuleNotFoundError(str(_CRYPTOGRAPHY_AVAILABLE))
 
-        if level not in get_args(EncryptionLevel):
+        if level not in get_args(EncryptionLevelType):
             raise ValueError("The provided `level` should be either `sample` or `chunk`")
 
         self.password = password
@@ -124,12 +133,11 @@ class RSAEncryption(Encryption):
     def __init__(
         self,
         password: str,
-        level: EncryptionLevel = "sample",
+        level: EncryptionLevelType = EncryptionLevel.SAMPLE.value,
     ) -> None:
         if not _CRYPTOGRAPHY_AVAILABLE:
             raise ModuleNotFoundError(str(_CRYPTOGRAPHY_AVAILABLE))
-
-        if level not in get_args(EncryptionLevel):
+        if level not in get_args(EncryptionLevelType):
             raise ValueError("The provided `level` should be either `sample` or `chunk`")
 
         self.password = password
