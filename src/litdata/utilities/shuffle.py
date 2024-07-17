@@ -19,7 +19,6 @@ from litdata.streaming.item_loader import Interval
 from litdata.utilities.env import _DistributedEnv
 
 
-# TODO: Logic needs to be updated? chunks_per_ranks -> workers_chunks
 def _intra_node_chunk_shuffle(
     distributed_env: _DistributedEnv,
     chunks_per_ranks: List[List[int]],
@@ -60,8 +59,7 @@ def _associate_chunks_and_internals_to_workers(
         for rank in range(world_size)
     ]
     if drop_last:
-        ratio = batch_size
-        num_items_per_workers = [ratio * int(item // ratio) for item in num_items_per_workers]
+        num_items_per_workers = [batch_size * int(item // batch_size) for item in num_items_per_workers]
 
     chunks_per_workers: List[List[int]] = [[] for _ in range(world_size)]
     intervals_per_workers: List[List[List[int]]] = [[] for _ in range(world_size)]
