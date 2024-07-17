@@ -218,7 +218,7 @@ def _assert_dir_is_empty(output_dir: Dir, append: bool = False, overwrite: bool 
     obj = parse.urlparse(output_dir.url)
 
     if obj.scheme != "s3":
-        raise ValueError(f"The provided folder should start with s3://. Found {output_dir.path}.")
+        raise ValueError(f"The provided folder should start with s3://. Found {output_dir.url}.")
 
     s3 = boto3.client("s3")
 
@@ -283,7 +283,7 @@ def _assert_dir_has_index_file(
     obj = parse.urlparse(output_dir.url)
 
     if obj.scheme != "s3":
-        raise ValueError(f"The provided folder should start with s3://. Found {output_dir.path}.")
+        raise ValueError(f"The provided folder should start with s3://. Found {output_dir.url}.")
 
     s3 = boto3.client("s3")
 
