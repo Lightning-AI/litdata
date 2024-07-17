@@ -245,7 +245,7 @@ class StreamingDataset(IterableDataset):
 
         return self
 
-    def _resume(self, workers_chunks: List[int], workers_intervals: List[Any]) -> None:
+    def _resume(self, workers_chunks: List[List[int]], workers_intervals: List[Any]) -> None:
         assert self._state_dict
         assert self.worker_env
         assert self.shuffler
