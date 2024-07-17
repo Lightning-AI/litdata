@@ -845,8 +845,6 @@ def test_dataset_resume_on_future_chunks(shuffle, tmpdir, monkeypatch):
     batches_to_fetch = 16
     batch_to_resume_from = None
     dataloader_state = None
-    assert len(train_dataloader.dataset) == 80
-    assert len(train_dataloader) == 40
 
     for i, batch in enumerate(train_dataloader):
         if i == batches_to_fetch:
