@@ -555,7 +555,7 @@ class StreamingDataLoader(DataLoader):
         profile_dir: Optional[str] = None,
         prefetch_factor: Optional[int] = None,
         shuffle: Optional[bool] = None,
-        drop_last: Optional[bool] = False,
+        drop_last: Optional[bool] = None,
         collate_fn: Optional[Callable] = None,
         **kwargs: Any,
     ) -> None:  # pyright: ignore
