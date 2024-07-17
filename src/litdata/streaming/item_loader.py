@@ -175,7 +175,8 @@ class PyTreeLoader(BaseItemLoader):
             else:
                 encrypted_data = fp.read()
                 decrypted_data = encryption.decrypt(encrypted_data)  # type: ignore
-                self._decrypted_chunks[chunk_index] = decrypted_data
+               # This would enable us to free the previous chunk from the memory.
+                self._decrypted_chunks = {chunk_index: decrypted_data}
             fp = BytesIO(decrypted_data)
 
         data = self._load_data(fp, offset)
