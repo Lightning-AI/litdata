@@ -47,7 +47,7 @@ def _associate_chunks_and_internals_to_workers(
     distributed_env: _DistributedEnv,
     indexes: Any,
     chunk_intervals: List[Interval],
-    drop_last: bool,
+    drop_last: bool = False,
     num_workers: int = 1,
     batch_size: int = 1,
 ) -> Tuple[List[List[int]], List[Any]]:
