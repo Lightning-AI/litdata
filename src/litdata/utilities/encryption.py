@@ -18,11 +18,8 @@ class EncryptionLevel(Enum):
     SAMPLE = "sample"
     CHUNK = "chunk"
 
-    def __str__(self):
-        return self.value
 
-
-EncryptionLevelType = Literal[EncryptionLevel.SAMPLE.value, EncryptionLevel.CHUNK.value]
+EncryptionLevelType = Literal["sample", "chunk"]
 
 
 class Encryption(ABC):
