@@ -2,7 +2,7 @@ import base64
 import json
 import os
 from abc import ABC, abstractmethod
-from enum import Enum
+from dataclasses import dataclass
 from typing import Any, Dict, Literal, Tuple, Union, get_args
 
 from litdata.constants import _CRYPTOGRAPHY_AVAILABLE
@@ -14,7 +14,8 @@ if _CRYPTOGRAPHY_AVAILABLE:
     from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
 
-class EncryptionLevel(Enum):
+@dataclass
+class EncryptionLevel:
     SAMPLE = "sample"
     CHUNK = "chunk"
 
@@ -62,7 +63,7 @@ class FernetEncryption(Encryption):
     def __init__(
         self,
         password: str,
-        level: EncryptionLevelType = EncryptionLevel.SAMPLE.value,
+        level: EncryptionLevelType = "sample",
     ) -> None:
         super().__init__()
         if not _CRYPTOGRAPHY_AVAILABLE:
@@ -131,7 +132,7 @@ class RSAEncryption(Encryption):
     def __init__(
         self,
         password: str,
-        level: EncryptionLevelType = EncryptionLevel.SAMPLE.value,
+        level: EncryptionLevelType = "sample",
     ) -> None:
         if not _CRYPTOGRAPHY_AVAILABLE:
             raise ModuleNotFoundError(str(_CRYPTOGRAPHY_AVAILABLE))

@@ -169,7 +169,7 @@ class PyTreeLoader(BaseItemLoader):
         self._validate_encryption(encryption)
 
         # chunk-level decryption
-        if self._config["encryption"]["level"] == EncryptionLevel.CHUNK.value:
+        if self._config["encryption"]["level"] == EncryptionLevel.CHUNK:
             decrypted_data = self._decrypted_chunks.get(chunk_index, None)
             if decrypted_data is None:
                 with open(chunk_filepath, "rb", 0) as fp:
@@ -181,7 +181,7 @@ class PyTreeLoader(BaseItemLoader):
             data = self._load_data(BytesIO(decrypted_data), offset)
 
         # sample-level decryption
-        elif self._config["encryption"]["level"] == EncryptionLevel.SAMPLE.value:
+        elif self._config["encryption"]["level"] == EncryptionLevel.SAMPLE:
             with open(chunk_filepath, "rb", 0) as fp:
                 data = self._load_data(fp, offset)
                 data = encryption.decrypt(data)  # type: ignore

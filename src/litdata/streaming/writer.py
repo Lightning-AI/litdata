@@ -27,7 +27,7 @@ from litdata.processing.utilities import get_worker_rank
 from litdata.streaming.compression import _COMPRESSORS, Compressor
 from litdata.streaming.serializers import Serializer, _get_serializers
 from litdata.utilities._pytree import PyTree, tree_flatten, treespec_dumps
-from litdata.utilities.encryption import Encryption
+from litdata.utilities.encryption import Encryption, EncryptionLevel
 from litdata.utilities.env import _DistributedEnv, _WorkerEnv
 from litdata.utilities.format import _convert_bytes_to_int, _human_readable_bytes
 
@@ -244,7 +244,7 @@ class BinaryWriter:
         current_chunk_bytes = sum([item.bytes for item in items])
 
         # Whether to encrypt the data at the chunk level
-        if self._encryption and self._encryption.level == "chunk":
+        if self._encryption and self._encryption.level == EncryptionLevel.CHUNK:
             data = self._encryption.encrypt(data)
             current_chunk_bytes = len(data)
 
@@ -305,7 +305,7 @@ class BinaryWriter:
         data, dim = self.serialize(items)
 
         # Whether to encrypt the data at the sample level
-        if self._encryption and self._encryption.level == "sample":
+        if self._encryption and self._encryption.level == EncryptionLevel.SAMPLE:
             data = self._encryption.encrypt(data)
 
         self._serialized_items[index] = Item(
