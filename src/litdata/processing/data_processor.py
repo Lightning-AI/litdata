@@ -785,8 +785,8 @@ class DataChunkRecipe(DataRecipe):
         if num_nodes == node_rank + 1:
             config = load_index_file(cache_dir)
 
-            size = sum([c["dim"] if c["dim"] is not None else c["chunk_size"] for c in config["chunks"]])
-            num_bytes = sum([c["chunk_bytes"] for c in config["chunks"]])
+            size = sum(c["dim"] if c["dim"] is not None else c["chunk_size"] for c in config["chunks"])
+            num_bytes = sum(c["chunk_bytes"] for c in config["chunks"])
             if config["config"] is not None:
                 data_format = tree_unflatten(
                     config["config"]["data_format"], treespec_loads(config["config"]["data_spec"])
@@ -1013,7 +1013,7 @@ class DataProcessor:
             workers_user_items = [w[:items_to_keep] for w in workers_user_items]
             print(f"Fast dev run is enabled. Limiting to {items_to_keep} items per process.")
 
-        num_items = sum([len(items) for items in workers_user_items])
+        num_items = sum(len(items) for items in workers_user_items)
 
         self._cleanup_cache()
 

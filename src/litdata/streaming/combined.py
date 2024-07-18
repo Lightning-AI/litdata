@@ -194,7 +194,7 @@ class _CombinedDatasetIterator(Iterator):
         self._num_samples_yielded = num_samples_yielded or [0 for _ in range(len(datasets))]
         self._original_weights = deepcopy(weights)
         self._weights = deepcopy(weights)
-        self._rng = random.Random(seed)
+        self._rng = random.Random(seed)  # noqa: S311
         self._iterate_over_all = iterate_over_all
         self._is_done = False
 
@@ -226,7 +226,7 @@ class _CombinedDatasetIterator(Iterator):
 
                     self._dataset_indexes[dataset_index] = None
                     self._weights[dataset_index] = None  # type: ignore
-                    new_sum = sum([w for w in self._weights if w is not None])
+                    new_sum = sum(w for w in self._weights if w is not None)
                     self._weights = [None if w is None else w / new_sum for w in self._weights]
 
         # stop on the first iteration

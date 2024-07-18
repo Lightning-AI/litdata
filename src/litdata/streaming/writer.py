@@ -241,7 +241,7 @@ class BinaryWriter:
         sample_data = b"".join([item.data for item in items])
         data = num_items.tobytes() + offsets.tobytes() + sample_data
 
-        current_chunk_bytes = sum([item.bytes for item in items])
+        current_chunk_bytes = sum(item.bytes for item in items)
 
         # Whether to encrypt the data at the chunk level
         if self._encryption and self._encryption.level == EncryptionLevel.CHUNK:
@@ -260,7 +260,7 @@ class BinaryWriter:
 
         dim: Optional[int] = None
         if items[0].dim:
-            dim = sum([item.dim if item.dim is not None else 0 for item in items])
+            dim = sum(item.dim if item.dim is not None else 0 for item in items)
 
         chunk_info = {
             "chunk_bytes": current_chunk_bytes,

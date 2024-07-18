@@ -112,7 +112,7 @@ class CacheBatchSampler:
             end = self._dataset_size if is_last else (worker_idx + 1) * worker_size
             worker_indices.append(indices[start:end])
 
-        assert sum([len(s) for s in worker_indices]) == self._dataset_size
+        assert sum(len(s) for s in worker_indices) == self._dataset_size
 
         worker_indices_batches = [self._chunk_list(indices, self._batch_size) for indices in worker_indices]
 
@@ -140,7 +140,7 @@ class CacheBatchSampler:
                 end_worker = replica_size if is_last_worker else (worker_idx + 1) * worker_size
                 worker_indices.append(replica_indices[start_worker:end_worker])
 
-        assert sum([len(s) for s in worker_indices]) == len(replica_indices)
+        assert sum(len(s) for s in worker_indices) == len(replica_indices)
 
         worker_indices_batches = [self._chunk_list(indices, self._batch_size) for indices in worker_indices]
 
@@ -202,7 +202,7 @@ class CacheBatchSampler:
     ) -> Iterator[List[Union[int, ChunkedIndex]]]:
         batches: List[List[Union[int, ChunkedIndex]]] = []
         counter = 0
-        while sum([len(v) for v in indices_per_workers]) != 0:
+        while sum(len(v) for v in indices_per_workers) != 0:
             worker_indices = indices_per_workers[counter % self._num_workers]
             if len(worker_indices) == 0:
                 batches.append([])

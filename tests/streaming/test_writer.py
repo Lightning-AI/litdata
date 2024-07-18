@@ -183,7 +183,7 @@ def test_binary_writer_with_jpeg_filepath_and_int(tmpdir):
     assert data["chunks"][0]["chunk_size"] == 7
     assert data["chunks"][1]["chunk_size"] == 7
     assert data["chunks"][-1]["chunk_size"] == 2
-    assert sum([chunk["chunk_size"] for chunk in data["chunks"]]) == 100
+    assert sum(chunk["chunk_size"] for chunk in data["chunks"]) == 100
 
     reader = BinaryReader(cache_dir, max_cache_size=10 ^ 9)
     for i in range(100):

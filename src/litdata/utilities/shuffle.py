@@ -50,7 +50,7 @@ def _associate_chunks_and_internals_to_ranks(
     num_workers: int = 1,
     batch_size: int = 1,
 ) -> Tuple[List[List[int]], List[Any]]:
-    num_items = sum([(interval[2] - interval[1]) for interval in chunk_intervals])
+    num_items = sum((interval[2] - interval[1]) for interval in chunk_intervals)
     num_items_per_ranks: List[int] = [
         num_items // distributed_env.world_size + num_items % distributed_env.world_size
         if rank == distributed_env.world_size - 1 and not drop_last

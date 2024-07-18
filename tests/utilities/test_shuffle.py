@@ -68,10 +68,10 @@ def test_associate_chunks_and_internals_to_ranks():
     )
 
     assert chunks_per_ranks == [[0, 1], [1, 2], [2, 3, 4, 5], [5, 6, 7]]
-    assert sum([interval[2] - interval[1] for interval in intervals_per_ranks[0]]) == 105
-    assert sum([interval[2] - interval[1] for interval in intervals_per_ranks[1]]) == 105
-    assert sum([interval[2] - interval[1] for interval in intervals_per_ranks[2]]) == 105
-    assert sum([interval[2] - interval[1] for interval in intervals_per_ranks[3]]) == 105
+    assert sum(interval[2] - interval[1] for interval in intervals_per_ranks[0]) == 105
+    assert sum(interval[2] - interval[1] for interval in intervals_per_ranks[1]) == 105
+    assert sum(interval[2] - interval[1] for interval in intervals_per_ranks[2]) == 105
+    assert sum(interval[2] - interval[1] for interval in intervals_per_ranks[3]) == 105
 
     assert intervals_per_ranks == [
         [[0, 0, 50, 50], [0, 0, 55, 150]],
@@ -99,10 +99,10 @@ def test_associate_chunks_and_internals_to_ranks():
     )
 
     assert chunks_per_ranks == [[0, 1], [1], [1, 2, 3, 4, 5], [5, 6, 7]]
-    assert sum([interval[2] - interval[1] for interval in intervals_per_ranks[0]]) == 64
-    assert sum([interval[2] - interval[1] for interval in intervals_per_ranks[1]]) == 64
-    assert sum([interval[2] - interval[1] for interval in intervals_per_ranks[2]]) == 64
-    assert sum([interval[2] - interval[1] for interval in intervals_per_ranks[3]]) == 64
+    assert sum(interval[2] - interval[1] for interval in intervals_per_ranks[0]) == 64
+    assert sum(interval[2] - interval[1] for interval in intervals_per_ranks[1]) == 64
+    assert sum(interval[2] - interval[1] for interval in intervals_per_ranks[2]) == 64
+    assert sum(interval[2] - interval[1] for interval in intervals_per_ranks[3]) == 64
     assert intervals_per_ranks == [
         [[0, 0, 5, 5], [0, 0, 59, 150]],
         [[0, 59, 123, 150]],

@@ -66,7 +66,7 @@ def train_test_split(
 
     new_datasets = [deepcopy(streaming_dataset) for _ in splits]
 
-    dataset_length = sum([my_roi[1] - my_roi[0] for my_roi in dummy_subsampled_roi])
+    dataset_length = sum(my_roi[1] - my_roi[0] for my_roi in dummy_subsampled_roi)
 
     subsampled_chunks, dummy_subsampled_roi = shuffle_lists_together(
         subsampled_chunks, dummy_subsampled_roi, np.random.RandomState([seed])
