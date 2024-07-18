@@ -14,37 +14,22 @@
 import datetime
 import os
 import re
+import shutil
 import sys
+from contextlib import suppress
 from dataclasses import dataclass
 from pathlib import Path
 from time import sleep
-from typing import Any, Literal, Optional, Union
+from typing import TYPE_CHECKING, Any, Literal, Optional, Union
 from urllib import parse
 
-from litdata.constants import _LIGHTNING_CLOUD_AVAILABLE
+import boto3
+import botocore
 
-if _LIGHTNING_CLOUD_AVAILABLE:
-    from lightning_cloud.rest_client import LightningClient
+from litdata.constants import _LIGHTNING_SDK_AVAILABLE
 
-try:
-    import boto3
-    import botocore
-
-    _BOTO3_AVAILABLE = True
-except Exception:
-    _BOTO3_AVAILABLE = False
-
-
-try:
-    from lightning_sdk import Machine, Studio
-
-    _LIGHTNING_SDK_AVAILABLE = True
-except (ImportError, ModuleNotFoundError):
-
-    class Machine:  # type: ignore
-        pass
-
-    _LIGHTNING_SDK_AVAILABLE = False
+if TYPE_CHECKING:
+    from lightning_sdk import Machine
 
 
 @dataclass
@@ -113,6 +98,8 @@ def _match_studio(target_id: Optional[str], target_name: Optional[str], cloudspa
 
 
 def _resolve_studio(dir_path: str, target_name: Optional[str], target_id: Optional[str]) -> Dir:
+    from lightning_cloud.rest_client import LightningClient
+
     client = LightningClient(max_tries=2)
 
     # Get the ids from env variables
@@ -152,6 +139,8 @@ def _resolve_studio(dir_path: str, target_name: Optional[str], target_id: Option
 
 
 def _resolve_s3_connections(dir_path: str) -> Dir:
+    from lightning_cloud.rest_client import LightningClient
+
     client = LightningClient(max_tries=2)
 
     # Get the ids from env variables
@@ -172,6 +161,8 @@ def _resolve_s3_connections(dir_path: str) -> Dir:
 
 
 def _resolve_datasets(dir_path: str) -> Dir:
+    from lightning_cloud.rest_client import LightningClient
+
     client = LightningClient(max_tries=2)
 
     # Get the ids from env variables
@@ -227,7 +218,7 @@ def _assert_dir_is_empty(output_dir: Dir, append: bool = False, overwrite: bool 
     obj = parse.urlparse(output_dir.url)
 
     if obj.scheme != "s3":
-        raise ValueError(f"The provided folder should start with s3://. Found {output_dir.path}.")
+        raise ValueError(f"The provided folder should start with s3://. Found {output_dir.url}.")
 
     s3 = boto3.client("s3")
 
@@ -246,7 +237,9 @@ def _assert_dir_is_empty(output_dir: Dir, append: bool = False, overwrite: bool 
         )
 
 
-def _assert_dir_has_index_file(output_dir: Dir, mode: Optional[Literal["append", "overwrite"]] = None) -> None:
+def _assert_dir_has_index_file(
+    output_dir: Dir, mode: Optional[Literal["append", "overwrite"]] = None, use_checkpoint: bool = False
+) -> None:
     if mode is not None and mode not in ["append", "overwrite"]:
         raise ValueError(f"The provided `mode` should be either `append` or `overwrite`. Found {mode}.")
 
@@ -273,17 +266,24 @@ def _assert_dir_has_index_file(output_dir: Dir, mode: Optional[Literal["append",
 
             # delete index.json file and chunks
             if os.path.exists(os.path.join(output_dir.path, "index.json")):
+                # only possible if mode = "overwrite"
                 os.remove(os.path.join(output_dir.path, "index.json"))
-            for file in os.listdir(output_dir.path):
-                if file.endswith(".bin"):
-                    os.remove(os.path.join(output_dir.path, file))
+
+            if mode == "overwrite" or (mode is None and not use_checkpoint):
+                for file in os.listdir(output_dir.path):
+                    if file.endswith(".bin"):
+                        os.remove(os.path.join(output_dir.path, file))
+
+                # delete checkpoints
+                with suppress(FileNotFoundError):
+                    shutil.rmtree(os.path.join(output_dir.path, ".checkpoints"))
 
         return
 
     obj = parse.urlparse(output_dir.url)
 
     if obj.scheme != "s3":
-        raise ValueError(f"The provided folder should start with s3://. Found {output_dir.path}.")
+        raise ValueError(f"The provided folder should start with s3://. Found {output_dir.url}.")
 
     s3 = boto3.client("s3")
 
@@ -316,8 +316,10 @@ def _assert_dir_has_index_file(output_dir: Dir, mode: Optional[Literal["append",
     # Delete all the files (including the index file in overwrite mode)
     bucket_name = obj.netloc
     s3 = boto3.resource("s3")
-    for obj in s3.Bucket(bucket_name).objects.filter(Prefix=prefix):
-        s3.Object(bucket_name, obj.key).delete()
+
+    if mode == "overwrite" or (mode is None and not use_checkpoint):
+        for obj in s3.Bucket(bucket_name).objects.filter(Prefix=prefix):
+            s3.Object(bucket_name, obj.key).delete()
 
 
 def _get_lightning_cloud_url() -> str:
@@ -341,13 +343,15 @@ def _resolve_time_template(path: str) -> str:
 def _execute(
     name: str,
     num_nodes: int,
-    machine: Optional[Machine] = None,
+    machine: Optional["Machine"] = None,
     command: Optional[str] = None,
 ) -> None:
     """Remotely execute the current operator."""
 
     if not _LIGHTNING_SDK_AVAILABLE:
         raise ModuleNotFoundError("The `lightning_sdk` is required.")
+
+    from lightning_sdk import Studio
 
     lightning_skip_install = os.getenv("LIGHTNING_SKIP_INSTALL", "")
     if lightning_skip_install:

@@ -37,9 +37,6 @@ _PIL_AVAILABLE = RequirementCache("PIL")
 
 
 def test_binary_writer_with_ints_and_chunk_bytes(tmpdir):
-    with pytest.raises(FileNotFoundError, match="The provided cache directory `dontexists` doesn't exist."):
-        BinaryWriter("dontexists", {})
-
     match = (
         "The provided compression something_else isn't available"
         if _ZSTD_AVAILABLE
@@ -80,9 +77,6 @@ def test_binary_writer_with_ints_and_chunk_bytes(tmpdir):
 
 def test_binary_writer_with_ints_and_chunk_size(tmpdir):
     seed_everything(42)
-
-    with pytest.raises(FileNotFoundError, match="The provided cache directory `dontexists` doesn't exist."):
-        BinaryWriter("dontexists", {})
 
     match = (
         "The provided compression something_else isn't available"
@@ -165,7 +159,7 @@ def test_binary_writer_with_jpeg_filepath_and_int(tmpdir):
 
     cache_dir = os.path.join(tmpdir, "chunks")
     os.makedirs(cache_dir, exist_ok=True)
-    binary_writer = BinaryWriter(cache_dir, chunk_bytes=2 << 12)
+    binary_writer = BinaryWriter(cache_dir, chunk_size=7)  # each chunk will have 7 items
 
     imgs = []
 
@@ -178,23 +172,25 @@ def test_binary_writer_with_jpeg_filepath_and_int(tmpdir):
         imgs.append(img)
         binary_writer[i] = {"x": path, "y": i}
 
-    assert len(os.listdir(cache_dir)) == 24
+    assert len(os.listdir(cache_dir)) == 14  # 100 items / 7 items per chunk = 14 chunks
     binary_writer.done()
     binary_writer.merge()
-    assert len(os.listdir(cache_dir)) == 26
+    assert len(os.listdir(cache_dir)) == 16  # 2 items in last chunk and index.json file
 
     with open(os.path.join(cache_dir, "index.json")) as f:
         data = json.load(f)
 
-    assert data["chunks"][0]["chunk_size"] == 4
-    assert data["chunks"][1]["chunk_size"] == 4
-    assert data["chunks"][-1]["chunk_size"] == 4
+    assert data["chunks"][0]["chunk_size"] == 7
+    assert data["chunks"][1]["chunk_size"] == 7
+    assert data["chunks"][-1]["chunk_size"] == 2
     assert sum([chunk["chunk_size"] for chunk in data["chunks"]]) == 100
 
     reader = BinaryReader(cache_dir, max_cache_size=10 ^ 9)
     for i in range(100):
-        data = reader.read(ChunkedIndex(i, chunk_index=i // 4))
-        np.testing.assert_array_equal(np.asarray(data["x"]).squeeze(0), imgs[i])
+        data = reader.read(ChunkedIndex(i, chunk_index=i // 7))
+        img_read = Image.open(data["x"])
+        print(f"{img_read.size=}")
+        np.testing.assert_array_equal(img_read, imgs[i])
         assert data["y"] == i
 
 
@@ -252,3 +248,23 @@ def test_writer_unordered_indexes(tmpdir):
     assert data["chunks"][0]["chunk_size"] == 5
     assert data["chunks"][1]["chunk_size"] == 5
     assert data["chunks"][2]["chunk_size"] == 2
+
+
+def test_writer_save_checkpoint(tmpdir):
+    cache_dir = os.path.join(tmpdir, "chunks")
+    os.makedirs(cache_dir, exist_ok=True)
+
+    binary_writer = BinaryWriter(cache_dir, chunk_size=5)
+
+    arr = [2, 3, 1, 4, 6, 5, 7, 8, 11, 9, 10, 12]
+
+    for i in arr:
+        binary_writer[i] = i - 1
+
+    binary_writer.done()
+    binary_writer.merge()
+    binary_writer.save_checkpoint()
+
+    for file in os.listdir(os.path.join(cache_dir, ".checkpoints")):
+        assert file.__contains__("checkpoint-0")
+        assert file.endswith(".json")

@@ -24,6 +24,7 @@ from litdata.streaming.resolver import Dir, _resolve_dir
 from litdata.streaming.sampler import ChunkedIndex
 from litdata.streaming.serializers import Serializer
 from litdata.streaming.writer import BinaryWriter
+from litdata.utilities.encryption import Encryption
 from litdata.utilities.env import _DistributedEnv, _WorkerEnv
 from litdata.utilities.format import _convert_bytes_to_int
 
@@ -37,6 +38,7 @@ class Cache:
         subsampled_files: Optional[List[str]] = None,
         region_of_interest: Optional[List[Tuple[int, int]]] = None,
         compression: Optional[str] = None,
+        encryption: Optional[Encryption] = None,
         chunk_size: Optional[int] = None,
         chunk_bytes: Optional[Union[int, str]] = None,
         item_loader: Optional[BaseItemLoader] = None,
@@ -69,6 +71,7 @@ class Cache:
             chunk_size=chunk_size,
             chunk_bytes=chunk_bytes,
             compression=compression,
+            encryption=encryption,
             serializers=serializers,
             chunk_index=writer_chunk_index or 0,
         )
@@ -79,6 +82,7 @@ class Cache:
             max_cache_size=_convert_bytes_to_int(max_cache_size) if isinstance(max_cache_size, str) else max_cache_size,
             remote_input_dir=input_dir.url,
             compression=compression,
+            encryption=encryption,
             item_loader=item_loader,
             serializers=serializers,
         )
@@ -152,3 +156,7 @@ class Cache:
 
     def _get_chunk_index_from_index(self, index: int) -> Tuple[int, int]:
         return self._reader._get_chunk_index_from_index(index)
+
+    def save_checkpoint(self, checkpoint_dir: str = ".checkpoints") -> Optional[str]:
+        """Save the current state of the writer to a checkpoint."""
+        return self._writer.save_checkpoint(checkpoint_dir=checkpoint_dir)

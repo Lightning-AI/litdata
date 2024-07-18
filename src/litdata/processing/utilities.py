@@ -21,23 +21,11 @@ from subprocess import DEVNULL, Popen
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 from urllib import parse
 
-from litdata.constants import _INDEX_FILENAME, _IS_IN_STUDIO, _LIGHTNING_CLOUD_AVAILABLE
+import boto3
+import botocore
+
+from litdata.constants import _INDEX_FILENAME, _IS_IN_STUDIO
 from litdata.streaming.cache import Dir
-
-if _LIGHTNING_CLOUD_AVAILABLE:
-    from lightning_cloud.openapi import (
-        ProjectIdDatasetsBody,
-    )
-    from lightning_cloud.openapi.rest import ApiException
-    from lightning_cloud.rest_client import LightningClient
-
-try:
-    import boto3
-    import botocore
-
-    _BOTO3_AVAILABLE = True
-except Exception:
-    _BOTO3_AVAILABLE = False
 
 
 def _create_dataset(
@@ -66,6 +54,10 @@ def _create_dataset(
 
     if not storage_dir:
         raise ValueError("The storage_dir should be defined.")
+
+    from lightning_cloud.openapi import ProjectIdDatasetsBody
+    from lightning_cloud.openapi.rest import ApiException
+    from lightning_cloud.rest_client import LightningClient
 
     client = LightningClient(retry=False)
 
@@ -249,3 +241,37 @@ def extract_rank_and_index_from_filename(chunk_filename: str) -> Tuple[int, int]
     index = int(chunk_filename[1].split(".")[0])
 
     return rank, index
+
+
+def remove_uuid_from_filename(filepath: str) -> str:
+    """Remove the unique id from the filepath. Expects the filepath to be in the format
+    `checkpoint-<rank>-<uuid>.json`.
+
+    e.g.: `checkpoint-0-9fe2c4e93f654fdbb24c02b15259716c.json`
+        -> `checkpoint-0.json`
+
+    """
+
+    if not filepath.__contains__(".checkpoints"):
+        return filepath
+
+    # uuid is of 32 characters, '.json' is 5 characters and '-' is 1 character
+    return filepath[:-38] + ".json"
+
+
+def download_directory_from_S3(bucket_name: str, remote_directory_name: str, local_directory_name: str) -> str:
+    s3_resource = boto3.resource("s3")
+    bucket = s3_resource.Bucket(bucket_name)
+
+    saved_file_dir = "."
+
+    for obj in bucket.objects.filter(Prefix=remote_directory_name):
+        local_filename = os.path.join(local_directory_name, obj.key)
+
+        if not os.path.exists(os.path.dirname(local_filename)):
+            os.makedirs(os.path.dirname(local_filename))
+        with open(local_filename, "wb") as f:
+            s3_resource.meta.client.download_fileobj(bucket_name, obj.key, f)
+            saved_file_dir = os.path.dirname(local_filename)
+
+    return saved_file_dir

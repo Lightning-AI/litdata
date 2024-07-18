@@ -30,6 +30,7 @@ from litdata.streaming.sampler import ChunkedIndex
 from litdata.streaming.serializers import Serializer
 from litdata.streaming.shuffle import FullShuffle, NoShuffle, Shuffle
 from litdata.utilities.dataset_utilities import _should_replace_path, _try_create_cache_dir, subsample_streaming_dataset
+from litdata.utilities.encryption import Encryption
 from litdata.utilities.env import _DistributedEnv, _is_in_dataloader_worker, _WorkerEnv
 from litdata.utilities.shuffle import _find_chunks_per_ranks_on_which_to_skip_deletion
 
@@ -49,6 +50,7 @@ class StreamingDataset(IterableDataset):
         serializers: Optional[Dict[str, Serializer]] = None,
         max_cache_size: Union[int, str] = "100GB",
         subsample: float = 1.0,
+        encryption: Optional[Encryption] = None,
     ) -> None:
         """The streaming dataset can be used once your data have been optimised using the DatasetOptimiser class.
 
@@ -64,6 +66,7 @@ class StreamingDataset(IterableDataset):
             serializers: The serializers used to serialize and deserialize the chunks.
             max_cache_size: The maximum cache size used by the StreamingDataset.
             subsample: Float representing fraction of the dataset to be randomly sampled (e.g., 0.1 => 10% of dataset).
+            encryption: The encryption object to use for decrypting the data.
 
         """
         super().__init__()
@@ -119,6 +122,7 @@ class StreamingDataset(IterableDataset):
         self._state_dict: Optional[Dict[str, Any]] = None
         self.num_workers: Optional[int] = None
         self.batch_size: Optional[int] = None
+        self._encryption = encryption
 
     def set_shuffle(self, shuffle: bool) -> None:
         self.shuffle = shuffle
@@ -153,6 +157,7 @@ class StreamingDataset(IterableDataset):
             chunk_bytes=1,
             serializers=self.serializers,
             max_cache_size=self.max_cache_size,
+            encryption=self._encryption,
         )
         cache._reader._try_load_config()
 
@@ -331,7 +336,7 @@ class StreamingDataset(IterableDataset):
                 index=index,
                 chunk_index=self.worker_chunks[self.chunk_index - 1],
                 # We provide the chunks indexes only one the first
-                chunk_indexes=None if self.has_triggered_download else self.worker_chunks,
+                chunk_indexes=None if self.has_triggered_download else self.worker_chunks[self.chunk_index - 1 :],
                 is_last_index=(self.chunk_index - 1) == len(self.worker_intervals) and len(self.current_indexes) == 1,
             )
         )
@@ -520,9 +525,12 @@ def _replay_chunks_sampling(
 
     for worker_idx, intervals in workers_intervals.items():
         for interval in intervals:
-            size = interval[-1] - interval[0]
+            size = interval[2] - interval[1]
             if indexes[worker_idx] >= size:
                 indexes[worker_idx] -= size
                 chunks_index[worker_idx] += 1
+            else:
+                # We've reached the chunk where resuming needs to take place (for this worker)
+                break
 
     return chunks_index, indexes

@@ -13,6 +13,7 @@
 
 import json
 import os
+import uuid
 import warnings
 from dataclasses import dataclass
 from time import sleep
@@ -26,6 +27,7 @@ from litdata.processing.utilities import get_worker_rank
 from litdata.streaming.compression import _COMPRESSORS, Compressor
 from litdata.streaming.serializers import Serializer, _get_serializers
 from litdata.utilities._pytree import PyTree, tree_flatten, treespec_dumps
+from litdata.utilities.encryption import Encryption, EncryptionLevel
 from litdata.utilities.env import _DistributedEnv, _WorkerEnv
 from litdata.utilities.format import _convert_bytes_to_int, _human_readable_bytes
 
@@ -48,6 +50,7 @@ class BinaryWriter:
         chunk_size: Optional[int] = None,
         chunk_bytes: Optional[Union[int, str]] = None,
         compression: Optional[str] = None,
+        encryption: Optional[Encryption] = None,
         follow_tensor_dimension: bool = True,
         serializers: Optional[Dict[str, Serializer]] = None,
         chunk_index: Optional[int] = None,
@@ -59,11 +62,14 @@ class BinaryWriter:
             chunk_bytes: The maximum number of bytes within a chunk.
             chunk_size: The maximum number of items within a chunk.
             compression: The compression algorithm to use.
+            encryption: The encryption algorithm to use.
             serializers: Provide your own serializers.
             chunk_index: The index of the chunk to start from.
 
         """
         self._cache_dir = cache_dir
+        if not os.path.exists(self._cache_dir):
+            os.makedirs(self._cache_dir, exist_ok=True)
 
         if (isinstance(self._cache_dir, str) and not os.path.exists(self._cache_dir)) or self._cache_dir is None:
             raise FileNotFoundError(f"The provided cache directory `{self._cache_dir}` doesn't exist.")
@@ -76,6 +82,7 @@ class BinaryWriter:
         self._chunk_size = chunk_size
         self._chunk_bytes = _convert_bytes_to_int(chunk_bytes) if isinstance(chunk_bytes, str) else chunk_bytes
         self._compression = compression
+        self._encryption = encryption
 
         self._data_format: Optional[List[str]] = None
         self._data_spec: Optional[PyTree] = None
@@ -103,6 +110,7 @@ class BinaryWriter:
 
         self._per_sample_num_bytes = 0
         self._per_sample_num_items = 0
+        self.last_checkpoint_chunk_info: List[Dict[str, Any]] = []
 
     @property
     def filled(self) -> bool:
@@ -139,6 +147,7 @@ class BinaryWriter:
             "chunk_bytes": self._chunk_bytes,
             "data_format": self._data_format,
             "data_spec": treespec_dumps(self._data_spec) if self._data_spec else None,
+            "encryption": self._encryption.state_dict() if self._encryption else None,
         }
 
     def serialize(self, items: Any) -> Tuple[bytes, Optional[int]]:
@@ -234,6 +243,11 @@ class BinaryWriter:
 
         current_chunk_bytes = sum([item.bytes for item in items])
 
+        # Whether to encrypt the data at the chunk level
+        if self._encryption and self._encryption.level == EncryptionLevel.CHUNK:
+            data = self._encryption.encrypt(data)
+            current_chunk_bytes = len(data)
+
         if self._chunk_bytes and current_chunk_bytes > self._chunk_bytes:
             warnings.warn(
                 f"An item was larger than the target chunk size ({_human_readable_bytes(self._chunk_bytes)})."
@@ -289,6 +303,11 @@ class BinaryWriter:
             raise ValueError(f"The provided index {index} already exists in the cache.")
 
         data, dim = self.serialize(items)
+
+        # Whether to encrypt the data at the sample level
+        if self._encryption and self._encryption.level == EncryptionLevel.SAMPLE:
+            data = self._encryption.encrypt(data)
+
         self._serialized_items[index] = Item(
             index=index,
             data=data,
@@ -458,7 +477,7 @@ class BinaryWriter:
                 elif config != data["config"]:
                     raise Exception(
                         "The config isn't consistent between chunks. This shouldn't have happened."
-                        f"Found {config} {data['config']}."
+                        f"Found {config}; {data['config']}."
                     )
 
                 chunks_info.extend(data["chunks"])
@@ -494,3 +513,25 @@ class BinaryWriter:
                 data=b"",
             )
         return out
+
+    def save_checkpoint(self, checkpoint_dir: str = ".checkpoints") -> Optional[str]:
+        """Save the current state of the writer to a checkpoint."""
+        checkpoint_dir = os.path.join(self._cache_dir, checkpoint_dir)
+        if not os.path.exists(checkpoint_dir):
+            os.makedirs(checkpoint_dir)
+
+        if self._chunks_info == self.last_checkpoint_chunk_info:
+            # to avoid saving the same checkpoint twice
+            return None
+
+        unique_id = uuid.uuid4().hex
+        done_till_index = sum(chnk_info["chunk_size"] for chnk_info in self._chunks_info)
+
+        checkpoint_filepath = os.path.join(checkpoint_dir, f"checkpoint-{self.rank}-{unique_id}.json")
+
+        checkPoint = {"chunks": self._chunks_info, "config": self.get_config(), "done_till_index": done_till_index}
+
+        with open(checkpoint_filepath, "w") as f:
+            json.dump(checkPoint, f)
+
+        return checkpoint_filepath

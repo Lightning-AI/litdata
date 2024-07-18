@@ -16,6 +16,7 @@ import os
 import random
 import sys
 from time import time
+from unittest import mock
 
 import numpy as np
 import pytest
@@ -100,6 +101,12 @@ def test_pil_serializer(mode):
     assert np.array_equal(np_data, np_dec_data)
 
 
+def test_pil_serializer_available():
+    serializer = PILSerializer()
+    with mock.patch("litdata.streaming.serializers._PIL_AVAILABLE", False):
+        assert not serializer.can_serialize(None)
+
+
 @pytest.mark.skipif(condition=not _PIL_AVAILABLE, reason="Requires: ['pil']")
 def test_jpeg_serializer():
     serializer = JPEGSerializer()
@@ -119,6 +126,12 @@ def test_jpeg_serializer():
 
     deserialized_img = serializer.deserialize(data)
     assert deserialized_img.shape == torch.Size([3, 28, 28])
+
+
+def test_jpeg_serializer_available():
+    serializer = JPEGSerializer()
+    with mock.patch("litdata.streaming.serializers._PIL_AVAILABLE", False):
+        assert not serializer.can_serialize(None)
 
 
 @pytest.mark.flaky(reruns=3)
@@ -204,10 +217,13 @@ def test_assert_no_header_tensor_serializer():
 
 def test_assert_no_header_numpy_serializer():
     serializer = NoHeaderNumpySerializer()
-    t = np.ones((10,))
+    t = np.ones((10,), dtype=np.float64)
     assert serializer.can_serialize(t)
     data, name = serializer.serialize(t)
-    assert name == "no_header_numpy:10"
+    try:
+        assert name == "no_header_numpy:10"
+    except AssertionError as e:  # debug what np.core.sctypes looks like on Windows
+        raise ValueError(np.core.sctypes) from e
     assert serializer._dtype is None
     serializer.setup(name)
     assert serializer._dtype == np.dtype("float64")

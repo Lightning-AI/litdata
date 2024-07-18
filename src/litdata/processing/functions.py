@@ -27,10 +27,11 @@ from urllib import parse
 
 import torch
 
-from litdata.constants import _INDEX_FILENAME, _IS_IN_STUDIO, _TQDM_AVAILABLE
+from litdata.constants import _INDEX_FILENAME, _IS_IN_STUDIO
 from litdata.processing.data_processor import DataChunkRecipe, DataProcessor, DataTransformRecipe
 from litdata.processing.readers import BaseReader
 from litdata.processing.utilities import (
+    _get_work_dir,
     extract_rank_and_index_from_filename,
     optimize_dns_context,
     read_index_file_content,
@@ -45,13 +46,8 @@ from litdata.streaming.resolver import (
     _resolve_dir,
 )
 from litdata.utilities._pytree import tree_flatten
-
-if _TQDM_AVAILABLE:
-    from tqdm.auto import tqdm as _tqdm
-else:
-
-    def _tqdm(iterator: Any) -> Any:
-        yield from iterator
+from litdata.utilities.encryption import Encryption
+from litdata.utilities.format import _get_tqdm_iterator_if_available
 
 
 def _is_remote_file(path: str) -> bool:
@@ -152,9 +148,10 @@ class LambdaDataChunkRecipe(DataChunkRecipe):
         chunk_size: Optional[int],
         chunk_bytes: Optional[Union[int, str]],
         compression: Optional[str],
+        encryption: Optional[Encryption] = None,
         existing_index: Optional[Dict[str, Any]] = None,
     ):
-        super().__init__(chunk_size=chunk_size, chunk_bytes=chunk_bytes, compression=compression)
+        super().__init__(chunk_size=chunk_size, chunk_bytes=chunk_bytes, compression=compression, encryption=encryption)
         self._fn = fn
         self._inputs = inputs
         self.is_generator = False
@@ -301,6 +298,7 @@ def optimize(
     chunk_size: Optional[int] = None,
     chunk_bytes: Optional[Union[int, str]] = None,
     compression: Optional[str] = None,
+    encryption: Optional[Encryption] = None,
     num_workers: Optional[int] = None,
     fast_dev_run: bool = False,
     num_nodes: Optional[int] = None,
@@ -311,6 +309,7 @@ def optimize(
     reader: Optional[BaseReader] = None,
     batch_size: Optional[int] = None,
     mode: Optional[Literal["append", "overwrite"]] = None,
+    use_checkpoint: bool = False,
 ) -> None:
     """This function converts a dataset into chunks possibly in a distributed way.
 
@@ -325,6 +324,7 @@ def optimize(
         chunk_size: The maximum number of elements to hold within a chunk.
         chunk_bytes: The maximum number of bytes to hold within a chunk.
         compression: The compression algorithm to use over the chunks.
+        encryption: The encryption algorithm to use over the chunks.
         num_workers: The number of workers to use during processing
         fast_dev_run: Whether to use process only a sub part of the inputs
         num_nodes: When doing remote execution, the number of nodes to use. Only supported on https://lightning.ai/.
@@ -336,6 +336,8 @@ def optimize(
         batch_size: Group the inputs into batches of batch_size length.
         mode: The mode to use when writing the data. Accepts either ``append`` or ``overwrite`` or None.
             Defaults to None.
+        use_checkpoint: Whether to create checkpoints while processing the data, which can be used to resume the
+            processing from the last checkpoint if the process is interrupted. (`Default: False`)
 
     """
     if mode is not None and mode not in ["append", "overwrite"]:
@@ -352,7 +354,6 @@ def optimize(
 
     if len(inputs) == 0:
         raise ValueError(f"The provided inputs should be non empty. Found {inputs}.")
-
     if chunk_size is None and chunk_bytes is None:
         raise ValueError("Either `chunk_size` or `chunk_bytes` needs to be defined.")
 
@@ -369,7 +370,19 @@ def optimize(
         )
 
     if num_nodes is None or int(os.getenv("DATA_OPTIMIZER_NUM_NODES", 0)) > 0:
+        DATA_OPTIMIZER_NUM_NODES = int(os.getenv("DATA_OPTIMIZER_NUM_NODES", 0))
         _output_dir: Dir = _resolve_dir(output_dir)
+
+        if (
+            _output_dir.url is None
+            and _output_dir.path
+            and _output_dir.path.startswith("/teamspace/studios/this_studio")
+            and DATA_OPTIMIZER_NUM_NODES > 0
+        ):
+            assert _output_dir.path
+            output_dir = _output_dir.path.replace("/teamspace/studios/this_studio", "")
+            output_dir = _get_work_dir().lstrip("/").rstrip("/") + "/" + output_dir.lstrip("/").rstrip("/")
+            _output_dir = _resolve_dir(output_dir)
 
         if _output_dir.url is not None and "cloudspaces" in _output_dir.url:
             raise ValueError(
@@ -377,7 +390,7 @@ def optimize(
                 " HINT: You can either use `/teamspace/s3_connections/...` or `/teamspace/datasets/...`."
             )
 
-        _assert_dir_has_index_file(_output_dir, mode=mode)
+        _assert_dir_has_index_file(_output_dir, mode=mode, use_checkpoint=use_checkpoint)
 
         if not isinstance(inputs, StreamingDataLoader):
             resolved_dir = _resolve_dir(input_dir or _get_input_dir(inputs))
@@ -412,6 +425,7 @@ def optimize(
             reorder_files=reorder_files,
             reader=reader,
             state_dict=state_dict,
+            use_checkpoint=use_checkpoint,
         )
 
         with optimize_dns_context(True):
@@ -422,6 +436,7 @@ def optimize(
                     chunk_size=chunk_size,
                     chunk_bytes=chunk_bytes,
                     compression=compression,
+                    encryption=encryption,
                     existing_index=existing_index_file_content,
                 )
             )
@@ -545,6 +560,8 @@ def merge_datasets(input_dirs: List[str], output_dir: str) -> None:
             counter += 1
 
     index_json = {"config": input_dirs_file_content[0]["config"], "chunks": chunks}  # type: ignore
+
+    _tqdm = _get_tqdm_iterator_if_available()
 
     for copy_info in _tqdm(copy_infos):
         _apply_copy(copy_info, resolved_output_dir)
