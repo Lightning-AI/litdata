@@ -147,9 +147,7 @@ class BinaryWriter:
             "chunk_bytes": self._chunk_bytes,
             "data_format": self._data_format,
             "data_spec": treespec_dumps(self._data_spec) if self._data_spec else None,
-            "encryption": {"algorithm": self._encryption.algorithm, "level": self._encryption.level}
-            if self._encryption
-            else None,
+            "encryption": self._encryption.state_dict() if self._encryption else None,
         }
 
     def serialize(self, items: Any) -> Tuple[bytes, Optional[int]]:

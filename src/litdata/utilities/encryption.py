@@ -99,13 +99,14 @@ class FernetEncryption(Encryption):
     def state_dict(self) -> Dict[str, Any]:
         return {
             "algorithm": self.algorithm,
-            "salt": base64.urlsafe_b64encode(self.salt).decode("utf-8"),
             "level": self.level,
         }
 
     def save(self, file_path: str) -> None:
+        state = self.state_dict()
+        state["salt"] = base64.urlsafe_b64encode(self.salt).decode("utf-8")
         with open(file_path, "wb") as file:
-            file.write(json.dumps(self.state_dict()).encode("utf-8"))
+            file.write(json.dumps(state).encode("utf-8"))
 
     @classmethod
     def load(cls, file_path: str, password: str) -> "FernetEncryption":
