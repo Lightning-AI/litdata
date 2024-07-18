@@ -80,10 +80,13 @@ class PILSerializer(Serializer):
         return Image.frombytes(mode, size, raw)  # pyright: ignore
 
     def can_serialize(self, item: Any) -> bool:
+        if not _PIL_AVAILABLE:
+            return False
+
         from PIL import Image
         from PIL.JpegImagePlugin import JpegImageFile
 
-        return bool(_PIL_AVAILABLE) and isinstance(item, Image.Image) and not isinstance(item, JpegImageFile)
+        return isinstance(item, Image.Image) and not isinstance(item, JpegImageFile)
 
 
 class JPEGSerializer(Serializer):
@@ -137,9 +140,12 @@ class JPEGSerializer(Serializer):
         return img
 
     def can_serialize(self, item: Any) -> bool:
+        if not _PIL_AVAILABLE:
+            return False
+
         from PIL.JpegImagePlugin import JpegImageFile
 
-        return bool(_PIL_AVAILABLE) and isinstance(item, JpegImageFile)
+        return isinstance(item, JpegImageFile)
 
 
 class BytesSerializer(Serializer):
