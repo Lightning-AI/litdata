@@ -27,6 +27,7 @@ from litdata.processing.utilities import get_worker_rank
 from litdata.streaming.compression import _COMPRESSORS, Compressor
 from litdata.streaming.serializers import Serializer, _get_serializers
 from litdata.utilities._pytree import PyTree, tree_flatten, treespec_dumps
+from litdata.utilities.encryption import Encryption, EncryptionLevel
 from litdata.utilities.env import _DistributedEnv, _WorkerEnv
 from litdata.utilities.format import _convert_bytes_to_int, _human_readable_bytes
 
@@ -49,6 +50,7 @@ class BinaryWriter:
         chunk_size: Optional[int] = None,
         chunk_bytes: Optional[Union[int, str]] = None,
         compression: Optional[str] = None,
+        encryption: Optional[Encryption] = None,
         follow_tensor_dimension: bool = True,
         serializers: Optional[Dict[str, Serializer]] = None,
         chunk_index: Optional[int] = None,
@@ -60,6 +62,7 @@ class BinaryWriter:
             chunk_bytes: The maximum number of bytes within a chunk.
             chunk_size: The maximum number of items within a chunk.
             compression: The compression algorithm to use.
+            encryption: The encryption algorithm to use.
             serializers: Provide your own serializers.
             chunk_index: The index of the chunk to start from.
 
@@ -79,6 +82,7 @@ class BinaryWriter:
         self._chunk_size = chunk_size
         self._chunk_bytes = _convert_bytes_to_int(chunk_bytes) if isinstance(chunk_bytes, str) else chunk_bytes
         self._compression = compression
+        self._encryption = encryption
 
         self._data_format: Optional[List[str]] = None
         self._data_spec: Optional[PyTree] = None
@@ -143,6 +147,7 @@ class BinaryWriter:
             "chunk_bytes": self._chunk_bytes,
             "data_format": self._data_format,
             "data_spec": treespec_dumps(self._data_spec) if self._data_spec else None,
+            "encryption": self._encryption.state_dict() if self._encryption else None,
         }
 
     def serialize(self, items: Any) -> Tuple[bytes, Optional[int]]:
@@ -238,6 +243,11 @@ class BinaryWriter:
 
         current_chunk_bytes = sum([item.bytes for item in items])
 
+        # Whether to encrypt the data at the chunk level
+        if self._encryption and self._encryption.level == EncryptionLevel.CHUNK:
+            data = self._encryption.encrypt(data)
+            current_chunk_bytes = len(data)
+
         if self._chunk_bytes and current_chunk_bytes > self._chunk_bytes:
             warnings.warn(
                 f"An item was larger than the target chunk size ({_human_readable_bytes(self._chunk_bytes)})."
@@ -293,6 +303,11 @@ class BinaryWriter:
             raise ValueError(f"The provided index {index} already exists in the cache.")
 
         data, dim = self.serialize(items)
+
+        # Whether to encrypt the data at the sample level
+        if self._encryption and self._encryption.level == EncryptionLevel.SAMPLE:
+            data = self._encryption.encrypt(data)
+
         self._serialized_items[index] = Item(
             index=index,
             data=data,
