@@ -78,10 +78,6 @@ jobs:
           pip install -e . -r requirements/test.txt -U -q --find-links $TORCH_URL
           pip list
 
-      # FIXME: REMOVE
-      # - name: Setup tmate session
-      #   uses: mxschmitt/action-tmate@v3
-
       - name: Tests
         run: coverage run --source litdata -m pytest tests -v
 

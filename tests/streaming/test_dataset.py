@@ -838,7 +838,7 @@ def test_dataset_resume_on_future_chunks(shuffle, tmpdir, monkeypatch):
         inputs=list(range(8)),
         output_dir=data_dir,
         chunk_size=190,
-        num_workers=1,
+        num_workers=1,  # TODO: Want 4 here, but optimize() has deletion race condition
         num_uploaders=1,
     )
     sleep(5)  # wait for copier/remover threads to complete
