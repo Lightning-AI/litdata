@@ -88,5 +88,7 @@ def thread_police():
             assert not thread.is_alive()
         elif thread.name == "QueueFeederThread":
             thread.join(timeout=20)
+        elif thread.name == "PrepareChunksThread":
+            thread.force_stop()
         else:
             raise AssertionError(f"Test left zombie thread: {thread}")
