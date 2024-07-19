@@ -108,7 +108,7 @@ def _find_chunks_per_workers_on_which_to_skip_deletion(
     num_workers: int,
     batch_size: int,
     workers_chunks: List[List[int]],
-    workers_intervals: List[List[int]],
+    workers_intervals: List[List[Interval]],
 ) -> Dict[int, List[int]]:
     # {1: [2, 3, 4, 5]}
     # [2, 3] belongs to rank 0
@@ -135,7 +135,6 @@ def _find_chunks_per_workers_on_which_to_skip_deletion(
             counter = 0
 
             while True:
-                chunks_of_currently_loaded_worker = workers_chunks_for_this_rank[worker_tracker_idx % num_workers]
                 interval_size_of_current_worker = workers_interval_sizes_for_this_rank[worker_tracker_idx % num_workers]
                 if len(interval_size_of_current_worker) == 0:
                     worker_tracker_idx += 1
