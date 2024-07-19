@@ -110,9 +110,6 @@ def _find_chunks_per_workers_on_which_to_skip_deletion(
     workers_chunks: List[List[int]],
     workers_intervals: List[List[Interval]],
 ) -> Dict[int, List[int]]:
-    # {1: [2, 3, 4, 5]}
-    # [2, 3] belongs to rank 0
-    # [4, 5] belongs to rank 1
     shared_chunks = _get_shared_chunks(workers_chunks)
     shared_chunks_aggregated_by_rank = _aggregate_shared_chunks_per_rank(shared_chunks, num_workers)
 
