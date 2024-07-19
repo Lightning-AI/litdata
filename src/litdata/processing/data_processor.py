@@ -52,6 +52,7 @@ from litdata.streaming.resolver import _resolve_dir
 from litdata.utilities._pytree import tree_flatten, tree_unflatten, treespec_loads
 from litdata.utilities.broadcast import broadcast_object
 from litdata.utilities.dataset_utilities import load_index_file
+from litdata.utilities.encryption import Encryption
 from litdata.utilities.packing import _pack_greedily
 
 logger = logging.Logger(__name__)
@@ -519,12 +520,12 @@ class BaseWorker:
 
         if isinstance(self.data_recipe, DataTransformRecipe):
             return
-
         self.cache = Cache(
             self.cache_chunks_dir,
             chunk_bytes=self.data_recipe.chunk_bytes,
             chunk_size=self.data_recipe.chunk_size,
             compression=self.data_recipe.compression,
+            encryption=self.data_recipe.encryption,
             writer_chunk_index=self.writer_starting_chunk_index,
         )
         self.cache._reader._rank = _get_node_rank() * self.num_workers + self.worker_index
@@ -714,6 +715,7 @@ class _Result:
     num_bytes: Optional[str] = None
     data_format: Optional[str] = None
     compression: Optional[str] = None
+    encryption: Optional[Encryption] = None
     num_chunks: Optional[int] = None
     num_bytes_per_chunk: Optional[List[int]] = None
 
@@ -743,6 +745,7 @@ class DataChunkRecipe(DataRecipe):
         chunk_size: Optional[int] = None,
         chunk_bytes: Optional[Union[int, str]] = None,
         compression: Optional[str] = None,
+        encryption: Optional[Encryption] = None,
     ):
         super().__init__()
         if chunk_size is not None and chunk_bytes is not None:
@@ -751,6 +754,7 @@ class DataChunkRecipe(DataRecipe):
         self.chunk_size = chunk_size
         self.chunk_bytes = 1 << 26 if chunk_size is None and chunk_bytes is None else chunk_bytes
         self.compression = compression
+        self.encryption = encryption
 
     @abstractmethod
     def prepare_structure(self, input_dir: Optional[str]) -> List[T]:
@@ -794,7 +798,6 @@ class DataChunkRecipe(DataRecipe):
             # The platform can't store more than 1024 entries.
             # Note: This isn't really used right now, so it is fine to skip if too big.
             num_bytes_per_chunk = [c["chunk_size"] for c in config["chunks"]] if num_chunks < 1024 else []
-
             return _Result(
                 size=size,
                 num_bytes=num_bytes,
@@ -944,7 +947,6 @@ class DataProcessor:
         """The `DataProcessor.run(...)` method triggers the data recipe processing over your dataset."""
         if not isinstance(data_recipe, DataRecipe):
             raise ValueError("The provided value should be a data recipe.")
-
         if not self.use_checkpoint and isinstance(data_recipe, DataChunkRecipe):
             # clean up checkpoints if not using checkpoints
             self._cleanup_checkpoints()
@@ -959,7 +961,6 @@ class DataProcessor:
 
         # Call the setup method of the user
         user_items: List[Any] = data_recipe.prepare_structure(self.input_dir.path if self.input_dir else None)
-
         if not isinstance(user_items, (list, StreamingDataLoader)):
             raise ValueError("The `prepare_structure` should return a list of item metadata.")
 

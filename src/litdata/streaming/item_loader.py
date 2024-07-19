@@ -16,8 +16,9 @@ import os
 from abc import ABC, abstractmethod
 from collections import namedtuple
 from copy import deepcopy
+from io import BytesIO, FileIO
 from time import sleep
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import torch
@@ -27,6 +28,7 @@ from litdata.constants import (
 )
 from litdata.streaming.serializers import Serializer
 from litdata.utilities._pytree import PyTree, tree_unflatten
+from litdata.utilities.encryption import Encryption, EncryptionLevel
 
 Interval = namedtuple("Interval", ["chunk_start", "roi_start_idx", "roi_end_idx", "chunk_end"])
 
@@ -83,7 +85,12 @@ class BaseItemLoader(ABC):
 
     @abstractmethod
     def load_item_from_chunk(
-        self, index: int, chunk_index: int, chunk_filepath: str, begin: int, chunk_bytes: int
+        self,
+        index: int,
+        chunk_index: int,
+        chunk_filepath: str,
+        begin: int,
+        chunk_bytes: int,
     ) -> Any:
         """Returns an item loaded from a chunk."""
         pass
@@ -99,6 +106,7 @@ class PyTreeLoader(BaseItemLoader):
 
     def __init__(self) -> None:
         self._chunk_filepaths: Dict[str, bool] = {}
+        self._decrypted_chunks: Dict[int, bytes] = {}
 
     def generate_intervals(self) -> List[Interval]:
         intervals = []
@@ -119,7 +127,13 @@ class PyTreeLoader(BaseItemLoader):
         pass
 
     def load_item_from_chunk(
-        self, index: int, chunk_index: int, chunk_filepath: str, begin: int, chunk_bytes: int
+        self,
+        index: int,
+        chunk_index: int,
+        chunk_filepath: str,
+        begin: int,
+        chunk_bytes: int,
+        encryption: Optional[Encryption] = None,
     ) -> bytes:
         offset = (1 + (index - begin) if index >= begin else index + 1) * 4
 
@@ -135,17 +149,55 @@ class PyTreeLoader(BaseItemLoader):
 
             self._chunk_filepaths[chunk_filepath] = True
 
-        with open(chunk_filepath, "rb", 0) as fp:
-            fp.seek(offset)
-            pair = fp.read(8)
-            begin, end = np.frombuffer(pair, np.uint32)
-            fp.seek(begin)
-            data = fp.read(end - begin)
+        if self._config["encryption"]:
+            data = self._load_encrypted_data(chunk_filepath, chunk_index, offset, encryption)
+        else:
+            with open(chunk_filepath, "rb", 0) as fp:
+                data = self._load_data(fp, offset)
 
         # check for mosaic mds format
         if "format" in self._config and self._config["format"] == "mds":
             return self.mds_deserialize(data, chunk_index)
         return self.deserialize(data)
+
+    def _load_encrypted_data(
+        self, chunk_filepath: str, chunk_index: int, offset: int, encryption: Optional[Encryption]
+    ) -> bytes:
+        """Load and decrypt data from chunk based on the encryption configuration."""
+
+        # Validate the provided encryption object against the expected configuration.
+        self._validate_encryption(encryption)
+
+        # chunk-level decryption
+        if self._config["encryption"]["level"] == EncryptionLevel.CHUNK:
+            decrypted_data = self._decrypted_chunks.get(chunk_index, None)
+            if decrypted_data is None:
+                with open(chunk_filepath, "rb", 0) as fp:
+                    encrypted_data = fp.read()
+                    decrypted_data = encryption.decrypt(encrypted_data)  # type: ignore
+                    # Store the decrypted chunk to avoid re-decryption,
+                    # also allows to free the previous chunk from the memory
+                    self._decrypted_chunks = {chunk_index: decrypted_data}
+            data = self._load_data(BytesIO(decrypted_data), offset)
+
+        # sample-level decryption
+        elif self._config["encryption"]["level"] == EncryptionLevel.SAMPLE:
+            with open(chunk_filepath, "rb", 0) as fp:
+                data = self._load_data(fp, offset)
+                data = encryption.decrypt(data)  # type: ignore
+
+        else:
+            raise ValueError("Invalid encryption level.")
+
+        return data
+
+    def _load_data(self, fp: Union[FileIO, BytesIO], offset: int) -> bytes:
+        """Load the data from the file pointer."""
+        fp.seek(offset)
+        pair = fp.read(8)
+        begin, end = np.frombuffer(pair, np.uint32)
+        fp.seek(begin)
+        return fp.read(end - begin)
 
     def mds_deserialize(self, raw_item_data: bytes, chunk_index: int) -> "PyTree":
         """Deserialize the mds raw bytes into their python equivalent."""
@@ -183,6 +235,15 @@ class PyTreeLoader(BaseItemLoader):
     def delete(self, chunk_index: int, chunk_filepath: str) -> None:
         if os.path.exists(chunk_filepath):
             os.remove(chunk_filepath)
+
+    def _validate_encryption(self, encryption: Optional[Encryption]) -> None:
+        """Validate the encryption object."""
+        if not encryption:
+            raise ValueError("Data is encrypted but no encryption object was provided.")
+        if encryption.algorithm != self._config["encryption"]["algorithm"]:
+            raise ValueError("Encryption algorithm mismatch.")
+        if encryption.level != self._config["encryption"]["level"]:
+            raise ValueError("Encryption level mismatch.")
 
 
 class TokensLoader(BaseItemLoader):
@@ -256,7 +317,12 @@ class TokensLoader(BaseItemLoader):
             self._load_chunk(chunk_index, chunk_filepath)
 
     def load_item_from_chunk(
-        self, index: int, chunk_index: int, chunk_filepath: str, begin: int, chunk_bytes: int
+        self,
+        index: int,
+        chunk_index: int,
+        chunk_filepath: str,
+        begin: int,
+        chunk_bytes: int,
     ) -> torch.Tensor:
         if chunk_filepath in self._chunk_filepaths and not os.path.isfile(chunk_filepath):
             del self._chunk_filepaths[chunk_filepath]

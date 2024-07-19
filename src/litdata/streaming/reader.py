@@ -24,6 +24,7 @@ from litdata.streaming.config import ChunksConfig, Interval
 from litdata.streaming.item_loader import BaseItemLoader, PyTreeLoader
 from litdata.streaming.sampler import ChunkedIndex
 from litdata.streaming.serializers import Serializer, _get_serializers
+from litdata.utilities.encryption import Encryption
 from litdata.utilities.env import _DistributedEnv, _WorkerEnv
 
 warnings.filterwarnings("ignore", message=".*The given buffer is not writable.*")
@@ -165,6 +166,7 @@ class BinaryReader:
         max_cache_size: Optional[Union[int, str]] = None,
         remote_input_dir: Optional[str] = None,
         compression: Optional[str] = None,
+        encryption: Optional[Encryption] = None,
         item_loader: Optional[BaseItemLoader] = None,
         serializers: Optional[Dict[str, Serializer]] = None,
     ) -> None:
@@ -177,6 +179,7 @@ class BinaryReader:
             remote_input_dir: The path to a remote folder where the data are located.
                 The scheme needs to be added to the path.
             compression: The algorithm to decompress the chunks.
+            encryption: The algorithm to decrypt the chunks or samples.
             item_loader: The chunk sampler to create sub arrays from a chunk.
             max_cache_size: The maximum cache size used by the reader when fetching the chunks.
             serializers: Provide your own serializers.
@@ -192,6 +195,7 @@ class BinaryReader:
             raise FileNotFoundError(f"The provided cache_dir `{self._cache_dir}` doesn't exist.")
 
         self._compression = compression
+        self._encryption = encryption
         self._intervals: Optional[List[str]] = None
         self.subsampled_files = subsampled_files
         self.region_of_interest = region_of_interest
@@ -272,9 +276,15 @@ class BinaryReader:
 
         # Fetch the element
         chunk_filepath, begin, chunk_bytes = self.config[index]
-        item = self._item_loader.load_item_from_chunk(
-            index.index, index.chunk_index, chunk_filepath, begin, chunk_bytes
-        )
+
+        if isinstance(self._item_loader, PyTreeLoader):
+            item = self._item_loader.load_item_from_chunk(
+                index.index, index.chunk_index, chunk_filepath, begin, chunk_bytes, self._encryption
+            )
+        else:
+            item = self._item_loader.load_item_from_chunk(
+                index.index, index.chunk_index, chunk_filepath, begin, chunk_bytes
+            )
 
         # We need to request deletion after the latest element has been loaded.
         # Otherwise, this could trigger segmentation fault error depending on the item loader used.
