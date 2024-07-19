@@ -206,7 +206,9 @@ def _get_shared_chunks(workers_chunks: List[List[int]]) -> Dict[int, List[int]]:
     return {chunk: workers for chunk, workers in shared_chunks.items() if len(workers) > 1}
 
 
-def _aggregate_shared_chunks_per_rank(shared_chunks: Dict[int, List[int]], num_workers: int) -> Dict[int, Dict[int, List[int]]]:
+def _aggregate_shared_chunks_per_rank(
+    shared_chunks: Dict[int, List[int]], num_workers: int
+) -> Dict[int, Dict[int, List[int]]]:
     aggregated_shared_chunks_per_rank: Dict[int, Dict[int, List[int]]] = {}
     for chunk_index, workers_ids in shared_chunks.items():
         aggregated_shared_chunks_per_rank[chunk_index] = {}

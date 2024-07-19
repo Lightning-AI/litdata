@@ -182,7 +182,7 @@ def test_find_chunks_per_workers_on_which_to_skip_deletion():
             ],
         )
         assert chunks_to_disable == {0: [0, 1, 2]}
-        
+
     # world size 2, 2 workers per rank, sharing multiple chunks
     chunks_to_disable = _find_chunks_per_workers_on_which_to_skip_deletion(
         num_workers=2,
