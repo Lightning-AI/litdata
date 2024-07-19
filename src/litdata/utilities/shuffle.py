@@ -43,7 +43,7 @@ def _intra_node_chunk_shuffle(
     return [index for chunks in chunk_indexes_per_nodes for index in chunks]
 
 
-def _associate_chunks_and_internals_to_workers(
+def _associate_chunks_and_intervals_to_workers(
     distributed_env: _DistributedEnv,
     indexes: Any,
     chunk_intervals: List[Interval],

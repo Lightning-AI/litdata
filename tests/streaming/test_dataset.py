@@ -39,7 +39,7 @@ from litdata.streaming.item_loader import TokensLoader
 from litdata.streaming.shuffle import FullShuffle, NoShuffle
 from litdata.utilities import dataset_utilities as dataset_utilities_module
 from litdata.utilities.env import _DistributedEnv, _WorkerEnv
-from litdata.utilities.shuffle import _associate_chunks_and_internals_to_workers
+from litdata.utilities.shuffle import _associate_chunks_and_intervals_to_workers
 from torch.utils.data import DataLoader
 
 
@@ -1000,7 +1000,7 @@ def test_replay_sampling():
 def test_replay_chunks_sampling():
     chunks_replica = range(10)
     intervals_replica = [(i, i, i + 5, i + 5) for i in range(0, 50, 5)]
-    workers_chunks, workers_intervals = _associate_chunks_and_internals_to_workers(
+    workers_chunks, workers_intervals = _associate_chunks_and_intervals_to_workers(
         _DistributedEnv(2, 0, 1), chunks_replica, intervals_replica
     )
     assert workers_chunks == [[0, 1, 2, 3, 4], [5, 6, 7, 8, 9]]
