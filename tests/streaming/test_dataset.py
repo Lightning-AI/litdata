@@ -839,6 +839,7 @@ def test_dataset_resume_on_future_chunks(shuffle, tmpdir, monkeypatch):
         num_workers=4,
         num_uploaders=1,
     )
+    sleep(5)  # wait for copier/remover threads to complete
     assert set(os.listdir(tmpdir / "optimized")) == {
         "chunk-0-0.bin",
         "chunk-0-1.bin",
