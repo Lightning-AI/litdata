@@ -114,12 +114,7 @@ def _find_chunks_per_workers_on_which_to_skip_deletion(
     # [2, 3] belongs to rank 0
     # [4, 5] belongs to rank 1
     shared_chunks = _get_shared_chunks(workers_chunks)
-
-    # workers_index_sharing_chunks
-    # {1: (0, [2, 3], (1, [4, 5]))}
     shared_chunks_aggregated_by_rank = _aggregate_shared_chunks_per_rank(shared_chunks, num_workers)
-
-    # breakpoint()
 
     max_trackers = {}
     to_disable = {}
@@ -168,7 +163,6 @@ def _find_chunks_per_workers_on_which_to_skip_deletion(
 
                     if current_worker_chunk_index == chunk_index:
                         num_shared_workers_for_this_rank -= 1
-                        # breakpoint()
 
                     # We consumed entirely the chunk of the worker we were tracking, let's break
                     # TODO: Maybe, we can prevent loading over and over for each worker
@@ -184,7 +178,6 @@ def _find_chunks_per_workers_on_which_to_skip_deletion(
                                     local_rank * num_workers + worker_tracker_idx % num_workers,
                                     counter,
                                 )
-
                         break
 
                     if num_samples_left_for_this_worker_chunk != batch_size:
@@ -195,10 +188,6 @@ def _find_chunks_per_workers_on_which_to_skip_deletion(
 
                 if num_of_samples_to_carry_to_next_chunk is None:
                     worker_tracker_idx += 1
-
-            # else:
-            #     # I don't know if this is possible
-            #     break
 
     for chunk_index, worker_ids in shared_chunks.items():
         last_worker_idx = max_trackers[chunk_index][0]

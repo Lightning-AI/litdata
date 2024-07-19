@@ -123,16 +123,16 @@ def test_get_shared_chunks():
 
 
 def test_find_chunks_per_workers_on_which_to_skip_deletion():
-    # world size = 1, no shared chunks
+    # world size = 1, single worker
     chunks_to_disable = _find_chunks_per_workers_on_which_to_skip_deletion(
-        num_workers=2,
+        num_workers=1,
         batch_size=1,
-        workers_chunks=[[0], [1]],
-        workers_intervals=[[(0, 0, 50, 50)], [(0, 0, 50, 50)]],
+        workers_chunks=[[0]],
+        workers_intervals=[[(0, 0, 50, 50)]],
     )
     assert chunks_to_disable == {}
 
-    # world size = 1, batch size 5, no shared chunks
+    # world size = 1, multiple workers, no shared chunks
     chunks_to_disable = _find_chunks_per_workers_on_which_to_skip_deletion(
         num_workers=2,
         batch_size=5,
@@ -141,7 +141,7 @@ def test_find_chunks_per_workers_on_which_to_skip_deletion():
     )
     assert chunks_to_disable == {}
 
-    # world size = 1, batch size 5, shared chunks
+    # world size = 1, 2 workers sharing one chunk
     chunks_to_disable = _find_chunks_per_workers_on_which_to_skip_deletion(
         num_workers=2,
         batch_size=5,
@@ -150,7 +150,7 @@ def test_find_chunks_per_workers_on_which_to_skip_deletion():
     )
     assert chunks_to_disable == {1: [1]}
 
-    # world size = 1, batch size 5, shared chunks
+    # world size = 1, 4 workers sharing one chunk
     chunks_to_disable = _find_chunks_per_workers_on_which_to_skip_deletion(
         num_workers=4,
         batch_size=5,
@@ -159,7 +159,7 @@ def test_find_chunks_per_workers_on_which_to_skip_deletion():
     )
     assert chunks_to_disable == {0: [0, 1, 2]}
 
-    # world size = 1, batch size 5, shared chunks
+    # world size = 1, 4 workers sharing one chunk, different size
     chunks_to_disable = _find_chunks_per_workers_on_which_to_skip_deletion(
         num_workers=4,
         batch_size=5,
@@ -168,26 +168,31 @@ def test_find_chunks_per_workers_on_which_to_skip_deletion():
     )
     assert chunks_to_disable == {0: [0, 1, 3]}
 
-    # world size = 1, batch size 5, shared chunks
-    chunks_to_disable = _find_chunks_per_workers_on_which_to_skip_deletion(
-        num_workers=4,
-        batch_size=5,
-        workers_chunks=[[0], [0], [0], [0]],
-        workers_intervals=[[(0, 0, 50, 50)], [(0, 50, 95, 50)], [(0, 95, 150, 50)], [(0, 150, 200, 50)]],
-    )
-    assert chunks_to_disable == {0: [0, 1, 3]}
-
+    # world size 2, 2 workers per rank, varying batch size
     for batch_size in range(1, 6):
-        # world size = 1, batch size 5, shared chunks
         chunks_to_disable = _find_chunks_per_workers_on_which_to_skip_deletion(
             num_workers=2,
             batch_size=batch_size,
             workers_chunks=[[0], [0], [0], [0]],
             workers_intervals=[
                 [(0, 0, 50, 50)],
-                [(0, 50, 95, 50)],  # local_rank 0
+                [(0, 50, 95, 50)],
                 [(0, 95, 145, 50)],
-                [(0, 145, 205, 50)],  # local_rank 1
+                [(0, 145, 205, 50)],  # last to access chunk 0
             ],
         )
         assert chunks_to_disable == {0: [0, 1, 2]}
+        
+    # world size 2, 2 workers per rank, sharing multiple chunks
+    chunks_to_disable = _find_chunks_per_workers_on_which_to_skip_deletion(
+        num_workers=2,
+        batch_size=5,
+        workers_chunks=[[0, 1], [3, 4], [1, 2], [4, 5]],
+        workers_intervals=[
+            [(0, 0, 50, 50), (0, 0, 50, 50)],
+            [(0, 0, 50, 50), (0, 0, 50, 50)],
+            [(0, 50, 100, 100), (0, 0, 50, 50)],
+            [(0, 50, 100, 100), (0, 0, 50, 50)],
+        ],
+    )
+    assert chunks_to_disable == {1: [2], 4: [3]}
