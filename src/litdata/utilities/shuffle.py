@@ -117,7 +117,6 @@ def _find_chunks_per_workers_on_which_to_skip_deletion(
     shared_chunks_aggregated_by_rank = _aggregate_shared_chunks_per_rank(shared_chunks, num_workers)
 
     max_trackers = {}
-    to_disable = {}
     for chunk_index, map_local_rank_to_worker_ids in shared_chunks_aggregated_by_rank.items():
         for local_rank, workers_index_sharing_chunks_for_this_rank in map_local_rank_to_worker_ids.items():
             # get all the worker chunks and intervals for this distributed rank
@@ -189,6 +188,7 @@ def _find_chunks_per_workers_on_which_to_skip_deletion(
                 if num_of_samples_to_carry_to_next_chunk is None:
                     worker_tracker_idx += 1
 
+    to_disable = {}
     for chunk_index, worker_ids in shared_chunks.items():
         last_worker_idx = max_trackers[chunk_index][0]
         to_disable[chunk_index] = [worker_idx for worker_idx in worker_ids if worker_idx != last_worker_idx]
@@ -206,7 +206,7 @@ def _get_shared_chunks(workers_chunks: List[List[int]]) -> Dict[int, List[int]]:
     return {chunk: workers for chunk, workers in shared_chunks.items() if len(workers) > 1}
 
 
-def _aggregate_shared_chunks_per_rank(shared_chunks, num_workers) -> Dict[int, List[int]]:
+def _aggregate_shared_chunks_per_rank(shared_chunks: Dict[int, List[int]], num_workers: int) -> Dict[int, List[int]]:
     aggregated_shared_chunks_per_rank = {}
     for chunk_index, workers_ids in shared_chunks.items():
         aggregated_shared_chunks_per_rank[chunk_index] = {}
@@ -217,7 +217,7 @@ def _aggregate_shared_chunks_per_rank(shared_chunks, num_workers) -> Dict[int, L
     return aggregated_shared_chunks_per_rank
 
 
-def _map_node_worker_rank_to_chunk_indexes_to_not_delete(to_disable):
+def _map_node_worker_rank_to_chunk_indexes_to_not_delete(to_disable: Dict[int, List[int]]) -> Dict[int, List[int]]:
     map_node_worker_rank_to_chunk_indexes = {}
     for chunk_index, worker_ids in to_disable.items():
         for worker_idx in worker_ids:
