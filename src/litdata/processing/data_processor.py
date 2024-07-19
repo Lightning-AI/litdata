@@ -255,12 +255,14 @@ def _upload_fn(upload_queue: Queue, remove_queue: Queue, cache_dir: str, output_
             output_filepath = remove_uuid_from_filename(output_filepath)  # remove unique id from checkpoints
 
             os.makedirs(os.path.dirname(output_filepath), exist_ok=True)
+            print(f"copying {local_filepath} to {output_filepath}")
             shutil.copy(local_filepath, output_filepath)
         else:
             raise ValueError(f"The provided {output_dir.path} isn't supported.")
 
         # Inform the remover to delete the file
         if remove_queue and os.path.exists(local_filepath):
+            print(f"putting {local_filepath} on the remove queue")
             remove_queue.put([local_filepath])
 
 
