@@ -11,6 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import copy
 from typing import Any, Dict, List, Tuple
 
 import numpy as np
@@ -42,37 +43,37 @@ def _intra_node_chunk_shuffle(
     return [index for chunks in chunk_indexes_per_nodes for index in chunks]
 
 
-def _associate_chunks_and_internals_to_ranks(
+def _associate_chunks_and_intervals_to_workers(
     distributed_env: _DistributedEnv,
     indexes: Any,
     chunk_intervals: List[Interval],
-    drop_last: bool,
+    drop_last: bool = False,
     num_workers: int = 1,
     batch_size: int = 1,
 ) -> Tuple[List[List[int]], List[Any]]:
     num_items = sum([(interval[2] - interval[1]) for interval in chunk_intervals])
-    num_items_per_ranks: List[int] = [
-        num_items // distributed_env.world_size + num_items % distributed_env.world_size
-        if rank == distributed_env.world_size - 1 and not drop_last
-        else num_items // distributed_env.world_size
-        for rank in range(distributed_env.world_size)
+    world_size = distributed_env.world_size * num_workers
+    num_items_per_workers: List[int] = [
+        num_items // world_size + num_items % world_size
+        if rank == world_size - 1 and not drop_last
+        else num_items // world_size
+        for rank in range(world_size)
     ]
     if drop_last:
-        ratio = num_workers * batch_size
-        num_items_per_ranks = [ratio * int(item // ratio) for item in num_items_per_ranks]
+        num_items_per_workers = [batch_size * int(item // batch_size) for item in num_items_per_workers]
 
-    chunks_per_ranks: List[List[int]] = [[] for _ in range(distributed_env.world_size)]
-    intervals_per_ranks: List[List[List[int]]] = [[] for _ in range(distributed_env.world_size)]
+    chunks_per_workers: List[List[int]] = [[] for _ in range(world_size)]
+    intervals_per_workers: List[List[List[int]]] = [[] for _ in range(world_size)]
 
     # 4. Assign the chunk & intervals to each rank
     for chunk_index, chunk_interval in zip(indexes, chunk_intervals):
         rank = 0
 
         while True:
-            if rank == len(num_items_per_ranks):
+            if rank == len(num_items_per_workers):
                 break
 
-            items_left_to_assign = num_items_per_ranks[rank]
+            items_left_to_assign = num_items_per_workers[rank]
 
             if items_left_to_assign == 0:
                 rank += 1
@@ -84,83 +85,172 @@ def _associate_chunks_and_internals_to_ranks(
                 break
 
             if items_in_chunk > items_left_to_assign:
-                chunks_per_ranks[rank].append(chunk_index)
+                chunks_per_workers[rank].append(chunk_index)
 
                 chunk_start, chunk_roi_start, chunk_roi_end, chunk_end = chunk_interval
 
-                intervals_per_ranks[rank].append(
+                intervals_per_workers[rank].append(
                     [chunk_start, chunk_roi_start, chunk_roi_start + items_left_to_assign, chunk_end]
                 )
                 chunk_interval = Interval(chunk_start, chunk_roi_start + items_left_to_assign, chunk_roi_end, chunk_end)
-                num_items_per_ranks[rank] = 0
+                num_items_per_workers[rank] = 0
                 rank += 1
             else:
-                chunks_per_ranks[rank].append(chunk_index)
-                intervals_per_ranks[rank].append(list(chunk_interval))
-                num_items_per_ranks[rank] -= items_in_chunk
+                chunks_per_workers[rank].append(chunk_index)
+                intervals_per_workers[rank].append(list(chunk_interval))
+                num_items_per_workers[rank] -= items_in_chunk
                 break
 
-    return chunks_per_ranks, intervals_per_ranks
+    return chunks_per_workers, intervals_per_workers
 
 
-def _find_chunks_per_ranks_on_which_to_skip_deletion(
-    num_workers: int, chunks_per_ranks: List[List[int]], intervals_per_ranks: List[Any]
+def _find_chunks_per_workers_on_which_to_skip_deletion(
+    num_workers: int,
+    batch_size: int,
+    workers_chunks: List[List[int]],
+    workers_intervals: List[List[Interval]],
 ) -> Dict[int, List[int]]:
-    # TODO: Add support for the real batch size
-    batch_size = 1
-    shared_chunks = {}
-    for rank, chunks in enumerate(chunks_per_ranks):
-        for c in chunks:
-            if c not in shared_chunks:
-                shared_chunks[c] = [rank]
-            else:
-                shared_chunks[c].append(rank)
+    """Returns a dictionary mapping a chunk index to a list of workers that should not delete that chunk.
 
-    shared_chunks = {c: ranks for c, ranks in shared_chunks.items() if len(ranks) > 1}
+    If a worker is included in this list, it should not delete the chunk after fully reading it, because another worker
+    will still have items left to read and therefore needs the chunk to be present. This mapping is used in the dataset
+    to only let the worker delete a chunk when that worker is the last to read from it.
 
-    disable_deletion_ranks = {}
+    """
 
-    for shared_chunk, ranks in shared_chunks.items():
-        counters = []
-        for rank in ranks:
-            chunks = chunks_per_ranks[rank]
-            intervals = [interval[2] - interval[1] for interval in intervals_per_ranks[rank]]
+    # Shared chunks across all workers and ranks
+    shared_chunks = _get_shared_chunks(workers_chunks)
 
-            workers_chunks: Any = [[] for _ in range(num_workers)]
-            workers_intervals: Any = [[] for _ in range(num_workers)]
-            for interval_idx, (c, i) in enumerate(zip(chunks, intervals)):
-                workers_chunks[interval_idx % num_workers].append(c)
-                workers_intervals[interval_idx % num_workers].append(i)
+    # Shared chunks grouped together by rank
+    shared_chunks_aggregated_by_rank = _aggregate_shared_chunks_per_rank(shared_chunks, num_workers)
 
+    max_trackers = {}
+    for chunk_index, map_local_rank_to_worker_ids in shared_chunks_aggregated_by_rank.items():
+        for local_rank, workers_index_sharing_chunks_for_this_rank in map_local_rank_to_worker_ids.items():
+            # Get all the worker chunks and intervals for this distributed rank
+            workers_slice = slice(local_rank * num_workers, (local_rank + 1) * num_workers)
+            workers_chunks_for_this_rank = copy.deepcopy(workers_chunks[workers_slice])
+            workers_interval_sizes_for_this_rank = copy.deepcopy(
+                [
+                    [interval[2] - interval[1] for interval in worker_intervals]
+                    for worker_intervals in workers_intervals[workers_slice]
+                ]
+            )
+
+            num_shared_workers_for_this_rank = len(workers_index_sharing_chunks_for_this_rank)
+            worker_tracker_idx = 0
+            num_of_samples_to_carry_to_next_chunk = None
             counter = 0
-            worker_idx = 0  # reset the worker_idx
+
             while True:
-                current_chunks = workers_chunks[worker_idx]
-                current_intervals = workers_intervals[worker_idx]
+                interval_size_of_current_worker = workers_interval_sizes_for_this_rank[worker_tracker_idx % num_workers]
+                if len(interval_size_of_current_worker) == 0:
+                    worker_tracker_idx += 1
+                    continue
 
-                if len(current_intervals) == 0:
-                    break
+                num_samples_left_for_this_worker_chunk = interval_size_of_current_worker[0]
 
-                if current_intervals[0] > batch_size:
-                    current_intervals[0] -= batch_size
-                    counter += batch_size
-                    worker_idx = (worker_idx + 1) % num_workers
+                # To consume a batch, we want to subtract `batch_size` from the size we have left,
+                # unless we had a remainder (< batch size) from the previous iteration/chunk
+                remover = (
+                    batch_size
+                    if num_of_samples_to_carry_to_next_chunk is None
+                    else num_of_samples_to_carry_to_next_chunk
+                )
+
+                if num_samples_left_for_this_worker_chunk > remover:
+                    # There are samples left to consume, so we subtract the batch size (or a remainder)
+                    workers_interval_sizes_for_this_rank[worker_tracker_idx % num_workers][0] -= remover
+                    counter += remover
+                    num_of_samples_to_carry_to_next_chunk = None
                 else:
-                    counter += current_intervals[0]
-                    current_intervals.pop(0)
-                    current_chunk = current_chunks.pop(0)
-                    worker_idx = (worker_idx + 1) % num_workers
+                    # There are fewer samples left in this chunk than we would like to consume for a full batch
+                    # So we take what's left from the chunk and move to the next chunk to complete the batch
+                    current_worker_chunk_index = workers_chunks_for_this_rank[worker_tracker_idx % num_workers].pop(0)
+                    workers_interval_sizes_for_this_rank[worker_tracker_idx % num_workers].pop(0)
+                    counter += remover
 
-                    if current_chunk == shared_chunk:
+                    if current_worker_chunk_index == chunk_index:
+                        num_shared_workers_for_this_rank -= 1
+
+                    # TODO: Maybe, we can prevent loading over and over for each worker
+                    if num_shared_workers_for_this_rank == 0 and current_worker_chunk_index == chunk_index:
+                        # We consumed entirely the chunk of the worker we were tracking
+                        # Keep track of how many samples this worker consumed for this chunk and which worker
+                        # has consumed the most samples for this chunk
+                        if chunk_index not in max_trackers:
+                            max_trackers[chunk_index] = (
+                                local_rank * num_workers + worker_tracker_idx % num_workers,
+                                counter,
+                            )
+                        else:
+                            if max_trackers[chunk_index][1] < counter:
+                                max_trackers[chunk_index] = (
+                                    local_rank * num_workers + worker_tracker_idx % num_workers,
+                                    counter,
+                                )
                         break
 
-            counters.append(counter)
+                    if num_samples_left_for_this_worker_chunk != batch_size:
+                        # If a batch was not assembled completely because we're at the end of a chunk,
+                        # we need to complete the assembly from samples in the next chunk and carry
+                        # over that remainder to the next loop iteration
+                        num_of_samples_to_carry_to_next_chunk = batch_size - num_samples_left_for_this_worker_chunk
 
-        max_counter = np.argmax(counters)
-        disable_ranks = [rank for rank in ranks if rank != ranks[max_counter]]
-        for rank in disable_ranks:
-            if rank not in disable_deletion_ranks:
-                disable_deletion_ranks[rank] = [shared_chunk]
+                    if remover != batch_size:
+                        # We've handled the remainder, reset it. Next iteration will start a fresh batch.
+                        num_of_samples_to_carry_to_next_chunk = None
+
+                if num_of_samples_to_carry_to_next_chunk is None:
+                    # Only go to the next worker if we assembled a full batch. If we have a remainder,
+                    # we need to go to the next chunk with the same worker and complete the batch.
+                    worker_tracker_idx += 1
+
+    to_disable = {}
+    for chunk_index, worker_ids in shared_chunks.items():
+        last_worker_idx = max_trackers[chunk_index][0]
+        to_disable[chunk_index] = [worker_idx for worker_idx in worker_ids if worker_idx != last_worker_idx]
+    return to_disable
+
+
+def _get_shared_chunks(workers_chunks: List[List[int]]) -> Dict[int, List[int]]:
+    """Returns a dictionary mapping a chunk index to a list of workers that share that same chunk."""
+    shared_chunks = {}
+    for worker, chunks in enumerate(workers_chunks):
+        for chunk in chunks:
+            if chunk not in shared_chunks:
+                shared_chunks[chunk] = [worker]
             else:
-                disable_deletion_ranks[rank].append(shared_chunk)
-    return disable_deletion_ranks
+                shared_chunks[chunk].append(worker)
+    # Remove chunk indexes that are only read by a single worker (and thus not shared)
+    return {chunk: workers for chunk, workers in shared_chunks.items() if len(workers) > 1}
+
+
+def _aggregate_shared_chunks_per_rank(
+    shared_chunks: Dict[int, List[int]], num_workers: int
+) -> Dict[int, Dict[int, List[int]]]:
+    """Groups together shared chunks by rank.
+
+    The output is a dictionary mapping a chunk index to a dictionary that maps a rank to a list of workers.
+
+    """
+    aggregated_shared_chunks_per_rank: Dict[int, Dict[int, List[int]]] = {}
+    for chunk_index, workers_ids in shared_chunks.items():
+        aggregated_shared_chunks_per_rank[chunk_index] = {}
+        for worker_idx in workers_ids:
+            if (worker_idx // num_workers) not in aggregated_shared_chunks_per_rank[chunk_index]:
+                aggregated_shared_chunks_per_rank[chunk_index][worker_idx // num_workers] = []
+            aggregated_shared_chunks_per_rank[chunk_index][worker_idx // num_workers].append(worker_idx)
+    return aggregated_shared_chunks_per_rank
+
+
+def _map_node_worker_rank_to_chunk_indexes_to_not_delete(to_disable: Dict[int, List[int]]) -> Dict[int, List[int]]:
+    """Takes a dictionary mapping a chunk index to a list of workers and inverts the map such that it returns a
+    dictionary mapping a worker to a list of chunk indexes (that should not be deleted by that worker)."""
+    map_node_worker_rank_to_chunk_indexes: Dict[int, List[int]] = {}
+    for chunk_index, worker_ids in to_disable.items():
+        for worker_idx in worker_ids:
+            if worker_idx not in map_node_worker_rank_to_chunk_indexes:
+                map_node_worker_rank_to_chunk_indexes[worker_idx] = []
+            map_node_worker_rank_to_chunk_indexes[worker_idx].append(chunk_index)
+    return map_node_worker_rank_to_chunk_indexes

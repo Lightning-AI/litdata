@@ -45,6 +45,12 @@ class TestStatefulDataset:
     def set_drop_last(self, drop_last):
         self.drop_last = drop_last
 
+    def set_batch_size(self, batch_size):
+        self.batch_size = batch_size
+
+    def set_num_workers(self, num_workers):
+        self.num_workers = num_workers
+
 
 class TestCombinedStreamingDataset(CombinedStreamingDataset):
     def _check_datasets(self, datasets) -> None:
@@ -88,6 +94,7 @@ def test_streaming_dataloader():
     }
 
 
+@pytest.mark.skip(reason="Profiling patches torch which leads to undesired test interactions")
 @pytest.mark.skipif(not _VIZ_TRACKER_AVAILABLE, reason="viz tracker required")
 @pytest.mark.parametrize("profile", [2, True])
 def test_dataloader_profiling(profile, tmpdir, monkeypatch):

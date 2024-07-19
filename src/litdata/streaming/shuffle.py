@@ -19,7 +19,10 @@ import numpy as np
 
 from litdata.streaming import Cache
 from litdata.utilities.env import _DistributedEnv
-from litdata.utilities.shuffle import _associate_chunks_and_internals_to_ranks, _intra_node_chunk_shuffle
+from litdata.utilities.shuffle import (
+    _associate_chunks_and_intervals_to_workers,
+    _intra_node_chunk_shuffle,
+)
 
 
 class Shuffle(ABC):
@@ -32,23 +35,19 @@ class Shuffle(ABC):
 
     @lru_cache(maxsize=10)
     def get_len(self, distributed_env: _DistributedEnv, num_workers: int, batch_size: int, current_epoch: int) -> int:
-        _, intervals_per_ranks = self.get_chunks_and_intervals_per_ranks(
+        _, workers_intervals = self.get_chunks_and_intervals_per_workers(
             distributed_env, num_workers, batch_size, current_epoch
         )
-
-        if self.drop_last:
-            items_per_process = [
-                sum((interval[2] - interval[1]) for interval in intervals) for intervals in intervals_per_ranks
-            ]
-            # Validate each processes gets the exact number of elements
-            if len(items_per_process) > 1:
-                assert all(items_per_process[0] == items_to_process for items_to_process in items_per_process[:1])
-            return items_per_process[0]
-
-        return sum((interval[2] - interval[1]) for interval in intervals_per_ranks[distributed_env.global_rank])
+        worker_start = distributed_env.global_rank * num_workers
+        worker_end = worker_start + num_workers
+        return sum(
+            (interval[2] - interval[1])
+            for intervals in workers_intervals[worker_start:worker_end]
+            for interval in intervals
+        )
 
     @abstractmethod
-    def get_chunks_and_intervals_per_ranks(
+    def get_chunks_and_intervals_per_workers(
         self, distributed_env: _DistributedEnv, num_workers: int, batch_size: int, current_epoch: int
     ) -> Any:
         pass
@@ -63,7 +62,7 @@ class NoShuffle(Shuffle):
     is True."""
 
     @lru_cache(maxsize=10)
-    def get_chunks_and_intervals_per_ranks(
+    def get_chunks_and_intervals_per_workers(
         self, distributed_env: _DistributedEnv, num_workers: int, batch_size: int, current_epoch: int
     ) -> Any:
         # 1. Get the intervals
@@ -71,11 +70,10 @@ class NoShuffle(Shuffle):
         indexes = range(len(chunk_intervals))
 
         # 2. Compute the items budget of each rank
-        chunks_per_ranks, intervals_per_ranks = _associate_chunks_and_internals_to_ranks(
+        workers_chunks, workers_intervals = _associate_chunks_and_intervals_to_workers(
             distributed_env, indexes, chunk_intervals, self.drop_last, num_workers, batch_size
         )
-
-        return chunks_per_ranks, intervals_per_ranks
+        return workers_chunks, workers_intervals
 
     def __call__(self, array: np.ndarray, num_chunks: int, current_epoch: int, chunk_index: int) -> List[int]:
         return array.tolist()
@@ -100,7 +98,7 @@ class FullShuffle(Shuffle):
     """
 
     @lru_cache(maxsize=10)
-    def get_chunks_and_intervals_per_ranks(
+    def get_chunks_and_intervals_per_workers(
         self, distributed_env: _DistributedEnv, num_workers: int, batch_size: int, current_epoch: int
     ) -> Any:
         # 1. Get the intervals
@@ -120,24 +118,24 @@ class FullShuffle(Shuffle):
         shuffled_chunk_intervals = np.asarray(chunk_intervals)[shuffled_indexes].tolist()
 
         # 3. Compute the items budget of each rank
-        chunks_per_ranks, intervals_per_ranks = _associate_chunks_and_internals_to_ranks(
+        workers_chunks, workers_intervals = _associate_chunks_and_intervals_to_workers(
             distributed_env, shuffled_indexes, shuffled_chunk_intervals, self.drop_last, num_workers, batch_size
         )
 
         # For the first epoch, no need of further shuffling
         if current_epoch == 1 or distributed_env.num_nodes == 1:
-            return chunks_per_ranks, intervals_per_ranks
+            return workers_chunks, workers_intervals
 
         # Perform shuffle within the nodes to avoid cache miss.
         # Note: It is possible for the overlapping chunks to change due to the changing order.
-        shuffled_indexes = _intra_node_chunk_shuffle(distributed_env, chunks_per_ranks, self.seed, current_epoch)
+        shuffled_indexes = _intra_node_chunk_shuffle(distributed_env, workers_chunks, self.seed, current_epoch)
         shuffled_chunk_intervals = np.asarray(chunk_intervals)[shuffled_indexes].tolist()
 
-        chunks_per_ranks, intervals_per_ranks = _associate_chunks_and_internals_to_ranks(
+        workers_chunks, workers_intervals = _associate_chunks_and_intervals_to_workers(
             distributed_env, shuffled_indexes, shuffled_chunk_intervals, self.drop_last, num_workers, batch_size
         )
 
-        return chunks_per_ranks, intervals_per_ranks
+        return workers_chunks, workers_intervals
 
     def __call__(self, array: np.ndarray, num_chunks: int, current_epoch: int, chunk_index: int) -> List[int]:
         return np.random.RandomState([self.seed, num_chunks * current_epoch, chunk_index]).permutation(array).tolist()

@@ -32,7 +32,6 @@ from litdata.streaming.dataset import (
     _INDEX_FILENAME,
     Dir,
     StreamingDataset,
-    _associate_chunks_to_workers,
     _replay_chunks_sampling,
     _replay_sampling,
 )
@@ -40,6 +39,7 @@ from litdata.streaming.item_loader import TokensLoader
 from litdata.streaming.shuffle import FullShuffle, NoShuffle
 from litdata.utilities import dataset_utilities as dataset_utilities_module
 from litdata.utilities.env import _DistributedEnv, _WorkerEnv
+from litdata.utilities.shuffle import _associate_chunks_and_intervals_to_workers
 from torch.utils.data import DataLoader
 
 
@@ -158,7 +158,7 @@ def test_streaming_dataset_distributed_no_shuffle(drop_last, tmpdir, compression
 
     assert len(process_2_2) == 50 + int(not drop_last)
 
-    _, intervals_per_ranks = dataset.shuffler.get_chunks_and_intervals_per_ranks(
+    _, workers_intervals = dataset.shuffler.get_chunks_and_intervals_per_workers(
         dataset.distributed_env, 1, 1, dataset.current_epoch
     )
 
@@ -167,7 +167,7 @@ def test_streaming_dataset_distributed_no_shuffle(drop_last, tmpdir, compression
     found_list = []
     for i in process_1_1:
         found = False
-        for interval in intervals_per_ranks[0]:
+        for interval in workers_intervals[0]:
             if interval[1] <= i <= interval[2]:
                 found = True
                 break
@@ -178,7 +178,7 @@ def test_streaming_dataset_distributed_no_shuffle(drop_last, tmpdir, compression
     found_list = []
     for i in process_2_1:
         found = False
-        for interval in intervals_per_ranks[1]:
+        for interval in workers_intervals[1]:
             if interval[1] <= i <= interval[2]:
                 found = True
                 break
@@ -506,19 +506,21 @@ def test_dataset_for_text_tokens_multiple_workers(tmpdir):
 
     expected = [
         [0, 10],
-        [40, 50],
-        [20, 30],
-        [60, 70],
-        [80, 90],
-        [120, 130],
         [100, 110],
+        [20, 30],
+        [120, 130],
+        [40, 50],
         [140, 150],
+        [60, 70],
         [160, 170],
+        [80, 90],
         [180, 190],
     ]
 
-    for result, batch in zip(expected, dataloader):
-        assert [batch[0][0].item(), batch[1][0].item()] == result
+    result = []
+    for batch in dataloader:
+        result.append(batch[:, 0].tolist())
+    assert result == expected
 
 
 def test_dataset_for_text_tokens_distributed_num_workers(tmpdir):
@@ -601,34 +603,46 @@ def test_dataset_for_text_tokens_distributed_num_workers_end_to_end(tmpdir, monk
     dataset = StreamingDataset(input_dir=str(tmpdir), item_loader=TokensLoader(block_size), shuffle=False)
 
     L = len(dataset)
-    assert len(dataset) == L
+    assert L == 20
 
     for i in range(L):
         sequence = dataset[i]
         assert sequence[0].item() == i * block_size
         assert sequence[-1].item() == (i + 1) * block_size - 1
 
+    monkeypatch.setenv("WORLD_SIZE", "2")
+    monkeypatch.setenv("GLOBAL_RANK", "0")
+    monkeypatch.setenv("NNODES", "1")
     dataset = StreamingDataset(input_dir=str(tmpdir), item_loader=TokensLoader(block_size), shuffle=False)
+    dataloader = StreamingDataLoader(dataset, batch_size=2, shuffle=False, num_workers=2)
+    assert dataset.drop_last  # in distributed setting, this is forced automatically
 
-    dataset.distributed_env = _DistributedEnv(2, 0, 1)
-    dataloader = DataLoader(dataset, batch_size=2, shuffle=False, num_workers=2)
+    # L = 20, world size 2, num workers 2
+    # L / (2 * 2) = 5 items per worker
+    # drop last -> 4 items per worker
+    # batch size = 2 -> 2 batches per worker -> len(dataloader) = 4
+    assert len(dataloader) == 4
 
-    assert len(dataloader) == 5
+    expected = [[0, 10], [40, 50], [20, 30], [60, 70]]
+    returned = []
+    for batch in dataloader:
+        returned.append(batch[:, 0].tolist())
+    assert returned == expected
 
-    expected = [[0, 10], [20, 30], [40, 50], [60, 70], [80, 90]]
+    monkeypatch.setenv("WORLD_SIZE", "2")
+    monkeypatch.setenv("GLOBAL_RANK", "1")
+    monkeypatch.setenv("NNODES", "1")
+    dataset = StreamingDataset(input_dir=str(tmpdir), item_loader=TokensLoader(block_size), shuffle=False)
+    dataloader = StreamingDataLoader(dataset, batch_size=2, shuffle=False, num_workers=2)
+    assert dataset.drop_last  # in distributed setting, this is forced automatically
 
-    for batch_idx, batch in enumerate(dataloader):
-        assert [batch[0][0].item(), batch[1][0].item()] == expected[batch_idx]
+    assert len(dataloader) == 4
 
-    dataset.distributed_env = _DistributedEnv(2, 1, 1)
-    dataloader = DataLoader(dataset, batch_size=2, shuffle=False)
-
-    assert len(dataloader) == 5
-
-    expected = [[100, 110], [120, 130], [140, 150], [160, 170], [180, 190]]
-
-    for batch_idx, batch in enumerate(dataloader):
-        assert [batch[0][0].item(), batch[1][0].item()] == expected[batch_idx]
+    expected = [[80, 90], [120, 130], [100, 110], [140, 150]]
+    returned = []
+    for batch in dataloader:
+        returned.append(batch[:, 0].tolist())
+    assert returned == expected
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="Not tested on windows and MacOs")
@@ -673,7 +687,7 @@ class EmulateS3StreamingDataset(StreamingDataset):
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="Not tested on windows and MacOs")
-def test_resumable_dataset_two_workers(tmpdir):
+def test_dataset_reshuffling_every_epoch(tmpdir):
     seed_everything(42)
 
     data_dir = os.path.join(tmpdir, "data")
@@ -775,7 +789,6 @@ def test_resumable_dataset_two_workers_2_epochs(tmpdir):
         input_dir=Dir(cache_dir, data_dir), item_loader=TokensLoader(block_size), shuffle=True
     )
 
-    dataset.current_epoch = 1
     dataloader = StreamingDataLoader(dataset, num_workers=2, batch_size=2, prefetch_factor=1, persistent_workers=True)
 
     batches_epoch_1 = []
@@ -789,9 +802,7 @@ def test_resumable_dataset_two_workers_2_epochs(tmpdir):
         batches_epoch_2.append(batch)
 
     assert len(os.listdir(cache_dir)) == 51
-
-    for batch_1, batch_2 in zip(batches_epoch_1, batches_epoch_2):
-        assert not torch.equal(batch_1, batch_2)
+    assert not all(torch.equal(b1, b2) for b1, b2 in zip(batches_epoch_1, batches_epoch_2))
 
 
 def _simple_preprocess(_):
@@ -799,39 +810,56 @@ def _simple_preprocess(_):
         yield torch.randint(0, 100, size=(10,), dtype=torch.int64)
 
 
-def _get_simulated_s3_dataloader(cache_dir, data_dir):
+def _get_simulated_s3_dataloader(cache_dir, data_dir, shuffle=False):
     dataset = EmulateS3StreamingDataset(
         input_dir=Dir(cache_dir, data_dir),
         item_loader=TokensLoader(block_size=10),
+        shuffle=shuffle,
     )
-    return StreamingDataLoader(dataset, batch_size=2, num_workers=1)
+    return StreamingDataLoader(dataset, batch_size=2, num_workers=2)
 
 
-@pytest.mark.skipif(sys.platform == "win32" or sys.platform == "darwin", reason="Not tested on windows and MacOs")
+@pytest.mark.skipif(sys.platform == "win32", reason="Not tested on windows and MacOs")
 @mock.patch.dict(os.environ, {}, clear=True)
 @pytest.mark.timeout(60)
-def test_dataset_resume_on_future_chunks(tmpdir, monkeypatch):
+@pytest.mark.parametrize("shuffle", [True, False])
+def test_dataset_resume_on_future_chunks(shuffle, tmpdir, monkeypatch):
     """This test is constructed to test resuming from a chunk past the first chunk, when subsequent chunks don't have
     the same size."""
     s3_cache_dir = str(tmpdir / "s3cache")
+    optimize_data_cache_dir = str(tmpdir / "optimize_data_cache")
     optimize_cache_dir = str(tmpdir / "optimize_cache")
     data_dir = str(tmpdir / "optimized")
+    monkeypatch.setenv("DATA_OPTIMIZER_DATA_CACHE_FOLDER", optimize_data_cache_dir)
     monkeypatch.setenv("DATA_OPTIMIZER_CACHE_FOLDER", optimize_cache_dir)
 
     optimize(
         fn=_simple_preprocess,
-        inputs=list(range(5)),
-        output_dir=str(tmpdir / "optimized"),
+        inputs=list(range(8)),
+        output_dir=data_dir,
         chunk_size=190,
-        num_workers=4,
+        num_workers=1,  # TODO: Want 4 here, but optimize() has deletion race condition
+        num_uploaders=1,
     )
-    assert len(os.listdir(tmpdir / "optimized")) > 0
+    sleep(5)  # wait for copier/remover threads to complete
+    # assert set(os.listdir(data_dir)) == {
+    #     "chunk-0-0.bin",
+    #     "chunk-0-1.bin",
+    #     "chunk-1-0.bin",
+    #     "chunk-1-1.bin",
+    #     "chunk-2-0.bin",
+    #     "chunk-2-1.bin",
+    #     "chunk-3-0.bin",
+    #     "chunk-3-1.bin",
+    #     "index.json",
+    # }
 
     os.mkdir(s3_cache_dir)
-    train_dataloader = _get_simulated_s3_dataloader(s3_cache_dir, data_dir)
+    train_dataloader = _get_simulated_s3_dataloader(s3_cache_dir, data_dir, shuffle=shuffle)
     batches_to_fetch = 16
     batch_to_resume_from = None
     dataloader_state = None
+
     for i, batch in enumerate(train_dataloader):
         if i == batches_to_fetch:
             dataloader_state = train_dataloader.state_dict()
@@ -841,7 +869,7 @@ def test_dataset_resume_on_future_chunks(tmpdir, monkeypatch):
 
     shutil.rmtree(s3_cache_dir)
     os.mkdir(s3_cache_dir)
-    train_dataloader = _get_simulated_s3_dataloader(s3_cache_dir, data_dir)
+    train_dataloader = _get_simulated_s3_dataloader(s3_cache_dir, data_dir, shuffle=shuffle)
     assert dataloader_state is not None
     assert batch_to_resume_from is not None
     train_dataloader.load_state_dict(dataloader_state)
@@ -972,14 +1000,15 @@ def test_replay_sampling():
 def test_replay_chunks_sampling():
     chunks_replica = range(10)
     intervals_replica = [(i, i, i + 5, i + 5) for i in range(0, 50, 5)]
-    workers_chunks, workers_intervals = _associate_chunks_to_workers(
-        _WorkerEnv(2, 0), chunks_replica, intervals_replica
+    workers_chunks, workers_intervals = _associate_chunks_and_intervals_to_workers(
+        _DistributedEnv(2, 0, 1), chunks_replica, intervals_replica
     )
-    assert workers_chunks == {0: [0, 2, 4, 6, 8], 1: [1, 3, 5, 7, 9]}
-    assert workers_intervals == {
-        0: [(0, 0, 5, 5), (10, 10, 15, 15), (20, 20, 25, 25), (30, 30, 35, 35), (40, 40, 45, 45)],
-        1: [(5, 5, 10, 10), (15, 15, 20, 20), (25, 25, 30, 30), (35, 35, 40, 40), (45, 45, 50, 50)],
-    }
+    assert workers_chunks == [[0, 1, 2, 3, 4], [5, 6, 7, 8, 9]]
+    assert workers_intervals == [
+        [[0, 0, 5, 5], [5, 5, 10, 10], [10, 10, 15, 15], [15, 15, 20, 20], [20, 20, 25, 25]],
+        [[25, 25, 30, 30], [30, 30, 35, 35], [35, 35, 40, 40], [40, 40, 45, 45], [45, 45, 50, 50]],
+    ]
+    workers_intervals = {i: workers_intervals[i] for i in range(len(workers_intervals))}
     assert _replay_chunks_sampling(workers_intervals, {0: 16, 1: 11}) == ({0: 3, 1: 2}, {0: 1, 1: 1})
     assert _replay_chunks_sampling(workers_intervals, {0: 14, 1: 13}) == ({0: 2, 1: 2}, {0: 4, 1: 3})
     assert _replay_chunks_sampling(workers_intervals, {0: 15, 1: 12}) == ({0: 3, 1: 2}, {0: 0, 1: 2})

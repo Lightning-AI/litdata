@@ -1,9 +1,12 @@
 from litdata.streaming.item_loader import Interval
 from litdata.utilities.env import _DistributedEnv
 from litdata.utilities.shuffle import (
-    _associate_chunks_and_internals_to_ranks,
-    _find_chunks_per_ranks_on_which_to_skip_deletion,
+    _aggregate_shared_chunks_per_rank,
+    _associate_chunks_and_intervals_to_workers,
+    _find_chunks_per_workers_on_which_to_skip_deletion,
+    _get_shared_chunks,
     _intra_node_chunk_shuffle,
+    _map_node_worker_rank_to_chunk_indexes_to_not_delete,
 )
 
 
@@ -21,7 +24,7 @@ def test_intra_node_chunk_shuffle():
     assert shuffled_indexes == [5, 2, 0, 7, 6, 1, 3, 4, 13, 10, 8, 15, 14, 9, 11, 12]
 
 
-def test_associate_chunks_and_internals_to_ranks():
+def test_associate_chunks_and_intervals_to_workers():
     indexes = [0, 1, 2, 3, 4, 5, 6, 7]
     chunk_intervals = [
         Interval(0, 0, 50, 50),
@@ -34,15 +37,15 @@ def test_associate_chunks_and_internals_to_ranks():
         Interval(0, 0, 50, 50),
     ]
 
-    chunks_per_ranks, intervals_per_ranks = _associate_chunks_and_internals_to_ranks(
+    workers_chunks, workers_intervals = _associate_chunks_and_intervals_to_workers(
         _DistributedEnv(4, 1, 2),
         indexes,
         chunk_intervals,
         drop_last=True,
     )
 
-    assert chunks_per_ranks == [[0, 1], [2, 3], [4, 5], [6, 7]]
-    assert intervals_per_ranks == [
+    assert workers_chunks == [[0, 1], [2, 3], [4, 5], [6, 7]]
+    assert workers_intervals == [
         [[0, 0, 50, 50], [0, 0, 50, 50]],
         [[0, 0, 50, 50], [0, 0, 50, 50]],
         [[0, 0, 50, 50], [0, 0, 50, 50]],
@@ -60,20 +63,20 @@ def test_associate_chunks_and_internals_to_ranks():
         Interval(0, 0, 33, 33),
     ]
 
-    chunks_per_ranks, intervals_per_ranks = _associate_chunks_and_internals_to_ranks(
+    workers_chunks, workers_intervals = _associate_chunks_and_intervals_to_workers(
         _DistributedEnv(4, 1, 2),
         indexes,
         chunk_intervals,
         drop_last=True,
     )
 
-    assert chunks_per_ranks == [[0, 1], [1, 2], [2, 3, 4, 5], [5, 6, 7]]
-    assert sum([interval[2] - interval[1] for interval in intervals_per_ranks[0]]) == 105
-    assert sum([interval[2] - interval[1] for interval in intervals_per_ranks[1]]) == 105
-    assert sum([interval[2] - interval[1] for interval in intervals_per_ranks[2]]) == 105
-    assert sum([interval[2] - interval[1] for interval in intervals_per_ranks[3]]) == 105
+    assert workers_chunks == [[0, 1], [1, 2], [2, 3, 4, 5], [5, 6, 7]]
+    assert sum([interval[2] - interval[1] for interval in workers_intervals[0]]) == 105
+    assert sum([interval[2] - interval[1] for interval in workers_intervals[1]]) == 105
+    assert sum([interval[2] - interval[1] for interval in workers_intervals[2]]) == 105
+    assert sum([interval[2] - interval[1] for interval in workers_intervals[3]]) == 105
 
-    assert intervals_per_ranks == [
+    assert workers_intervals == [
         [[0, 0, 50, 50], [0, 0, 55, 150]],
         [[0, 55, 150, 150], [0, 0, 10, 50]],
         [[0, 10, 50, 50], [0, 0, 12, 12], [0, 0, 50, 50], [0, 0, 3, 27]],
@@ -91,24 +94,133 @@ def test_associate_chunks_and_internals_to_ranks():
         Interval(0, 0, 1, 1),
     ]
 
-    chunks_per_ranks, intervals_per_ranks = _associate_chunks_and_internals_to_ranks(
+    workers_chunks, workers_intervals = _associate_chunks_and_intervals_to_workers(
         _DistributedEnv(4, 1, 2),
         indexes,
         chunk_intervals,
         drop_last=True,
     )
 
-    assert chunks_per_ranks == [[0, 1], [1], [1, 2, 3, 4, 5], [5, 6, 7]]
-    assert sum([interval[2] - interval[1] for interval in intervals_per_ranks[0]]) == 64
-    assert sum([interval[2] - interval[1] for interval in intervals_per_ranks[1]]) == 64
-    assert sum([interval[2] - interval[1] for interval in intervals_per_ranks[2]]) == 64
-    assert sum([interval[2] - interval[1] for interval in intervals_per_ranks[3]]) == 64
-    assert intervals_per_ranks == [
+    assert workers_chunks == [[0, 1], [1], [1, 2, 3, 4, 5], [5, 6, 7]]
+    assert sum([interval[2] - interval[1] for interval in workers_intervals[0]]) == 64
+    assert sum([interval[2] - interval[1] for interval in workers_intervals[1]]) == 64
+    assert sum([interval[2] - interval[1] for interval in workers_intervals[2]]) == 64
+    assert sum([interval[2] - interval[1] for interval in workers_intervals[3]]) == 64
+    assert workers_intervals == [
         [[0, 0, 5, 5], [0, 0, 59, 150]],
         [[0, 59, 123, 150]],
         [[0, 123, 150, 150], [0, 0, 7, 7], [0, 0, 12, 12], [0, 0, 4, 4], [0, 0, 14, 27]],
         [[0, 14, 27, 27], [0, 0, 50, 50], [0, 0, 1, 1]],
     ]
 
-    disable_deletion_ranks = _find_chunks_per_ranks_on_which_to_skip_deletion(1, chunks_per_ranks, intervals_per_ranks)
-    assert disable_deletion_ranks == {1: [1], 2: [1], 3: [5]}
+
+def test_get_shared_chunks():
+    assert _get_shared_chunks([]) == {}
+    assert _get_shared_chunks([[0]]) == {}
+    assert _get_shared_chunks([[0], [1]]) == {}
+    assert _get_shared_chunks([[0], [0, 1]]) == {0: [0, 1]}  # chunk 0 is shared by worker 0 and 1
+    assert _get_shared_chunks([[0, 1], [1]]) == {1: [0, 1]}  # chunk 1 is shared by worker 0 and 1
+    assert _get_shared_chunks([[2], [0, 1], [2, 3]]) == {2: [0, 2]}
+    assert _get_shared_chunks([[2], [0, 1], [2, 3], [1, 4], [1]]) == {1: [1, 3, 4], 2: [0, 2]}
+
+
+def test_find_chunks_per_workers_on_which_to_skip_deletion():
+    # world size = 1, single worker
+    chunks_to_disable = _find_chunks_per_workers_on_which_to_skip_deletion(
+        num_workers=1,
+        batch_size=1,
+        workers_chunks=[[0]],
+        workers_intervals=[[(0, 0, 50, 50)]],
+    )
+    assert chunks_to_disable == {}
+
+    # world size = 1, multiple workers, no shared chunks
+    chunks_to_disable = _find_chunks_per_workers_on_which_to_skip_deletion(
+        num_workers=2,
+        batch_size=5,
+        workers_chunks=[[0], [1]],
+        workers_intervals=[[(0, 0, 50, 50)], [(0, 0, 50, 50)]],
+    )
+    assert chunks_to_disable == {}
+
+    # world size = 1, 2 workers sharing one chunk
+    chunks_to_disable = _find_chunks_per_workers_on_which_to_skip_deletion(
+        num_workers=2,
+        batch_size=5,
+        workers_chunks=[[0, 1], [1, 2]],
+        workers_intervals=[[(0, 0, 50, 50), (0, 0, 25, 50)], [(0, 25, 50, 50), (0, 0, 50, 50)]],
+    )
+    assert chunks_to_disable == {1: [1]}
+
+    # world size = 1, 4 workers sharing one chunk
+    chunks_to_disable = _find_chunks_per_workers_on_which_to_skip_deletion(
+        num_workers=4,
+        batch_size=5,
+        workers_chunks=[[0], [0], [0], [0]],
+        workers_intervals=[[(0, 0, 50, 50)], [(0, 50, 100, 50)], [(0, 100, 150, 50)], [(0, 150, 200, 50)]],
+    )
+    assert chunks_to_disable == {0: [0, 1, 2]}
+
+    # world size = 1, 4 workers sharing one chunk, different size
+    chunks_to_disable = _find_chunks_per_workers_on_which_to_skip_deletion(
+        num_workers=4,
+        batch_size=5,
+        workers_chunks=[[0], [0], [0], [0]],
+        workers_intervals=[[(0, 0, 50, 50)], [(0, 50, 95, 50)], [(0, 95, 150, 50)], [(0, 150, 200, 50)]],
+    )
+    assert chunks_to_disable == {0: [0, 1, 3]}
+
+    # world size 2, 2 workers per rank, varying batch size
+    for batch_size in range(1, 6):
+        chunks_to_disable = _find_chunks_per_workers_on_which_to_skip_deletion(
+            num_workers=2,
+            batch_size=batch_size,
+            workers_chunks=[[0], [0], [0], [0]],
+            workers_intervals=[
+                [(0, 0, 50, 50)],
+                [(0, 50, 95, 50)],
+                [(0, 95, 145, 50)],
+                [(0, 145, 205, 50)],  # last to access chunk 0
+            ],
+        )
+        assert chunks_to_disable == {0: [0, 1, 2]}
+
+    # world size 2, 2 workers per rank, sharing multiple chunks
+    chunks_to_disable = _find_chunks_per_workers_on_which_to_skip_deletion(
+        num_workers=2,
+        batch_size=5,
+        workers_chunks=[[0, 1], [3, 4], [1, 2], [4, 5]],
+        workers_intervals=[
+            [(0, 0, 50, 50), (0, 0, 50, 50)],
+            [(0, 0, 50, 50), (0, 0, 50, 50)],
+            [(0, 50, 100, 100), (0, 0, 50, 50)],
+            [(0, 50, 100, 100), (0, 0, 50, 50)],
+        ],
+    )
+    assert chunks_to_disable == {1: [2], 4: [3]}
+
+
+def test_aggregate_shared_chunks_per_rank():
+    # world size = 1, num workers per rank = 1
+    num_workers = 1
+    shared_chunks = {0: [0], 1: [0], 2: [0]}  # 3 chunks shared by 1 worker
+    expected = {0: {0: [0]}, 1: {0: [0]}, 2: {0: [0]}}
+    assert _aggregate_shared_chunks_per_rank(shared_chunks, num_workers) == expected
+
+    # world size = 1, num workers per rank = 2
+    num_workers = 2
+    shared_chunks = {0: [0, 1], 1: [0, 1], 2: [0]}  # 3 chunks shared by 2 workers
+    expected = {0: {0: [0, 1]}, 1: {0: [0, 1]}, 2: {0: [0]}}
+    assert _aggregate_shared_chunks_per_rank(shared_chunks, num_workers) == expected
+
+    # world size = 4, num workers per rank = 2
+    num_workers = 2
+    shared_chunks = {0: [0, 2], 1: [1, 3], 2: [2, 3]}  # 3 chunks distributed among 2 * 2 workers
+    expected = {0: {0: [0], 1: [2]}, 1: {0: [1], 1: [3]}, 2: {1: [2, 3]}}
+    assert _aggregate_shared_chunks_per_rank(shared_chunks, num_workers) == expected
+
+
+def test_map_node_worker_rank_to_chunk_indexes_to_not_delete():
+    chunks_to_workers = {10: [2, 3, 4], 20: [1, 2, 3], 30: [3, 4], 40: [4, 5, 6]}
+    workers_to_chunks = _map_node_worker_rank_to_chunk_indexes_to_not_delete(chunks_to_workers)
+    assert workers_to_chunks == {1: [20], 2: [10, 20], 3: [10, 20, 30], 4: [10, 30, 40], 5: [40], 6: [40]}
