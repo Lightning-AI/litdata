@@ -837,6 +837,7 @@ def test_dataset_resume_on_future_chunks(shuffle, tmpdir, monkeypatch):
         output_dir=str(tmpdir / "optimized"),
         chunk_size=190,
         num_workers=4,
+        num_uploaders=1,
     )
     assert set(os.listdir(tmpdir / "optimized")) == {
         "chunk-0-0.bin",
