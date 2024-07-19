@@ -84,7 +84,7 @@ def _thread_police():
         if isinstance(thread, PrepareChunksThread):
             thread.force_stop()
             continue
-        
+
         stop = getattr(thread, "stop", None) or getattr(thread, "exit", None)
         if thread.daemon and callable(stop):
             # A daemon thread would anyway be stopped at the end of a program
