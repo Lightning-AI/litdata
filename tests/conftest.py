@@ -69,7 +69,7 @@ def lightning_sdk_mock(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
-def thread_police():
+def _thread_police():
     """Attempts to stop left-over threads to avoid test interactions.
 
     Adapted from PyTorch Lightning.
@@ -88,7 +88,7 @@ def thread_police():
             assert not thread.is_alive()
         elif thread.name == "QueueFeederThread":
             thread.join(timeout=20)
-        elif thread.name == "PrepareChunksThread":
+        elif "PrepareChunksThread" in thread.name:
             thread.force_stop()
         else:
             raise AssertionError(f"Test left zombie thread: {thread}")
