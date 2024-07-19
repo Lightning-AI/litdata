@@ -229,13 +229,13 @@ class StreamingDataset(IterableDataset):
             # premature deletion for the other workers.
             node_size = self.distributed_env.world_size // self.distributed_env.num_nodes
             first_rank_this_node = (self.distributed_env.global_rank // node_size) * node_size
-            num_workers_per_node = node_size * self.num_workers
+            num_workers_per_node = node_size * (self.num_workers or 1)
             worker_start = first_rank_this_node * num_workers_per_node
             worker_end = worker_start + num_workers_per_node
             local_rank = self.distributed_env.global_rank % node_size
 
             chunks_indexes_skip_deletion = _find_chunks_per_workers_on_which_to_skip_deletion(
-                self.num_workers,
+                (self.num_workers or 1),
                 self.batch_size,
                 workers_chunks[worker_start:worker_end],
                 workers_intervals[worker_start:worker_end],
@@ -244,7 +244,7 @@ class StreamingDataset(IterableDataset):
                 chunks_indexes_skip_deletion
             )
 
-            worker_rank_local_node = local_rank * self.num_workers + self.worker_env.rank
+            worker_rank_local_node = local_rank * (self.num_workers or 1) + self.worker_env.rank
 
             if worker_rank_local_node in worker_node_rank_to_chunk_indexes:
                 self.cache._reader.config.skip_chunk_indexes_deletion = worker_node_rank_to_chunk_indexes[
