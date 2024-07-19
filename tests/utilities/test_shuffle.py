@@ -3,8 +3,8 @@ from litdata.utilities.env import _DistributedEnv
 from litdata.utilities.shuffle import (
     _associate_chunks_and_internals_to_workers,
     _find_chunks_per_workers_on_which_to_skip_deletion,
-    _intra_node_chunk_shuffle,
     _get_shared_chunks,
+    _intra_node_chunk_shuffle,
 )
 
 
@@ -149,7 +149,7 @@ def test_find_chunks_per_workers_on_which_to_skip_deletion():
         workers_intervals=[[(0, 0, 50, 50), (0, 0, 25, 50)], [(0, 25, 50, 50), (0, 0, 50, 50)]],
     )
     assert chunks_to_disable == {1: [1]}
-    
+
     # world size = 1, batch size 5, shared chunks
     chunks_to_disable = _find_chunks_per_workers_on_which_to_skip_deletion(
         num_workers=4,
@@ -158,16 +158,6 @@ def test_find_chunks_per_workers_on_which_to_skip_deletion():
         workers_intervals=[[(0, 0, 50, 50)], [(0, 50, 100, 50)], [(0, 100, 150, 50)], [(0, 150, 200, 50)]],
     )
     assert chunks_to_disable == {0: [0, 1, 2]}
-    
-    # world size = 1, batch size 5, shared chunks
-    chunks_to_disable = _find_chunks_per_workers_on_which_to_skip_deletion(
-        num_workers=4,
-        batch_size=5,
-        workers_chunks=[[0], [0], [0], [0]],
-        workers_intervals=[[(0, 0, 50, 50)], [(0, 50, 95, 50)], [(0, 95, 150, 50)], [(0, 150, 200, 50)]],
-    )
-    assert chunks_to_disable == {0: [0, 1, 3]}
-
 
     # world size = 1, batch size 5, shared chunks
     chunks_to_disable = _find_chunks_per_workers_on_which_to_skip_deletion(
@@ -177,7 +167,16 @@ def test_find_chunks_per_workers_on_which_to_skip_deletion():
         workers_intervals=[[(0, 0, 50, 50)], [(0, 50, 95, 50)], [(0, 95, 150, 50)], [(0, 150, 200, 50)]],
     )
     assert chunks_to_disable == {0: [0, 1, 3]}
-    
+
+    # world size = 1, batch size 5, shared chunks
+    chunks_to_disable = _find_chunks_per_workers_on_which_to_skip_deletion(
+        num_workers=4,
+        batch_size=5,
+        workers_chunks=[[0], [0], [0], [0]],
+        workers_intervals=[[(0, 0, 50, 50)], [(0, 50, 95, 50)], [(0, 95, 150, 50)], [(0, 150, 200, 50)]],
+    )
+    assert chunks_to_disable == {0: [0, 1, 3]}
+
     for batch_size in range(1, 6):
         # world size = 1, batch size 5, shared chunks
         chunks_to_disable = _find_chunks_per_workers_on_which_to_skip_deletion(
@@ -185,8 +184,10 @@ def test_find_chunks_per_workers_on_which_to_skip_deletion():
             batch_size=batch_size,
             workers_chunks=[[0], [0], [0], [0]],
             workers_intervals=[
-                [(0, 0, 50, 50)], [(0, 50, 95, 50)],  # local_rank 0
-                [(0, 95, 145, 50)], [(0, 145, 205, 50)] # local_rank 1
+                [(0, 0, 50, 50)],
+                [(0, 50, 95, 50)],  # local_rank 0
+                [(0, 95, 145, 50)],
+                [(0, 145, 205, 50)],  # local_rank 1
             ],
         )
         assert chunks_to_disable == {0: [0, 1, 2]}

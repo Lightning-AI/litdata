@@ -11,9 +11,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import copy
 from typing import Any, Dict, List, Tuple
 
-import copy
 import numpy as np
 
 from litdata.streaming.item_loader import Interval
@@ -105,35 +105,36 @@ def _associate_chunks_and_internals_to_workers(
 
 
 def _find_chunks_per_workers_on_which_to_skip_deletion(
-    num_workers: int, 
-    batch_size: int, 
-    workers_chunks: List[List[int]], 
+    num_workers: int,
+    batch_size: int,
+    workers_chunks: List[List[int]],
     workers_intervals: List[List[int]],
 ) -> Dict[int, List[int]]:
-
     # {1: [2, 3, 4, 5]}
-    # [2, 3] belongs to rank 0
+    # [2, 3] belongs to rank 0
     # [4, 5] belongs to rank 1
     shared_chunks = _get_shared_chunks(workers_chunks)
-    
-    # workers_index_sharing_chunks
+
+    # workers_index_sharing_chunks
     # {1: (0, [2, 3], (1, [4, 5]))}
     shared_chunks_aggregated_by_rank = _aggregate_shared_chunks_per_rank(shared_chunks, num_workers)
-    
+
     # breakpoint()
-    
+
     max_trackers = {}
     to_disable = {}
     for chunk_index, map_local_rank_to_worker_ids in shared_chunks_aggregated_by_rank.items():
         for local_rank, workers_index_sharing_chunks_for_this_rank in map_local_rank_to_worker_ids.items():
-            
             # get all the worker chunks and intervals for this distributed rank
             workers_slice = slice(local_rank * num_workers, (local_rank + 1) * num_workers)
             workers_chunks_for_this_rank = copy.deepcopy(workers_chunks[workers_slice])
             workers_intervals_for_this_rank = copy.deepcopy(  # TODO: rename
-                [[interval[2] - interval[1] for interval in worker_intervals] for worker_intervals in workers_intervals[workers_slice]]
+                [
+                    [interval[2] - interval[1] for interval in worker_intervals]
+                    for worker_intervals in workers_intervals[workers_slice]
+                ]
             )
-            
+
             num_shared_workers_for_this_rank = len(workers_index_sharing_chunks_for_this_rank)
             worker_tracker_idx = 0
             num_of_samples_to_carry_to_next_chunk = None
@@ -145,13 +146,16 @@ def _find_chunks_per_workers_on_which_to_skip_deletion(
                 if len(intervals_of_currently_loaded_worker) == 0:
                     worker_tracker_idx += 1
                     continue
-                
+
                 num_samples_left_for_this_worker_chunk = intervals_of_currently_loaded_worker[0]
-        
-                remover = batch_size if num_of_samples_to_carry_to_next_chunk is None else num_of_samples_to_carry_to_next_chunk
-                
+
+                remover = (
+                    batch_size
+                    if num_of_samples_to_carry_to_next_chunk is None
+                    else num_of_samples_to_carry_to_next_chunk
+                )
+
                 if num_samples_left_for_this_worker_chunk > remover:
-                    
                     # We have consumed a batch, going to the next worker
                     workers_intervals_for_this_rank[worker_tracker_idx % num_workers][0] -= remover
                     counter += remover
@@ -170,11 +174,17 @@ def _find_chunks_per_workers_on_which_to_skip_deletion(
                     # TODO: Maybe, we can prevent loading over and over for each worker
                     if num_shared_workers_for_this_rank == 0 and current_worker_chunk_index == chunk_index:
                         if chunk_index not in max_trackers:
-                            max_trackers[chunk_index] = (local_rank * num_workers + worker_tracker_idx % num_workers,  counter)
+                            max_trackers[chunk_index] = (
+                                local_rank * num_workers + worker_tracker_idx % num_workers,
+                                counter,
+                            )
                         else:
                             if max_trackers[chunk_index][1] < counter:
-                                max_trackers[chunk_index] = (local_rank * num_workers + worker_tracker_idx % num_workers,  counter)
-                            
+                                max_trackers[chunk_index] = (
+                                    local_rank * num_workers + worker_tracker_idx % num_workers,
+                                    counter,
+                                )
+
                         break
 
                     if num_samples_left_for_this_worker_chunk != batch_size:
@@ -189,7 +199,6 @@ def _find_chunks_per_workers_on_which_to_skip_deletion(
             # else:
             #     # I don't know if this is possible
             #     break
-            
 
     for chunk_index, worker_ids in shared_chunks.items():
         last_worker_idx = max_trackers[chunk_index][0]
@@ -227,4 +236,3 @@ def _map_node_worker_rank_to_chunk_indexes_to_not_delete(to_disable):
                 map_node_worker_rank_to_chunk_indexes[worker_idx] = []
             map_node_worker_rank_to_chunk_indexes[worker_idx].append(chunk_index)
     return map_node_worker_rank_to_chunk_indexes
-                
