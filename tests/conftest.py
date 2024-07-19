@@ -1,4 +1,5 @@
 import sys
+import threading
 from types import ModuleType
 from unittest.mock import Mock
 
@@ -65,3 +66,26 @@ def lightning_sdk_mock(monkeypatch):
     lightning_sdk = ModuleType("lightning_sdk")
     monkeypatch.setitem(sys.modules, "lightning_sdk", lightning_sdk)
     return lightning_sdk
+
+
+@pytest.fixture(autouse=True)
+def thread_police():
+    """Attempts to stop left-over threads to avoid test interactions.
+
+    Adapted from PyTorch Lightning.
+    """
+    active_threads_before = set(threading.enumerate())
+    yield
+    active_threads_after = set(threading.enumerate())
+
+    for thread in active_threads_after - active_threads_before:
+        stop = getattr(thread, "stop", None) or getattr(thread, "exit", None)
+        if thread.daemon and callable(stop):
+            # A daemon thread would anyway be stopped at the end of a program
+            # We do it preemptively here to reduce the risk of interactions with other tests that run after
+            stop()
+            assert not thread.is_alive()
+        elif thread.name == "QueueFeederThread":
+            thread.join(timeout=20)
+        else:
+            raise AssertionError(f"Test left zombie thread: {thread}")
