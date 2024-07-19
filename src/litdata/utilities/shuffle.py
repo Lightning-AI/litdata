@@ -122,7 +122,7 @@ def _find_chunks_per_workers_on_which_to_skip_deletion(
             # get all the worker chunks and intervals for this distributed rank
             workers_slice = slice(local_rank * num_workers, (local_rank + 1) * num_workers)
             workers_chunks_for_this_rank = copy.deepcopy(workers_chunks[workers_slice])
-            workers_intervals_for_this_rank = copy.deepcopy(  # TODO: rename
+            workers_interval_sizes_for_this_rank = copy.deepcopy(
                 [
                     [interval[2] - interval[1] for interval in worker_intervals]
                     for worker_intervals in workers_intervals[workers_slice]
@@ -136,12 +136,12 @@ def _find_chunks_per_workers_on_which_to_skip_deletion(
 
             while True:
                 chunks_of_currently_loaded_worker = workers_chunks_for_this_rank[worker_tracker_idx % num_workers]
-                intervals_of_currently_loaded_worker = workers_intervals_for_this_rank[worker_tracker_idx % num_workers]
-                if len(intervals_of_currently_loaded_worker) == 0:
+                interval_size_of_current_worker = workers_interval_sizes_for_this_rank[worker_tracker_idx % num_workers]
+                if len(interval_size_of_current_worker) == 0:
                     worker_tracker_idx += 1
                     continue
 
-                num_samples_left_for_this_worker_chunk = intervals_of_currently_loaded_worker[0]
+                num_samples_left_for_this_worker_chunk = interval_size_of_current_worker[0]
 
                 remover = (
                     batch_size
@@ -151,13 +151,13 @@ def _find_chunks_per_workers_on_which_to_skip_deletion(
 
                 if num_samples_left_for_this_worker_chunk > remover:
                     # We have consumed a batch, going to the next worker
-                    workers_intervals_for_this_rank[worker_tracker_idx % num_workers][0] -= remover
+                    workers_interval_sizes_for_this_rank[worker_tracker_idx % num_workers][0] -= remover
                     counter += remover
                     num_of_samples_to_carry_to_next_chunk = None
                 else:
                     # We have consumed a batch, going to the next worker
                     current_worker_chunk_index = workers_chunks_for_this_rank[worker_tracker_idx % num_workers].pop(0)
-                    workers_intervals_for_this_rank[worker_tracker_idx % num_workers].pop(0)
+                    workers_interval_sizes_for_this_rank[worker_tracker_idx % num_workers].pop(0)
                     counter += remover
 
                     if current_worker_chunk_index == chunk_index:
