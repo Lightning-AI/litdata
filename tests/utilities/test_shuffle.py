@@ -1,10 +1,12 @@
 from litdata.streaming.item_loader import Interval
 from litdata.utilities.env import _DistributedEnv
 from litdata.utilities.shuffle import (
+    _aggregate_shared_chunks_per_rank,
     _associate_chunks_and_internals_to_workers,
     _find_chunks_per_workers_on_which_to_skip_deletion,
     _get_shared_chunks,
     _intra_node_chunk_shuffle,
+    _map_node_worker_rank_to_chunk_indexes_to_not_delete,
 )
 
 
@@ -196,3 +198,29 @@ def test_find_chunks_per_workers_on_which_to_skip_deletion():
         ],
     )
     assert chunks_to_disable == {1: [2], 4: [3]}
+
+
+def test_aggregate_shared_chunks_per_rank():
+    # world size = 1, num workers per rank = 1
+    num_workers = 1
+    shared_chunks = {0: [0], 1: [0], 2: [0]}  # 3 chunks shared by 1 worker
+    expected = {0: {0: [0]}, 1: {0: [0]}, 2: {0: [0]}}
+    assert _aggregate_shared_chunks_per_rank(shared_chunks, num_workers) == expected
+
+    # world size = 1, num workers per rank = 2
+    num_workers = 2
+    shared_chunks = {0: [0, 1], 1: [0, 1], 2: [0]}  # 3 chunks shared by 2 workers
+    expected = {0: {0: [0, 1]}, 1: {0: [0, 1]}, 2: {0: [0]}}
+    assert _aggregate_shared_chunks_per_rank(shared_chunks, num_workers) == expected
+
+    # world size = 4, num workers per rank = 2
+    num_workers = 2
+    shared_chunks = {0: [0, 2], 1: [1, 3], 2: [2, 3]}  # 3 chunks distributed among 2 * 2 workers
+    expected = {0: {0: [0], 1: [2]}, 1: {0: [1], 1: [3]}, 2: {1: [2, 3]}}
+    assert _aggregate_shared_chunks_per_rank(shared_chunks, num_workers) == expected
+
+
+def test_map_node_worker_rank_to_chunk_indexes_to_not_delete():
+    chunks_to_workers = {10: [2, 3, 4], 20: [1, 2, 3], 30: [3, 4], 40: [4, 5, 6]}
+    workers_to_chunks = _map_node_worker_rank_to_chunk_indexes_to_not_delete(chunks_to_workers)
+    assert workers_to_chunks == {1: [20], 2: [10, 20], 3: [10, 20, 30], 4: [10, 30, 40], 5: [40], 6: [40]}
