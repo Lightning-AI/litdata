@@ -476,8 +476,8 @@ class StreamingDataset(IterableDataset):
             "random_state": None,
             "shuffler": None,
             "_state_dict": None,
-            "num_workers": None,
-            "batch_size": None,
+            "num_workers": 1,
+            "batch_size": 1,
         }
 
         for prop, value in default_properties.items():
