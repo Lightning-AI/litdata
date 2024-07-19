@@ -123,7 +123,7 @@ class StreamingDataset(IterableDataset):
         # Has slightly different meaning in the context of the dataset
         # We consider `num_workers = 0` from `torch.utils.DataLoader` still as 1 worker (the main process)
         self.num_workers: int = 1
-        self.batch_size: Optional[int] = None
+        self.batch_size: int = 1
 
     def set_shuffle(self, shuffle: bool) -> None:
         self.shuffle = shuffle
@@ -212,7 +212,7 @@ class StreamingDataset(IterableDataset):
             self.current_epoch = state["current_epoch"]
 
         workers_chunks, workers_intervals = self.shuffler.get_chunks_and_intervals_per_workers(
-            self.distributed_env, self.worker_env.world_size, self.batch_size or 1, self.current_epoch
+            self.distributed_env, self.worker_env.world_size, self.batch_size, self.current_epoch
         )
 
         worker_rank = self.distributed_env.global_rank * self.worker_env.world_size + self.worker_env.rank

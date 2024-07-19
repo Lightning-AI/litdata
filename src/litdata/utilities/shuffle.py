@@ -206,8 +206,8 @@ def _get_shared_chunks(workers_chunks: List[List[int]]) -> Dict[int, List[int]]:
     return {chunk: workers for chunk, workers in shared_chunks.items() if len(workers) > 1}
 
 
-def _aggregate_shared_chunks_per_rank(shared_chunks: Dict[int, List[int]], num_workers: int) -> Dict[int, List[int]]:
-    aggregated_shared_chunks_per_rank = {}
+def _aggregate_shared_chunks_per_rank(shared_chunks: Dict[int, List[int]], num_workers: int) -> Dict[int, Dict[int, List[int]]]:
+    aggregated_shared_chunks_per_rank: Dict[int, Dict[int, List[int]]] = {}
     for chunk_index, workers_ids in shared_chunks.items():
         aggregated_shared_chunks_per_rank[chunk_index] = {}
         for worker_idx in workers_ids:
@@ -218,7 +218,7 @@ def _aggregate_shared_chunks_per_rank(shared_chunks: Dict[int, List[int]], num_w
 
 
 def _map_node_worker_rank_to_chunk_indexes_to_not_delete(to_disable: Dict[int, List[int]]) -> Dict[int, List[int]]:
-    map_node_worker_rank_to_chunk_indexes = {}
+    map_node_worker_rank_to_chunk_indexes: Dict[int, List[int]] = {}
     for chunk_index, worker_ids in to_disable.items():
         for worker_idx in worker_ids:
             if worker_idx not in map_node_worker_rank_to_chunk_indexes:
