@@ -120,7 +120,9 @@ class StreamingDataset(IterableDataset):
         self.shuffler: Optional[Shuffle] = None
         self.serializers = serializers
         self._state_dict: Optional[Dict[str, Any]] = None
-        self.num_workers: Optional[int] = None
+        # Has slightly different meaning in the context of the dataset
+        # We consider `num_workers = 0` from `torch.utils.DataLoader` still as 1 worker (the main process)
+        self.num_workers: int = 1
         self.batch_size: Optional[int] = None
 
     def set_shuffle(self, shuffle: bool) -> None:
@@ -177,13 +179,13 @@ class StreamingDataset(IterableDataset):
         return FullShuffle(cache, seed, drop_last) if self.shuffle else NoShuffle(cache, seed, drop_last)
 
     def __len__(self) -> int:
-        return self.get_len(self.num_workers if self.num_workers else 1, self.batch_size if self.batch_size else 1)
+        return self.get_len(self.num_workers, self.batch_size if self.batch_size else 1)
 
     def set_batch_size(self, batch_size: int) -> None:
         self.batch_size = batch_size
 
     def set_num_workers(self, num_workers: int) -> None:
-        self.num_workers = num_workers
+        self.num_workers = num_workers or 1
 
     def get_len(self, num_workers: int, batch_size: int) -> int:
         self.num_workers = num_workers
@@ -229,13 +231,13 @@ class StreamingDataset(IterableDataset):
             # premature deletion for the other workers.
             node_size = self.distributed_env.world_size // self.distributed_env.num_nodes
             first_rank_this_node = (self.distributed_env.global_rank // node_size) * node_size
-            num_workers_per_node = node_size * (self.num_workers or 1)
+            num_workers_per_node = node_size * self.num_workers
             worker_start = first_rank_this_node * num_workers_per_node
             worker_end = worker_start + num_workers_per_node
             local_rank = self.distributed_env.global_rank % node_size
 
             chunks_indexes_skip_deletion = _find_chunks_per_workers_on_which_to_skip_deletion(
-                (self.num_workers or 1),
+                self.num_workers,
                 self.batch_size,
                 workers_chunks[worker_start:worker_end],
                 workers_intervals[worker_start:worker_end],
@@ -244,8 +246,7 @@ class StreamingDataset(IterableDataset):
                 chunks_indexes_skip_deletion
             )
 
-            worker_rank_local_node = local_rank * (self.num_workers or 1) + self.worker_env.rank
-
+            worker_rank_local_node = local_rank * self.num_workers + self.worker_env.rank
             if worker_rank_local_node in worker_node_rank_to_chunk_indexes:
                 self.cache._reader.config.skip_chunk_indexes_deletion = worker_node_rank_to_chunk_indexes[
                     worker_rank_local_node
