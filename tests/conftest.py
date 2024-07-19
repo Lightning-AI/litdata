@@ -5,6 +5,7 @@ from unittest.mock import Mock
 
 import pytest
 import torch.distributed
+from litdata.streaming.reader import PrepareChunksThread
 
 
 @pytest.fixture(autouse=True)
@@ -80,6 +81,10 @@ def _thread_police():
     active_threads_after = set(threading.enumerate())
 
     for thread in active_threads_after - active_threads_before:
+        if isinstance(thread, PrepareChunksThread):
+            thread.force_stop()
+            continue
+        
         stop = getattr(thread, "stop", None) or getattr(thread, "exit", None)
         if thread.daemon and callable(stop):
             # A daemon thread would anyway be stopped at the end of a program
@@ -88,7 +93,5 @@ def _thread_police():
             assert not thread.is_alive()
         elif thread.name == "QueueFeederThread":
             thread.join(timeout=20)
-        elif "PrepareChunksThread" in thread.name:
-            thread.force_stop()
         else:
             raise AssertionError(f"Test left zombie thread: {thread}")
