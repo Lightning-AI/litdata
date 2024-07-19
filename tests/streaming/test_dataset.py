@@ -827,20 +827,22 @@ def test_dataset_resume_on_future_chunks(shuffle, tmpdir, monkeypatch):
     """This test is constructed to test resuming from a chunk past the first chunk, when subsequent chunks don't have
     the same size."""
     s3_cache_dir = str(tmpdir / "s3cache")
+    optimize_data_cache_dir = str(tmpdir / "optimize_data_cache")
     optimize_cache_dir = str(tmpdir / "optimize_cache")
     data_dir = str(tmpdir / "optimized")
+    monkeypatch.setenv("DATA_OPTIMIZER_DATA_CACHE_FOLDER", optimize_data_cache_dir)
     monkeypatch.setenv("DATA_OPTIMIZER_CACHE_FOLDER", optimize_cache_dir)
 
     optimize(
         fn=_simple_preprocess,
         inputs=list(range(8)),
-        output_dir=str(tmpdir / "optimized"),
+        output_dir=data_dir,
         chunk_size=190,
         num_workers=4,
         num_uploaders=1,
     )
     sleep(5)  # wait for copier/remover threads to complete
-    assert set(os.listdir(tmpdir / "optimized")) == {
+    assert set(os.listdir(data_dir)) == {
         "chunk-0-0.bin",
         "chunk-0-1.bin",
         "chunk-1-0.bin",
