@@ -73,6 +73,7 @@ def thread_police():
     """Attempts to stop left-over threads to avoid test interactions.
 
     Adapted from PyTorch Lightning.
+
     """
     active_threads_before = set(threading.enumerate())
     yield
