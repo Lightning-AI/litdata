@@ -32,7 +32,10 @@ from litdata.streaming.shuffle import FullShuffle, NoShuffle, Shuffle
 from litdata.utilities.dataset_utilities import _should_replace_path, _try_create_cache_dir, subsample_streaming_dataset
 from litdata.utilities.encryption import Encryption
 from litdata.utilities.env import _DistributedEnv, _is_in_dataloader_worker, _WorkerEnv
-from litdata.utilities.shuffle import _find_chunks_per_ranks_on_which_to_skip_deletion
+from litdata.utilities.shuffle import (
+    _find_chunks_per_workers_on_which_to_skip_deletion,
+    _map_node_worker_rank_to_chunk_indexes_to_not_delete,
+)
 
 logger = Logger(__name__)
 
@@ -120,8 +123,10 @@ class StreamingDataset(IterableDataset):
         self.shuffler: Optional[Shuffle] = None
         self.serializers = serializers
         self._state_dict: Optional[Dict[str, Any]] = None
-        self.num_workers: Optional[int] = None
-        self.batch_size: Optional[int] = None
+        # Has slightly different meaning in the context of the dataset
+        # We consider `num_workers = 0` from `torch.utils.DataLoader` still as 1 worker (the main process)
+        self.num_workers: int = 1
+        self.batch_size: int = 1
         self._encryption = encryption
 
     def set_shuffle(self, shuffle: bool) -> None:
@@ -179,7 +184,13 @@ class StreamingDataset(IterableDataset):
         return FullShuffle(cache, seed, drop_last) if self.shuffle else NoShuffle(cache, seed, drop_last)
 
     def __len__(self) -> int:
-        return self.get_len(1, 1)
+        return self.get_len(self.num_workers, self.batch_size if self.batch_size else 1)
+
+    def set_batch_size(self, batch_size: int) -> None:
+        self.batch_size = batch_size
+
+    def set_num_workers(self, num_workers: int) -> None:
+        self.num_workers = num_workers or 1
 
     def get_len(self, num_workers: int, batch_size: int) -> int:
         self.num_workers = num_workers
@@ -205,35 +216,46 @@ class StreamingDataset(IterableDataset):
             state: Dict[str, Any] = self._state_dict
             self.current_epoch = state["current_epoch"]
 
-        chunks_per_replica, intervals_per_replica = self.shuffler.get_chunks_and_intervals_per_ranks(
-            self.distributed_env, self.worker_env.world_size, self.batch_size or 1, self.current_epoch
+        workers_chunks, workers_intervals = self.shuffler.get_chunks_and_intervals_per_workers(
+            self.distributed_env, self.worker_env.world_size, self.batch_size, self.current_epoch
         )
-        chunks_replica = chunks_per_replica[self.distributed_env.global_rank % self.distributed_env.world_size]
-        intervals_replica = intervals_per_replica[self.distributed_env.global_rank % self.distributed_env.world_size]
+
+        worker_rank = self.distributed_env.global_rank * self.worker_env.world_size + self.worker_env.rank
+        self.worker_chunks = workers_chunks[worker_rank]
+        self.worker_intervals = workers_intervals[worker_rank]
+
+        # The max number of samples to return from `__next__` (in worker)
+        self.stop_length = sum(interval[2] - interval[1] for interval in self.worker_intervals)
 
         # Handle restart
         if self._state_dict:
-            self._resume(chunks_replica, intervals_replica)
+            self._resume(workers_chunks, workers_intervals)
         else:
-            # Find the chunks shared across multiple ranks.
-            # For each shared chunk, find the rank to use the chunk last and prevent deletion
-            # for the other ranks.
-            chunks_indexes_skip_deletion = _find_chunks_per_ranks_on_which_to_skip_deletion(
-                self.worker_env.world_size, chunks_per_replica, intervals_per_replica
+            # Find the chunks shared across all workers of the current node.
+            # For each shared chunk, find the rank and worker to use the chunk last and prevent
+            # premature deletion for the other workers.
+            node_size = self.distributed_env.world_size // self.distributed_env.num_nodes
+            first_rank_this_node = (self.distributed_env.global_rank // node_size) * node_size
+            num_workers_per_node = node_size * self.num_workers
+            worker_start = first_rank_this_node * num_workers_per_node
+            worker_end = worker_start + num_workers_per_node
+            local_rank = self.distributed_env.global_rank % node_size
+
+            chunks_indexes_skip_deletion = _find_chunks_per_workers_on_which_to_skip_deletion(
+                self.num_workers,
+                self.batch_size,
+                workers_chunks[worker_start:worker_end],
+                workers_intervals[worker_start:worker_end],
             )
-            if self.distributed_env.global_rank in chunks_indexes_skip_deletion:
-                self.cache._reader.config.skip_chunk_indexes_deletion = chunks_indexes_skip_deletion[
-                    self.distributed_env.global_rank
+            worker_node_rank_to_chunk_indexes = _map_node_worker_rank_to_chunk_indexes_to_not_delete(
+                chunks_indexes_skip_deletion
+            )
+
+            worker_rank_local_node = local_rank * self.num_workers + self.worker_env.rank
+            if worker_rank_local_node in worker_node_rank_to_chunk_indexes:
+                self.cache._reader.config.skip_chunk_indexes_deletion = worker_node_rank_to_chunk_indexes[
+                    worker_rank_local_node
                 ]
-
-            workers_chunks, workers_intervals = _associate_chunks_to_workers(
-                self.worker_env,
-                chunks_per_replica[self.distributed_env.global_rank],
-                intervals_per_replica[self.distributed_env.global_rank],
-            )
-
-            self.worker_chunks = workers_chunks[self.worker_env.rank]
-            self.worker_intervals = workers_intervals[self.worker_env.rank]
 
             self.num_chunks = len(self.worker_chunks)
             self.current_indexes = []
@@ -246,7 +268,7 @@ class StreamingDataset(IterableDataset):
 
         return self
 
-    def _resume(self, chunks_replica: List[int], intervals_replica: List[Any]) -> None:
+    def _resume(self, workers_chunks: List[List[int]], workers_intervals: List[Any]) -> None:
         assert self._state_dict
         assert self.worker_env
         assert self.shuffler
@@ -259,17 +281,22 @@ class StreamingDataset(IterableDataset):
         # TODO: Implement elastic sampling where the number of workers, ranks can change.
         num_samples_yielded = self._state_dict["num_samples_yielded"]
 
+        worker_start = self.distributed_env.global_rank * num_workers
+        worker_end = worker_start + num_workers
+
         # replay sampling from each worker / chunks using the batch size
-        workers_chunks, workers_intervals = _associate_chunks_to_workers(
-            self.worker_env, chunks_replica, intervals_replica
-        )
         indexes = _replay_sampling(num_samples_yielded, batch_size, num_workers)
-        chunks_index, indexes = _replay_chunks_sampling(workers_intervals, indexes)
+        chunks_index, indexes = _replay_chunks_sampling(
+            workers_intervals={i: workers_intervals[i] for i in range(worker_start, worker_end)},
+            indexes=indexes,
+        )
 
         # select the chunks and intervals associated to this worker
-        worker_rank = self.worker_env.rank
+        worker_rank = self.distributed_env.global_rank * self.worker_env.world_size + self.worker_env.rank
+        worker_local_rank = self.worker_env.rank
+
         self.num_chunks = len(workers_intervals[worker_rank])
-        self.chunk_index = chunks_index[worker_rank]
+        self.chunk_index = chunks_index[worker_local_rank]
         self.worker_chunks = workers_chunks[worker_rank]
         self.worker_intervals = workers_intervals[worker_rank]
 
@@ -281,10 +308,10 @@ class StreamingDataset(IterableDataset):
         current_indexes = self.shuffler(current_indexes, self.num_chunks, self.current_epoch, self.chunk_index)
 
         # skip any indexes already consumed
-        current_indexes = current_indexes[indexes[worker_rank] :]
+        current_indexes = current_indexes[indexes[worker_local_rank] :]
         self.current_indexes = current_indexes
 
-        self.global_index = num_samples_yielded
+        self.global_index = indexes[worker_local_rank]
 
         # bump the chunk_index
         self.chunk_index += 1
@@ -305,7 +332,7 @@ class StreamingDataset(IterableDataset):
 
     def __next__(self) -> Any:
         # Prevent to create more batch on a given process
-        if self.global_index >= len(self):
+        if self.global_index >= self.stop_length:
             self.current_epoch += 1
             raise StopIteration
 
@@ -454,8 +481,8 @@ class StreamingDataset(IterableDataset):
             "random_state": None,
             "shuffler": None,
             "_state_dict": None,
-            "num_workers": None,
-            "batch_size": None,
+            "num_workers": 1,
+            "batch_size": 1,
         }
 
         for prop, value in default_properties.items():
@@ -468,28 +495,6 @@ def is_integer(value: str) -> bool:
         return True
     except Exception:
         return False
-
-
-def _associate_chunks_to_workers(
-    worker_env: _WorkerEnv, chunks_replica: List[int], intervals_replica: List[Any]
-) -> Any:
-    workers_chunks = {}
-    workers_intervals = {}
-
-    for worker_idx in range(worker_env.world_size):
-        worker_chunks = []
-        worker_intervals = []
-        for i, (chunk_index, chunk_interval) in enumerate(zip(chunks_replica, intervals_replica)):
-            if i % worker_env.world_size != worker_idx:
-                continue
-
-            worker_chunks.append(chunk_index)
-            worker_intervals.append(chunk_interval)
-
-        workers_chunks[worker_idx] = worker_chunks
-        workers_intervals[worker_idx] = worker_intervals
-
-    return workers_chunks, workers_intervals
 
 
 def _replay_sampling(num_samples_yielded: int, batch_size: int, num_workers: int) -> Dict[int, int]:

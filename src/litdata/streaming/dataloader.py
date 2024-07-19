@@ -555,7 +555,7 @@ class StreamingDataLoader(DataLoader):
         profile_dir: Optional[str] = None,
         prefetch_factor: Optional[int] = None,
         shuffle: Optional[bool] = None,
-        drop_last: Optional[bool] = False,
+        drop_last: Optional[bool] = None,
         collate_fn: Optional[Callable] = None,
         **kwargs: Any,
     ) -> None:  # pyright: ignore
@@ -570,6 +570,9 @@ class StreamingDataLoader(DataLoader):
 
         if drop_last is not None:
             dataset.set_drop_last(drop_last)
+
+        dataset.set_batch_size(batch_size)
+        dataset.set_num_workers(num_workers)
 
         shuffle = None
 

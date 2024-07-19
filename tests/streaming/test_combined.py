@@ -93,8 +93,15 @@ def test_drop_last_and_shuffle():
 
     dataset_mock_1.set_shuffle.assert_called()
     dataset_mock_2.set_shuffle.assert_called()
+
     dataset_mock_1.set_drop_last.assert_called()
     dataset_mock_2.set_drop_last.assert_called()
+
+    dataset_mock_1.set_num_workers.assert_called()
+    dataset_mock_2.set_num_workers.assert_called()
+
+    dataset_mock_1.set_batch_size.assert_called()
+    dataset_mock_2.set_batch_size.assert_called()
 
 
 class TestStatefulDataset:
@@ -225,6 +232,12 @@ class SimpleDataset(IterableDataset):
         pass
 
     def set_drop_last(self, _):
+        pass
+
+    def set_batch_size(self, _):
+        pass
+
+    def set_num_workers(self, _):
         pass
 
 
@@ -558,43 +571,6 @@ def test_combined_dataset_with_dataloader_2_epochs(tmpdir):
         {
             "dataset": {
                 "0": {
-                    "num_samples_yielded": 8,
-                    "num_workers": 3,
-                    "batch_size": 2,
-                    "current_epoch": 1,
-                    "input_dir_path": ANY,
-                    "input_dir_url": ANY,
-                    "item_loader": None,
-                    "drop_last": False,
-                    "seed": 42,
-                    "world_size": 1,
-                    "shuffle": True,
-                    "subsampled_files": ANY,
-                    "region_of_interest": ANY,
-                },
-                "1": {
-                    "num_samples_yielded": 3,
-                    "num_workers": 3,
-                    "batch_size": 2,
-                    "current_epoch": 1,
-                    "input_dir_path": ANY,
-                    "input_dir_url": ANY,
-                    "item_loader": None,
-                    "drop_last": False,
-                    "seed": 42,
-                    "world_size": 1,
-                    "shuffle": True,
-                    "subsampled_files": ANY,
-                    "region_of_interest": ANY,
-                },
-            },
-            "current_epoch": 0,
-            "latest_worker_idx": 2,
-            "num_samples_yielded": {0: [3, 1], 1: [3, 1], 2: [2, 1]},
-        },
-        {
-            "dataset": {
-                "0": {
                     "num_samples_yielded": 9,
                     "num_workers": 3,
                     "batch_size": 2,
@@ -626,8 +602,8 @@ def test_combined_dataset_with_dataloader_2_epochs(tmpdir):
                 },
             },
             "current_epoch": 0,
-            "latest_worker_idx": 0,
-            "num_samples_yielded": {0: [4, 1], 1: [3, 1], 2: [2, 1]},
+            "latest_worker_idx": 2,
+            "num_samples_yielded": {0: [3, 1], 1: [3, 1], 2: [3, 1]},
         },
         {
             "dataset": {
@@ -663,8 +639,8 @@ def test_combined_dataset_with_dataloader_2_epochs(tmpdir):
                 },
             },
             "current_epoch": 0,
-            "latest_worker_idx": 1,
-            "num_samples_yielded": {0: [4, 1], 1: [4, 1], 2: [2, 1]},
+            "latest_worker_idx": 0,
+            "num_samples_yielded": {0: [4, 1], 1: [3, 1], 2: [3, 1]},
         },
     ]
 
@@ -857,43 +833,6 @@ def test_combined_dataset_with_dataloader_2_epochs(tmpdir):
         {
             "dataset": {
                 "0": {
-                    "num_samples_yielded": 8,
-                    "num_workers": 3,
-                    "batch_size": 2,
-                    "current_epoch": 2,
-                    "input_dir_path": ANY,
-                    "input_dir_url": ANY,
-                    "item_loader": None,
-                    "drop_last": False,
-                    "seed": 42,
-                    "world_size": 1,
-                    "shuffle": True,
-                    "subsampled_files": ANY,
-                    "region_of_interest": ANY,
-                },
-                "1": {
-                    "num_samples_yielded": 3,
-                    "num_workers": 3,
-                    "batch_size": 2,
-                    "current_epoch": 2,
-                    "input_dir_path": ANY,
-                    "input_dir_url": ANY,
-                    "item_loader": None,
-                    "drop_last": False,
-                    "seed": 42,
-                    "world_size": 1,
-                    "shuffle": True,
-                    "subsampled_files": ANY,
-                    "region_of_interest": ANY,
-                },
-            },
-            "current_epoch": 1,
-            "latest_worker_idx": 2,
-            "num_samples_yielded": {0: [3, 1], 1: [3, 1], 2: [2, 1]},
-        },
-        {
-            "dataset": {
-                "0": {
                     "num_samples_yielded": 9,
                     "num_workers": 3,
                     "batch_size": 2,
@@ -925,8 +864,8 @@ def test_combined_dataset_with_dataloader_2_epochs(tmpdir):
                 },
             },
             "current_epoch": 1,
-            "latest_worker_idx": 0,
-            "num_samples_yielded": {0: [4, 1], 1: [3, 1], 2: [2, 1]},
+            "latest_worker_idx": 2,
+            "num_samples_yielded": {0: [3, 1], 1: [3, 1], 2: [3, 1]},
         },
         {
             "dataset": {
@@ -962,8 +901,8 @@ def test_combined_dataset_with_dataloader_2_epochs(tmpdir):
                 },
             },
             "current_epoch": 1,
-            "latest_worker_idx": 1,
-            "num_samples_yielded": {0: [4, 1], 1: [4, 1], 2: [2, 1]},
+            "latest_worker_idx": 0,
+            "num_samples_yielded": {0: [4, 1], 1: [3, 1], 2: [3, 1]},
         },
     ]
 
