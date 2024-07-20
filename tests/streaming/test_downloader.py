@@ -36,11 +36,13 @@ def test_gcp_downloader(tmpdir, monkeypatch, google_mock):
     mock_bucket.blob = MagicMock(return_value=mock_blob)
 
     # Initialize the downloader
-    downloader = GCPDownloader("gs://random_bucket", tmpdir, [])
+    storage_options = {"project": "DUMMY_PROJECT"}
+    downloader = GCPDownloader("gs://random_bucket", tmpdir, [], storage_options)
     local_filepath = os.path.join(tmpdir, "a.txt")
     downloader.download_file("gs://random_bucket/a.txt", local_filepath)
 
     # Assert that the correct methods were called
+    google_mock.cloud.storage.Client.assert_called_with(**storage_options)
     mock_client.bucket.assert_called_with("random_bucket")
     mock_bucket.blob.assert_called_with("a.txt")
     mock_blob.download_to_filename.assert_called_with(local_filepath)
