@@ -6,6 +6,34 @@ import pytest
 from litdata.streaming import client
 
 
+def test_s3_client_with_storage_options(monkeypatch):
+    boto3 = mock.MagicMock()
+    monkeypatch.setattr(client, "boto3", boto3)
+
+    botocore = mock.MagicMock()
+    monkeypatch.setattr(client, "botocore", botocore)
+
+    storage_options = {"region_name": "us-west-2", "endpoint_url": "https://custom.endpoint"}
+    s3_client = client.S3Client(storage_options=storage_options)
+
+    assert s3_client.client
+
+    boto3.client.assert_called_with(
+        "s3",
+        region_name="us-west-2",
+        endpoint_url="https://custom.endpoint",
+        config=botocore.config.Config(retries={"max_attempts": 1000, "mode": "adaptive"}),
+    )
+
+    s3_client = client.S3Client()
+
+    assert s3_client.client
+
+    boto3.client.assert_called_with(
+        "s3", config=botocore.config.Config(retries={"max_attempts": 1000, "mode": "adaptive"})
+    )
+
+
 def test_s3_client_without_cloud_space_id(monkeypatch):
     boto3 = mock.MagicMock()
     monkeypatch.setattr(client, "boto3", boto3)
