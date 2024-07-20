@@ -169,6 +169,7 @@ class BinaryReader:
         encryption: Optional[Encryption] = None,
         item_loader: Optional[BaseItemLoader] = None,
         serializers: Optional[Dict[str, Serializer]] = None,
+        storage_options: Optional[dict] = {},
     ) -> None:
         """The BinaryReader enables to read chunked dataset in an efficient way.
 
@@ -207,6 +208,7 @@ class BinaryReader:
         self._item_loader = item_loader or PyTreeLoader()
         self._last_chunk_index: Optional[int] = None
         self._max_cache_size = int(os.getenv("MAX_CACHE_SIZE", max_cache_size or 0))
+        self._storage_options = storage_options
 
     def _get_chunk_index_from_index(self, index: int) -> Tuple[int, int]:
         # Load the config containing the index
@@ -224,6 +226,7 @@ class BinaryReader:
             self._item_loader,
             self.subsampled_files,
             self.region_of_interest,
+            self._storage_options,
         )
         return self._config
 

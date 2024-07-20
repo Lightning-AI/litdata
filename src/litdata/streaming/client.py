@@ -13,7 +13,7 @@
 
 import os
 from time import time
-from typing import Any, Optional
+from typing import Any, Dict, Optional
 
 import boto3
 import botocore
@@ -26,10 +26,11 @@ from litdata.constants import _IS_IN_STUDIO
 class S3Client:
     # TODO: Generalize to support more cloud providers.
 
-    def __init__(self, refetch_interval: int = 3300) -> None:
+    def __init__(self, refetch_interval: int = 3300, storage_options: Optional[Dict] = {}) -> None:
         self._refetch_interval = refetch_interval
         self._last_time: Optional[float] = None
         self._client: Optional[Any] = None
+        self._storage_options: dict = storage_options or {}
 
     def _create_client(self) -> None:
         has_shared_credentials_file = (
@@ -38,7 +39,9 @@ class S3Client:
 
         if has_shared_credentials_file or not _IS_IN_STUDIO:
             self._client = boto3.client(
-                "s3", config=botocore.config.Config(retries={"max_attempts": 1000, "mode": "adaptive"})
+                "s3",
+                **self._storage_options,
+                config=botocore.config.Config(retries={"max_attempts": 1000, "mode": "adaptive"}),
             )
         else:
             provider = InstanceMetadataProvider(iam_role_fetcher=InstanceMetadataFetcher(timeout=3600, num_attempts=5))

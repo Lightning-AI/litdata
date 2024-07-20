@@ -54,6 +54,7 @@ class StreamingDataset(IterableDataset):
         max_cache_size: Union[int, str] = "100GB",
         subsample: float = 1.0,
         encryption: Optional[Encryption] = None,
+        storage_options: Optional[Dict] = {},
     ) -> None:
         """The streaming dataset can be used once your data have been optimised using the DatasetOptimiser class.
 
@@ -70,6 +71,7 @@ class StreamingDataset(IterableDataset):
             max_cache_size: The maximum cache size used by the StreamingDataset.
             subsample: Float representing fraction of the dataset to be randomly sampled (e.g., 0.1 => 10% of dataset).
             encryption: The encryption object to use for decrypting the data.
+            storage_options: The storage options to connect remote storages.
 
         """
         super().__init__()
@@ -85,7 +87,7 @@ class StreamingDataset(IterableDataset):
         self.subsampled_files: List[str] = []
         self.region_of_interest: List[Tuple[int, int]] = []
         self.subsampled_files, self.region_of_interest = subsample_streaming_dataset(
-            self.input_dir, item_loader, subsample, shuffle, seed
+            self.input_dir, item_loader, subsample, shuffle, seed, storage_options
         )
 
         self.item_loader = item_loader
@@ -128,6 +130,7 @@ class StreamingDataset(IterableDataset):
         self.num_workers: int = 1
         self.batch_size: int = 1
         self._encryption = encryption
+        self.storage_options = storage_options
 
     def set_shuffle(self, shuffle: bool) -> None:
         self.shuffle = shuffle
@@ -163,6 +166,7 @@ class StreamingDataset(IterableDataset):
             serializers=self.serializers,
             max_cache_size=self.max_cache_size,
             encryption=self._encryption,
+            storage_options=self.storage_options,
         )
         cache._reader._try_load_config()
 

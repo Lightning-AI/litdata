@@ -15,7 +15,7 @@ import os
 import shutil
 import subprocess
 from abc import ABC
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 from urllib import parse
 
 from filelock import FileLock, Timeout
@@ -25,10 +25,13 @@ from litdata.streaming.client import S3Client
 
 
 class Downloader(ABC):
-    def __init__(self, remote_dir: str, cache_dir: str, chunks: List[Dict[str, Any]]):
+    def __init__(
+        self, remote_dir: str, cache_dir: str, chunks: List[Dict[str, Any]], storage_options: Optional[Dict] = {}
+    ):
         self._remote_dir = remote_dir
         self._cache_dir = cache_dir
         self._chunks = chunks
+        self._storage_options = storage_options
 
     def download_chunk_from_index(self, chunk_index: int) -> None:
         chunk_filename = self._chunks[chunk_index]["filename"]
@@ -41,12 +44,14 @@ class Downloader(ABC):
 
 
 class S3Downloader(Downloader):
-    def __init__(self, remote_dir: str, cache_dir: str, chunks: List[Dict[str, Any]]):
-        super().__init__(remote_dir, cache_dir, chunks)
+    def __init__(
+        self, remote_dir: str, cache_dir: str, chunks: List[Dict[str, Any]], storage_options: Optional[Dict] = {}
+    ):
+        super().__init__(remote_dir, cache_dir, chunks, storage_options)
         self._s5cmd_available = os.system("s5cmd > /dev/null 2>&1") == 0
 
         if not self._s5cmd_available:
-            self._client = S3Client()
+            self._client = S3Client(storage_options=self._storage_options)
 
     def download_file(self, remote_filepath: str, local_filepath: str) -> None:
         obj = parse.urlparse(remote_filepath)
@@ -88,11 +93,13 @@ class S3Downloader(Downloader):
 
 
 class GCPDownloader(Downloader):
-    def __init__(self, remote_dir: str, cache_dir: str, chunks: List[Dict[str, Any]]):
+    def __init__(
+        self, remote_dir: str, cache_dir: str, chunks: List[Dict[str, Any]], storage_options: Optional[Dict] = {}
+    ):
         if not _GOOGLE_STORAGE_AVAILABLE:
             raise ModuleNotFoundError(str(_GOOGLE_STORAGE_AVAILABLE))
 
-        super().__init__(remote_dir, cache_dir, chunks)
+        super().__init__(remote_dir, cache_dir, chunks, storage_options)
 
     def download_file(self, remote_filepath: str, local_filepath: str) -> None:
         from google.cloud import storage
@@ -140,8 +147,10 @@ class LocalDownloaderWithCache(LocalDownloader):
 _DOWNLOADERS = {"s3://": S3Downloader, "gs://": GCPDownloader, "local:": LocalDownloaderWithCache, "": LocalDownloader}
 
 
-def get_downloader_cls(remote_dir: str, cache_dir: str, chunks: List[Dict[str, Any]]) -> Downloader:
+def get_downloader_cls(
+    remote_dir: str, cache_dir: str, chunks: List[Dict[str, Any]], storage_options: Optional[Dict] = {}
+) -> Downloader:
     for k, cls in _DOWNLOADERS.items():
         if str(remote_dir).startswith(k):
-            return cls(remote_dir, cache_dir, chunks)
+            return cls(remote_dir, cache_dir, chunks, storage_options)
     raise ValueError(f"The provided `remote_dir` {remote_dir} doesn't have a downloader associated.")

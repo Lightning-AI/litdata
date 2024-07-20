@@ -45,6 +45,7 @@ class Cache:
         max_cache_size: Union[int, str] = "100GB",
         serializers: Optional[Dict[str, Serializer]] = None,
         writer_chunk_index: Optional[int] = None,
+        storage_options: Optional[Dict] = {},
     ):
         """The Cache enables to optimise dataset format for cloud training. This is done by grouping several elements
         together in order to accelerate fetching.
@@ -85,6 +86,7 @@ class Cache:
             encryption=encryption,
             item_loader=item_loader,
             serializers=serializers,
+            storage_options=storage_options,
         )
         self._is_done = False
         self._distributed_env = _DistributedEnv.detect()
