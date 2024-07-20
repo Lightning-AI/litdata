@@ -40,8 +40,10 @@ class S3Client:
         if has_shared_credentials_file or not _IS_IN_STUDIO:
             self._client = boto3.client(
                 "s3",
-                **self._storage_options,
-                config=botocore.config.Config(retries={"max_attempts": 1000, "mode": "adaptive"}),
+                **{
+                    "config": botocore.config.Config(retries={"max_attempts": 1000, "mode": "adaptive"}),
+                    **self._storage_options,
+                },
             )
         else:
             provider = InstanceMetadataProvider(iam_role_fetcher=InstanceMetadataFetcher(timeout=3600, num_attempts=5))

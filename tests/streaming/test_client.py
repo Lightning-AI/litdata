@@ -13,7 +13,11 @@ def test_s3_client_with_storage_options(monkeypatch):
     botocore = mock.MagicMock()
     monkeypatch.setattr(client, "botocore", botocore)
 
-    storage_options = {"region_name": "us-west-2", "endpoint_url": "https://custom.endpoint"}
+    storage_options = {
+        "region_name": "us-west-2",
+        "endpoint_url": "https://custom.endpoint",
+        "config": botocore.config.Config(retries={"max_attempts": 100}),
+    }
     s3_client = client.S3Client(storage_options=storage_options)
 
     assert s3_client.client
@@ -22,7 +26,7 @@ def test_s3_client_with_storage_options(monkeypatch):
         "s3",
         region_name="us-west-2",
         endpoint_url="https://custom.endpoint",
-        config=botocore.config.Config(retries={"max_attempts": 1000, "mode": "adaptive"}),
+        config=botocore.config.Config(retries={"max_attempts": 100}),
     )
 
     s3_client = client.S3Client()
