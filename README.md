@@ -209,6 +209,21 @@ for batch in dataloader:
 
 ```
 
+
+Additionally, you can inject client connection settings for [S3](https://boto3.amazonaws.com/v1/documentation/api/latest/reference/core/session.html#boto3.session.Session.client) or GCP when initializing your dataset. This is useful for specifying custom endpoints and credentials per dataset.
+
+```python
+from litdata import StreamingDataset
+
+storage_options = {
+    "endpoint_url": "your_endpoint_url",
+    "aws_access_key_id": "your_access_key_id",
+    "aws_secret_access_key": "your_secret_access_key",
+}
+
+dataset = StreamingDataset('s3://my-bucket/my-data', storage_options=storage_options)
+```
+
 </details>  
 
 <details>

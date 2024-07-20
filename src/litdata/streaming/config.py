@@ -33,6 +33,7 @@ class ChunksConfig:
         item_loader: Optional[BaseItemLoader] = None,
         subsampled_files: Optional[List[str]] = None,
         region_of_interest: Optional[List[Tuple[int, int]]] = None,
+        storage_options: Optional[Dict] = {},
     ) -> None:
         """The ChunksConfig reads the index files associated a chunked dataset and enables to map an index to its
         chunk.
@@ -44,6 +45,7 @@ class ChunksConfig:
                 The scheme needs to be added to the path.
             subsampled_files: List of subsampled chunk files loaded from `input_dir/index.json` file.
             region_of_interest: List of tuples of {start,end} of region of interest for each chunk.
+            storage_options: Additional connection options for accessing storage services.
 
         """
         self._cache_dir = cache_dir
@@ -52,6 +54,7 @@ class ChunksConfig:
         self._chunks = None
         self._remote_dir = remote_dir
         self._item_loader = item_loader or PyTreeLoader()
+        self._storage_options = storage_options
 
         # load data from `index.json` file
         data = load_index_file(self._cache_dir)
@@ -75,7 +78,7 @@ class ChunksConfig:
         self._downloader = None
 
         if remote_dir:
-            self._downloader = get_downloader_cls(remote_dir, cache_dir, self._chunks)
+            self._downloader = get_downloader_cls(remote_dir, cache_dir, self._chunks, self._storage_options)
 
         self._compressor_name = self._config["compression"]
         self._compressor: Optional[Compressor] = None
@@ -234,17 +237,20 @@ class ChunksConfig:
         item_loader: Optional[BaseItemLoader] = None,
         subsampled_files: Optional[List[str]] = None,
         region_of_interest: Optional[List[Tuple[int, int]]] = None,
+        storage_options: Optional[dict] = {},
     ) -> Optional["ChunksConfig"]:
         cache_index_filepath = os.path.join(cache_dir, _INDEX_FILENAME)
 
         if isinstance(remote_dir, str):
-            downloader = get_downloader_cls(remote_dir, cache_dir, [])
+            downloader = get_downloader_cls(remote_dir, cache_dir, [], storage_options)
             downloader.download_file(os.path.join(remote_dir, _INDEX_FILENAME), cache_index_filepath)
 
         if not os.path.exists(cache_index_filepath):
             return None
 
-        return ChunksConfig(cache_dir, serializers, remote_dir, item_loader, subsampled_files, region_of_interest)
+        return ChunksConfig(
+            cache_dir, serializers, remote_dir, item_loader, subsampled_files, region_of_interest, storage_options
+        )
 
     def __len__(self) -> int:
         return self._length

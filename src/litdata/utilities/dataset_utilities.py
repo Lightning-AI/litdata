@@ -19,6 +19,7 @@ def subsample_streaming_dataset(
     subsample: float = 1.0,
     shuffle: bool = False,
     seed: int = 42,
+    storage_options: Optional[Dict] = {},
 ) -> Tuple[List[str], List[Tuple[int, int]]]:
     """Subsample streaming dataset.
 
@@ -46,7 +47,7 @@ def subsample_streaming_dataset(
     # Check if `index.json` file exists in cache path
     if not os.path.exists(cache_index_filepath) and isinstance(input_dir.url, str):
         assert input_dir.url is not None
-        downloader = get_downloader_cls(input_dir.url, input_dir.path, [])
+        downloader = get_downloader_cls(input_dir.url, input_dir.path, [], storage_options)
         downloader.download_file(os.path.join(input_dir.url, _INDEX_FILENAME), cache_index_filepath)
 
     if os.path.exists(os.path.join(input_dir.path, _INDEX_FILENAME)):
