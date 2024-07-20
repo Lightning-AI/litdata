@@ -45,6 +45,7 @@ class ChunksConfig:
                 The scheme needs to be added to the path.
             subsampled_files: List of subsampled chunk files loaded from `input_dir/index.json` file.
             region_of_interest: List of tuples of {start,end} of region of interest for each chunk.
+            storage_options: Additional connection options for accessing storage services.
 
         """
         self._cache_dir = cache_dir

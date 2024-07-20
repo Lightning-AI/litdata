@@ -184,6 +184,7 @@ class BinaryReader:
             item_loader: The chunk sampler to create sub arrays from a chunk.
             max_cache_size: The maximum cache size used by the reader when fetching the chunks.
             serializers: Provide your own serializers.
+            storage_options: Additional connection options for accessing storage services.
 
         """
         super().__init__()
