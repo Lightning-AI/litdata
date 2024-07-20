@@ -31,7 +31,7 @@ class Downloader(ABC):
         self._remote_dir = remote_dir
         self._cache_dir = cache_dir
         self._chunks = chunks
-        self._storage_options = storage_options
+        self._storage_options = storage_options or {}
 
     def download_chunk_from_index(self, chunk_index: int) -> None:
         chunk_filename = self._chunks[chunk_index]["filename"]
@@ -120,7 +120,7 @@ class GCPDownloader(Downloader):
                 if key[0] == "/":
                     key = key[1:]
 
-                client = storage.Client()
+                client = storage.Client(**self._storage_options)
                 bucket = client.bucket(bucket_name)
                 blob = bucket.blob(key)
                 blob.download_to_filename(local_filepath)
