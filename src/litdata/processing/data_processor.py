@@ -934,7 +934,7 @@ class DataProcessor:
             raise ValueError("Either the reader or the weights needs to be defined.")
 
         # Ensure the input dir is the same across all nodes
-        self.input_dir = broadcast_object("input_dir", self.input_dir)
+        self.input_dir = broadcast_object("input_dir", self.input_dir, rank=_get_node_rank())
 
         if self.output_dir:
             # Ensure the output dir is the same across all nodes
