@@ -1,4 +1,5 @@
 import itertools
+
 from litdata.streaming.item_loader import Interval
 from litdata.utilities.env import _DistributedEnv
 from litdata.utilities.shuffle import (
@@ -6,43 +7,46 @@ from litdata.utilities.shuffle import (
     _associate_chunks_and_intervals_to_workers,
     _find_chunks_per_workers_on_which_to_skip_deletion,
     _get_shared_chunks,
-    _intra_node_chunk_shuffle,
     _group_chunks_by_nodes,
+    _intra_node_chunk_shuffle,
     _map_node_worker_rank_to_chunk_indexes_to_not_delete,
 )
 
 
 def test_intra_node_chunk_shuffle():
     chunks_per_workers = [
-        [0, 1], [2, 3],     # rank 0, node 0, worker 0, 1
-        [4, 5], [6, 7],     # rank 1, node 0, worker 0, 1
-        [8, 9], [10, 11],   # rank 2, node 1, worker 0, 1
-        [12, 13], [14, 15], # rank 3, node 1, worker 0, 1
+        [0, 1],
+        [2, 3],  # rank 0, node 0, worker 0, 1
+        [4, 5],
+        [6, 7],  # rank 1, node 0, worker 0, 1
+        [8, 9],
+        [10, 11],  # rank 2, node 1, worker 0, 1
+        [12, 13],
+        [14, 15],  # rank 3, node 1, worker 0, 1
     ]
 
     # Each rank shuffles the chunks the same way
     shuffled_per_rank = [
         _intra_node_chunk_shuffle(
-            distributed_env=_DistributedEnv(4, rank, 2), 
-            num_workers=2, 
-            chunks_per_workers=chunks_per_workers, 
-            seed=42, 
-            current_epoch=0
+            distributed_env=_DistributedEnv(4, rank, 2),
+            num_workers=2,
+            chunks_per_workers=chunks_per_workers,
+            seed=42,
+            current_epoch=0,
         )
         for rank in range(4)
     ]
     expected = [1, 5, 0, 7, 2, 4, 3, 6, 9, 13, 8, 15, 10, 12, 11, 14]
     assert shuffled_per_rank[0] == shuffled_per_rank[1] == shuffled_per_rank[2] == shuffled_per_rank[3] == expected
 
-
     # shuffles are different each epoch
     shuffled_per_rank = [
         _intra_node_chunk_shuffle(
-            distributed_env=_DistributedEnv(4, 0, 2), 
-            num_workers=2, 
-            chunks_per_workers=chunks_per_workers, 
-            seed=42, 
-            current_epoch=epoch
+            distributed_env=_DistributedEnv(4, 0, 2),
+            num_workers=2,
+            chunks_per_workers=chunks_per_workers,
+            seed=42,
+            current_epoch=epoch,
         )
         for epoch in range(4)
     ]
@@ -62,8 +66,10 @@ def test_group_chunks_by_nodes():
 
     # 1 node x 2 processes x 2 workers
     chunks_per_workers = [
-        [0, 1], [2, 3],     # rank 0, node 0, worker 0, 1
-        [4, 5], [6, 7],     # rank 1, node 0, worker 0, 1
+        [0, 1],
+        [2, 3],  # rank 0, node 0, worker 0, 1
+        [4, 5],
+        [6, 7],  # rank 1, node 0, worker 0, 1
     ]
     result = _group_chunks_by_nodes(chunks_per_workers, world_size=2, num_nodes=1, num_workers_per_process=2)
     expected = [[0, 1, 2, 3, 4, 5, 6, 7]]
@@ -71,18 +77,22 @@ def test_group_chunks_by_nodes():
 
     # 2 nodes x 2 processes x 2 workers
     chunks_per_workers = [
-        [0, 1], [2, 3],     # rank 0, node 0, worker 0, 1
-        [4, 5], [6, 7],     # rank 1, node 0, worker 0, 1
-        [8, 9], [10, 11],   # rank 2, node 1, worker 0, 1
-        [12, 13], [14, 15], # rank 3, node 1, worker 0, 1
+        [0, 1],
+        [2, 3],  # rank 0, node 0, worker 0, 1
+        [4, 5],
+        [6, 7],  # rank 1, node 0, worker 0, 1
+        [8, 9],
+        [10, 11],  # rank 2, node 1, worker 0, 1
+        [12, 13],
+        [14, 15],  # rank 3, node 1, worker 0, 1
     ]
     result = _group_chunks_by_nodes(chunks_per_workers, world_size=4, num_nodes=2, num_workers_per_process=2)
     expected = [
-        [0, 1, 2, 3, 4, 5, 6, 7],       # chunks in node 0
-        [8, 9, 10, 11, 12, 13, 14, 15], # chunks in node 1
+        [0, 1, 2, 3, 4, 5, 6, 7],  # chunks in node 0
+        [8, 9, 10, 11, 12, 13, 14, 15],  # chunks in node 1
     ]
     assert result == expected
-    
+
 
 def test_associate_chunks_and_intervals_to_workers():
     indexes = [0, 1, 2, 3, 4, 5, 6, 7]

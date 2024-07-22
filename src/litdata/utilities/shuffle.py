@@ -28,7 +28,7 @@ def _intra_node_chunk_shuffle(
     current_epoch: int,
 ) -> List[int]:
     chunk_indexes_per_nodes = _group_chunks_by_nodes(
-        chunks_per_workers=chunks_per_workers, 
+        chunks_per_workers=chunks_per_workers,
         world_size=distributed_env.world_size,
         num_nodes=distributed_env.num_nodes,
         num_workers_per_process=num_workers,
@@ -45,8 +45,8 @@ def _intra_node_chunk_shuffle(
 
 
 def _group_chunks_by_nodes(
-    chunks_per_workers: List[List[int]], 
-    world_size: int, 
+    chunks_per_workers: List[List[int]],
+    world_size: int,
     num_nodes: int,
     num_workers_per_process: int,
 ) -> List[List[int]]:
