@@ -50,8 +50,8 @@ def _group_chunks_by_nodes(
     num_nodes: int,
     num_workers_per_process: int,
 ) -> List[List[int]]:
-    """Takes a list representing chunks grouped by worker (global worker id across ranks and nodes) and returns
-    a list in which the chunks are grouped by node."""
+    """Takes a list representing chunks grouped by worker (global worker id across ranks and nodes) and returns a list
+    in which the chunks are grouped by node."""
     chunk_indexes_per_nodes: Any = [[] for _ in range(num_nodes)]
     num_processes_per_node = world_size // num_nodes
     for worker_global_id, chunks in enumerate(chunks_per_workers):
