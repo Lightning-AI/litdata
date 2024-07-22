@@ -15,14 +15,14 @@ from litdata.utilities.shuffle import (
 
 def test_intra_node_chunk_shuffle():
     chunks_per_workers = [
-        [0, 1],
-        [2, 3],  # rank 0, node 0, worker 0, 1
-        [4, 5],
-        [6, 7],  # rank 1, node 0, worker 0, 1
-        [8, 9],
-        [10, 11],  # rank 2, node 1, worker 0, 1
-        [12, 13],
-        [14, 15],  # rank 3, node 1, worker 0, 1
+        [0, 1],     # rank 0, node 0, worker 0
+        [2, 3],     # rank 0, node 0, worker 1
+        [4, 5],     # rank 1, node 0, worker 0
+        [6, 7],     # rank 1, node 0, worker 1
+        [8, 9],     # rank 2, node 1, worker 0
+        [10, 11],   # rank 2, node 1, worker 1
+        [12, 13],   # rank 3, node 1, worker 0
+        [14, 15],   # rank 3, node 1, worker 1
     ]
 
     # Each rank shuffles the chunks the same way
@@ -66,10 +66,10 @@ def test_group_chunks_by_nodes():
 
     # 1 node x 2 processes x 2 workers
     chunks_per_workers = [
-        [0, 1],
-        [2, 3],  # rank 0, node 0, worker 0, 1
-        [4, 5],
-        [6, 7],  # rank 1, node 0, worker 0, 1
+        [0, 1],  # rank 0, node 0, worker 0
+        [2, 3],  # rank 0, node 0, worker 1
+        [4, 5],  # rank 1, node 0, worker 0
+        [6, 7],  # rank 1, node 0, worker 1
     ]
     result = _group_chunks_by_nodes(chunks_per_workers, world_size=2, num_nodes=1, num_workers_per_process=2)
     expected = [[0, 1, 2, 3, 4, 5, 6, 7]]
@@ -77,18 +77,18 @@ def test_group_chunks_by_nodes():
 
     # 2 nodes x 2 processes x 2 workers
     chunks_per_workers = [
-        [0, 1],
-        [2, 3],  # rank 0, node 0, worker 0, 1
-        [4, 5],
-        [6, 7],  # rank 1, node 0, worker 0, 1
-        [8, 9],
-        [10, 11],  # rank 2, node 1, worker 0, 1
-        [12, 13],
-        [14, 15],  # rank 3, node 1, worker 0, 1
+        [0, 1],     # rank 0, node 0, worker 0
+        [2, 3],     # rank 0, node 0, worker 1
+        [4, 5],     # rank 1, node 0, worker 0
+        [6, 7],     # rank 1, node 0, worker 1
+        [8, 9],     # rank 2, node 1, worker 0
+        [10, 11],   # rank 2, node 1, worker 1
+        [12, 13],   # rank 3, node 1, worker 0
+        [14, 15],   # rank 3, node 1, worker 1
     ]
     result = _group_chunks_by_nodes(chunks_per_workers, world_size=4, num_nodes=2, num_workers_per_process=2)
     expected = [
-        [0, 1, 2, 3, 4, 5, 6, 7],  # chunks in node 0
+        [0, 1, 2, 3, 4, 5, 6, 7],        # chunks in node 0
         [8, 9, 10, 11, 12, 13, 14, 15],  # chunks in node 1
     ]
     assert result == expected
