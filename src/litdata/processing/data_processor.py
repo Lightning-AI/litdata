@@ -938,10 +938,7 @@ class DataProcessor:
 
         if self.output_dir:
             # Ensure the output dir is the same across all nodes
-            print(f"Sending request for output_dir, {self.output_dir=}, rank=", _get_node_rank())
-            result = broadcast_object("output_dir", self.output_dir, rank=_get_node_rank())
-            print(f"Broadcast result was", result, "rank=", _get_node_rank())
-            self.output_dir = result
+            self.output_dir = broadcast_object("output_dir", self.output_dir, rank=_get_node_rank())
             print(f"Storing the files under {self.output_dir.path if self.output_dir.path else self.output_dir.url}")
 
         self.random_seed = random_seed
