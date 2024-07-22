@@ -37,9 +37,9 @@ def _intra_node_chunk_shuffle(
     # shuffle the chunks associated to the node
     for i in range(len(chunk_indexes_per_nodes)):
         # permute the indexes within the node
-        chunk_indexes_per_nodes[i] = np.random.RandomState(seed=seed + current_epoch).permutation(
+        chunk_indexes_per_nodes[i] = list(np.random.RandomState(seed=seed + current_epoch).permutation(
             chunk_indexes_per_nodes[i]
-        )
+        ))
 
     return [index for chunks in chunk_indexes_per_nodes for index in chunks]
 
