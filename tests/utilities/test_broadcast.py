@@ -20,7 +20,7 @@ def test_broadcast(monkeypatch):
     resp.json = fn
     session.post.return_value = resp
     monkeypatch.setattr(requests, "Session", mock.MagicMock(return_value=session))
-    assert broadcast_object("key", "value") == "value"
+    assert broadcast_object("key", "value", rank=0) == "value"
 
 
 @mock.patch.dict(

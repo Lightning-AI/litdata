@@ -123,11 +123,8 @@ class _ImmutableDistributedMap:
 
         self.private_client: _HTTPClient = _HTTPClient(lightning_app_state_url, auth_token=token, use_retry=False)
 
-    def set_and_get(self, key: str, value: Any, rank: Optional[int] = None) -> Any:
-        payload = {"key": key, "value": pickle.dumps(value, 0).decode()}
-
-        if rank is not None:
-            payload["rank"] = str(rank)
+    def set_and_get(self, key: str, value: Any, rank: int) -> Any:
+        payload = {"key": key, "value": pickle.dumps(value, 0).decode(), "rank": str(rank)}
 
         # Try the public address first
         try:
@@ -145,7 +142,7 @@ class _ImmutableDistributedMap:
         return pickle.loads(bytes(value, "utf-8"))  # noqa: S301
 
 
-def broadcast_object(key: str, obj: Any, rank: Optional[int] = None) -> Any:
+def broadcast_object(key: str, obj: Any, rank: int) -> Any:
     """This function enables to broadcast object across machines."""
     if os.getenv("LIGHTNING_APP_EXTERNAL_URL") is not None:
         value = None
