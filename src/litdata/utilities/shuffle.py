@@ -23,7 +23,7 @@ from litdata.utilities.env import _DistributedEnv
 def _intra_node_chunk_shuffle(
     distributed_env: _DistributedEnv,
     num_workers: int,
-    chunks_per_workers: List[List[int]],  # chunks_per_workers
+    chunks_per_workers: List[List[int]],
     seed: int,
     current_epoch: int,
 ) -> List[int]:
