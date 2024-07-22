@@ -22,16 +22,17 @@ from litdata.utilities.env import _DistributedEnv
 
 def _intra_node_chunk_shuffle(
     distributed_env: _DistributedEnv,
-    chunks_per_ranks: List[List[int]],
+    num_workers: int,
+    chunks_per_workers: List[List[int]],  # chunks_per_workers
     seed: int,
     current_epoch: int,
 ) -> List[int]:
-    chunk_indexes_per_nodes: Any = [[] for _ in range(distributed_env.num_nodes)]
-    process_per_node = distributed_env.world_size // distributed_env.num_nodes
-    for rank, chunks_per_rank in enumerate(chunks_per_ranks):
-        chunk_indexes_per_nodes[0 if distributed_env.num_nodes == 1 else rank // process_per_node].extend(
-            chunks_per_rank
-        )
+    chunk_indexes_per_nodes = _group_chunks_by_nodes(
+        chunks_per_workers=chunks_per_workers, 
+        world_size=distributed_env.world_size,
+        num_nodes=distributed_env.num_nodes,
+        num_workers_per_process=num_workers,
+    )
 
     # shuffle the chunks associated to the node
     for i in range(len(chunk_indexes_per_nodes)):
@@ -41,6 +42,21 @@ def _intra_node_chunk_shuffle(
         )
 
     return [index for chunks in chunk_indexes_per_nodes for index in chunks]
+
+
+def _group_chunks_by_nodes(
+    chunks_per_workers: List[List[int]], 
+    world_size: int, 
+    num_nodes: int,
+    num_workers_per_process: int,
+) -> List[List[int]]:
+    chunk_indexes_per_nodes: Any = [[] for _ in range(num_nodes)]
+    num_processes_per_node = world_size // num_nodes
+    for worker_global_id, chunks in enumerate(chunks_per_workers):
+        process_rank = worker_global_id // num_workers_per_process  # the process rank this worker belongs to
+        node_rank = process_rank // num_processes_per_node  # the node rank this worker belongs to
+        chunk_indexes_per_nodes[node_rank].extend(chunks)
+    return chunk_indexes_per_nodes
 
 
 def _associate_chunks_and_intervals_to_workers(
