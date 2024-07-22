@@ -128,7 +128,9 @@ class FullShuffle(Shuffle):
 
         # Perform shuffle within the nodes to avoid cache miss.
         # Note: It is possible for the overlapping chunks to change due to the changing order.
-        shuffled_indexes = _intra_node_chunk_shuffle(distributed_env, workers_chunks, self.seed, current_epoch)
+        shuffled_indexes = _intra_node_chunk_shuffle(
+            distributed_env, num_workers, workers_chunks, self.seed, current_epoch
+        )
         shuffled_chunk_intervals = np.asarray(chunk_intervals)[shuffled_indexes].tolist()
 
         workers_chunks, workers_intervals = _associate_chunks_and_intervals_to_workers(
