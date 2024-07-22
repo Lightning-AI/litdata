@@ -114,7 +114,7 @@ class FullShuffle(Shuffle):
         # than in epoch 1 because shuffle a second time within the node.
         # This is done slighyly down this function.
         seed_shift = 1 if distributed_env.num_nodes > 1 else current_epoch
-        shuffled_indexes = np.random.RandomState(seed=self.seed + seed_shift).permutation(indexes)
+        shuffled_indexes = np.random.RandomState(seed=(self.seed, seed_shift)).permutation(indexes)
         shuffled_chunk_intervals = np.asarray(chunk_intervals)[shuffled_indexes].tolist()
 
         # 3. Compute the items budget of each rank
