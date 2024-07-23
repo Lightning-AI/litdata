@@ -149,7 +149,7 @@ class PyTreeLoader(BaseItemLoader):
 
             self._chunk_filepaths[chunk_filepath] = True
 
-        if self._config["encryption"]:
+        if self._config.get("encryption"):
             data = self._load_encrypted_data(chunk_filepath, chunk_index, offset, encryption)
         else:
             with open(chunk_filepath, "rb", 0) as fp:
