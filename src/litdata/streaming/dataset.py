@@ -291,7 +291,7 @@ class StreamingDataset(IterableDataset):
         # replay sampling from each worker / chunks using the batch size
         indexes = _replay_sampling(num_samples_yielded, batch_size, num_workers)
         chunks_index, indexes = _replay_chunks_sampling(
-            workers_intervals={i: workers_intervals[i] for i in range(worker_start, worker_end)},
+            workers_intervals={i: workers_intervals[j] for i, j in enumerate(range(worker_start, worker_end))},
             indexes=indexes,
         )
 
