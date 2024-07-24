@@ -306,7 +306,7 @@ train_datasets = [
 
 # Mix SlimPajama data and Starcoder data with these proportions:
 weights = (0.693584, 0.306416)
-combined_dataset = CombinedStreamingDataset(datasets=train_datasets, seed=42, weights=weights)
+combined_dataset = CombinedStreamingDataset(datasets=train_datasets, seed=42, weights=weights, iterate_over_all=False)
 
 train_dataloader = StreamingDataLoader(combined_dataset, batch_size=8, pin_memory=True, num_workers=os.cpu_count())
 
