@@ -227,7 +227,9 @@ def map(
         raise ValueError("When providing a streaming dataloader, weights isn't supported.")
 
     if not isinstance(inputs, (Sequence, StreamingDataLoader)):
-        raise ValueError(f"The provided inputs should be a non-empty sequence or a streaming dataloader. Found {inputs}.")
+        raise ValueError(
+            f"The provided inputs should be a non-empty sequence or a streaming dataloader. Found {inputs}."
+        )
 
     if len(inputs) == 0:
         raise ValueError(f"The provided inputs should be non empty. Found {inputs}.")
@@ -350,7 +352,9 @@ def optimize(
         raise ValueError("When providing a streaming dataloader, weights isn't supported.")
 
     if not isinstance(inputs, (Sequence, StreamingDataLoader)):
-        raise ValueError(f"The provided inputs should be a non-empty sequence or a streaming dataloader. Found {inputs}.")
+        raise ValueError(
+            f"The provided inputs should be a non-empty sequence or a streaming dataloader. Found {inputs}."
+        )
 
     if len(inputs) == 0:
         raise ValueError(f"The provided inputs should be non empty. Found {inputs}.")
