@@ -175,11 +175,11 @@ ld.map(
 
 **Key benefits:**
 
-✅ Parallelize processing:    Reduce processing time by transforming data across multiple machines simultaneously.
-✅ Scale to large data:       Increase the size of datasets you can efficiently handle.
-✅ Flexible usecases:         Resize images, create embeddings, scrape the internet, etc...
-✅ Run local or cloud:        Run on your own machines or auto-scale to 1000s of cloud GPUs with Lightning Studios.
-✅ Enterprise security:       Self host or process data on your cloud account with Lightning Studios.
+✅ Parallelize processing:    Reduce processing time by transforming data across multiple machines simultaneously.    
+✅ Scale to large data:       Increase the size of datasets you can efficiently handle.    
+✅ Flexible usecases:         Resize images, create embeddings, scrape the internet, etc...    
+✅ Run local or cloud:        Run on your own machines or auto-scale to 1000s of cloud GPUs with Lightning Studios.         
+✅ Enterprise security:       Self host or process data on your cloud account with Lightning Studios.  
 
 &nbsp;
 
