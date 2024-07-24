@@ -10,10 +10,10 @@ Optimize data for fast AI model training.**
 
 <pre>
 Transform                              Optimize
-
-✅ Parallelize data processing       ✅ Stream large cloud datasets
-✅ Create vector embeddings          ✅ Accelerate training by 20x
-✅ Run distributed inference         ✅ Pause and resume data streaming
+  
+✅ Parallelize data processing       ✅ Stream large cloud datasets          
+✅ Create vector embeddings          ✅ Accelerate training by 20x           
+✅ Run distributed inference         ✅ Pause and resume data streaming      
 ✅ Scrape websites at scale          ✅ Use remote data without local loading
 </pre>
 
