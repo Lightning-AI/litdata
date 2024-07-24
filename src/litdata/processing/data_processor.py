@@ -960,7 +960,9 @@ class DataProcessor:
         torch.manual_seed(self.random_seed)
 
         # Call the setup method of the user
-        user_items: List[Any] = data_recipe.prepare_structure(self.input_dir.path if self.input_dir else None)
+        user_items: Union[List[Any], StreamingDataLoader] = data_recipe.prepare_structure(
+            self.input_dir.path if self.input_dir else None
+        )
         if not isinstance(user_items, (list, StreamingDataLoader)):
             raise ValueError("The `prepare_structure` should return a list of item metadata.")
 
@@ -969,6 +971,8 @@ class DataProcessor:
 
         if self.reader:
             user_items = self.reader.remap_items(user_items, self.num_workers)
+
+        assert isinstance(user_items, list)
 
         if self.weights is not None:
             if len(self.weights) != len(user_items):

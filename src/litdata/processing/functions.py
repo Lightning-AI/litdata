@@ -98,7 +98,7 @@ def _get_default_num_workers() -> int:
 
 
 class LambdaDataTransformRecipe(DataTransformRecipe):
-    def __init__(self, fn: Callable[[str, Any], None], inputs: Sequence[Any]):
+    def __init__(self, fn: Callable[[str, Any], None], inputs: Union[Sequence[Any], StreamingDataLoader]):
         super().__init__()
         self._fn = fn
         self._inputs = inputs
@@ -144,7 +144,7 @@ class LambdaDataChunkRecipe(DataChunkRecipe):
     def __init__(
         self,
         fn: Callable[[Any], None],
-        inputs: Sequence[Any],
+        inputs: Union[Sequence[Any], StreamingDataLoader],
         chunk_size: Optional[int],
         chunk_bytes: Optional[Union[int, str]],
         compression: Optional[str],
@@ -184,7 +184,7 @@ class LambdaDataChunkRecipe(DataChunkRecipe):
 
 def map(
     fn: Callable[[str, Any], None],
-    inputs: Sequence[Any],
+    inputs: Union[Sequence[Any], StreamingDataLoader],
     output_dir: Union[str, Dir],
     input_dir: Optional[str] = None,
     weights: Optional[List[int]] = None,
@@ -199,12 +199,11 @@ def map(
     reader: Optional[BaseReader] = None,
     batch_size: Optional[int] = None,
 ) -> None:
-    """This function map a callbable over a collection of files possibly in a distributed way.
+    """This function maps a callable over a collection of inputs, possibly in a distributed way.
 
     Arguments:
         fn: A function to be executed over each input element
-        inputs: A sequence of input to be processed by the `fn` function.
-            Each input should contain at least a valid filepath.
+        inputs: A sequence of input to be processed by the `fn` function, or a streaming dataloader.
         output_dir: The folder where the processed data should be stored.
         input_dir: Provide the path where your files are stored. If the files are on a remote storage,
             they will be downloaded in the background while processed.
@@ -228,7 +227,7 @@ def map(
         raise ValueError("When providing a streaming dataloader, weights isn't supported.")
 
     if not isinstance(inputs, (Sequence, StreamingDataLoader)):
-        raise ValueError(f"The provided inputs should be non empty sequence or a streaming dataloader. Found {inputs}.")
+        raise ValueError(f"The provided inputs should be a non-empty sequence or a streaming dataloader. Found {inputs}.")
 
     if len(inputs) == 0:
         raise ValueError(f"The provided inputs should be non empty. Found {inputs}.")
@@ -291,7 +290,7 @@ def map(
 
 def optimize(
     fn: Callable[[Any], Any],
-    inputs: Sequence[Any],
+    inputs: Union[Sequence[Any], StreamingDataLoader],
     output_dir: str,
     input_dir: Optional[str] = None,
     weights: Optional[List[int]] = None,
@@ -311,12 +310,13 @@ def optimize(
     mode: Optional[Literal["append", "overwrite"]] = None,
     use_checkpoint: bool = False,
 ) -> None:
-    """This function converts a dataset into chunks possibly in a distributed way.
+    """This function converts a dataset into chunks, possibly in a distributed way.
 
     Arguments:
-        fn: A function to be executed over each input element
-        inputs: A sequence of input to be processed by the `fn` function.
-            Each input should contain at least a valid filepath.
+        fn: A function to be executed over each input element. The function should return the data sample that
+            corresponds to the input. Every invocation of the function should return a similar hierarchy of objects,
+            where the object types and list sizes don't change.
+        inputs: A sequence of input to be processed by the `fn` function, or a streaming dataloader.
         output_dir: The folder where the processed data should be stored.
         input_dir: Provide the path where your files are stored. If the files are on a remote storage,
             they will be downloaded in the background while processed.
@@ -350,7 +350,7 @@ def optimize(
         raise ValueError("When providing a streaming dataloader, weights isn't supported.")
 
     if not isinstance(inputs, (Sequence, StreamingDataLoader)):
-        raise ValueError(f"The provided inputs should be non empty sequence or a streaming dataloader. Found {inputs}.")
+        raise ValueError(f"The provided inputs should be a non-empty sequence or a streaming dataloader. Found {inputs}.")
 
     if len(inputs) == 0:
         raise ValueError(f"The provided inputs should be non empty. Found {inputs}.")
