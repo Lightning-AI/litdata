@@ -133,14 +133,14 @@ for sample in dataloader:
 
 **Key benefits:**
 
-✅ Accelerate training:       Optimized datasets load 20x faster.
-✅ Stream cloud datasets:     Work with cloud data without downloading it.
-✅ Pytorch-first:             Works with PyTorch libraries like PyTorch Lightning, Lightning Fabric, Hugging Face.
-✅ Easy collaboration:        Share and access datasets in the cloud, streamlining team projects.
-✅ Scale across GPUs:         Streamed data automatically scales to all GPUs.
-✅ Flexible storage:          Use S3, GCS, Azure, or your own cloud account for data storage.
-✅ Run local or cloud:        Run on your own machines or auto-scale to 1000s of cloud GPUs with Lightning Studios.
-✅ Enterprise security:       Self host or process data on your cloud account with Lightning Studios.
+✅ Accelerate training:       Optimized datasets load 20x faster.      
+✅ Stream cloud datasets:     Work with cloud data without downloading it.    
+✅ Pytorch-first:             Works with PyTorch libraries like PyTorch Lightning, Lightning Fabric, Hugging Face.    
+✅ Easy collaboration:        Share and access datasets in the cloud, streamlining team projects.     
+✅ Scale across GPUs:         Streamed data automatically scales to all GPUs.      
+✅ Flexible storage:          Use S3, GCS, Azure, or your own cloud account for data storage.    
+✅ Run local or cloud:        Run on your own machines or auto-scale to 1000s of cloud GPUs with Lightning Studios.         
+✅ Enterprise security:       Self host or process data on your cloud account with Lightning Studios.  
 
 &nbsp;
 
