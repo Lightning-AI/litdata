@@ -52,6 +52,19 @@ def google_mock(monkeypatch):
 
 
 @pytest.fixture()
+def azure_mock(monkeypatch):
+    azure = ModuleType("azure")
+    monkeypatch.setitem(sys.modules, "azure", azure)
+    azure_storage = ModuleType("storage")
+    monkeypatch.setitem(sys.modules, "azure.storage", azure_storage)
+    azure_storage_blob = ModuleType("storage")
+    monkeypatch.setitem(sys.modules, "azure.storage.blob", azure_storage_blob)
+    azure.storage = azure_storage
+    azure.storage.blob = azure_storage_blob
+    return azure
+
+
+@pytest.fixture()
 def lightning_cloud_mock(monkeypatch):
     lightning_cloud = ModuleType("lightning_cloud")
     monkeypatch.setitem(sys.modules, "lightning_cloud", lightning_cloud)

@@ -153,13 +153,11 @@ class AzureDownloader(Downloader):
 
         try:
             with FileLock(local_filepath + ".lock", timeout=3 if obj.path.endswith(_INDEX_FILENAME) else 0):
-                directories = obj.path.lstrip("/").split("/")
-                container_name = directories[0]
-                blob_name = os.path.join(*directories[1:])
-                service_client = BlobServiceClient.from_connection_string(self._storage_options["connection_string"])
-                blob_client = service_client.get_blob_client(container=container_name, blob=blob_name)
+                service = BlobServiceClient(**self._storage_options)
+                blob_client = service.get_blob_client(container=obj.netloc, blob=obj.path.lstrip("/"))
                 with open(local_filepath, "wb") as download_file:
-                    download_file.write(blob_client.download_blob().readall())
+                    blob_data = blob_client.download_blob()
+                    blob_data.readinto(download_file)
 
         except Timeout:
             # another process is responsible to download that file, continue
