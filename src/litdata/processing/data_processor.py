@@ -776,7 +776,7 @@ class DataChunkRecipe(DataRecipe):
         if chunks and delete_cached_files and output_dir.path is not None:
             # delete all these chunks files
             print("-" * 60)
-            print("All chunk files should have been deleted")
+            print("All chunk files should have been deleted.")
             for chunk in chunks:
                 print(f"Deleting chunk: {chunk}")
                 os.remove(os.path.join(cache_dir, chunk))
