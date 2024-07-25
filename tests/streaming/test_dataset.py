@@ -823,7 +823,8 @@ def _get_simulated_s3_dataloader(cache_dir, data_dir, shuffle=False):
 @mock.patch.dict(os.environ, {}, clear=True)
 @pytest.mark.timeout(60)
 @pytest.mark.parametrize("shuffle", [True, False])
-def test_dataset_resume_on_future_chunks(shuffle, tmpdir, monkeypatch):
+@pytest.mark.parametrize("number_of_workers", [1, 2, 4])
+def test_dataset_resume_on_future_chunks(shuffle, number_of_workers, tmpdir, monkeypatch):
     """This test is constructed to test resuming from a chunk past the first chunk, when subsequent chunks don't have
     the same size."""
     s3_cache_dir = str(tmpdir / "s3cache")
@@ -838,7 +839,7 @@ def test_dataset_resume_on_future_chunks(shuffle, tmpdir, monkeypatch):
         inputs=list(range(8)),
         output_dir=data_dir,
         chunk_size=190,
-        num_workers=1,  # TODO: Want 4 here, but optimize() has deletion race condition
+        num_workers=number_of_workers,
         num_uploaders=1,
     )
     sleep(5)  # wait for copier/remover threads to complete
