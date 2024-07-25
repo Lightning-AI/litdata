@@ -780,7 +780,7 @@ class DataChunkRecipe(DataRecipe):
             for chunk in chunks:
                 print(f"Deleting chunk: {chunk}")
                 os.remove(os.path.join(cache_dir, chunk))
-            print("-"*60)
+            print("-" * 60)
             # raise RuntimeError(f"All the chunks should have been deleted. Found {chunks}")
 
         merge_cache = Cache(cache_dir, chunk_bytes=1)
