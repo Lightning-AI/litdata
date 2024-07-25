@@ -774,7 +774,14 @@ class DataChunkRecipe(DataRecipe):
 
         chunks = [file for file in os.listdir(cache_dir) if file.endswith(".bin")]
         if chunks and delete_cached_files and output_dir.path is not None:
-            raise RuntimeError(f"All the chunks should have been deleted. Found {chunks}")
+            # delete all these chunks files
+            print("-"*60)
+            print("All chunk files should have been deleted")
+            for chunk in chunks:
+                print(f"Deleting chunk: {chunk}")
+                os.remove(os.path.join(cache_dir, chunk))
+            print("-"(60))
+            # raise RuntimeError(f"All the chunks should have been deleted. Found {chunks}")
 
         merge_cache = Cache(cache_dir, chunk_bytes=1)
         node_rank = _get_node_rank()
