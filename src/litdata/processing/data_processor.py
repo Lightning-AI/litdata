@@ -195,6 +195,50 @@ def _remove_target(input_dir: Dir, cache_dir: str, queue_in: Queue) -> None:
                 os.remove(path)
 
 
+def _upload_leftovers(local_filepath: str, output_dir: Dir, cache_dir: str) -> None:
+    """This function is used to upload leftovers from a local to remote dataset directory."""
+    obj = parse.urlparse(output_dir.url if output_dir.url else output_dir.path)
+
+    if obj.scheme == "s3":
+        s3 = S3Client()
+
+    if local_filepath is None:
+        return
+
+    # Upload the file to the target cloud storage
+    if not local_filepath.startswith(cache_dir):
+        local_filepath = os.path.join(cache_dir, local_filepath)
+    if obj.scheme == "s3":
+        try:
+            output_filepath = str(obj.path).lstrip("/")
+
+            if local_filepath.__contains__(".checkpoints"):
+                output_filepath = os.path.join(output_filepath, ".checkpoints")
+
+            output_filepath = remove_uuid_from_filename(output_filepath)  # remove unique id from checkpoints
+
+            s3.client.upload_file(
+                local_filepath,
+                obj.netloc,
+                output_filepath,
+            )
+        except Exception as e:
+            raise Exception(e)
+
+    elif output_dir.path:
+        output_filepath = output_dir.path
+
+        if local_filepath.__contains__(".checkpoints"):
+            output_filepath = os.path.join(output_filepath, ".checkpoints")
+
+        output_filepath = remove_uuid_from_filename(output_filepath)  # remove unique id from checkpoints
+
+        os.makedirs(os.path.dirname(output_filepath), exist_ok=True)
+        shutil.copy(local_filepath, output_filepath)
+    else:
+        raise ValueError(f"The provided {output_dir.path} isn't supported.")
+
+
 def _upload_fn(upload_queue: Queue, remove_queue: Queue, cache_dir: str, output_dir: Dir) -> None:
     """This function is used to upload optimised chunks from a local to remote dataset directory."""
     obj = parse.urlparse(output_dir.url if output_dir.url else output_dir.path)
@@ -779,6 +823,7 @@ class DataChunkRecipe(DataRecipe):
             print("All chunk files should have been deleted.")
             for chunk in chunks:
                 print(f"Deleting chunk: {chunk}")
+                _upload_leftovers(chunk, output_dir, cache_dir)
                 os.remove(os.path.join(cache_dir, chunk))
             print("-" * 60)
             # raise RuntimeError(f"All the chunks should have been deleted. Found {chunks}")
