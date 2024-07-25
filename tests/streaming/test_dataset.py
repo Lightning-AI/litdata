@@ -823,7 +823,7 @@ def _get_simulated_s3_dataloader(cache_dir, data_dir, shuffle=False):
 @mock.patch.dict(os.environ, {}, clear=True)
 @pytest.mark.timeout(90)
 @pytest.mark.parametrize("shuffle", [True, False])
-@pytest.mark.parametrize("number_of_workers", [1, 2, 3]) # github actions runners have 3 cores for macOS
+@pytest.mark.parametrize("number_of_workers", [1, 2, 3])  # github actions runners have 3 cores for macOS
 def test_dataset_resume_on_future_chunks(shuffle, number_of_workers, tmpdir, monkeypatch):
     """This test is constructed to test resuming from a chunk past the first chunk, when subsequent chunks don't have
     the same size."""
