@@ -181,6 +181,7 @@ def _remove_target(input_dir: Dir, cache_dir: str, queue_in: Queue) -> None:
         # 2. Terminate the process if we received a termination signal
         if paths is None:
             return
+        print(f"Removing {paths} from {input_dir.path} 🚮")
 
         # 3. Iterate through the paths and delete them sequentially.
         for path in paths:
@@ -263,6 +264,8 @@ def _upload_fn(upload_queue: Queue, remove_queue: Queue, cache_dir: str, output_
         # Upload the file to the target cloud storage
         if not local_filepath.startswith(cache_dir):
             local_filepath = os.path.join(cache_dir, local_filepath)
+        
+        print(f"Uploading {local_filepath} to {output_dir.path} 🚀")
 
         if obj.scheme == "s3":
             try:
