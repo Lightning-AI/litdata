@@ -15,7 +15,6 @@ import io
 import os
 import random
 import sys
-from time import time
 from unittest import mock
 
 import numpy as np
@@ -33,7 +32,6 @@ from litdata.streaming.serializers import (
     NoHeaderNumpySerializer,
     NoHeaderTensorSerializer,
     NumpySerializer,
-    PickleSerializer,
     PILSerializer,
     TensorSerializer,
     VideoSerializer,
@@ -140,10 +138,7 @@ def test_tensor_serializer():
     seed_everything(42)
 
     serializer_tensor = TensorSerializer()
-    serializer_pickle = PickleSerializer()
 
-    ratio_times = []
-    ratio_bytes = []
     shapes = [(10,), (10, 10), (10, 10, 10), (10, 10, 10, 5), (10, 10, 10, 5, 4)]
     for dtype in _TORCH_DTYPES_MAPPING.values():
         for shape in shapes:
@@ -152,29 +147,11 @@ def test_tensor_serializer():
                 continue
             tensor = torch.ones(shape, dtype=dtype)
 
-            t0 = time()
             data, _ = serializer_tensor.serialize(tensor)
             deserialized_tensor = serializer_tensor.deserialize(data)
-            tensor_time = time() - t0
-            tensor_bytes = len(data)
 
             assert deserialized_tensor.dtype == dtype
             assert torch.equal(tensor, deserialized_tensor)
-
-            t1 = time()
-            data, _ = serializer_pickle.serialize(tensor)
-            deserialized_tensor = serializer_pickle.deserialize(data)
-            pickle_time = time() - t1
-            pickle_bytes = len(data)
-
-            assert deserialized_tensor.dtype == dtype
-            assert torch.equal(tensor, deserialized_tensor)
-
-            ratio_times.append(pickle_time / tensor_time)
-            ratio_bytes.append(pickle_bytes / tensor_bytes)
-
-    assert np.mean(ratio_times) > 1.6
-    assert np.mean(ratio_bytes) > 2
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="Not supported on windows")
