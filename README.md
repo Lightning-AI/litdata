@@ -242,6 +242,40 @@ Here you can see an illustration showing how the Streaming Dataset works with mu
 </details>  
 
 <details>
+  <summary> ✅ Stream from multiple cloud providers</summary>
+
+&nbsp;
+
+The StreamingDataset supports reading optimized datasets from common cloud providers. 
+
+```python
+import os
+import litdata as ld
+
+# Read data from AWS S3
+aws_storage_options={
+    "AWS_ACCESS_KEY_ID": os.environ['AWS_ACCESS_KEY_ID'],
+    "AWS_SECRET_ACCESS_KEY": os.environ['AWS_SECRET_ACCESS_KEY'],
+}
+dataset = ld.StreamingDataset("s3://my-bucket/my-data", storage_options=aws_storage_options)
+
+# Read data from GCS
+gcp_storage_options={
+    "project": os.environ['PROJECT_ID'],
+}
+dataset = ld.StreamingDataset("gcp://my-bucket/my-data", storage_options=gcp_storage_options)
+
+# Read data from Azure
+azure_storage_options={
+    "account_url": f"https://{os.environ['AZURE_ACCOUNT_NAME']}.blob.core.windows.net",
+    "credential": os.environ['AZURE_ACCOUNT_ACCESS_KEY']
+}
+dataset = ld.StreamingDataset("azure://my-bucket/my-data", storage_options=azure_storage_options)
+```
+
+</details>  
+
+<details>
   <summary> ✅ Pause, resume data streaming</summary>
 &nbsp;
 
