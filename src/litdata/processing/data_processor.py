@@ -264,7 +264,7 @@ def _upload_fn(upload_queue: Queue, remove_queue: Queue, cache_dir: str, output_
         # Upload the file to the target cloud storage
         if not local_filepath.startswith(cache_dir):
             local_filepath = os.path.join(cache_dir, local_filepath)
-        
+
         print(f"Uploading {local_filepath} to {output_dir.path} 🚀")
 
         if obj.scheme == "s3":
