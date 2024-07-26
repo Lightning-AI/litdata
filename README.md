@@ -4,7 +4,7 @@
 &nbsp;
 &nbsp;
 
-**Transform datasets at scale.
+**Transform datasets at scale.    
 Optimize data for fast AI model training.**
 
 
@@ -59,7 +59,7 @@ pip install litdata
 
 Choose your workflow:
 
-🚀 [Speed up model training](#speed-up-model-training)
+🚀 [Speed up model training](#speed-up-model-training)    
 🚀 [Transform datasets](#transform-datasets)
 
 &nbsp;
@@ -863,5 +863,5 @@ Below are templates for real-world applications of LitData at scale.
 # Community
 LitData is a community project accepting contributions -  Let's make the world's most advanced AI data processing framework.
 
-💬 [Get help on Discord](https://discord.com/invite/XncpTy7DSt)
+💬 [Get help on Discord](https://discord.com/invite/XncpTy7DSt)    
 📋 [License: Apache 2.0](https://github.com/Lightning-AI/litdata/blob/main/LICENSE)
