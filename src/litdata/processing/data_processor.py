@@ -508,7 +508,8 @@ class BaseWorker:
 
     def _create_cache(self) -> None:
         self.cache_data_dir = _get_cache_data_dir()
-        os.makedirs(self.cache_data_dir, exist_ok=True)
+        if not os.path.exists(self.cache_data_dir): # redundant but, otherwise it fails in CI on macOS
+            os.makedirs(self.cache_data_dir, exist_ok=True)
 
         self.cache_chunks_dir = _get_cache_dir()
 
