@@ -84,7 +84,7 @@ class PrepareChunksThread(Thread):
         for chunk_index in chunk_indexes:
             self._to_delete_queue.put(chunk_index)
 
-    def _delete(self, chunk_index: int) -> None:
+    def _apply_delete(self, chunk_index: int) -> None:
         """Inform the item loader of the chunk to delete."""
         if self._config.can_delete(chunk_index):
             chunk_filepath, _, _ = self._config[ChunkedIndex(index=-1, chunk_index=chunk_index)]
@@ -118,7 +118,7 @@ class PrepareChunksThread(Thread):
         # Get the current cache size and decide whether we need to start cleanup. Otherwise, keep track of it
         while self._max_cache_size and self._chunks_index_to_be_deleted and self._can_delete_chunk():
             # Delete the oldest chunk
-            self._delete(self._chunks_index_to_be_deleted.pop(0))
+            self._apply_delete(self._chunks_index_to_be_deleted.pop(0))
 
         return
 
