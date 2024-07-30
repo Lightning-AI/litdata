@@ -282,6 +282,7 @@ def test_merge_datasets(tmpdir):
     assert len(ds) == 20
     assert ds[:] == list(range(20))
 
+
 @pytest.mark.timeout(10)
 def test_merge_compressed_datasets(tmpdir):
     folder_1 = os.path.join(tmpdir, "folder_1")
