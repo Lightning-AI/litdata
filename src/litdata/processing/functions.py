@@ -554,10 +554,13 @@ def merge_datasets(input_dirs: List[str], output_dir: str) -> None:
     copy_infos: List[CopyInfo] = []
     counter = 0
     for input_dir, input_dir_file_content in zip(resolved_input_dirs, input_dirs_file_content):
+        compression = input_dir_file_content["config"]["compression"]  # type: ignore
         for chunk in input_dir_file_content["chunks"]:  # type: ignore
             assert isinstance(chunk, dict)
             old_filename = chunk["filename"]
-            new_filename = f"chunk-0-{counter}.bin"
+            new_filename = (
+                f"chunk-0-{counter}.{compression}.bin" if compression is not None else f"chunk-0-{counter}.bin"
+            )
             copy_infos.append(CopyInfo(input_dir=input_dir, old_filename=old_filename, new_filename=new_filename))
             chunk["filename"] = new_filename
             chunks.append(chunk)
