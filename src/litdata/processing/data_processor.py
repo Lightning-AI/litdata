@@ -508,19 +508,11 @@ class BaseWorker:
 
     def _create_cache(self) -> None:
         self.cache_data_dir = _get_cache_data_dir()
-        if not os.path.exists(self.cache_data_dir):  # redundant but, otherwise it fails in CI on macOS
-            os.makedirs(self.cache_data_dir, exist_ok=True)
-
         self.cache_chunks_dir = _get_cache_dir()
-
-        if os.path.exists(self.cache_chunks_dir):
-            # clean up the cache chunks dir folder to avoid previous json files from interfering with the current run
-            shutil.rmtree(self.cache_chunks_dir, ignore_errors=True)
-
-        os.makedirs(self.cache_chunks_dir, exist_ok=True)
 
         if isinstance(self.data_recipe, DataTransformRecipe):
             return
+
         self.cache = Cache(
             self.cache_chunks_dir,
             chunk_bytes=self.data_recipe.chunk_bytes,
@@ -1090,10 +1082,8 @@ class DataProcessor:
         if _TQDM_AVAILABLE:
             pbar.close()
 
-        # TODO: Understand why it hangs.
-        if num_nodes == 1:
-            for w in self.workers:
-                w.join(0)
+        for w in self.workers:
+            w.join()
 
         print("Workers are finished.")
         result = data_recipe._done(len(user_items), self.delete_cached_files, self.output_dir)
