@@ -910,7 +910,8 @@ class DataProcessor:
 
         """
         import multiprocessing as mp
-        mp.set_start_method('spawn', force=True)
+
+        mp.set_start_method("spawn", force=True)
 
         self.input_dir = _resolve_dir(input_dir)
         self.output_dir = _resolve_dir(output_dir)
