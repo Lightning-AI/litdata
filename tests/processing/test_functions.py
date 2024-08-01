@@ -73,7 +73,7 @@ def random_image(index):
     return {"image": fake_img, "class": index}
 
 
-@pytest.mark.skipif(sys.platform == "win32" or sys.platform == "darwin", reason="too slow")
+@pytest.mark.skipif(sys.platform == "win32", reason="too slow")
 def test_optimize_append_overwrite(tmpdir):
     output_dir = str(tmpdir / "output_dir")
 
