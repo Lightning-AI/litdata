@@ -48,6 +48,7 @@ from litdata.streaming import Cache
 from litdata.streaming.cache import Dir
 from litdata.streaming.client import S3Client
 from litdata.streaming.dataloader import StreamingDataLoader
+from litdata.streaming.item_loader import BaseItemLoader
 from litdata.streaming.resolver import _resolve_dir
 from litdata.utilities._pytree import tree_flatten, tree_unflatten, treespec_loads
 from litdata.utilities.broadcast import broadcast_object
@@ -397,6 +398,7 @@ class BaseWorker:
         use_checkpoint: bool = False,
         checkpoint_chunks_info: Optional[List[Dict[str, Any]]] = None,
         checkpoint_next_index: Optional[int] = None,
+        item_loader: Optional[BaseItemLoader] = None,
     ) -> None:
         """The BaseWorker is responsible to process the user data."""
         self.worker_index = worker_index
@@ -422,6 +424,7 @@ class BaseWorker:
         self.remove_queue: Queue = Queue()
         self.progress_queue: Queue = progress_queue
         self.error_queue: Queue = error_queue
+        self.item_loader = item_loader
         self._counter = 0
         self._last_time = time()
         self._index_counter = 0
@@ -520,6 +523,7 @@ class BaseWorker:
             compression=self.data_recipe.compression,
             encryption=self.data_recipe.encryption,
             writer_chunk_index=self.writer_starting_chunk_index,
+            item_loader=self.item_loader,
         )
         self.cache._reader._rank = _get_node_rank() * self.num_workers + self.worker_index
 
@@ -878,6 +882,7 @@ class DataProcessor:
         reader: Optional[BaseReader] = None,
         state_dict: Optional[Dict[int, int]] = None,
         use_checkpoint: bool = False,
+        item_loader: Optional[BaseItemLoader] = None,
     ):
         """The `DatasetOptimiser` provides an efficient way to process data across multiple machine into chunks to make
         training faster.
@@ -924,6 +929,7 @@ class DataProcessor:
         self.use_checkpoint = use_checkpoint
         self.checkpoint_chunks_info: Optional[List[List[Dict[str, Any]]]] = None
         self.checkpoint_next_index: Optional[List[int]] = None
+        self.item_loader = item_loader
 
         self.state_dict = state_dict or {rank: 0 for rank in range(self.num_workers)}
 
@@ -1142,6 +1148,7 @@ class DataProcessor:
                 self.use_checkpoint,
                 self.checkpoint_chunks_info[worker_idx] if self.checkpoint_chunks_info else None,
                 self.checkpoint_next_index[worker_idx] if self.checkpoint_next_index else None,
+                self.item_loader,
             )
             worker.start()
             workers.append(worker)
