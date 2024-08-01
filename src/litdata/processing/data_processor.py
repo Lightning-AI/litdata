@@ -910,7 +910,7 @@ class DataProcessor:
 
         self.num_workers = num_workers or (1 if fast_dev_run else (os.cpu_count() or 1) * 4)
         self.num_downloaders = num_downloaders or 2
-        self.num_uploaders = num_uploaders or 5
+        self.num_uploaders = num_uploaders or 1
         self.delete_cached_files = delete_cached_files
         self.fast_dev_run = _get_fast_dev_run() if fast_dev_run is None else fast_dev_run
         self.workers: Any = []
