@@ -1241,3 +1241,20 @@ def test_data_chunk_recipe():
     data_recipe = DataChunkRecipe(chunk_size=2)
     assert data_recipe.chunk_bytes is None
     assert data_recipe.chunk_size == 2
+
+
+def test_data_processor_start_method(monkeypatch):
+    with pytest.raises(ValueError, match="cannot find context for 'blabla'"):
+        DataProcessor(None, start_method="blabla")
+
+    mp_mock = mock.MagicMock()
+
+    monkeypatch.setattr(data_processor_module, "multiprocessing", mp_mock)
+
+    DataProcessor(None)
+    mp_mock.set_start_method.assert_called_with("spawn", force=True)
+
+    monkeypatch.setattr(data_processor_module, "in_notebook", mock.MagicMock(return_value=True))
+
+    DataProcessor(None)
+    mp_mock.set_start_method.assert_called_with("fork", force=True)

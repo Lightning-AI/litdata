@@ -14,10 +14,12 @@
 import concurrent
 import json
 import logging
+import multiprocessing
 import os
 import random
 import shutil
 import signal
+import sys
 import tempfile
 import traceback
 from abc import abstractmethod
@@ -878,6 +880,7 @@ class DataProcessor:
         reader: Optional[BaseReader] = None,
         state_dict: Optional[Dict[int, int]] = None,
         use_checkpoint: bool = False,
+        start_method: Optional[str] = None,
     ):
         """The `DatasetOptimiser` provides an efficient way to process data across multiple machine into chunks to make
         training faster.
@@ -899,11 +902,21 @@ class DataProcessor:
             state_dict: The writer state dict. This is used to decide how to append data to an existing dataset.
             use_checkpoint: Whether to create checkpoints while processing the data, which can be used to resume the
                 processing from the last checkpoint if the process is interrupted. (`Default: False`)
+            start_method: The start method used by python multiprocessing package. Default to spawn unless running
+                inside an interactive shell like Ipython.
 
         """
-        import multiprocessing as mp
+        # spawn doesn't work in IPython
+        start_method = start_method or ("fork" if in_notebook() else "spawn")
 
-        mp.set_start_method("spawn", force=True)
+        msg = f"Setting multiprocessing start_method to {start_method}. "
+        if in_notebook() and start_method == "fork":
+            msg += "Tip: Libraries relying on lock can hang with `fork`. To use `spawn` in notebooks, "
+            msg += "move your code to files and import it within the notebook."
+
+        print(msg)
+
+        multiprocessing.set_start_method(start_method, force=True)
 
         self.input_dir = _resolve_dir(input_dir)
         self.output_dir = _resolve_dir(output_dir)
@@ -1082,8 +1095,10 @@ class DataProcessor:
         if _TQDM_AVAILABLE:
             pbar.close()
 
-        for w in self.workers:
-            w.join()
+        # TODO: Check whether this is still required.
+        if num_nodes == 1:
+            for w in self.workers:
+                w.join()
 
         print("Workers are finished.")
         result = data_recipe._done(len(user_items), self.delete_cached_files, self.output_dir)
@@ -1344,3 +1359,9 @@ class DataProcessor:
                 self.checkpoint_chunks_info[i] = checkpoint["chunks"]
                 self.checkpoint_next_index[i] = checkpoint["done_till_index"]
         return
+
+
+def in_notebook() -> bool:
+    """Returns ``True`` if the module is running in IPython kernel, ``False`` if in IPython shell or other Python
+    shell."""
+    return "ipykernel" in sys.modules
