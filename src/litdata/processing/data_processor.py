@@ -14,6 +14,7 @@
 import concurrent
 import json
 import logging
+import multiprocessing
 import os
 import random
 import shutil
@@ -905,19 +906,17 @@ class DataProcessor:
                 inside an interactive shell like Ipython.
 
         """
-        import multiprocessing as mp
-
         # spawn doesn't work in IPython
         start_method = start_method or ("fork" if in_notebook() else "spawn")
 
         msg = f"Setting multiprocessing start_method to {start_method}. "
-        if in_notebook() == "fork":
+        if in_notebook() and start_method == "fork":
             msg += "Tip: Libraries relying on lock can hang with `fork`. To use `spawn` in notebooks, "
             msg += "move your code to files and import it within the notebook."
 
         print(msg)
 
-        mp.set_start_method(start_method, force=True)
+        multiprocessing.set_start_method(start_method, force=True)
 
         self.input_dir = _resolve_dir(input_dir)
         self.output_dir = _resolve_dir(output_dir)
