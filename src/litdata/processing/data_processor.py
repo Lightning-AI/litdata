@@ -1362,7 +1362,7 @@ class DataProcessor:
         return
 
 
-def in_notebook():
+def in_notebook() -> bool:
     """Returns ``True`` if the module is running in IPython kernel, ``False`` if in IPython shell or other Python
     shell."""
     return "ipykernel" in sys.modules
