@@ -311,6 +311,7 @@ def optimize(
     batch_size: Optional[int] = None,
     mode: Optional[Literal["append", "overwrite"]] = None,
     use_checkpoint: bool = False,
+    start_method: Optional[str] = None,
 ) -> None:
     """This function converts a dataset into chunks, possibly in a distributed way.
 
@@ -340,6 +341,8 @@ def optimize(
             Defaults to None.
         use_checkpoint: Whether to create checkpoints while processing the data, which can be used to resume the
             processing from the last checkpoint if the process is interrupted. (`Default: False`)
+        start_method: The start method used by python multiprocessing package. Default to spawn unless running
+            inside an interactive shell like Ipython.
 
     """
     if mode is not None and mode not in ["append", "overwrite"]:
@@ -430,6 +433,7 @@ def optimize(
             reader=reader,
             state_dict=state_dict,
             use_checkpoint=use_checkpoint,
+            start_method=start_method,
         )
 
         with optimize_dns_context(True):
