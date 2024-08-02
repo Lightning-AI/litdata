@@ -913,7 +913,7 @@ class DataProcessor:
         msg = f"Setting multiprocessing start_method to {start_method}. "
         if in_notebook() == "fork":
             msg += "Tip: Libraries relying on lock can hang with `fork`. To use `spawn` in notebooks, "
-            msg += "move the code to files and import it within the notebook."
+            msg += "move your code to files and import it within the notebook."
 
         print(msg)
 
