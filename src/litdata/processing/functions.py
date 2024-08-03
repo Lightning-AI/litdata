@@ -342,7 +342,8 @@ def optimize(
             Defaults to None.
         use_checkpoint: Whether to create checkpoints while processing the data, which can be used to resume the
             processing from the last checkpoint if the process is interrupted. (`Default: False`)
-        item_loader: The item loader used by the StreamingDataset if any.
+        item_loader: The item loader that will be used during loading in StreamingDataset. Determines
+        	the format in which the data is stored and optimized for loading.
 
     """
     if mode is not None and mode not in ["append", "overwrite"]:
