@@ -378,6 +378,22 @@ def _is_path(input_dir: Optional[str], element: Any) -> bool:
     return os.path.isfile(element)
 
 
+class FakeQueue:
+    """This class enables us to replace multiprocessing Queue when not required and avoid serializing data."""
+
+    def __init__(self):
+        self._items = []
+
+    def add_items(self, items: List[Any]) -> None:
+        self._items.extend(items)
+
+    def get(self) -> None:
+        try:
+            return self._items.pop(0)
+        except Exception:
+            raise Empty
+
+
 class BaseWorker:
     def __init__(
         self,
@@ -420,7 +436,8 @@ class BaseWorker:
         self.to_download_queues: List[Queue] = []
         self.to_upload_queues: List[Queue] = []
         self.stop_queue = stop_queue
-        self.ready_to_process_queue: Queue = Queue()
+        self.no_downloaders = self.input_dir.path is None or self.reader is not None
+        self.ready_to_process_queue: Union[Queue, FakeQueue] = FakeQueue() if self.no_downloaders else Queue()
         self.remove_queue: Queue = Queue()
         self.progress_queue: Queue = progress_queue
         self.error_queue: Queue = error_queue
@@ -551,14 +568,18 @@ class BaseWorker:
 
     def _collect_paths(self) -> None:
         if self.input_dir.path is None or self.reader is not None:
-            for index in range(len(self.items)):
-                self.ready_to_process_queue.put(index)
-            for _ in range(self.num_downloaders):
-                self.ready_to_process_queue.put(None)
+            if isinstance(self.ready_to_process_queue, FakeQueue):
+                self.ready_to_process_queue.add_items(list(range(len(self.items))))
+            else:
+                for index in range(len(self.items)):
+                    self.ready_to_process_queue.put(index)
             return
 
+        if _TQDM_AVAILABLE:
+            from tqdm.auto import tqdm as _tqdm
+
         items = []
-        for item in self.items:
+        for item in _tqdm(self.items):
             flattened_item, spec = tree_flatten(item)
 
             # For speed reasons, we assume starting with `self.input_dir` is enough to be a real file.
