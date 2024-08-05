@@ -20,7 +20,12 @@ from urllib import parse
 
 from filelock import FileLock, Timeout
 
-from litdata.constants import _AZURE_STORAGE_AVAILABLE, _GOOGLE_STORAGE_AVAILABLE, _INDEX_FILENAME
+from litdata.constants import (
+    _AZURE_STORAGE_AVAILABLE,
+    _GOOGLE_STORAGE_AVAILABLE,
+    _HUGGINGFACE_HUB_AVAILABLE,
+    _INDEX_FILENAME,
+)
 from litdata.streaming.client import S3Client
 
 
@@ -164,6 +169,42 @@ class AzureDownloader(Downloader):
             pass
 
 
+class HFDownloader(Downloader):
+    def __init__(
+        self, remote_dir: str, cache_dir: str, chunks: List[Dict[str, Any]], storage_options: Optional[Dict] = {}
+    ):
+        if not _HUGGINGFACE_HUB_AVAILABLE:
+            raise ModuleNotFoundError(str(_HUGGINGFACE_HUB_AVAILABLE))
+
+        super().__init__(remote_dir, cache_dir, chunks, storage_options)
+
+    def download_file(self, remote_filepath: str, local_filepath: str) -> None:
+        """
+        Download a file from the Hugging Face Hub.
+        The remote_filepath should be in the format `hf://<repo_type>/<repo_org>/<repo_name>/path`.
+        """
+        from huggingface_hub import hf_hub_download
+
+        obj = parse.urlparse(remote_filepath)
+
+        if obj.scheme != "hf":
+            raise ValueError(f"Expected obj.scheme to be `hf`, instead, got {obj.scheme} for remote={remote_filepath}")
+
+        if os.path.exists(local_filepath):
+            return
+
+        try:
+            with FileLock(local_filepath + ".lock", timeout=3 if obj.path.endswith(_INDEX_FILENAME) else 0):
+                # split adapted from https://github.com/mosaicml/streaming/blob/main/streaming/base/storage/download.py#L292
+                _, _, _, repo_org, repo_name, path = remote_filepath.split("/", 5)
+                hf_hub_download(
+                    repo_id=f"{repo_org}/{repo_name}", filename=path, local_dir=self._cache_dir, repo_type="dataset"
+                )
+        except Timeout:
+            # another process is responsible to download that file, continue
+            pass
+
+
 class LocalDownloader(Downloader):
     def download_file(self, remote_filepath: str, local_filepath: str) -> None:
         if not os.path.exists(remote_filepath):
@@ -183,6 +224,7 @@ _DOWNLOADERS = {
     "s3://": S3Downloader,
     "gs://": GCPDownloader,
     "azure://": AzureDownloader,
+    "hf://": HFDownloader,
     "local:": LocalDownloaderWithCache,
     "": LocalDownloader,
 }
