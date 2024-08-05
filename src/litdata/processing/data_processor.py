@@ -390,8 +390,8 @@ class FakeQueue:
     def get(self) -> None:
         try:
             return self._items.pop(0)
-        except Exception:
-            raise Empty
+        except IndexError:
+            return None
 
 
 class BaseWorker:
