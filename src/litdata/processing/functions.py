@@ -313,6 +313,7 @@ def optimize(
     mode: Optional[Literal["append", "overwrite"]] = None,
     use_checkpoint: bool = False,
     item_loader: Optional[BaseItemLoader] = None,
+    start_method: Optional[str] = None,
 ) -> None:
     """This function converts a dataset into chunks, possibly in a distributed way.
 
@@ -343,6 +344,8 @@ def optimize(
         use_checkpoint: Whether to create checkpoints while processing the data, which can be used to resume the
             processing from the last checkpoint if the process is interrupted. (`Default: False`)
         item_loader: The item loader used by the StreamingDataset if any.
+        start_method: The start method used by python multiprocessing package. Default to spawn unless running
+            inside an interactive shell like Ipython.
 
     """
     if mode is not None and mode not in ["append", "overwrite"]:
@@ -434,6 +437,7 @@ def optimize(
             state_dict=state_dict,
             use_checkpoint=use_checkpoint,
             item_loader=item_loader,
+            start_method=start_method,
         )
 
         with optimize_dns_context(True):

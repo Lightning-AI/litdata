@@ -139,6 +139,7 @@ for sample in dataloader:
 ✅ Easy collaboration:        Share and access datasets in the cloud, streamlining team projects.     
 ✅ Scale across GPUs:         Streamed data automatically scales to all GPUs.      
 ✅ Flexible storage:          Use S3, GCS, Azure, or your own cloud account for data storage.    
+✅ Compression:               Reduce your data footprint by using advanced compression algorithms.  
 ✅ Run local or cloud:        Run on your own machines or auto-scale to 1000s of cloud GPUs with Lightning Studios.         
 ✅ Enterprise security:       Self host or process data on your cloud account with Lightning Studios.  
 
@@ -435,6 +436,39 @@ if __name__ == "__main__":
 ```
 
 The `overwrite` mode will delete the existing data and start from fresh.
+
+</details>
+
+<details>
+  <summary> ✅ Use compression</summary>
+&nbsp;
+
+Reduce your data footprint by using advanced compression algorithms.
+
+```python
+import litdata as ld
+
+def compress(index):
+    return index, index**2
+
+if __name__ == "__main__":
+    # Add some data
+    ld.optimize(
+        fn=compress,
+        inputs=list(range(100)),
+        output_dir="./my_optimized_dataset",
+        chunk_bytes="64MB",
+        num_workers=1,
+        compression="zstd"
+    )
+```
+
+Using [zstd](https://github.com/facebook/zstd), you can achieve high compression ratio like 4.34x for this simple example.
+
+| Without | With |
+| -------- | -------- | 
+| 2.8kb | 646b |
+
 
 </details>
 
