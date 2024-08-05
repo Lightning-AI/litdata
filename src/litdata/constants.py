@@ -37,6 +37,7 @@ _GOOGLE_STORAGE_AVAILABLE = RequirementCache("google.cloud.storage")
 _AZURE_STORAGE_AVAILABLE = RequirementCache("azure.storage.blob")
 _TQDM_AVAILABLE = RequirementCache("tqdm")
 _LIGHTNING_SDK_AVAILABLE = RequirementCache("lightning_sdk")
+_HUGGINGFACE_HUB_AVAILABLE = RequirementCache("huggingface-hub")
 
 # DON'T CHANGE ORDER
 _TORCH_DTYPES_MAPPING = {
