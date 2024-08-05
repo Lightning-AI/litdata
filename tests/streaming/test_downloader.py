@@ -5,6 +5,7 @@ from unittest.mock import MagicMock
 from litdata.streaming.downloader import (
     AzureDownloader,
     GCPDownloader,
+    HFDownloader,
     LocalDownloaderWithCache,
     S3Downloader,
     shutil,
@@ -70,6 +71,23 @@ def test_azure_downloader(tmpdir, monkeypatch, azure_mock):
     service_mock.get_blob_client.assert_called_with(container="random_bucket", blob="a.txt")
     mock_blob.download_blob.assert_called()
     mock_blob_data.readinto.assert_called()
+
+
+@mock.patch("litdata.streaming.downloader._HUGGINGFACE_HUB_AVAILABLE", True)
+def test_hf_downloader(tmpdir, monkeypatch, huggingface_mock):
+    mock_hf_hub_download = MagicMock()
+    huggingface_mock.hf_hub_download = mock_hf_hub_download
+
+    # Initialize the downloader
+    storage_options = {}
+    downloader = HFDownloader("hf://datasets/random_org/random_repo", tmpdir, [], storage_options)
+    local_filepath = os.path.join(tmpdir, "a.txt")
+    downloader.download_file("hf://datasets/random_org/random_repo/a.txt", local_filepath)
+
+    # Assert that the correct methods were called
+    huggingface_mock.hf_hub_download.assert_called_with(
+        repo_id="random_org/random_repo", filename="a.txt", local_dir=tmpdir, repo_type="dataset"
+    )
 
 
 def test_download_with_cache(tmpdir, monkeypatch):
