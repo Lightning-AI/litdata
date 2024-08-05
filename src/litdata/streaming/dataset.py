@@ -269,7 +269,7 @@ class StreamingDataset(IterableDataset):
 
         self.has_triggered_download = False
         self.last_time = time()
-
+        self._state_dict = None
         return self
 
     def _resume(self, workers_chunks: List[List[int]], workers_intervals: List[Any]) -> None:
