@@ -257,12 +257,17 @@ class ChunksConfig:
 
     def _validate_item_loader(self) -> None:
         assert self._config
-        if (
-            len(self._config["data_format"]) == 1
-            and self._config["data_format"][0].startswith("no_header_tensor")
-            and not isinstance(self._item_loader, TokensLoader)
-        ):
-            raise ValueError("Please, use Cache(..., item_loader=TokensLoader(block_size=...))")
+        if "item_loader" in self._config:
+            if self._item_loader.__class__.__name__ != self._config["item_loader"]:
+                item_loader = self._config["item_loader"]
+                raise ValueError(f"Please, use Cache(..., item_loader={item_loader}(...))")
+        else:
+            if (
+                len(self._config["data_format"]) == 1
+                and self._config["data_format"][0].startswith("no_header_tensor")
+                and not isinstance(self._item_loader, TokensLoader)
+            ):
+                raise ValueError("Please, use Cache(..., item_loader=TokensLoader(block_size=...))")
 
 
 def load_subsampled_chunks(subsampled_files: List[str], original_chunks: List[Dict[str, Any]]) -> List[Dict[str, Any]]:

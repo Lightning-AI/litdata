@@ -20,11 +20,11 @@ from time import sleep
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
-import torch
 
 from litdata.constants import _INDEX_FILENAME
 from litdata.processing.utilities import get_worker_rank
 from litdata.streaming.compression import _COMPRESSORS, Compressor
+from litdata.streaming.item_loader import BaseItemLoader, PyTreeLoader
 from litdata.streaming.serializers import Serializer, _get_serializers
 from litdata.utilities._pytree import PyTree, tree_flatten, treespec_dumps
 from litdata.utilities.encryption import Encryption, EncryptionLevel
@@ -54,6 +54,7 @@ class BinaryWriter:
         follow_tensor_dimension: bool = True,
         serializers: Optional[Dict[str, Serializer]] = None,
         chunk_index: Optional[int] = None,
+        item_loader: Optional[BaseItemLoader] = None,
     ):
         """The BinaryWriter enables to chunk dataset into an efficient streaming format for cloud training.
 
@@ -83,6 +84,7 @@ class BinaryWriter:
         self._chunk_bytes = _convert_bytes_to_int(chunk_bytes) if isinstance(chunk_bytes, str) else chunk_bytes
         self._compression = compression
         self._encryption = encryption
+        self._item_loader = item_loader or PyTreeLoader()
 
         self._data_format: Optional[List[str]] = None
         self._data_spec: Optional[PyTree] = None
@@ -148,6 +150,7 @@ class BinaryWriter:
             "data_format": self._data_format,
             "data_spec": treespec_dumps(self._data_spec) if self._data_spec else None,
             "encryption": self._encryption.state_dict() if self._encryption else None,
+            "item_loader": self._item_loader.__class__.__name__,
         }
 
     def serialize(self, items: Any) -> Tuple[bytes, Optional[int]]:
@@ -155,10 +158,6 @@ class BinaryWriter:
 
         # Flatten the items provided by the users
         flattened, data_spec = tree_flatten(items)
-
-        is_single_tensor = (
-            len(flattened) == 1 and isinstance(flattened[0], torch.Tensor) and len(flattened[0].shape) == 1
-        )
 
         # Collect the sizes and associated bytes for each item
         sizes: List[int] = []
@@ -178,14 +177,7 @@ class BinaryWriter:
             # tiny optimization to avoid looping over all the data format
             self._serialize_with_data_format(flattened, sizes, data, self._data_format)
 
-        # If there is a single element and it is a tensor, enable continous array.
-        if is_single_tensor:
-            return data[0], flattened[0].shape[0]
-
-        # Concatenante into a single byte array
-        head = np.array(sizes, np.uint32).tobytes()
-        body = b"".join(data)
-        return head + body, None
+        return self._item_loader.encode_data(data, sizes, flattened)
 
     def _serialize(self, item: Any, sizes: List[int], data: List[bytes]) -> str:
         """Serialize a given item and append its size and bytes to the sizes and data array."""

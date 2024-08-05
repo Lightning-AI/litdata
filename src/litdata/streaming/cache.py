@@ -76,6 +76,7 @@ class Cache:
             encryption=encryption,
             serializers=serializers,
             chunk_index=writer_chunk_index or 0,
+            item_loader=item_loader,
         )
         self._reader = BinaryReader(
             self._cache_dir,
