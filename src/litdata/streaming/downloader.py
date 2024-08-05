@@ -181,8 +181,10 @@ class HFDownloader(Downloader):
     def download_file(self, remote_filepath: str, local_filepath: str) -> None:
         """Download a file from the Hugging Face Hub.
 
-        The remote_filepath should be in the format `hf://<repo_type>/<repo_org>/<repo_name>/path`.
-        For more information, see https://huggingface.co/docs/huggingface_hub/en/guides/hf_file_system#integrations.
+        The remote_filepath should be in the format `hf://<repo_type>/<repo_org>/<repo_name>/path`. For more
+        information, see
+        https://huggingface.co/docs/huggingface_hub/en/guides/hf_file_system#integrations.
+
         """
         from huggingface_hub import hf_hub_download
 
