@@ -474,6 +474,34 @@ def test_dataset_for_text_tokens(tmpdir):
             break
 
 
+def test_dataset_with_1d_array(tmpdir):
+    seed_everything(42)
+
+    cache = Cache(input_dir=str(tmpdir), chunk_size=100)
+    text_idxs_list = []
+
+    for i in range(100):
+        text_ids = torch.randint(0, 1000, (np.random.randint(0, 1000),)).to(torch.int)
+        text_idxs_list.append(text_ids)
+
+        chunk_filepath = cache._add_item(i, text_ids)
+        if chunk_filepath:
+            print(i)
+            break
+
+    cache.done()
+    cache.merge()
+
+    dataset = StreamingDataset(input_dir=str(tmpdir), shuffle=False)
+
+    assert len(dataset) == 100
+
+    for i in range(100):
+        generated = dataset[i]
+        expected = text_idxs_list[i]
+        assert torch.equal(expected, generated)
+
+
 def test_dataset_for_text_tokens_multiple_workers(tmpdir):
     seed_everything(42)
 
@@ -594,7 +622,14 @@ def test_dataset_for_text_tokens_distributed_num_workers_end_to_end(tmpdir, monk
     monkeypatch.setenv("DATA_OPTIMIZER_DATA_CACHE_FOLDER", cache_dir)
 
     functions.optimize(
-        optimize_fn, inputs, output_dir=str(tmpdir), num_workers=2, chunk_size=2, reorder_files=False, num_downloaders=1
+        optimize_fn,
+        inputs,
+        output_dir=str(tmpdir),
+        num_workers=2,
+        chunk_size=2,
+        reorder_files=False,
+        num_downloaders=1,
+        item_loader=TokensLoader(),
     )
 
     assert len([f for f in os.listdir(tmpdir) if f.endswith(".bin")]) == 10
@@ -840,6 +875,7 @@ def test_dataset_resume_on_future_chunks(shuffle, tmpdir, monkeypatch):
         chunk_size=190,
         num_workers=4,
         num_uploaders=1,
+        item_loader=TokensLoader(block_size=10),
     )
     assert set(os.listdir(data_dir)) == {
         "chunk-0-0.bin",
@@ -1076,7 +1112,14 @@ def test_subsample_streaming_dataset_with_token_loader(tmpdir, monkeypatch):
     monkeypatch.setenv("DATA_OPTIMIZER_DATA_CACHE_FOLDER", cache_dir)
 
     functions.optimize(
-        optimize_fn, inputs, output_dir=str(tmpdir), num_workers=2, chunk_size=2, reorder_files=False, num_downloaders=1
+        optimize_fn,
+        inputs,
+        output_dir=str(tmpdir),
+        num_workers=2,
+        chunk_size=2,
+        reorder_files=False,
+        num_downloaders=1,
+        item_loader=TokensLoader(),
     )
 
     assert len([f for f in os.listdir(tmpdir) if f.endswith(".bin")]) == 10
