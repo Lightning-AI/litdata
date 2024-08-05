@@ -100,8 +100,8 @@ class BaseItemLoader(ABC):
         """Delete a chunk from the local filesystem."""
         pass
 
-    @classmethod
-    def encode_data(cls, data: List[bytes], sizes: List[int], flattened: List[Any]) -> Tuple[bytes, Optional[int]]:
+    @abstractmethod
+    def encode_data(self, data: List[bytes], sizes: List[int], flattened: List[Any]) -> Any:
         pass
 
 
@@ -337,6 +337,8 @@ class TokensLoader(BaseItemLoader):
         begin: int,
         chunk_bytes: int,
     ) -> torch.Tensor:
+        assert self._block_size
+
         if chunk_filepath in self._chunk_filepaths and not os.path.isfile(chunk_filepath):
             del self._chunk_filepaths[chunk_filepath]
 

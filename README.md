@@ -312,6 +312,69 @@ for batch_idx, batch in enumerate(dataloader):
 
 
 <details>
+  <summary> ✅ LLM Pre-training </summary>
+&nbsp;
+
+LitData is highly optimized for LLM pre-training. First, we need to tokenize the entire dataset and then we can consume it.
+
+```python
+import json
+from pathlib import Path
+import zstandard as zstd
+from litdata import optimize, TokensLoader
+from tokenizer import Tokenizer
+from functools import partial
+
+# 1. Define a function to convert the text within the jsonl files into tokens
+def tokenize_fn(filepath, tokenizer=None):
+    with zstd.open(open(filepath, "rb"), "rt", encoding="utf-8") as f:
+        for row in f:
+            text = json.loads(row)["text"]
+            if json.loads(row)["meta"]["redpajama_set_name"] == "RedPajamaGithub":
+                continue  # exclude the GitHub data since it overlaps with starcoder
+            text_ids = tokenizer.encode(text, bos=False, eos=True)
+            yield text_ids
+
+if __name__ == "__main__":
+    # 2. Generate the inputs (we are going to optimize all the compressed json files from SlimPajama dataset )
+    input_dir = "./slimpajama-raw"
+    inputs = [str(file) for file in Path(f"{input_dir}/SlimPajama-627B/train").rglob("*.zst")]
+
+    # 3. Store the optimized data wherever you want under "/teamspace/datasets" or "/teamspace/s3_connections"
+    outputs = optimize(
+        fn=partial(tokenize_fn, tokenizer=Tokenizer(f"{input_dir}/checkpoints/Llama-2-7b-hf")), # Note: You can use HF tokenizer or any others
+        inputs=inputs,
+        output_dir="./slimpajama-optimized",
+        chunk_size=(2049 * 8012),
+        # This is important to inform LitData that we are encoding contiguous 1D array (tokens). 
+        # LitData skips storing metadata for each sample e.g all the tokens are concatenated to form one large tensor.
+        item_loader=TokensLoader(),
+    )
+```
+
+```python
+import os
+from litdata import StreamingDataset, CombinedStreamingDataset, StreamingDataLoader, TokensLoader
+from tqdm import tqdm
+
+# Increase by one because we need the next word as well
+dataset = StreamingDataset(
+  input_dir=f"./slimpajama-optimized/train",
+  item_loader=TokensLoader(block_size=2048 + 1),
+  shuffle=True,
+  drop_last=True,
+)
+
+train_dataloader = StreamingDataLoader(dataset, batch_size=8, pin_memory=True, num_workers=os.cpu_count())
+
+# Iterate over the SlimPajama dataset
+for batch in tqdm(train_dataloader):
+    pass
+```
+
+</details>
+
+<details>
   <summary> ✅ Combine datasets</summary>
 &nbsp;
 
