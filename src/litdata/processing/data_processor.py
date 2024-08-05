@@ -379,6 +379,22 @@ def _is_path(input_dir: Optional[str], element: Any) -> bool:
     return os.path.isfile(element)
 
 
+class FakeQueue:
+    """This class enables us to replace multiprocessing Queue when not required and avoid serializing data."""
+
+    def __init__(self) -> None:
+        self._items: List[Any] = []
+
+    def add_items(self, items: List[Any]) -> None:
+        self._items.extend(items)
+
+    def get(self) -> None:
+        try:
+            return self._items.pop(0)
+        except IndexError:
+            return None
+
+
 class BaseWorker:
     def __init__(
         self,
@@ -422,7 +438,8 @@ class BaseWorker:
         self.to_download_queues: List[Queue] = []
         self.to_upload_queues: List[Queue] = []
         self.stop_queue = stop_queue
-        self.ready_to_process_queue: Queue = Queue()
+        self.no_downloaders = self.input_dir.path is None or self.reader is not None
+        self.ready_to_process_queue: Union[Queue, FakeQueue] = FakeQueue() if self.no_downloaders else Queue()
         self.remove_queue: Queue = Queue()
         self.progress_queue: Queue = progress_queue
         self.error_queue: Queue = error_queue
@@ -554,11 +571,12 @@ class BaseWorker:
         self.to_upload_queues[self._counter % self.num_uploaders].put(data)
 
     def _collect_paths(self) -> None:
-        if self.input_dir.path is None or self.reader is not None:
-            for index in range(len(self.items)):
-                self.ready_to_process_queue.put(index)
-            for _ in range(self.num_downloaders):
-                self.ready_to_process_queue.put(None)
+        if self.no_downloaders:
+            if isinstance(self.ready_to_process_queue, FakeQueue):
+                self.ready_to_process_queue.add_items(list(range(len(self.items))))
+            else:
+                for index in range(len(self.items)):
+                    self.ready_to_process_queue.put(index)
             return
 
         items = []
@@ -582,7 +600,11 @@ class BaseWorker:
             paths = []
             for index, path in indexed_paths.items():
                 paths.append(path)
-                if self.input_dir and not self.input_dir.path.startswith("/teamspace/studios/this_studio"):
+                if (
+                    self.input_dir
+                    and isinstance(self.input_dir.path, str)
+                    and not self.input_dir.path.startswith("/teamspace/studios/this_studio")
+                ):
                     path = path.replace(self.input_dir.path, self.cache_data_dir)
                 flattened_item[index] = path
 
@@ -593,7 +615,7 @@ class BaseWorker:
         self.items = items
 
     def _start_downloaders(self) -> None:
-        if self.input_dir.path is None or self.reader is not None:
+        if self.no_downloaders:
             return
 
         for _ in range(self.num_downloaders):
