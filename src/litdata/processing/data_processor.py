@@ -381,8 +381,8 @@ def _is_path(input_dir: Optional[str], element: Any) -> bool:
 class FakeQueue:
     """This class enables us to replace multiprocessing Queue when not required and avoid serializing data."""
 
-    def __init__(self):
-        self._items = []
+    def __init__(self) -> None:
+        self._items: List[Any] = []
 
     def add_items(self, items: List[Any]) -> None:
         self._items.extend(items)
@@ -596,7 +596,11 @@ class BaseWorker:
             paths = []
             for index, path in indexed_paths.items():
                 paths.append(path)
-                if self.input_dir and not self.input_dir.path.startswith("/teamspace/studios/this_studio"):
+                if (
+                    self.input_dir
+                    and isinstance(self.input_dir.path, str)
+                    and not self.input_dir.path.startswith("/teamspace/studios/this_studio")
+                ):
                     path = path.replace(self.input_dir.path, self.cache_data_dir)
                 flattened_item[index] = path
 
