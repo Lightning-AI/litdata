@@ -567,7 +567,7 @@ class BaseWorker:
         self.to_upload_queues[self._counter % self.num_uploaders].put(data)
 
     def _collect_paths(self) -> None:
-        if self.input_dir.path is None or self.reader is not None:
+        if self.no_downloaders:
             if isinstance(self.ready_to_process_queue, FakeQueue):
                 self.ready_to_process_queue.add_items(list(range(len(self.items))))
             else:
@@ -575,11 +575,8 @@ class BaseWorker:
                     self.ready_to_process_queue.put(index)
             return
 
-        if _TQDM_AVAILABLE:
-            from tqdm.auto import tqdm as _tqdm
-
         items = []
-        for item in _tqdm(self.items):
+        for item in self.items:
             flattened_item, spec = tree_flatten(item)
 
             # For speed reasons, we assume starting with `self.input_dir` is enough to be a real file.
@@ -610,7 +607,7 @@ class BaseWorker:
         self.items = items
 
     def _start_downloaders(self) -> None:
-        if self.input_dir.path is None or self.reader is not None:
+        if self.no_downloaders:
             return
 
         for _ in range(self.num_downloaders):
