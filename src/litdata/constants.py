@@ -26,18 +26,18 @@ _DEFAULT_FAST_DEV_RUN_ITEMS = 10
 _DEFAULT_CACHE_DIR = os.path.join(Path.home(), ".lightning", "chunks")
 
 # This is required for full pytree serialization / deserialization support
-_TORCH_GREATER_EQUAL_2_1_0 = RequirementCache("torch>=2.1.0")
-_VIZ_TRACKER_AVAILABLE = RequirementCache("viztracer")
-_LIGHTNING_CLOUD_AVAILABLE = RequirementCache("lightning-cloud")
+_AZURE_STORAGE_AVAILABLE = RequirementCache("azure.storage.blob")
 _BOTO3_AVAILABLE = RequirementCache("boto3")
-_TORCH_AUDIO_AVAILABLE = RequirementCache("torchaudio")
-_ZSTD_AVAILABLE = RequirementCache("zstd")
 _CRYPTOGRAPHY_AVAILABLE = RequirementCache("cryptography")
 _GOOGLE_STORAGE_AVAILABLE = RequirementCache("google.cloud.storage")
-_AZURE_STORAGE_AVAILABLE = RequirementCache("azure.storage.blob")
-_TQDM_AVAILABLE = RequirementCache("tqdm")
-_LIGHTNING_SDK_AVAILABLE = RequirementCache("lightning_sdk")
 _HUGGINGFACE_HUB_AVAILABLE = RequirementCache("huggingface-hub")
+_LIGHTNING_CLOUD_AVAILABLE = RequirementCache("lightning-cloud")
+_LIGHTNING_SDK_AVAILABLE = RequirementCache("lightning_sdk")
+_TORCH_AUDIO_AVAILABLE = RequirementCache("torchaudio")
+_TORCH_GREATER_EQUAL_2_1_0 = RequirementCache("torch>=2.1.0")
+_TQDM_AVAILABLE = RequirementCache("tqdm")
+_VIZ_TRACKER_AVAILABLE = RequirementCache("viztracer")
+_ZSTD_AVAILABLE = RequirementCache("zstd")
 
 # DON'T CHANGE ORDER
 _TORCH_DTYPES_MAPPING = {
