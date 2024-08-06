@@ -286,6 +286,7 @@ dataset = StreamingDataset("hf://datasets/my-org/my-repo", storage_options=hf_st
 To upload data to Hugging Face, you can use the `huggingface-cli` command. Below is the command format:
 ```sh
 $ huggingface-cli upload [dataset_repo_id] [local_path] [path_in_repo] --repo-type dataset
+eg: huggingface-cli upload my-org/my-repo ./my-data --repo-type dataset
 ```
 > For more information, checkout the [Hugging Face documentation](https://huggingface.co/docs/datasets/main/en/share#huggingface-cli-upload).
 
