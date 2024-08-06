@@ -118,12 +118,12 @@ def _read_last_updated_timestamp(input_dir: Optional[Dir]) -> str:
 
 def _try_create_cache_dir(input_dir: Optional[str]) -> Optional[str]:
     # input_dir = input_dir.path if input_dir.path else input_dir.url
-    input_dir = _resolve_dir(input_dir)
-    last_updation_timestamp = _read_last_updated_timestamp(input_dir)
+    resolved_input_dir = _resolve_dir(input_dir)
+    last_updation_timestamp = _read_last_updated_timestamp(resolved_input_dir)
 
     if last_updation_timestamp == "":
-        # use different cache dir for each dataset if no timestamp is found
-        last_updation_timestamp = str(datetime.now()).replace(" ", "_")
+        # for backward compatibility, use the input_dir as the cache dir (if no timestamp is found)
+        last_updation_timestamp = input_dir
 
     hash_object = hashlib.md5((last_updation_timestamp).encode())  # noqa: S324
     if "LIGHTNING_CLUSTER_ID" not in os.environ or "LIGHTNING_CLOUD_PROJECT_ID" not in os.environ:
