@@ -1,3 +1,4 @@
+import contextlib
 import os
 from unittest import mock
 from unittest.mock import MagicMock
@@ -11,7 +12,6 @@ from litdata.streaming.downloader import (
     shutil,
     subprocess,
 )
-import contextlib
 
 
 def test_s3_downloader_fast(tmpdir, monkeypatch):
