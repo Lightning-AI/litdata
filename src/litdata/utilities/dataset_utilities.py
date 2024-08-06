@@ -106,7 +106,7 @@ def _read_last_updated_timestamp(input_dir: Optional[Dir]) -> str:
         # download index.json file and read last_updation_timestamp
         with tempfile.TemporaryDirectory() as tmp_directory:
             temp_index_filepath = os.path.join(tmp_directory, _INDEX_FILENAME)
-            downloader = get_downloader_cls(input_dir.url, input_dir.path, [])  # type: ignore
+            downloader = get_downloader_cls(input_dir.url, tmp_directory, [])
             downloader.download_file(os.path.join(input_dir.url, _INDEX_FILENAME), temp_index_filepath)
 
             index_json_content = load_index_file(tmp_directory)
