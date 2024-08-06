@@ -109,8 +109,8 @@ def _read_last_updated_timestamp(input_dir: Optional[Dir]) -> str:
 
             index_json_content = load_index_file(tmp_directory)
 
-    if index_json_content is not None and "last_updation_timestamp" in index_json_content:
-        last_updation_timestamp = index_json_content["last_updation_timestamp"]
+    if index_json_content is not None and "updated_at" in index_json_content:
+        last_updation_timestamp = index_json_content["updated_at"]
 
     return last_updation_timestamp
 
