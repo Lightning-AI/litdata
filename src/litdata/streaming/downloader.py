@@ -198,11 +198,18 @@ class HFDownloader(Downloader):
 
         try:
             with FileLock(local_filepath + ".lock", timeout=3 if obj.path.endswith(_INDEX_FILENAME) else 0):
-                # split adapted from https://github.com/mosaicml/streaming/blob/main/streaming/base/storage/download.py#L292
+                # Adapted from https://github.com/mosaicml/streaming/blob/main/streaming/base/storage/download.py#L292
+                # expected URL format: hf://datasets/<repo_org>/<repo_name>/path
                 _, _, _, repo_org, repo_name, path = remote_filepath.split("/", 5)
-                hf_hub_download(
+                downloaded_path = hf_hub_download(
                     repo_id=f"{repo_org}/{repo_name}", filename=path, local_dir=self._cache_dir, repo_type="dataset"
                 )
+
+                # Move the downloaded file to the expected location if it's not already there.
+                if downloaded_path != local_filepath and os.path.exists(downloaded_path):
+                    os.rename(downloaded_path, local_filepath)
+                    os.rmdir(os.path.dirname(downloaded_path))
+
         except Timeout:
             # another process is responsible to download that file, continue
             pass
