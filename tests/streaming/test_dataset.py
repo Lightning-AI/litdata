@@ -932,7 +932,6 @@ def test_dataset_valid_state(tmpdir, monkeypatch):
 
     monkeypatch.setattr(dataset_utilities_module, "get_downloader_cls", mock.MagicMock(return_value=downloader))
 
-
     data_dir = os.path.join(tmpdir, "data")
     cache_dir = os.path.join(tmpdir, "cache_dir")
 
