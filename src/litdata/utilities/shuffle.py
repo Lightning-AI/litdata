@@ -161,6 +161,18 @@ def _find_chunks_per_workers_on_which_to_skip_deletion(
             counter = 0
 
             while True:
+
+                # TODO: Add comment
+                if num_of_samples_to_carry_to_next_chunk is None:
+                    sizes = [size for size in workers_interval_sizes_for_this_rank if len(size)]
+                    min_interval_size = min(size[0] for size in sizes)
+                    num_batches = max(0, (min_interval_size // batch_size) - 1)
+                    for i in range(len(workers_interval_sizes_for_this_rank)):
+                        if workers_interval_sizes_for_this_rank[i]:
+                            workers_interval_sizes_for_this_rank[i][0] -= num_batches * batch_size
+                    worker_tracker_idx += num_batches * len(sizes)
+                    counter += num_batches * batch_size * len(sizes)
+
                 interval_size_of_current_worker = workers_interval_sizes_for_this_rank[worker_tracker_idx % num_workers]
                 if len(interval_size_of_current_worker) == 0:
                     worker_tracker_idx += 1
