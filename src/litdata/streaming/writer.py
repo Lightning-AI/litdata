@@ -478,11 +478,7 @@ class BinaryWriter:
 
         if node_rank is None:
             with open(os.path.join(self._cache_dir, _INDEX_FILENAME), "w") as f:
-                data = {
-                    "chunks": chunks_info,
-                    "config": config,
-                    "last_updation_timestamp": str(time())
-                }
+                data = {"chunks": chunks_info, "config": config, "last_updation_timestamp": str(time())}
                 json.dump(data, f, sort_keys=True)
         else:
             with open(os.path.join(self._cache_dir, f"{node_rank}-{_INDEX_FILENAME}"), "w") as f:
