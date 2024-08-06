@@ -198,7 +198,7 @@ class StreamingDataset(IterableDataset):
 
     def get_len(self, num_workers: int, batch_size: int) -> int:
         self.set_num_workers(num_workers)
-        self.batch_size = batch_size
+        self.set_batch_size(batch_size)
         worker_env = _WorkerEnv.detect()
         if self.shuffler is None:
             cache = self._create_cache(worker_env=worker_env)
