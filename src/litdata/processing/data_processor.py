@@ -937,7 +937,6 @@ class DataProcessor:
         """
         # spawn doesn't work in IPython
         start_method = start_method or ("fork" if in_notebook() else "spawn")
-        start_method = "fork"
 
         msg = f"Setting multiprocessing start_method to {start_method}. "
         if in_notebook() and start_method == "fork":
