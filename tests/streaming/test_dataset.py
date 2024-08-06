@@ -17,6 +17,7 @@ import random
 import shutil
 import sys
 from time import sleep
+from typing import Any, Dict, Optional
 from unittest import mock
 
 import numpy as np
@@ -38,6 +39,7 @@ from litdata.streaming.dataset import (
 from litdata.streaming.item_loader import TokensLoader
 from litdata.streaming.shuffle import FullShuffle, NoShuffle
 from litdata.utilities import dataset_utilities as dataset_utilities_module
+from litdata.utilities.dataset_utilities import load_index_file
 from litdata.utilities.env import _DistributedEnv, _WorkerEnv
 from litdata.utilities.shuffle import _associate_chunks_and_intervals_to_workers
 from torch.utils.data import DataLoader
@@ -917,6 +919,20 @@ def test_dataset_resume_on_future_chunks(shuffle, tmpdir, monkeypatch):
 def test_dataset_valid_state(tmpdir, monkeypatch):
     seed_everything(42)
 
+    index_json_content: Optional[Dict[str, Any]] = None
+
+    downloader = mock.MagicMock()
+
+    def fn(remote_chunkpath: str, local_chunkpath: str):
+        assert index_json_content is not None
+        with open(local_chunkpath, "w") as f:
+            json.dump(index_json_content, f)
+
+    downloader.download_file = fn
+
+    monkeypatch.setattr(dataset_utilities_module, "get_downloader_cls", mock.MagicMock(return_value=downloader))
+
+
     data_dir = os.path.join(tmpdir, "data")
     cache_dir = os.path.join(tmpdir, "cache_dir")
 
@@ -934,6 +950,8 @@ def test_dataset_valid_state(tmpdir, monkeypatch):
 
     cache.done()
     cache.merge()
+
+    index_json_content = load_index_file(data_dir)
 
     dataset = EmulateS3StreamingDataset(
         input_dir=Dir(cache_dir, data_dir),
