@@ -265,7 +265,7 @@ dataset = ld.StreamingDataset("s3://my-bucket/my-data", storage_options=aws_stor
 gcp_storage_options={
     "project": os.environ['PROJECT_ID'],
 }
-dataset = ld.StreamingDataset("gcp://my-bucket/my-data", storage_options=gcp_storage_options)
+dataset = ld.StreamingDataset("gs://my-bucket/my-data", storage_options=gcp_storage_options)
 
 # Read data from Azure
 azure_storage_options={
