@@ -96,15 +96,17 @@ def _read_last_updated_timestamp(input_dir: Optional[Dir]) -> str:
     """Read last updated timestamp from index.json file."""
     last_updation_timestamp = ""
     index_json_content = None
+    assert isinstance(input_dir, Dir)
 
-    if input_dir.path is not None and os.path.exists(input_dir.path, _INDEX_FILENAME):
+    if input_dir.path is not None and os.path.exists(os.path.join(input_dir.path, _INDEX_FILENAME)):
         # read index.json file and read last_updation_timestamp
         index_json_content = load_index_file(input_dir.path)
     elif input_dir.url is not None:
+        assert input_dir.url is not None
         # download index.json file and read last_updation_timestamp
         with tempfile.TemporaryDirectory() as tmp_directory:
             temp_index_filepath = os.path.join(tmp_directory, _INDEX_FILENAME)
-            downloader = get_downloader_cls(input_dir.url, input_dir.path, [])
+            downloader = get_downloader_cls(input_dir.url, input_dir.path, []) # type: ignore
             downloader.download_file(os.path.join(input_dir.url, _INDEX_FILENAME), temp_index_filepath)
 
             index_json_content = load_index_file(tmp_directory)
@@ -122,7 +124,7 @@ def _try_create_cache_dir(input_dir: Optional[str]) -> Optional[str]:
 
     if last_updation_timestamp == "":
         # for backward compatibility, use the input_dir for hashing (if no timestamp is found)
-        last_updation_timestamp = input_dir
+        last_updation_timestamp = input_dir if input_dir else ""
 
     hash_object = hashlib.md5((last_updation_timestamp).encode())  # noqa: S324
     if "LIGHTNING_CLUSTER_ID" not in os.environ or "LIGHTNING_CLOUD_PROJECT_ID" not in os.environ:
