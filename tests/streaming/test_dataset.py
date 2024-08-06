@@ -911,6 +911,7 @@ def test_dataset_resume_on_future_chunks(shuffle, tmpdir, monkeypatch):
     # The next batch after resuming must match what we should have gotten next in the initial loop
     assert torch.equal(next(iter(train_dataloader)), batch_to_resume_from)
 
+
 @pytest.mark.timeout(60)
 @pytest.mark.skipif(sys.platform == "win32", reason="Not tested on windows and MacOs")
 def test_dataset_valid_state(tmpdir, monkeypatch):
