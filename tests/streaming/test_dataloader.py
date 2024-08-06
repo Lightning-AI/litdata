@@ -3,7 +3,7 @@ import os
 import pytest
 import torch
 from litdata.constants import _VIZ_TRACKER_AVAILABLE
-from litdata.streaming import CombinedStreamingDataset, StreamingDataLoader
+from litdata.streaming import Cache, CombinedStreamingDataset, StreamingDataLoader, StreamingDataset
 from litdata.streaming import dataloader as streaming_dataloader_module
 from torch import tensor
 
@@ -187,3 +187,18 @@ def test_custom_collate_multiworker():
 
     # Try calling the state_dict. No error should follow
     _state_dict = dataloader.state_dict()
+
+
+def test_dataloader_no_workers(tmpdir):
+    cache = Cache(input_dir=str(tmpdir), chunk_bytes="64MB")
+    for i in range(1000):
+        cache[i] = i
+
+    cache.done()
+    cache.merge()
+
+    dataset = StreamingDataset(str(tmpdir), shuffle=True)
+    dataloader = StreamingDataLoader(dataset)
+    assert len(dataset) == 1000
+    assert len(dataloader) == 1000
+    assert len(dataset) == 1000
