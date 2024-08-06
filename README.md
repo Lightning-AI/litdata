@@ -279,16 +279,19 @@ hf_storage_options={
     "use_auth_token": os.environ['HF_TOKEN']
 }
 dataset = StreamingDataset("hf://datasets/my-org/my-repo", storage_options=hf_storage_options)
+# it also supports nested directories
+dataset = StreamingDataset("hf://datasets/my-org/my-repo/dataset-1", storage_options=hf_storage_options)
 ```
 
 ### Upload Data to Hugging Face
 
 To upload data to Hugging Face, you can use the `huggingface-cli` command. Below is the command format:
+> For more information, checkout the [Hugging Face documentation](https://huggingface.co/docs/datasets/main/en/share#huggingface-cli-upload).
 ```sh
 $ huggingface-cli upload [dataset_repo_id] [local_path] [path_in_repo] --repo-type dataset
-eg: huggingface-cli upload my-org/my-repo ./my-data --repo-type dataset
+# eg: huggingface-cli upload my-org/my-repo ./my-data --repo-type dataset
+# or huggingface-cli upload my-org/my-repo ./my-data dataset-1 --repo-type dataset
 ```
-> For more information, checkout the [Hugging Face documentation](https://huggingface.co/docs/datasets/main/en/share#huggingface-cli-upload).
 
 </details>  
 
