@@ -1,7 +1,9 @@
+from datetime import datetime
 import hashlib
 import json
 import math
 import os
+import tempfile
 from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
@@ -9,7 +11,7 @@ import numpy as np
 from litdata.constants import _DEFAULT_CACHE_DIR, _INDEX_FILENAME
 from litdata.streaming.downloader import get_downloader_cls
 from litdata.streaming.item_loader import BaseItemLoader, TokensLoader
-from litdata.streaming.resolver import Dir
+from litdata.streaming.resolver import Dir, _resolve_dir
 from litdata.utilities.subsample import shuffle_lists_together, subsample_filenames_and_roi
 
 
@@ -91,8 +93,39 @@ def _should_replace_path(path: Optional[str]) -> bool:
     return path.startswith("/teamspace/datasets/") or path.startswith("/teamspace/s3_connections/")
 
 
+def _read_last_updated_timestamp(input_dir: Optional[Dir]) -> str:
+    """Read last updated timestamp from index.json file."""
+    last_updation_timestamp = ""
+    index_json_content = None
+
+    if input_dir.path is not None and os.path.exists(input_dir.path, _INDEX_FILENAME):
+        # read index.json file and read last_updation_timestamp
+        index_json_content = load_index_file(input_dir.path)
+    elif input_dir.url is not None:
+        # download index.json file and read last_updation_timestamp
+        with tempfile.TemporaryDirectory() as tmp_directory:
+            temp_index_filepath = os.path.join(tmp_directory, _INDEX_FILENAME)
+            downloader = get_downloader_cls(input_dir.url, input_dir.path, [])
+            downloader.download_file(os.path.join(input_dir.url, _INDEX_FILENAME), temp_index_filepath)
+
+            index_json_content = load_index_file(tmp_directory)
+
+    if index_json_content is not None and "last_updation_timestamp" in index_json_content:
+        last_updation_timestamp = index_json_content["last_updation_timestamp"]
+
+    return last_updation_timestamp
+
+
 def _try_create_cache_dir(input_dir: Optional[str]) -> Optional[str]:
-    hash_object = hashlib.md5((input_dir or "").encode())  # noqa: S324
+    # input_dir = input_dir.path if input_dir.path else input_dir.url
+    input_dir = _resolve_dir(input_dir)
+    last_updation_timestamp = _read_last_updated_timestamp(input_dir)
+
+    if last_updation_timestamp == "":
+        # use different cache dir for each dataset if no timestamp is found
+        last_updation_timestamp = str(datetime.now()).replace(" ", "_")
+
+    hash_object = hashlib.md5((last_updation_timestamp).encode())  # noqa: S324
     if "LIGHTNING_CLUSTER_ID" not in os.environ or "LIGHTNING_CLOUD_PROJECT_ID" not in os.environ:
         cache_dir = os.path.join(_DEFAULT_CACHE_DIR, hash_object.hexdigest())
         os.makedirs(cache_dir, exist_ok=True)

@@ -16,7 +16,7 @@ import os
 import uuid
 import warnings
 from dataclasses import dataclass
-from time import sleep
+from time import sleep, time
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
@@ -478,7 +478,12 @@ class BinaryWriter:
 
         if node_rank is None:
             with open(os.path.join(self._cache_dir, _INDEX_FILENAME), "w") as f:
-                json.dump({"chunks": chunks_info, "config": config}, f, sort_keys=True)
+                data = {
+                    "chunks": chunks_info,
+                    "config": config,
+                    "last_updation_timestamp": str(time())
+                }
+                json.dump(data, f, sort_keys=True)
         else:
             with open(os.path.join(self._cache_dir, f"{node_rank}-{_INDEX_FILENAME}"), "w") as f:
                 json.dump({"chunks": chunks_info, "config": config}, f, sort_keys=True)
