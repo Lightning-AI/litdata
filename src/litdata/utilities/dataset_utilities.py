@@ -122,7 +122,7 @@ def _try_create_cache_dir(input_dir: Optional[str]) -> Optional[str]:
     last_updation_timestamp = _read_last_updated_timestamp(resolved_input_dir)
 
     if last_updation_timestamp == "":
-        # for backward compatibility, use the input_dir as the cache dir (if no timestamp is found)
+        # for backward compatibility, use the input_dir for hashing (if no timestamp is found)
         last_updation_timestamp = input_dir
 
     hash_object = hashlib.md5((last_updation_timestamp).encode())  # noqa: S324
