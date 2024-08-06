@@ -202,7 +202,11 @@ class HFDownloader(Downloader):
                 # expected URL format: hf://datasets/<repo_org>/<repo_name>/path
                 _, _, _, repo_org, repo_name, path = remote_filepath.split("/", 5)
                 downloaded_path = hf_hub_download(
-                    repo_id=f"{repo_org}/{repo_name}", filename=path, local_dir=self._cache_dir, repo_type="dataset"
+                    repo_id=f"{repo_org}/{repo_name}",
+                    filename=path,
+                    local_dir=self._cache_dir,
+                    repo_type="dataset",
+                    **self._storage_options,
                 )
 
                 # Move the downloaded file to the expected location if it's not already there.
