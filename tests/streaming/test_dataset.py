@@ -923,7 +923,6 @@ def test_dataset_valid_state(tmpdir, monkeypatch):
     index_json_content: Optional[Dict[str, Any]] = None
 
     def mock_resolve_dataset(dir_path: str) -> Dir:
-        print("meow")
         return Dir(
             path=dir_path,
             url=os.path.join(
