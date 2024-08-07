@@ -80,6 +80,8 @@ def test_streaming_dataset(tmpdir, monkeypatch, compression):
     for i in range(60):
         assert next(dataset_iter) == i
 
+    dataloader = StreamingDataLoader(dataset, num_workers=0, batch_size=1)
+    assert len(dataloader) == 60
     dataloader = DataLoader(dataset, num_workers=2, batch_size=1)
     assert len(dataloader) == 60
     dataloader = DataLoader(dataset, num_workers=2, batch_size=2)
