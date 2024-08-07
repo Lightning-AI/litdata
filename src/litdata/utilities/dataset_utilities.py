@@ -95,7 +95,7 @@ def _should_replace_path(path: Optional[str]) -> bool:
 
 def _read_updated_at(input_dir: Optional[Dir]) -> str:
     """Read last updated timestamp from index.json file."""
-    last_updation_timestamp = ""
+    last_updation_timestamp = "0"
     index_json_content = None
     assert isinstance(input_dir, Dir)
 
@@ -136,9 +136,9 @@ def _try_create_cache_dir(input_dir: Optional[str]) -> Optional[str]:
     resolved_input_dir = _resolve_dir(input_dir)
     updated_at = _read_updated_at(resolved_input_dir)
 
-    if updated_at == "":
+    if updated_at == "0" and input_dir is not None:
         # for backward compatibility, use the input_dir for hashing (if no timestamp is found)
-        updated_at = input_dir if input_dir else ""
+        updated_at = hashlib.md5(input_dir.encode()).hexdigest()  # noqa: S324
 
     dir_url_hash = hashlib.md5((resolved_input_dir.url or "").encode()).hexdigest()  # noqa: S324
 

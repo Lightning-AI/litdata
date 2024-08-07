@@ -698,7 +698,7 @@ def test_s3_streaming_dataset(monkeypatch):
     dataset = StreamingDataset(input_dir="s3://pl-flash-data/optimized_tiny_imagenet")
     assert dataset.input_dir.url == "s3://pl-flash-data/optimized_tiny_imagenet"
     assert dataset.input_dir.path.endswith(
-        "/chunks/597d6184e3ba942b36c8b6357a890033"
+        "chunks/597d6184e3ba942b36c8b6357a890033/597d6184e3ba942b36c8b6357a890033"
     )  # it won't be None, and a cache dir will be created
 
 
