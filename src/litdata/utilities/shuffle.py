@@ -161,7 +161,6 @@ def _find_chunks_per_workers_on_which_to_skip_deletion(
             counter = 0
 
             while True:
-                
                 # PART 1: Consume as many batches all at once for every worker and their respective current chunk
                 if num_of_samples_to_carry_to_next_chunk is None:
                     sizes = [size for size in workers_interval_sizes_for_this_rank if len(size)]
