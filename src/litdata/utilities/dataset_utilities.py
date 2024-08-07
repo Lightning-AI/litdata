@@ -118,7 +118,6 @@ def _read_last_updated_timestamp(input_dir: Optional[Dir]) -> str:
 
 
 def _try_create_cache_dir(input_dir: Optional[str]) -> Optional[str]:
-    # input_dir = input_dir.path if input_dir.path else input_dir.url
     resolved_input_dir = _resolve_dir(input_dir)
     last_updation_timestamp = _read_last_updated_timestamp(resolved_input_dir)
 
