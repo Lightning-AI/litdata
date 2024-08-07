@@ -222,6 +222,15 @@ def test_find_chunks_per_workers_on_which_to_skip_deletion():
     )
     assert chunks_to_disable == {1: [1]}
 
+    # world size = 1, 2 workers sharing one chunk, different sizes with remainders to next chunk
+    chunks_to_disable = _find_chunks_per_workers_on_which_to_skip_deletion(
+        num_workers=2,
+        batch_size=25,
+        workers_chunks=[[0, 1], [1, 2]],
+        workers_intervals=[[(0, 0, 70, 100), (0, 0, 55, 100)], [(0, 0, 105, 50), (0, 0, 55, 100)]],
+    )
+    assert chunks_to_disable == {1: [0]}
+
     # world size = 1, 4 workers sharing one chunk
     chunks_to_disable = _find_chunks_per_workers_on_which_to_skip_deletion(
         num_workers=4,
@@ -241,7 +250,7 @@ def test_find_chunks_per_workers_on_which_to_skip_deletion():
     assert chunks_to_disable == {0: [0, 1, 3]}
 
     # world size 2, 2 workers per rank, varying batch size
-    for batch_size in range(1, 6):
+    for batch_size in range(1, 7):
         chunks_to_disable = _find_chunks_per_workers_on_which_to_skip_deletion(
             num_workers=2,
             batch_size=batch_size,
