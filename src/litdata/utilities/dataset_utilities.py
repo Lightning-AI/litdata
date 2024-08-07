@@ -137,7 +137,6 @@ def _try_create_cache_dir(input_dir: Optional[str]) -> Optional[str]:
     updated_at = _read_updated_at(resolved_input_dir)
 
     if updated_at == "0" and input_dir is not None:
-        # for backward compatibility, use the input_dir for hashing (if no timestamp is found)
         updated_at = hashlib.md5(input_dir.encode()).hexdigest()  # noqa: S324
 
     dir_url_hash = hashlib.md5((resolved_input_dir.url or "").encode()).hexdigest()  # noqa: S324
