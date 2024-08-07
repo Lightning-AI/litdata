@@ -27,6 +27,7 @@ from litdata import optimize, train_test_split
 from litdata.constants import _ZSTD_AVAILABLE
 from litdata.processing import functions
 from litdata.streaming import Cache
+from litdata.streaming import resolver as resolver_module
 from litdata.streaming import dataset as dataset_module
 from litdata.streaming.dataloader import StreamingDataLoader
 from litdata.streaming.dataset import (
@@ -921,6 +922,16 @@ def test_dataset_valid_state(tmpdir, monkeypatch):
 
     index_json_content: Optional[Dict[str, Any]] = None
 
+    def mock_resolve_dataset(dir_path: str) -> Dir:
+        print("meow")
+        return Dir(
+            path=dir_path,
+            url=os.path.join(
+                "s3://dummy_bucket/projects/project_id/datasets/",
+                *dir_path.split("/")[3:],
+            ),
+        )
+
     downloader = mock.MagicMock()
 
     def fn(remote_chunkpath: str, local_chunkpath: str):
@@ -930,6 +941,7 @@ def test_dataset_valid_state(tmpdir, monkeypatch):
 
     downloader.download_file = fn
 
+    monkeypatch.setattr(resolver_module, "_resolve_datasets", mock_resolve_dataset)
     monkeypatch.setattr(dataset_utilities_module, "get_downloader_cls", mock.MagicMock(return_value=downloader))
 
     data_dir = os.path.join(tmpdir, "data")
