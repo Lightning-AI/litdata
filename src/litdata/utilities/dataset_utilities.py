@@ -141,18 +141,17 @@ def _try_create_cache_dir(input_dir: Optional[str]) -> Optional[str]:
         updated_at = input_dir if input_dir else ""
 
     dir_url_hash = hashlib.md5((resolved_input_dir.url or "").encode()).hexdigest()  # noqa: S324
-    updated_at_hash = hashlib.md5((updated_at).encode()).hexdigest()  # noqa: S324
 
     if "LIGHTNING_CLUSTER_ID" not in os.environ or "LIGHTNING_CLOUD_PROJECT_ID" not in os.environ:
         input_dir_hash_filepath = os.path.join(_DEFAULT_CACHE_DIR, dir_url_hash)
-        _clear_cache_dir_if_updated(input_dir_hash_filepath, updated_at_hash)
-        cache_dir = os.path.join(input_dir_hash_filepath, updated_at_hash)
+        _clear_cache_dir_if_updated(input_dir_hash_filepath, updated_at)
+        cache_dir = os.path.join(input_dir_hash_filepath, updated_at)
         os.makedirs(cache_dir, exist_ok=True)
         return cache_dir
 
     input_dir_hash_filepath = os.path.join("/cache", "chunks", dir_url_hash)
-    _clear_cache_dir_if_updated(input_dir_hash_filepath, updated_at_hash)
-    cache_dir = os.path.join(input_dir_hash_filepath, updated_at_hash)
+    _clear_cache_dir_if_updated(input_dir_hash_filepath, updated_at)
+    cache_dir = os.path.join(input_dir_hash_filepath, updated_at)
     os.makedirs(cache_dir, exist_ok=True)
     return cache_dir
 
