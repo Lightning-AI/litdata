@@ -27,8 +27,8 @@ from litdata import optimize, train_test_split
 from litdata.constants import _ZSTD_AVAILABLE
 from litdata.processing import functions
 from litdata.streaming import Cache
-from litdata.streaming import resolver as resolver_module
 from litdata.streaming import dataset as dataset_module
+from litdata.streaming import resolver as resolver_module
 from litdata.streaming.dataloader import StreamingDataLoader
 from litdata.streaming.dataset import (
     _INDEX_FILENAME,
