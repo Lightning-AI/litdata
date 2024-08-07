@@ -2,6 +2,7 @@ import hashlib
 import json
 import math
 import os
+import shutil
 import tempfile
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -117,6 +118,19 @@ def _read_updated_at(input_dir: Optional[Dir]) -> str:
     return last_updation_timestamp
 
 
+def _clear_cache_dir_if_updated(input_dir_hash_filepath: str, updated_at_hash: str) -> None:
+    """
+    clear cache dir if it is updated.
+    If last_updated has changed and /cache/chunks/{HASH(input_dir.url)} isn't empty,
+    we remove all the files and then create the cache.
+    """
+    if os.path.exists(input_dir_hash_filepath):
+        # check if it only contains one directory with updated_at_hash
+        dir_list = os.listdir(input_dir_hash_filepath)
+        if not (len(dir_list) == 1 and dir_list[0] == updated_at_hash):
+            shutil.rmtree(input_dir_hash_filepath)
+
+
 def _try_create_cache_dir(input_dir: Optional[str]) -> Optional[str]:
     resolved_input_dir = _resolve_dir(input_dir)
     updated_at = _read_updated_at(resolved_input_dir)
@@ -125,12 +139,19 @@ def _try_create_cache_dir(input_dir: Optional[str]) -> Optional[str]:
         # for backward compatibility, use the input_dir for hashing (if no timestamp is found)
         updated_at = input_dir if input_dir else ""
 
-    hash_object = hashlib.md5((updated_at).encode())  # noqa: S324
+    dir_url_hash = hashlib.md5((resolved_input_dir.url or "").encode()).hexdigest()  # noqa: S324
+    updated_at_hash = hashlib.md5((updated_at).encode()).hexdigest()  # noqa: S324
+
     if "LIGHTNING_CLUSTER_ID" not in os.environ or "LIGHTNING_CLOUD_PROJECT_ID" not in os.environ:
-        cache_dir = os.path.join(_DEFAULT_CACHE_DIR, hash_object.hexdigest())
+        input_dir_hash_filepath = os.path.join(_DEFAULT_CACHE_DIR, dir_url_hash)
+        _clear_cache_dir_if_updated(input_dir_hash_filepath, updated_at_hash)
+        cache_dir = os.path.join(input_dir_hash_filepath, updated_at_hash)
         os.makedirs(cache_dir, exist_ok=True)
         return cache_dir
-    cache_dir = os.path.join("/cache", "chunks", hash_object.hexdigest())
+
+    input_dir_hash_filepath = os.path.join("/cache", "chunks", dir_url_hash)
+    _clear_cache_dir_if_updated(input_dir_hash_filepath, updated_at_hash)
+    cache_dir = os.path.join(input_dir_hash_filepath, updated_at_hash)
     os.makedirs(cache_dir, exist_ok=True)
     return cache_dir
 
