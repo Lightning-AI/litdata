@@ -119,10 +119,11 @@ def _read_updated_at(input_dir: Optional[Dir]) -> str:
 
 
 def _clear_cache_dir_if_updated(input_dir_hash_filepath: str, updated_at_hash: str) -> None:
-    """
-    clear cache dir if it is updated.
-    If last_updated has changed and /cache/chunks/{HASH(input_dir.url)} isn't empty,
-    we remove all the files and then create the cache.
+    """Clear cache dir if it is updated.
+
+    If last_updated has changed and /cache/chunks/{HASH(input_dir.url)} isn't empty, we remove all the files and then
+    create the cache.
+
     """
     if os.path.exists(input_dir_hash_filepath):
         # check if it only contains one directory with updated_at_hash
