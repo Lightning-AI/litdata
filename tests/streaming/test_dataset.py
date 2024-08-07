@@ -17,6 +17,7 @@ import random
 import shutil
 import sys
 from time import sleep
+from typing import Any, Dict, Optional
 from unittest import mock
 
 import numpy as np
@@ -27,6 +28,7 @@ from litdata.constants import _ZSTD_AVAILABLE
 from litdata.processing import functions
 from litdata.streaming import Cache
 from litdata.streaming import dataset as dataset_module
+from litdata.streaming import resolver as resolver_module
 from litdata.streaming.dataloader import StreamingDataLoader
 from litdata.streaming.dataset import (
     _INDEX_FILENAME,
@@ -38,6 +40,7 @@ from litdata.streaming.dataset import (
 from litdata.streaming.item_loader import TokensLoader
 from litdata.streaming.shuffle import FullShuffle, NoShuffle
 from litdata.utilities import dataset_utilities as dataset_utilities_module
+from litdata.utilities.dataset_utilities import load_index_file
 from litdata.utilities.env import _DistributedEnv, _WorkerEnv
 from litdata.utilities.shuffle import _associate_chunks_and_intervals_to_workers
 from torch.utils.data import DataLoader
@@ -695,7 +698,7 @@ def test_s3_streaming_dataset(monkeypatch):
     dataset = StreamingDataset(input_dir="s3://pl-flash-data/optimized_tiny_imagenet")
     assert dataset.input_dir.url == "s3://pl-flash-data/optimized_tiny_imagenet"
     assert dataset.input_dir.path.endswith(
-        "/chunks/597d6184e3ba942b36c8b6357a890033"
+        "chunks/597d6184e3ba942b36c8b6357a890033/597d6184e3ba942b36c8b6357a890033"
     )  # it won't be None, and a cache dir will be created
 
 
@@ -912,9 +915,33 @@ def test_dataset_resume_on_future_chunks(shuffle, tmpdir, monkeypatch):
     assert torch.equal(next(iter(train_dataloader)), batch_to_resume_from)
 
 
+@pytest.mark.timeout(60)
 @pytest.mark.skipif(sys.platform == "win32", reason="Not tested on windows and MacOs")
 def test_dataset_valid_state(tmpdir, monkeypatch):
     seed_everything(42)
+
+    index_json_content: Optional[Dict[str, Any]] = None
+
+    def mock_resolve_dataset(dir_path: str) -> Dir:
+        return Dir(
+            path=dir_path,
+            url=os.path.join(
+                "s3://dummy_bucket/projects/project_id/datasets/",
+                *dir_path.split("/")[3:],
+            ),
+        )
+
+    downloader = mock.MagicMock()
+
+    def fn(remote_chunkpath: str, local_chunkpath: str):
+        assert index_json_content is not None
+        with open(local_chunkpath, "w") as f:
+            json.dump(index_json_content, f)
+
+    downloader.download_file = fn
+
+    monkeypatch.setattr(resolver_module, "_resolve_datasets", mock_resolve_dataset)
+    monkeypatch.setattr(dataset_utilities_module, "get_downloader_cls", mock.MagicMock(return_value=downloader))
 
     data_dir = os.path.join(tmpdir, "data")
     cache_dir = os.path.join(tmpdir, "cache_dir")
@@ -933,6 +960,8 @@ def test_dataset_valid_state(tmpdir, monkeypatch):
 
     cache.done()
     cache.merge()
+
+    index_json_content = load_index_file(data_dir)
 
     dataset = EmulateS3StreamingDataset(
         input_dir=Dir(cache_dir, data_dir),

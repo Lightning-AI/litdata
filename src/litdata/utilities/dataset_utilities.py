@@ -2,6 +2,8 @@ import hashlib
 import json
 import math
 import os
+import shutil
+import tempfile
 from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
@@ -9,7 +11,7 @@ import numpy as np
 from litdata.constants import _DEFAULT_CACHE_DIR, _INDEX_FILENAME
 from litdata.streaming.downloader import get_downloader_cls
 from litdata.streaming.item_loader import BaseItemLoader, TokensLoader
-from litdata.streaming.resolver import Dir
+from litdata.streaming.resolver import Dir, _resolve_dir
 from litdata.utilities.subsample import shuffle_lists_together, subsample_filenames_and_roi
 
 
@@ -91,13 +93,64 @@ def _should_replace_path(path: Optional[str]) -> bool:
     return path.startswith("/teamspace/datasets/") or path.startswith("/teamspace/s3_connections/")
 
 
+def _read_updated_at(input_dir: Optional[Dir]) -> str:
+    """Read last updated timestamp from index.json file."""
+    last_updation_timestamp = "0"
+    index_json_content = None
+    assert isinstance(input_dir, Dir)
+
+    if input_dir.path is not None and os.path.exists(os.path.join(input_dir.path, _INDEX_FILENAME)):
+        # read index.json file and read last_updation_timestamp
+        index_json_content = load_index_file(input_dir.path)
+    elif input_dir.url is not None:
+        assert input_dir.url is not None
+        # download index.json file and read last_updation_timestamp
+        with tempfile.TemporaryDirectory() as tmp_directory:
+            temp_index_filepath = os.path.join(tmp_directory, _INDEX_FILENAME)
+            downloader = get_downloader_cls(input_dir.url, tmp_directory, [])
+            downloader.download_file(os.path.join(input_dir.url, _INDEX_FILENAME), temp_index_filepath)
+
+            index_json_content = load_index_file(tmp_directory)
+
+    if index_json_content is not None and "updated_at" in index_json_content:
+        last_updation_timestamp = index_json_content["updated_at"]
+
+    return last_updation_timestamp
+
+
+def _clear_cache_dir_if_updated(input_dir_hash_filepath: str, updated_at_hash: str) -> None:
+    """Clear cache dir if it is updated.
+
+    If last_updated has changed and /cache/chunks/{HASH(input_dir.url)} isn't empty, we remove all the files and then
+    create the cache.
+
+    """
+    if os.path.exists(input_dir_hash_filepath):
+        # check if it only contains one directory with updated_at_hash
+        dir_list = os.listdir(input_dir_hash_filepath)
+        if not (len(dir_list) == 1 and dir_list[0] == updated_at_hash):
+            shutil.rmtree(input_dir_hash_filepath)
+
+
 def _try_create_cache_dir(input_dir: Optional[str]) -> Optional[str]:
-    hash_object = hashlib.md5((input_dir or "").encode())  # noqa: S324
+    resolved_input_dir = _resolve_dir(input_dir)
+    updated_at = _read_updated_at(resolved_input_dir)
+
+    if updated_at == "0" and input_dir is not None:
+        updated_at = hashlib.md5(input_dir.encode()).hexdigest()  # noqa: S324
+
+    dir_url_hash = hashlib.md5((resolved_input_dir.url or "").encode()).hexdigest()  # noqa: S324
+
     if "LIGHTNING_CLUSTER_ID" not in os.environ or "LIGHTNING_CLOUD_PROJECT_ID" not in os.environ:
-        cache_dir = os.path.join(_DEFAULT_CACHE_DIR, hash_object.hexdigest())
+        input_dir_hash_filepath = os.path.join(_DEFAULT_CACHE_DIR, dir_url_hash)
+        _clear_cache_dir_if_updated(input_dir_hash_filepath, updated_at)
+        cache_dir = os.path.join(input_dir_hash_filepath, updated_at)
         os.makedirs(cache_dir, exist_ok=True)
         return cache_dir
-    cache_dir = os.path.join("/cache", "chunks", hash_object.hexdigest())
+
+    input_dir_hash_filepath = os.path.join("/cache", "chunks", dir_url_hash)
+    _clear_cache_dir_if_updated(input_dir_hash_filepath, updated_at)
+    cache_dir = os.path.join(input_dir_hash_filepath, updated_at)
     os.makedirs(cache_dir, exist_ok=True)
     return cache_dir
 
