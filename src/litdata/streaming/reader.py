@@ -186,6 +186,7 @@ class BinaryReader:
             max_cache_size: The maximum cache size used by the reader when fetching the chunks.
             serializers: Provide your own serializers.
             storage_options: Additional connection options for accessing storage services.
+            max_pre_download: Maximum number of chunks that can be pre-downloaded by the reader.
 
         """
         super().__init__()

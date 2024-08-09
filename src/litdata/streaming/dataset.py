@@ -73,6 +73,7 @@ class StreamingDataset(IterableDataset):
             subsample: Float representing fraction of the dataset to be randomly sampled (e.g., 0.1 => 10% of dataset).
             encryption: The encryption object to use for decrypting the data.
             storage_options: Additional connection options for accessing storage services.
+            max_pre_download: Maximum number of chunks that can be pre-downloaded by the StreamingDataset.
 
         """
         super().__init__()

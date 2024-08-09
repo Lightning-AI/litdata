@@ -63,6 +63,7 @@ class Cache:
             serializers: Provide your own serializers.
             writer_chunk_index: The index of the chunk to start from when writing.
             storage_options: Additional connection options for accessing storage services.
+            max_pre_download: Maximum number of chunks that can be pre-downloaded while filling up the cache.
 
         """
         super().__init__()
