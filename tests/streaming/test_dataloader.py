@@ -260,7 +260,6 @@ def test_dataloader_states_with_persistent_workers(tmpdir):
 
     dataset = StreamingDataset(str(tmpdir), shuffle=True)
 
-    # Test dataloader with persistent workers
     dataloader = StreamingDataLoader(dataset, batch_size=4, num_workers=2)
     assert len(dataloader) == 25, "Dataloader length should be 25 (100 items / batch size 4)"
 
