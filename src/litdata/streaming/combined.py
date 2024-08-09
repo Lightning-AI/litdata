@@ -134,6 +134,11 @@ class CombinedStreamingDataset(IterableDataset):
         for dataset in self._datasets:
             dataset.set_drop_last(drop_last)
 
+    def reset_state_dict(self) -> None:
+        """Reset the state of the dataset."""
+        for dataset in self._datasets:
+            dataset.reset_state_dict()
+
     def _check_datasets(self, datasets: List[StreamingDataset]) -> None:
         if any(not isinstance(d, StreamingDataset) for d in datasets):
             raise RuntimeError("The provided datasets should be instances of the StreamingDataset.")

@@ -338,12 +338,14 @@ class StreamingDataset(IterableDataset):
         # Prevent to create more batch on a given process
         if self.global_index >= self.stop_length:
             self.current_epoch += 1
+            self.reset_state_dict()
             raise StopIteration
 
         # Lazily re-populate the interval to reduce memory usage.
         if len(self.current_indexes) == 0:
             if self.chunk_index == self.num_chunks:
                 self.current_epoch += 1
+                self.reset_state_dict()
                 raise StopIteration
 
             # reset index

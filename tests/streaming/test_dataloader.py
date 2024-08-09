@@ -56,6 +56,9 @@ class TestCombinedStreamingDataset(CombinedStreamingDataset):
     def _check_datasets(self, datasets) -> None:
         pass
 
+    def reset_state_dict(self):
+        pass
+
 
 def test_streaming_dataloader():
     dataset = TestCombinedStreamingDataset(
