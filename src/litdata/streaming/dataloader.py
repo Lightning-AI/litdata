@@ -615,6 +615,7 @@ class StreamingDataLoader(DataLoader):
             self.current_epoch += 1
             self._num_samples_yielded_combined = {}
             self._num_samples_yielded_streaming = 0
+            self.dataset.reset_state_dict()
 
         self.dataset.set_epoch(self.current_epoch)
 
