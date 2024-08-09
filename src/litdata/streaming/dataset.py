@@ -407,6 +407,9 @@ class StreamingDataset(IterableDataset):
             # the state is restored within the workers
             self._state_dict = state_dict
 
+    def reset_state_dict(self) -> None:
+        self._state_dict = None
+
     def _validate_state_dict(self) -> None:
         assert self._state_dict
         assert self.worker_env
