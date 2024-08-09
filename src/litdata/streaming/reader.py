@@ -267,11 +267,7 @@ class BinaryReader:
             # Create and start the prepare chunks thread
             if self._prepare_thread is None and self._config:
                 self._prepare_thread = PrepareChunksThread(
-                    self._config,
-                    self._item_loader,
-                    self._distributed_env,
-                    self._max_cache_size,
-                    self._max_pre_download
+                    self._config, self._item_loader, self._distributed_env, self._max_cache_size, self._max_pre_download
                 )
                 self._prepare_thread.start()
                 if index.chunk_indexes:
