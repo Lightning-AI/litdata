@@ -205,3 +205,46 @@ def test_dataloader_no_workers(tmpdir):
     assert len(dataset) == 1000
     assert len(dataloader) == 1000
     assert len(dataset) == 1000
+
+
+@pytest.mark.timeout(120)
+def test_dataloader_with_loading_states(tmpdir):
+    cache = Cache(input_dir=str(tmpdir), chunk_bytes="64MB")
+    for i in range(100):
+        cache[i] = i
+    cache.done()
+    cache.merge()
+
+    dataset = StreamingDataset(str(tmpdir), shuffle=True)
+
+    # Test dataloader without explicit num workers
+    dataloader = StreamingDataLoader(dataset, batch_size=4)
+    dataloader.load_state_dict(dataloader.state_dict())
+    batch = next(iter(dataloader))
+    assert len(batch) == 4, "Batch size should be 4"
+    assert len(dataloader) == 25, "Dataloader length should be 25 (100 items / batch size 4)"
+
+    # Test dataloader with num workers
+    dataloader = StreamingDataLoader(dataset, batch_size=4, num_workers=2)
+    assert len(dataloader) == 25, "Dataloader length should be 25 (100 items / batch size 4)"
+
+    # Verify dataloader state after partial iteration
+    for batch_idx, batch in enumerate(dataloader):
+        assert dataloader.current_epoch == 1, "Current epoch should be 1"
+        if batch_idx == 10:
+            break
+    dataloader.load_state_dict(dataloader.state_dict())
+
+    # Verify remaining batches in the first epoch
+    count = 0
+    for _ in dataloader:
+        assert dataloader.current_epoch == 1, "Current epoch should be 1"
+        count += 1
+    assert count == 15, "There should be atleast 15 batches remaining in the first epoch"
+
+    # Verify batches in the second epoch
+    count = 0
+    for _ in dataloader:
+        assert dataloader.current_epoch == 2, "Current epoch should be 2"
+        count += 1
+    assert count >= 25, "There should be at least 25 batches in the second epoch"
