@@ -52,7 +52,7 @@ class Range:
         self.values = list(range(start, end, step))
 
     def set_epoch(self, epoch):
-        self.values = np.random.RandomState(42 + epoch).permutation(self.values).tolist()
+        self.values = np.random.RandomState([42, epoch]).permutation(self.values).tolist()
 
     def __iter__(self):
         yield from self.values
