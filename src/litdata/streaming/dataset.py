@@ -390,7 +390,7 @@ class StreamingDataset(IterableDataset):
 
         return {
             "num_samples_yielded": num_samples_yielded,
-            "num_workers": num_workers if num_workers > 0 else 1,
+            "num_workers": num_workers or 1,
             "batch_size": batch_size,
             "current_epoch": self.current_epoch,
             "input_dir_path": self.input_dir.path,
