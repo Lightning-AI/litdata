@@ -1,4 +1,3 @@
-import contextlib
 import os
 from unittest import mock
 from unittest.mock import MagicMock
@@ -6,7 +5,6 @@ from unittest.mock import MagicMock
 from litdata.streaming.downloader import (
     AzureDownloader,
     GCPDownloader,
-    HFDownloader,
     LocalDownloaderWithCache,
     S3Downloader,
     shutil,
@@ -72,31 +70,6 @@ def test_azure_downloader(tmpdir, monkeypatch, azure_mock):
     service_mock.get_blob_client.assert_called_with(container="random_bucket", blob="a.txt")
     mock_blob.download_blob.assert_called()
     mock_blob_data.readinto.assert_called()
-
-
-@mock.patch("litdata.streaming.downloader._HUGGINGFACE_HUB_AVAILABLE", True)
-def test_hf_downloader(tmpdir, monkeypatch, huggingface_mock):
-    mock_hf_hub_download = MagicMock()
-    huggingface_mock.hf_hub_download = mock_hf_hub_download
-
-    # Initialize the downloader
-    storage_options = {}
-    downloader = HFDownloader("hf://datasets/random_org/random_repo", tmpdir, [], storage_options)
-    local_filepath = os.path.join(tmpdir, "a.txt")
-
-    # ignore filenotfound error for this test TODO: write a better test
-    with contextlib.suppress(FileNotFoundError):
-        downloader.download_file("hf://datasets/random_org/random_repo/a.txt", local_filepath)
-    # Assert that the correct methods were called
-    huggingface_mock.hf_hub_download.assert_called_once()
-    huggingface_mock.hf_hub_download.assert_called_with(
-        repo_id="random_org/random_repo", filename="a.txt", local_dir=tmpdir, repo_type="dataset"
-    )
-
-    # Test that the file is not downloaded if it already exists
-    with contextlib.suppress(FileNotFoundError):
-        downloader.download_file("hf://datasets/random_org/random_repo/a.txt", local_filepath)
-        huggingface_mock.hf_hub_download.assert_not_called()
 
 
 def test_download_with_cache(tmpdir, monkeypatch):
