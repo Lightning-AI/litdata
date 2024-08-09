@@ -139,6 +139,7 @@ for sample in dataloader:
 ✅ Easy collaboration:        Share and access datasets in the cloud, streamlining team projects.     
 ✅ Scale across GPUs:         Streamed data automatically scales to all GPUs.      
 ✅ Flexible storage:          Use S3, GCS, Azure, or your own cloud account for data storage.    
+✅ Compression:               Reduce your data footprint by using advanced compression algorithms.  
 ✅ Run local or cloud:        Run on your own machines or auto-scale to 1000s of cloud GPUs with Lightning Studios.         
 ✅ Enterprise security:       Self host or process data on your cloud account with Lightning Studios.  
 
@@ -311,6 +312,69 @@ for batch_idx, batch in enumerate(dataloader):
 
 
 <details>
+  <summary> ✅ LLM Pre-training </summary>
+&nbsp;
+
+LitData is highly optimized for LLM pre-training. First, we need to tokenize the entire dataset and then we can consume it.
+
+```python
+import json
+from pathlib import Path
+import zstandard as zstd
+from litdata import optimize, TokensLoader
+from tokenizer import Tokenizer
+from functools import partial
+
+# 1. Define a function to convert the text within the jsonl files into tokens
+def tokenize_fn(filepath, tokenizer=None):
+    with zstd.open(open(filepath, "rb"), "rt", encoding="utf-8") as f:
+        for row in f:
+            text = json.loads(row)["text"]
+            if json.loads(row)["meta"]["redpajama_set_name"] == "RedPajamaGithub":
+                continue  # exclude the GitHub data since it overlaps with starcoder
+            text_ids = tokenizer.encode(text, bos=False, eos=True)
+            yield text_ids
+
+if __name__ == "__main__":
+    # 2. Generate the inputs (we are going to optimize all the compressed json files from SlimPajama dataset )
+    input_dir = "./slimpajama-raw"
+    inputs = [str(file) for file in Path(f"{input_dir}/SlimPajama-627B/train").rglob("*.zst")]
+
+    # 3. Store the optimized data wherever you want under "/teamspace/datasets" or "/teamspace/s3_connections"
+    outputs = optimize(
+        fn=partial(tokenize_fn, tokenizer=Tokenizer(f"{input_dir}/checkpoints/Llama-2-7b-hf")), # Note: You can use HF tokenizer or any others
+        inputs=inputs,
+        output_dir="./slimpajama-optimized",
+        chunk_size=(2049 * 8012),
+        # This is important to inform LitData that we are encoding contiguous 1D array (tokens). 
+        # LitData skips storing metadata for each sample e.g all the tokens are concatenated to form one large tensor.
+        item_loader=TokensLoader(),
+    )
+```
+
+```python
+import os
+from litdata import StreamingDataset, StreamingDataLoader, TokensLoader
+from tqdm import tqdm
+
+# Increase by one because we need the next word as well
+dataset = StreamingDataset(
+  input_dir=f"./slimpajama-optimized/train",
+  item_loader=TokensLoader(block_size=2048 + 1),
+  shuffle=True,
+  drop_last=True,
+)
+
+train_dataloader = StreamingDataLoader(dataset, batch_size=8, pin_memory=True, num_workers=os.cpu_count())
+
+# Iterate over the SlimPajama dataset
+for batch in tqdm(train_dataloader):
+    pass
+```
+
+</details>
+
+<details>
   <summary> ✅ Combine datasets</summary>
 &nbsp;
 
@@ -435,6 +499,39 @@ if __name__ == "__main__":
 ```
 
 The `overwrite` mode will delete the existing data and start from fresh.
+
+</details>
+
+<details>
+  <summary> ✅ Use compression</summary>
+&nbsp;
+
+Reduce your data footprint by using advanced compression algorithms.
+
+```python
+import litdata as ld
+
+def compress(index):
+    return index, index**2
+
+if __name__ == "__main__":
+    # Add some data
+    ld.optimize(
+        fn=compress,
+        inputs=list(range(100)),
+        output_dir="./my_optimized_dataset",
+        chunk_bytes="64MB",
+        num_workers=1,
+        compression="zstd"
+    )
+```
+
+Using [zstd](https://github.com/facebook/zstd), you can achieve high compression ratio like 4.34x for this simple example.
+
+| Without | With |
+| -------- | -------- | 
+| 2.8kb | 646b |
+
 
 </details>
 

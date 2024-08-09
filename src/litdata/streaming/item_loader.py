@@ -100,6 +100,10 @@ class BaseItemLoader(ABC):
         """Delete a chunk from the local filesystem."""
         pass
 
+    @abstractmethod
+    def encode_data(self, data: List[bytes], sizes: List[int], flattened: List[Any]) -> Any:
+        pass
+
 
 class PyTreeLoader(BaseItemLoader):
     """The Pytree Loader is the default loader of the Cache object."""
@@ -245,9 +249,16 @@ class PyTreeLoader(BaseItemLoader):
         if encryption.level != self._config["encryption"]["level"]:
             raise ValueError("Encryption level mismatch.")
 
+    @classmethod
+    def encode_data(cls, data: List[bytes], sizes: List[int], flattened: List[Any]) -> Tuple[bytes, Optional[int]]:
+        # Concatenante into a single byte array
+        head = np.array(sizes, np.uint32).tobytes()
+        body = b"".join(data)
+        return head + body, None
+
 
 class TokensLoader(BaseItemLoader):
-    def __init__(self, block_size: int):
+    def __init__(self, block_size: Optional[int] = None):
         """The Tokens Loader is an optimizer item loader for NLP.
 
         Arguments:
@@ -263,6 +274,7 @@ class TokensLoader(BaseItemLoader):
         self._chunk_filepaths: Dict[str, bool] = {}
 
     def state_dict(self) -> Dict:
+        assert self._block_size
         return {
             "block_size": self._block_size,
         }
@@ -280,6 +292,7 @@ class TokensLoader(BaseItemLoader):
             raise ValueError("The provided chunks isn't properly setup.")
 
     def generate_intervals(self) -> List[Interval]:
+        assert self._block_size
         intervals = []
         begin = 0
         end = 0
@@ -324,6 +337,8 @@ class TokensLoader(BaseItemLoader):
         begin: int,
         chunk_bytes: int,
     ) -> torch.Tensor:
+        assert self._block_size
+
         if chunk_filepath in self._chunk_filepaths and not os.path.isfile(chunk_filepath):
             del self._chunk_filepaths[chunk_filepath]
 
@@ -350,3 +365,7 @@ class TokensLoader(BaseItemLoader):
             if chunk_index in self._mmaps:
                 del self._mmaps[chunk_index]
             os.remove(chunk_filepath)
+
+    @classmethod
+    def encode_data(cls, data: List[bytes], _: List[int], flattened: List[Any]) -> Tuple[bytes, Optional[int]]:
+        return data[0], flattened[0].shape[0]

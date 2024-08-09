@@ -17,6 +17,7 @@ import random
 import shutil
 import sys
 from time import sleep
+from typing import Any, Dict, Optional
 from unittest import mock
 
 import numpy as np
@@ -27,6 +28,7 @@ from litdata.constants import _ZSTD_AVAILABLE
 from litdata.processing import functions
 from litdata.streaming import Cache
 from litdata.streaming import dataset as dataset_module
+from litdata.streaming import resolver as resolver_module
 from litdata.streaming.dataloader import StreamingDataLoader
 from litdata.streaming.dataset import (
     _INDEX_FILENAME,
@@ -38,6 +40,7 @@ from litdata.streaming.dataset import (
 from litdata.streaming.item_loader import TokensLoader
 from litdata.streaming.shuffle import FullShuffle, NoShuffle
 from litdata.utilities import dataset_utilities as dataset_utilities_module
+from litdata.utilities.dataset_utilities import load_index_file
 from litdata.utilities.env import _DistributedEnv, _WorkerEnv
 from litdata.utilities.shuffle import _associate_chunks_and_intervals_to_workers
 from torch.utils.data import DataLoader
@@ -80,6 +83,8 @@ def test_streaming_dataset(tmpdir, monkeypatch, compression):
     for i in range(60):
         assert next(dataset_iter) == i
 
+    dataloader = StreamingDataLoader(dataset, num_workers=0, batch_size=1)
+    assert len(dataloader) == 60
     dataloader = DataLoader(dataset, num_workers=2, batch_size=1)
     assert len(dataloader) == 60
     dataloader = DataLoader(dataset, num_workers=2, batch_size=2)
@@ -474,6 +479,34 @@ def test_dataset_for_text_tokens(tmpdir):
             break
 
 
+def test_dataset_with_1d_array(tmpdir):
+    seed_everything(42)
+
+    cache = Cache(input_dir=str(tmpdir), chunk_size=100)
+    text_idxs_list = []
+
+    for i in range(100):
+        text_ids = torch.randint(0, 1000, (np.random.randint(0, 1000),)).to(torch.int)
+        text_idxs_list.append(text_ids)
+
+        chunk_filepath = cache._add_item(i, text_ids)
+        if chunk_filepath:
+            print(i)
+            break
+
+    cache.done()
+    cache.merge()
+
+    dataset = StreamingDataset(input_dir=str(tmpdir), shuffle=False)
+
+    assert len(dataset) == 100
+
+    for i in range(100):
+        generated = dataset[i]
+        expected = text_idxs_list[i]
+        assert torch.equal(expected, generated)
+
+
 def test_dataset_for_text_tokens_multiple_workers(tmpdir):
     seed_everything(42)
 
@@ -594,7 +627,14 @@ def test_dataset_for_text_tokens_distributed_num_workers_end_to_end(tmpdir, monk
     monkeypatch.setenv("DATA_OPTIMIZER_DATA_CACHE_FOLDER", cache_dir)
 
     functions.optimize(
-        optimize_fn, inputs, output_dir=str(tmpdir), num_workers=2, chunk_size=2, reorder_files=False, num_downloaders=1
+        optimize_fn,
+        inputs,
+        output_dir=str(tmpdir),
+        num_workers=2,
+        chunk_size=2,
+        reorder_files=False,
+        num_downloaders=1,
+        item_loader=TokensLoader(),
     )
 
     assert len([f for f in os.listdir(tmpdir) if f.endswith(".bin")]) == 10
@@ -660,7 +700,7 @@ def test_s3_streaming_dataset(monkeypatch):
     dataset = StreamingDataset(input_dir="s3://pl-flash-data/optimized_tiny_imagenet")
     assert dataset.input_dir.url == "s3://pl-flash-data/optimized_tiny_imagenet"
     assert dataset.input_dir.path.endswith(
-        "/chunks/597d6184e3ba942b36c8b6357a890033"
+        "chunks/597d6184e3ba942b36c8b6357a890033/597d6184e3ba942b36c8b6357a890033"
     )  # it won't be None, and a cache dir will be created
 
 
@@ -840,6 +880,7 @@ def test_dataset_resume_on_future_chunks(shuffle, tmpdir, monkeypatch):
         chunk_size=190,
         num_workers=4,
         num_uploaders=1,
+        item_loader=TokensLoader(block_size=10),
     )
     assert set(os.listdir(data_dir)) == {
         "chunk-0-0.bin",
@@ -876,9 +917,33 @@ def test_dataset_resume_on_future_chunks(shuffle, tmpdir, monkeypatch):
     assert torch.equal(next(iter(train_dataloader)), batch_to_resume_from)
 
 
+@pytest.mark.timeout(60)
 @pytest.mark.skipif(sys.platform == "win32", reason="Not tested on windows and MacOs")
 def test_dataset_valid_state(tmpdir, monkeypatch):
     seed_everything(42)
+
+    index_json_content: Optional[Dict[str, Any]] = None
+
+    def mock_resolve_dataset(dir_path: str) -> Dir:
+        return Dir(
+            path=dir_path,
+            url=os.path.join(
+                "s3://dummy_bucket/projects/project_id/datasets/",
+                *dir_path.split("/")[3:],
+            ),
+        )
+
+    downloader = mock.MagicMock()
+
+    def fn(remote_chunkpath: str, local_chunkpath: str):
+        assert index_json_content is not None
+        with open(local_chunkpath, "w") as f:
+            json.dump(index_json_content, f)
+
+    downloader.download_file = fn
+
+    monkeypatch.setattr(resolver_module, "_resolve_datasets", mock_resolve_dataset)
+    monkeypatch.setattr(dataset_utilities_module, "get_downloader_cls", mock.MagicMock(return_value=downloader))
 
     data_dir = os.path.join(tmpdir, "data")
     cache_dir = os.path.join(tmpdir, "cache_dir")
@@ -897,6 +962,8 @@ def test_dataset_valid_state(tmpdir, monkeypatch):
 
     cache.done()
     cache.merge()
+
+    index_json_content = load_index_file(data_dir)
 
     dataset = EmulateS3StreamingDataset(
         input_dir=Dir(cache_dir, data_dir),
@@ -1076,7 +1143,14 @@ def test_subsample_streaming_dataset_with_token_loader(tmpdir, monkeypatch):
     monkeypatch.setenv("DATA_OPTIMIZER_DATA_CACHE_FOLDER", cache_dir)
 
     functions.optimize(
-        optimize_fn, inputs, output_dir=str(tmpdir), num_workers=2, chunk_size=2, reorder_files=False, num_downloaders=1
+        optimize_fn,
+        inputs,
+        output_dir=str(tmpdir),
+        num_workers=2,
+        chunk_size=2,
+        reorder_files=False,
+        num_downloaders=1,
+        item_loader=TokensLoader(),
     )
 
     assert len([f for f in os.listdir(tmpdir) if f.endswith(".bin")]) == 10

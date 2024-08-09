@@ -50,6 +50,7 @@ from litdata.streaming import Cache
 from litdata.streaming.cache import Dir
 from litdata.streaming.client import S3Client
 from litdata.streaming.dataloader import StreamingDataLoader
+from litdata.streaming.item_loader import BaseItemLoader
 from litdata.streaming.resolver import _resolve_dir
 from litdata.utilities._pytree import tree_flatten, tree_unflatten, treespec_loads
 from litdata.utilities.broadcast import broadcast_object
@@ -378,6 +379,22 @@ def _is_path(input_dir: Optional[str], element: Any) -> bool:
     return os.path.isfile(element)
 
 
+class FakeQueue:
+    """This class enables us to replace multiprocessing Queue when not required and avoid serializing data."""
+
+    def __init__(self) -> None:
+        self._items: List[Any] = []
+
+    def add_items(self, items: List[Any]) -> None:
+        self._items.extend(items)
+
+    def get(self) -> None:
+        try:
+            return self._items.pop(0)
+        except IndexError:
+            return None
+
+
 class BaseWorker:
     def __init__(
         self,
@@ -399,6 +416,7 @@ class BaseWorker:
         use_checkpoint: bool = False,
         checkpoint_chunks_info: Optional[List[Dict[str, Any]]] = None,
         checkpoint_next_index: Optional[int] = None,
+        item_loader: Optional[BaseItemLoader] = None,
     ) -> None:
         """The BaseWorker is responsible to process the user data."""
         self.worker_index = worker_index
@@ -420,10 +438,12 @@ class BaseWorker:
         self.to_download_queues: List[Queue] = []
         self.to_upload_queues: List[Queue] = []
         self.stop_queue = stop_queue
-        self.ready_to_process_queue: Queue = Queue()
+        self.no_downloaders = self.input_dir.path is None or self.reader is not None
+        self.ready_to_process_queue: Union[Queue, FakeQueue] = FakeQueue() if self.no_downloaders else Queue()
         self.remove_queue: Queue = Queue()
         self.progress_queue: Queue = progress_queue
         self.error_queue: Queue = error_queue
+        self.item_loader = item_loader
         self._counter = 0
         self._last_time = time()
         self._index_counter = 0
@@ -522,6 +542,7 @@ class BaseWorker:
             compression=self.data_recipe.compression,
             encryption=self.data_recipe.encryption,
             writer_chunk_index=self.writer_starting_chunk_index,
+            item_loader=self.item_loader,
         )
         self.cache._reader._rank = _get_node_rank() * self.num_workers + self.worker_index
 
@@ -550,11 +571,12 @@ class BaseWorker:
         self.to_upload_queues[self._counter % self.num_uploaders].put(data)
 
     def _collect_paths(self) -> None:
-        if self.input_dir.path is None or self.reader is not None:
-            for index in range(len(self.items)):
-                self.ready_to_process_queue.put(index)
-            for _ in range(self.num_downloaders):
-                self.ready_to_process_queue.put(None)
+        if self.no_downloaders:
+            if isinstance(self.ready_to_process_queue, FakeQueue):
+                self.ready_to_process_queue.add_items(list(range(len(self.items))))
+            else:
+                for index in range(len(self.items)):
+                    self.ready_to_process_queue.put(index)
             return
 
         items = []
@@ -578,7 +600,11 @@ class BaseWorker:
             paths = []
             for index, path in indexed_paths.items():
                 paths.append(path)
-                if self.input_dir and not self.input_dir.path.startswith("/teamspace/studios/this_studio"):
+                if (
+                    self.input_dir
+                    and isinstance(self.input_dir.path, str)
+                    and not self.input_dir.path.startswith("/teamspace/studios/this_studio")
+                ):
                     path = path.replace(self.input_dir.path, self.cache_data_dir)
                 flattened_item[index] = path
 
@@ -589,7 +615,7 @@ class BaseWorker:
         self.items = items
 
     def _start_downloaders(self) -> None:
-        if self.input_dir.path is None or self.reader is not None:
+        if self.no_downloaders:
             return
 
         for _ in range(self.num_downloaders):
@@ -880,6 +906,7 @@ class DataProcessor:
         reader: Optional[BaseReader] = None,
         state_dict: Optional[Dict[int, int]] = None,
         use_checkpoint: bool = False,
+        item_loader: Optional[BaseItemLoader] = None,
         start_method: Optional[str] = None,
     ):
         """The `DatasetOptimiser` provides an efficient way to process data across multiple machine into chunks to make
@@ -902,6 +929,8 @@ class DataProcessor:
             state_dict: The writer state dict. This is used to decide how to append data to an existing dataset.
             use_checkpoint: Whether to create checkpoints while processing the data, which can be used to resume the
                 processing from the last checkpoint if the process is interrupted. (`Default: False`)
+            item_loader: The item loader that will be used during loading in StreamingDataset. Determines
+                    the format in which the data is stored and optimized for loading.
             start_method: The start method used by python multiprocessing package. Default to spawn unless running
                 inside an interactive shell like Ipython.
 
@@ -937,6 +966,7 @@ class DataProcessor:
         self.use_checkpoint = use_checkpoint
         self.checkpoint_chunks_info: Optional[List[List[Dict[str, Any]]]] = None
         self.checkpoint_next_index: Optional[List[int]] = None
+        self.item_loader = item_loader
 
         self.state_dict = state_dict or {rank: 0 for rank in range(self.num_workers)}
 
@@ -1157,6 +1187,7 @@ class DataProcessor:
                 self.use_checkpoint,
                 self.checkpoint_chunks_info[worker_idx] if self.checkpoint_chunks_info else None,
                 self.checkpoint_next_index[worker_idx] if self.checkpoint_next_index else None,
+                self.item_loader,
             )
             worker.start()
             workers.append(worker)

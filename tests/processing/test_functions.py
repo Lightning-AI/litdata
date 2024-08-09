@@ -176,7 +176,7 @@ def test_optimize_append_overwrite(tmpdir):
     assert ds[:] == [(i, i**2, i**3) for i in range(0, 5)]
 
 
-@pytest.mark.skipif(sys.platform == "win32" or sys.platform == "darwin", reason="too slow")
+@pytest.mark.skipif(sys.platform == "win32", reason="too slow")
 def test_optimize_checkpoint_in_none_and_append_mode(tmpdir):
     output_dir = str(tmpdir / "output_dir")
 
@@ -188,6 +188,7 @@ def test_optimize_checkpoint_in_none_and_append_mode(tmpdir):
             chunk_size=1,
             num_workers=2,
             use_checkpoint=True,
+            start_method="fork",
         )
 
     # check that the checkpoints are created
@@ -201,6 +202,7 @@ def test_optimize_checkpoint_in_none_and_append_mode(tmpdir):
         chunk_size=1,
         num_workers=2,
         use_checkpoint=True,
+        start_method="fork",
     )
 
     ds = StreamingDataset(output_dir)
@@ -221,6 +223,7 @@ def test_optimize_checkpoint_in_none_and_append_mode(tmpdir):
             num_workers=2,
             use_checkpoint=True,
             mode="append",
+            start_method="fork",
         )
 
     # check that the checkpoints are created
@@ -240,6 +243,7 @@ def test_optimize_checkpoint_in_none_and_append_mode(tmpdir):
         num_workers=2,
         use_checkpoint=True,
         mode="append",
+        start_method="fork",
     )
 
     ds = StreamingDataset(output_dir)

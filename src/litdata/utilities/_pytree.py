@@ -1019,7 +1019,7 @@ def map_only(__type_or_types_or_pred: Union[TypeAny, Callable[[Any], bool]]) -> 
     ):
 
         def pred(x: Any) -> bool:
-            return isinstance(x, __type_or_types_or_pred)  # type: ignore[arg-type]
+            return isinstance(x, __type_or_types_or_pred)
 
     elif callable(__type_or_types_or_pred):
         pred = __type_or_types_or_pred  # type: ignore[assignment]

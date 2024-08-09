@@ -38,6 +38,7 @@ from litdata.processing.utilities import (
 )
 from litdata.streaming.client import S3Client
 from litdata.streaming.dataloader import StreamingDataLoader
+from litdata.streaming.item_loader import BaseItemLoader
 from litdata.streaming.resolver import (
     Dir,
     _assert_dir_has_index_file,
@@ -311,6 +312,7 @@ def optimize(
     batch_size: Optional[int] = None,
     mode: Optional[Literal["append", "overwrite"]] = None,
     use_checkpoint: bool = False,
+    item_loader: Optional[BaseItemLoader] = None,
     start_method: Optional[str] = None,
 ) -> None:
     """This function converts a dataset into chunks, possibly in a distributed way.
@@ -341,6 +343,8 @@ def optimize(
             Defaults to None.
         use_checkpoint: Whether to create checkpoints while processing the data, which can be used to resume the
             processing from the last checkpoint if the process is interrupted. (`Default: False`)
+        item_loader: The item loader that will be used during loading in StreamingDataset. Determines
+                the format in which the data is stored and optimized for loading.
         start_method: The start method used by python multiprocessing package. Default to spawn unless running
             inside an interactive shell like Ipython.
 
@@ -433,6 +437,7 @@ def optimize(
             reader=reader,
             state_dict=state_dict,
             use_checkpoint=use_checkpoint,
+            item_loader=item_loader,
             start_method=start_method,
         )
 
