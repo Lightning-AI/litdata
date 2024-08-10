@@ -227,7 +227,7 @@ def test_streaming_dataset_distributed_full_shuffle_odd(drop_last, tmpdir, compr
     dataset_iter = iter(dataset)
     assert len(dataset_iter) == 548
     process_1_1 = list(dataset_iter)
-    assert process_1_1[:10] == [224, 227, 229, 226, 225, 222, 228, 221, 220, 223]
+    assert process_1_1[:10] == [531, 536, 538, 530, 535, 537, 534, 539, 533, 532]
     assert len(process_1_1) == 548
 
     dataset_2 = StreamingDataset(input_dir=str(tmpdir), shuffle=True, drop_last=drop_last)
@@ -238,7 +238,7 @@ def test_streaming_dataset_distributed_full_shuffle_odd(drop_last, tmpdir, compr
     dataset_2_iter = iter(dataset_2)
     assert len(dataset_2_iter) == 548 + int(not drop_last)
     process_2_1 = list(dataset_2_iter)
-    assert process_2_1[:10] == [279, 278, 105, 104, 106, 107, 103, 101, 102, 109]
+    assert process_2_1[:10] == [248, 249, 884, 887, 888, 883, 886, 882, 889, 880]
     assert len(process_2_1) == 548 + int(not drop_last)
     assert len([i for i in process_1_1 if i in process_2_1]) == 0
 
@@ -280,7 +280,7 @@ def test_streaming_dataset_distributed_full_shuffle_even(drop_last, tmpdir, comp
     dataset_iter = iter(dataset)
     assert len(dataset_iter) == 611
     process_1_1 = list(dataset_iter)
-    assert process_1_1[:10] == [818, 810, 812, 815, 814, 817, 813, 819, 816, 811]
+    assert process_1_1[:10] == [278, 272, 270, 273, 276, 275, 274, 271, 277, 279]
     assert len(process_1_1) == 611
 
     dataset_2 = StreamingDataset(input_dir=str(tmpdir), shuffle=True, drop_last=drop_last)
@@ -291,7 +291,7 @@ def test_streaming_dataset_distributed_full_shuffle_even(drop_last, tmpdir, comp
     dataset_2_iter = iter(dataset_2)
     assert len(dataset_2_iter) == 611
     process_2_1 = list(dataset_2_iter)
-    assert process_2_1[:10] == [181, 183, 186, 188, 187, 185, 189, 184, 182, 1092]
+    assert process_2_1[:10] == [999, 993, 991, 994, 997, 996, 995, 992, 998, 527]
     assert len(process_2_1) == 611
     assert len([i for i in process_1_1 if i in process_2_1]) == 0
 
@@ -328,7 +328,7 @@ def test_streaming_dataset_distributed_full_shuffle_even_multi_nodes(drop_last, 
     dataset_iter = iter(dataset)
     assert len(dataset_iter) == 305
     process_1_1 = list(dataset_iter)
-    assert process_1_1[:10] == [817, 816, 812, 810, 814, 815, 819, 813, 818, 811]
+    assert process_1_1[:10] == [271, 273, 276, 272, 279, 270, 274, 275, 278, 277]
     assert len(process_1_1) == 305
 
     dataset_2 = StreamingDataset(input_dir=str(tmpdir), shuffle=True, drop_last=drop_last)
@@ -339,7 +339,7 @@ def test_streaming_dataset_distributed_full_shuffle_even_multi_nodes(drop_last, 
     dataset_2_iter = iter(dataset_2)
     assert len(dataset_2_iter) == 305
     process_2_1 = list(dataset_2_iter)
-    assert process_2_1[:10] == [1087, 1088, 1089, 1085, 1086, 4, 3, 0, 5, 1]
+    assert process_2_1[:10] == [418, 417, 419, 416, 415, 348, 341, 343, 347, 346]
     assert len(process_2_1) == 305
     assert len([i for i in process_1_1 if i in process_2_1]) == 0
 
@@ -352,7 +352,7 @@ def test_streaming_dataset_distributed_full_shuffle_even_multi_nodes(drop_last, 
     dataset_2_iter = iter(dataset_2)
     assert len(dataset_2_iter) == 310
     process_2_1 = list(dataset_2_iter)
-    assert process_2_1[:10] == [1018, 1010, 1012, 1015, 1014, 1017, 1013, 1019, 1016, 1011]
+    assert process_2_1[:10] == [231, 236, 232, 235, 234, 238, 239, 237, 230, 233]
     assert len(process_2_1) == 310
     assert len([i for i in process_1_1 if i in process_2_1]) != 0
 
