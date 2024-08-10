@@ -89,6 +89,16 @@ def test_streaming_dataset(tmpdir, monkeypatch, compression):
     assert len(dataloader) == 60
     dataloader = DataLoader(dataset, num_workers=2, batch_size=2)
     assert len(dataloader) == 30
+    
+@pytest.mark.timeout(30)
+def test_streaming_dataset_max_pre_download(tmpdir, monkeypatch, compression):
+    seed_everything(42)
+
+    dataset = StreamingDataset(input_dir=str(tmpdir))
+    assert dataset.cache._reader._max_pre_download == 2
+    
+    dataset = StreamingDataset(input_dir=str(tmpdir), max_pre_download=10)
+    assert dataset.cache._reader._max_pre_download == 2
 
 
 @pytest.mark.parametrize("drop_last", [False, True])
