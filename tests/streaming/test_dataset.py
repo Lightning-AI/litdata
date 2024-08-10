@@ -91,13 +91,25 @@ def test_streaming_dataset(tmpdir, monkeypatch, compression):
     assert len(dataloader) == 30
     
 @pytest.mark.timeout(30)
-def test_streaming_dataset_max_pre_download(tmpdir, monkeypatch, compression):
+def test_streaming_dataset_max_pre_download(tmpdir):
     seed_everything(42)
+    
+    cache = Cache(str(tmpdir), chunk_size=10)
+    for i in range(60):
+        cache[i] = i
+    cache.done()
+    cache.merge()
 
     dataset = StreamingDataset(input_dir=str(tmpdir))
+    assert len(dataset) == 60
+    for i in range(60):
+        assert dataset[i] == i
     assert dataset.cache._reader._max_pre_download == 2
     
     dataset = StreamingDataset(input_dir=str(tmpdir), max_pre_download=10)
+    assert len(dataset) == 60
+    for i in range(60):
+        assert dataset[i] == i
     assert dataset.cache._reader._max_pre_download == 10
 
 
