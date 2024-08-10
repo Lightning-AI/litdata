@@ -98,7 +98,7 @@ def test_streaming_dataset_max_pre_download(tmpdir, monkeypatch, compression):
     assert dataset.cache._reader._max_pre_download == 2
     
     dataset = StreamingDataset(input_dir=str(tmpdir), max_pre_download=10)
-    assert dataset.cache._reader._max_pre_download == 2
+    assert dataset.cache._reader._max_pre_download == 10
 
 
 @pytest.mark.parametrize("drop_last", [False, True])
