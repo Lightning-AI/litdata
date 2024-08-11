@@ -422,7 +422,6 @@ class StreamingDataset(IterableDataset):
         assert self.cache
 
         state: Dict[str, Any] = self._state_dict
-
         if state["shuffle"] != self.shuffle:
             raise ValueError(
                 "The provided `shuffle` state doesn't match the current one. "
@@ -474,6 +473,12 @@ class StreamingDataset(IterableDataset):
             raise ValueError(
                 "The provided `drop_last` state doesn't match the current one. "
                 f"Found `{self.drop_last}` instead of `{state['drop_last']}`."
+            )
+
+        if state["num_samples_yielded"] > len(self):
+            raise ValueError(
+                "The provided `num_samples_yielded` state is greater than the dataset length. "
+                f"Found `{state['num_samples_yielded']}` instead of `{len(self)}`."
             )
 
     def reset(self) -> None:
