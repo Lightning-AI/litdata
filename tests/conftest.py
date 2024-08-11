@@ -65,16 +65,6 @@ def azure_mock(monkeypatch):
 
 
 @pytest.fixture()
-def huggingface_mock(monkeypatch):
-    huggingface_hub = ModuleType("huggingface_hub")
-    monkeypatch.setitem(sys.modules, "huggingface_hub", huggingface_hub)
-    hf_hub_download = ModuleType("hf_hub_download")
-    monkeypatch.setitem(sys.modules, "huggingface_hub.hf_hub_download", hf_hub_download)
-    huggingface_hub.hf_hub_download = hf_hub_download
-    return huggingface_hub
-
-
-@pytest.fixture()
 def lightning_cloud_mock(monkeypatch):
     lightning_cloud = ModuleType("lightning_cloud")
     monkeypatch.setitem(sys.modules, "lightning_cloud", lightning_cloud)

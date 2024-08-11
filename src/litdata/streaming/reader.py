@@ -170,6 +170,7 @@ class BinaryReader:
         item_loader: Optional[BaseItemLoader] = None,
         serializers: Optional[Dict[str, Serializer]] = None,
         storage_options: Optional[dict] = {},
+        max_pre_download: int = 2,
     ) -> None:
         """The BinaryReader enables to read chunked dataset in an efficient way.
 
@@ -185,6 +186,7 @@ class BinaryReader:
             max_cache_size: The maximum cache size used by the reader when fetching the chunks.
             serializers: Provide your own serializers.
             storage_options: Additional connection options for accessing storage services.
+            max_pre_download: Maximum number of chunks that can be pre-downloaded by the reader.
 
         """
         super().__init__()
@@ -210,6 +212,7 @@ class BinaryReader:
         self._last_chunk_index: Optional[int] = None
         self._max_cache_size = int(os.getenv("MAX_CACHE_SIZE", max_cache_size or 0))
         self._storage_options = storage_options
+        self._max_pre_download = max_pre_download
 
     def _get_chunk_index_from_index(self, index: int) -> Tuple[int, int]:
         # Load the config containing the index
@@ -264,7 +267,7 @@ class BinaryReader:
             # Create and start the prepare chunks thread
             if self._prepare_thread is None and self._config:
                 self._prepare_thread = PrepareChunksThread(
-                    self._config, self._item_loader, self._distributed_env, self._max_cache_size
+                    self._config, self._item_loader, self._distributed_env, self._max_cache_size, self._max_pre_download
                 )
                 self._prepare_thread.start()
                 if index.chunk_indexes:

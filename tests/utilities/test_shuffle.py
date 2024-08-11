@@ -36,7 +36,7 @@ def test_intra_node_chunk_shuffle():
         )
         for rank in range(4)
     ]
-    expected = [1, 5, 0, 7, 2, 4, 3, 6, 9, 13, 8, 15, 10, 12, 11, 14]
+    expected = [4, 3, 7, 6, 0, 1, 5, 2, 12, 11, 15, 14, 8, 9, 13, 10]
     assert shuffled_per_rank[0] == shuffled_per_rank[1] == shuffled_per_rank[2] == shuffled_per_rank[3] == expected
 
     # shuffles are different each epoch

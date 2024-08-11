@@ -55,7 +55,7 @@ class Range:
         self.values = list(range(start, end, step))
 
     def set_epoch(self, epoch):
-        self.values = np.random.RandomState(42 + epoch).permutation(self.values).tolist()
+        self.values = np.random.RandomState([42, epoch]).permutation(self.values).tolist()
 
     def __iter__(self):
         yield from self.values
@@ -74,8 +74,8 @@ def test_combined_dataset_iterate_over_all_4_datasets():
         data.append(list(dataset))
 
     assert len(data[0]) == 40
-    assert data[0][-3:] == [14, 13, 16]
-    assert data[1][-3:] == [14, 18, 17]
+    assert data[0][-3:] == [11, 18, 19]
+    assert data[1][-3:] == [18, 11, 12]
 
 
 def test_combined_dataset_num_samples_yield_iterate_over_all():
