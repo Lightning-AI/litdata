@@ -701,7 +701,8 @@ class StreamingDataLoader(DataLoader):
 
         # Inform we are resuming and disable resetting the StreamingDataLoader state.
         # This is toggle back to False when the `__iter__` method of the StreamingDataLoader completes.
-        self.restore = True
+        if obj["num_samples_yielded"] < len(self.dataset):
+            self.restore = True
 
         if isinstance(self.dataset, CombinedStreamingDataset):
             self.dataset._set_use_streaming_dataloader(True)
