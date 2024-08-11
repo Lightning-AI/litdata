@@ -325,3 +325,34 @@ def test_resume_dataloader_with_new_dataset(tmpdir):
     dataloader.load_state_dict(dataloader_state)
     for _ in dataloader:
         assert dataloader.current_epoch == 2, "Current epoch should be 2"
+
+
+def test_dataloader_resume_after_epoch_completion(tmpdir):
+    cache = Cache(input_dir=str(tmpdir), chunk_bytes="64MB")
+    for i in range(50):
+        cache[i] = i
+    cache.done()
+    cache.merge()
+
+    dataset = StreamingDataset(str(tmpdir), shuffle=True)
+    # Test dataloader without explicit num workers
+    dataloader = StreamingDataLoader(dataset, batch_size=4)
+    for _ in dataloader:
+        pass
+    assert dataloader.current_epoch == 1
+    dataloader.load_state_dict(dataloader.state_dict())
+    # force restore
+    dataloader.restore = True
+    batch = next(iter(dataloader))
+    assert len(batch) == 4, "Batch size should be 4"
+
+    # Test dataloader with num workers > 1
+    dataloader = StreamingDataLoader(dataset, batch_size=4, num_workers=2)
+    for _ in dataloader:
+        pass
+    assert dataloader.current_epoch == 1
+    dataloader.load_state_dict(dataloader.state_dict())
+    # force restore
+    dataloader.restore = True
+    batch = next(iter(dataloader))
+    assert len(batch) == 4, "Batch size should be 4"
