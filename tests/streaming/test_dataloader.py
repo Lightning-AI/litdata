@@ -302,3 +302,25 @@ def test_dataloader_states_with_persistent_workers(tmpdir):
         assert dataloader.current_epoch == 3, "Current epoch should be 3"
         count += 1
     assert count >= 25, "There should be at least 25 batches in the third epoch"
+
+
+def test_resume_dataloader_with_new_dataset(tmpdir):
+    dataset_1_path = tmpdir.join("dataset_1")
+    dataset_2_path = tmpdir.join("dataset_2")
+    for dataset in [dataset_1_path, dataset_2_path]:
+        cache = Cache(input_dir=str(dataset), chunk_bytes="64MB")
+        for i in range(100):
+            cache[i] = i
+        cache.done()
+        cache.merge()
+    dataset = StreamingDataset(str(dataset_1_path), shuffle=True)
+    dataloader = StreamingDataLoader(dataset, batch_size=4, num_workers=2)
+    for _ in dataloader:
+        assert dataloader.current_epoch == 1, "Current epoch should be 1"
+
+    dataloader_state = dataloader.state_dict()
+    dataset = StreamingDataset(str(dataset_2_path), shuffle=True)
+    dataloader = StreamingDataLoader(dataset, batch_size=4, num_workers=2)
+    dataloader.load_state_dict(dataloader_state)
+    for _ in dataloader:
+        assert dataloader.current_epoch == 2, "Current epoch should be 2"
