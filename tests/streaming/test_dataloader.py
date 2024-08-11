@@ -249,6 +249,14 @@ def test_dataloader_with_loading_states(tmpdir):
         count += 1
     assert count >= 25, "There should be at least 25 batches in the second epoch"
 
+    # Verify that the datalaoder can resume after complete last epoch
+    dataloader.load_state_dict(dataloader.state_dict())
+    count = 0
+    for _ in dataloader:
+        assert dataloader.current_epoch == 3, "Current epoch should be 3"
+        count += 1
+    assert count >= 25, "There should be at least 25 batches in the third epoch"
+
 
 @pytest.mark.timeout(120)
 def test_dataloader_states_with_persistent_workers(tmpdir):
@@ -286,3 +294,11 @@ def test_dataloader_states_with_persistent_workers(tmpdir):
         assert dataloader.current_epoch == 2, "Current epoch should be 2"
         count += 1
     assert count >= 25, "There should be at least 25 batches in the second epoch"
+
+    # Verify that the datalaoder can resume after complete last epoch
+    dataloader.load_state_dict(dataloader.state_dict())
+    count = 0
+    for _ in dataloader:
+        assert dataloader.current_epoch == 3, "Current epoch should be 3"
+        count += 1
+    assert count >= 25, "There should be at least 25 batches in the third epoch"
