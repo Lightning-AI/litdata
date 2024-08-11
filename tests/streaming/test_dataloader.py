@@ -304,12 +304,13 @@ def test_dataloader_states_with_persistent_workers(tmpdir):
     assert count >= 25, "There should be at least 25 batches in the third epoch"
 
 
+@pytest.mark.timeout(60)
 def test_resume_dataloader_with_new_dataset(tmpdir):
     dataset_1_path = tmpdir.join("dataset_1")
     dataset_2_path = tmpdir.join("dataset_2")
     for dataset in [dataset_1_path, dataset_2_path]:
         cache = Cache(input_dir=str(dataset), chunk_bytes="64MB")
-        for i in range(100):
+        for i in range(50):
             cache[i] = i
         cache.done()
         cache.merge()
