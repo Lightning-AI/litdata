@@ -234,13 +234,14 @@ def test_dataloader_with_loading_states(tmpdir):
         if batch_idx == 10:
             break
     dataloader.load_state_dict(dataloader.state_dict())
-
+    assert dataloader.restore
     # Verify remaining batches in the first epoch
     count = 0
     for _ in dataloader:
         assert dataloader.current_epoch == 1, "Current epoch should be 1"
         count += 1
     assert count == 15, "There should be atleast 15 batches remaining in the first epoch"
+    assert not dataloader.restore
 
     # Verify batches in the second epoch
     count = 0
@@ -251,6 +252,7 @@ def test_dataloader_with_loading_states(tmpdir):
 
     # Verify that the datalaoder can resume after complete last epoch
     dataloader.load_state_dict(dataloader.state_dict())
+    assert not dataloader.restore
     count = 0
     for _ in dataloader:
         assert dataloader.current_epoch == 3, "Current epoch should be 3"
@@ -280,6 +282,7 @@ def test_dataloader_states_with_persistent_workers(tmpdir):
     prev_dataloader_state = dataloader.state_dict()
     dataloader = StreamingDataLoader(dataset, batch_size=4, num_workers=2, persistent_workers=True)
     dataloader.load_state_dict(prev_dataloader_state)
+    assert dataloader.restore
 
     # Verify remaining batches in the first epoch
     count = 0
@@ -287,6 +290,7 @@ def test_dataloader_states_with_persistent_workers(tmpdir):
         assert dataloader.current_epoch == 1, "Current epoch should be 1"
         count += 1
     assert count == 15, "There should be atleast 15 batches remaining in the first epoch"
+    assert not dataloader.restore
 
     # Verify batches in the second epoch
     count = 0
@@ -297,6 +301,7 @@ def test_dataloader_states_with_persistent_workers(tmpdir):
 
     # Verify that the datalaoder can resume after complete last epoch
     dataloader.load_state_dict(dataloader.state_dict())
+    assert not dataloader.restore
     count = 0
     for _ in dataloader:
         assert dataloader.current_epoch == 3, "Current epoch should be 3"
