@@ -342,12 +342,14 @@ class StreamingDataset(IterableDataset):
         # Prevent to create more batch on a given process
         if self.global_index >= self.stop_length:
             self.current_epoch += 1
+            self.reset_state_dict()
             raise StopIteration
 
         # Lazily re-populate the interval to reduce memory usage.
         if len(self.current_indexes) == 0:
             if self.chunk_index == self.num_chunks:
                 self.current_epoch += 1
+                self.reset_state_dict()
                 raise StopIteration
 
             # reset index
@@ -392,7 +394,7 @@ class StreamingDataset(IterableDataset):
 
         return {
             "num_samples_yielded": num_samples_yielded,
-            "num_workers": num_workers,
+            "num_workers": num_workers or 1,
             "batch_size": batch_size,
             "current_epoch": self.current_epoch,
             "input_dir_path": self.input_dir.path,
@@ -411,13 +413,15 @@ class StreamingDataset(IterableDataset):
             # the state is restored within the workers
             self._state_dict = state_dict
 
+    def reset_state_dict(self) -> None:
+        self._state_dict = None
+
     def _validate_state_dict(self) -> None:
         assert self._state_dict
         assert self.worker_env
         assert self.cache
 
         state: Dict[str, Any] = self._state_dict
-
         if state["shuffle"] != self.shuffle:
             raise ValueError(
                 "The provided `shuffle` state doesn't match the current one. "
@@ -469,6 +473,12 @@ class StreamingDataset(IterableDataset):
             raise ValueError(
                 "The provided `drop_last` state doesn't match the current one. "
                 f"Found `{self.drop_last}` instead of `{state['drop_last']}`."
+            )
+
+        if state["num_samples_yielded"] > len(self):
+            raise ValueError(
+                "The provided `num_samples_yielded` state is greater than the dataset length. "
+                f"Found `{state['num_samples_yielded']}` instead of `{len(self)}`."
             )
 
     def reset(self) -> None:
