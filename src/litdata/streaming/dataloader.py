@@ -615,6 +615,7 @@ class StreamingDataLoader(DataLoader):
             self.current_epoch += 1
             self._num_samples_yielded_combined = {}
             self._num_samples_yielded_streaming = 0
+            self.dataset.reset_state_dict()
 
         self.dataset.set_epoch(self.current_epoch)
 
@@ -700,13 +701,23 @@ class StreamingDataLoader(DataLoader):
 
         # Inform we are resuming and disable resetting the StreamingDataLoader state.
         # This is toggle back to False when the `__iter__` method of the StreamingDataLoader completes.
-        self.restore = True
+        # self.restore = True
 
         if isinstance(self.dataset, CombinedStreamingDataset):
             self.dataset._set_use_streaming_dataloader(True)
             self.dataset.load_state_dict(obj)
+
+            # Inform that the dataloader is resuming.
+            # TODO: Check if the number of samples yielded is less than the length of the dataset.
+            # Also, len is not available for CombinedStreamingDataset incase of provided weights.
+            self.restore = True
+
         elif isinstance(self.dataset, StreamingDataset):
             self.dataset.load_state_dict(obj["dataset"])
+
+            # Inform that the dataloader is resuming.
+            if self._num_samples_yielded_streaming < len(self.dataset):
+                self.restore = True
         else:
             raise RuntimeError("The provided dataset should be a `StreamingDataset` or a `CombinedStreamingDataset`.")
 

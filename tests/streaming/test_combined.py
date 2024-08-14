@@ -17,6 +17,9 @@ class TestCombinedStreamingDataset(CombinedStreamingDataset):
     def _check_datasets(self, datasets) -> None:
         pass
 
+    def reset_state_dict(self):
+        pass
+
 
 def test_combined_dataset_num_samples_yield():
     dataset = TestCombinedStreamingDataset(
