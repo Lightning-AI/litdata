@@ -18,9 +18,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-13, windows-latest]
-        python-version: [3.9]
-        requires: ["oldest", "latest"]
+        os: ["ubuntu-latest", "macos-13", "windows-latest"]
+        python-version: ["3.9"]
 
     # Timeout: https://stackoverflow.com/a/59076067/4521646
     timeout-minutes: 35
@@ -33,20 +32,6 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-
-      # Github Actions: Run step on specific OS: https://stackoverflow.com/a/57948488/4521646
-      #- name: Setup macOS
-      #  if: runner.os == 'macOS'
-      #  run: |
-      #    brew install libomp  # https://github.com/pytorch/pytorch/issues/20030
-
-      - name: Set min. dependencies
-        if: matrix.requires == 'oldest'
-        run: |
-          for fpath in ('requirements.txt', 'requirements/test.txt'):
-              req = open(fpath).read().replace('>=', '==')
-              open(fpath, 'w').write(req)
-        shell: python
 
       - name: Display dependencies
         run: |
@@ -64,18 +49,10 @@ jobs:
           key: ${{ runner.os }}-${{ matrix.python-version }}-${{ matrix.requires }}-pip-${{ hashFiles('requirements.txt') }}
           restore-keys: ${{ runner.os }}-${{ matrix.python-version }}-${{ matrix.requires }}-pip-
 
-      - name: Install package & dependencies on Ubuntu
-        if: matrix.os == 'ubuntu-latest'
-        run: |
-          pip --version
-          pip install -e '.[extras]' -r requirements/test.txt -U -q --find-links $TORCH_URL
-          pip list
-
       - name: Install package & dependencies
-        if: matrix.os != 'ubuntu-latest'
         run: |
           pip --version
-          pip install -e . -r requirements/test.txt -U -q --find-links $TORCH_URL
+          pip install -e ".[extras]" -r requirements/test.txt -U -q --find-links $TORCH_URL
           pip list
 
       - name: Tests
