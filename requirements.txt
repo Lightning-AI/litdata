@@ -1,4 +1,5 @@
 torch
+numpy < 2.0  # patch for latest pyTorch with converting to NumPy
 filelock
 numpy
 boto3

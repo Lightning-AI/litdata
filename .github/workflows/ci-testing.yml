@@ -56,10 +56,9 @@ jobs:
           pip list
 
       - name: Tests
-        run: coverage run --source litdata -m pytest tests -v
+        run: pytest tests/ -v -n auto --dist=loadscope --cov=litdata
 
       - name: Statistics
-        if: success()
         run: |
           coverage report
           coverage xml

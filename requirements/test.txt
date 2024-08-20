@@ -1,13 +1,13 @@
-coverage ==7.5.3
-cryptography==42.0.8
-mosaicml-streaming==0.8.0
+coverage ==7.5.*
+cryptography ==42.0.8
+mosaicml-streaming ==0.8.0
 pytest ==8.3.*
-pytest-cov ==5.0.0
-pytest-timeout ==2.3.1
+pytest-cov ==5.0.*
+pytest-timeout ==2.3.*
 pytest-rerunfailures ==14.0
 pytest-random-order ==1.1.1
+pytest-xdist ==3.6.*
 pandas
 lightning
 lightning-cloud == 0.5.70 # Must be pinned to ensure compatibility
 zstd
-numpy < 2.0
