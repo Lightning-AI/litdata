@@ -510,8 +510,7 @@ class BinaryWriter:
     def save_checkpoint(self, checkpoint_dir: str = ".checkpoints") -> Optional[str]:
         """Save the current state of the writer to a checkpoint."""
         checkpoint_dir = os.path.join(self._cache_dir, checkpoint_dir)
-        if not os.path.exists(checkpoint_dir):
-            os.makedirs(checkpoint_dir)
+        os.makedirs(checkpoint_dir, exist_ok=True)
 
         if self._chunks_info == self.last_checkpoint_chunk_info:
             # to avoid saving the same checkpoint twice
