@@ -20,7 +20,7 @@ from unittest import mock
 import numpy as np
 import pytest
 import torch
-from litdata.imports import RequirementCache
+from lightning_utilities.core.imports import RequirementCache
 from litdata.streaming.serializers import (
     _AV_AVAILABLE,
     _NUMPY_DTYPES_MAPPING,

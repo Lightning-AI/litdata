@@ -20,8 +20,8 @@ import numpy as np
 import pytest
 import torch
 from lightning.pytorch.demos.boring_classes import RandomDataset
+from lightning_utilities.core.imports import RequirementCache
 from lightning_utilities.test.warning import no_warning_call
-from litdata.imports import RequirementCache
 from litdata.streaming import Cache
 from litdata.streaming.dataloader import CacheDataLoader
 from litdata.streaming.dataset import StreamingDataset
