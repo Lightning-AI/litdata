@@ -18,8 +18,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ["ubuntu-latest", "macos-13", "windows-latest"]
-        python-version: ["3.9"]
+        os: ["ubuntu-22.04", "macos-13", "windows-2022"]
+        python-version: ["3.9", "3.10"]
 
     # Timeout: https://stackoverflow.com/a/59076067/4521646
     timeout-minutes: 35
@@ -32,22 +32,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-
-      - name: Display dependencies
-        run: |
-          cat requirements.txt
-          cat requirements/test.txt
-
-      - name: Get pip cache dir
-        id: pip-cache
-        run: echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
-
-      - name: Cache pip
-        uses: actions/cache@v4
-        with:
-          path: ${{ steps.pip-cache.outputs.dir }}
-          key: ${{ runner.os }}-${{ matrix.python-version }}-${{ matrix.requires }}-pip-${{ hashFiles('requirements.txt') }}
-          restore-keys: ${{ runner.os }}-${{ matrix.python-version }}-${{ matrix.requires }}-pip-
+          cache: "pip"
 
       - name: Install package & dependencies
         run: |
@@ -68,7 +53,7 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ./coverage.xml
-          flags: unittests
+          flags: unittests,${{ matrix.os }},${{ matrix.python-version }}
           env_vars: OS,PYTHON
           name: codecov-umbrella
           fail_ci_if_error: false
