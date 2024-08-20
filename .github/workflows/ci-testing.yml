@@ -53,7 +53,7 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ./coverage.xml
-          flags: unittests
+          flags: unittests,${{ matrix.os }},${{ matrix.python-version }}
           env_vars: OS,PYTHON
           name: codecov-umbrella
           fail_ci_if_error: false
