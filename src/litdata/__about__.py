@@ -19,7 +19,7 @@ __author__ = "Lightning AI et al."
 __author_email__ = "pytorch@lightning.ai"
 __license__ = "Apache-2.0"
 __copyright__ = f"Copyright (c) 2023-{time.strftime('%Y')}, {__author__}."
-__homepage__ = "https://github.com/Lightning-AI/lit-data"
+__homepage__ = "https://github.com/Lightning-AI/litdata"
 __docs_url__ = "https://lightning.ai/docs/pytorch/stable/"
 # this has to be simple string, see: https://github.com/pypa/twine/issues/522
 __docs__ = "The Deep Learning framework to train, deploy, and ship AI products Lightning fast."

@@ -16,7 +16,8 @@ import os
 from abc import ABC, abstractmethod
 from typing import Any, List
 
-from litdata.imports import RequirementCache
+from lightning_utilities.core.imports import RequirementCache
+
 from litdata.streaming.dataloader import StreamingDataLoader
 from litdata.utilities.format import _get_tqdm_iterator_if_available
 

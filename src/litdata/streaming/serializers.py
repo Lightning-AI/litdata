@@ -22,9 +22,9 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Union
 
 import numpy as np
 import torch
+from lightning_utilities.core.imports import RequirementCache
 
 from litdata.constants import _NUMPY_DTYPES_MAPPING, _TORCH_DTYPES_MAPPING
-from litdata.imports import RequirementCache
 
 if TYPE_CHECKING:
     from PIL.JpegImagePlugin import JpegImageFile

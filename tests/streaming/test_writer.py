@@ -19,7 +19,7 @@ import sys
 import numpy as np
 import pytest
 import torch
-from litdata.imports import RequirementCache
+from lightning_utilities.core.imports import RequirementCache
 from litdata.streaming.compression import _ZSTD_AVAILABLE
 from litdata.streaming.reader import BinaryReader
 from litdata.streaming.sampler import ChunkedIndex

@@ -10,9 +10,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from lightning_utilities.core.imports import RequirementCache
 
 from litdata.__about__ import *  # noqa: F403
-from litdata.imports import RequirementCache
 from litdata.processing.functions import map, merge_datasets, optimize, walk
 from litdata.streaming.combined import CombinedStreamingDataset
 from litdata.streaming.dataloader import StreamingDataLoader
