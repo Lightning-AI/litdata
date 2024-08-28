@@ -83,7 +83,15 @@ class ChunksConfig:
         self._compressor_name = self._config["compression"]
         self._compressor: Optional[Compressor] = None
 
-        if self._compressor_name in _COMPRESSORS:
+        if self._compressor_name:
+            if len(_COMPRESSORS) == 0:
+                raise ValueError(
+                    "No compression algorithms are installed. To use zstd compression,  run `pip install zstd`."
+                )
+            if self._compressor_name not in _COMPRESSORS:
+                raise ValueError(
+                    f"The provided compression {self._compressor_name} isn't available in {sorted(_COMPRESSORS)}",
+                )
             self._compressor = _COMPRESSORS[self._compressor_name]
 
         self._skip_chunk_indexes_deletion: Optional[List[int]] = None
