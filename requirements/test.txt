@@ -1,4 +1,4 @@
-coverage ==7.6.1
+coverage ==7.6.*
 cryptography==42.0.8
 mosaicml-streaming==0.8.1
 pytest ==8.3.*
