@@ -18,6 +18,7 @@ from abc import ABC
 from typing import Any, Dict, List, Optional
 from urllib import parse
 
+import fsspec
 from filelock import FileLock, Timeout
 
 from litdata.constants import _AZURE_STORAGE_AVAILABLE, _GOOGLE_STORAGE_AVAILABLE, _INDEX_FILENAME
@@ -26,8 +27,17 @@ from litdata.streaming.client import S3Client
 
 class Downloader(ABC):
     def __init__(
-        self, remote_dir: str, cache_dir: str, chunks: List[Dict[str, Any]], storage_options: Optional[Dict] = {}
+        self,
+        cloud_provider: str,
+        remote_dir: str,
+        cache_dir: str,
+        chunks: List[Dict[str, Any]],
+        storage_options: Optional[Dict] = {},
     ):
+        print("-"*100)
+        print(f"{cloud_provider=}")
+        print("-" * 100)
+        self.fs = fsspec.filesystem(cloud_provider)
         self._remote_dir = remote_dir
         self._cache_dir = cache_dir
         self._chunks = chunks
@@ -188,10 +198,42 @@ _DOWNLOADERS = {
 }
 
 
+_DOWNLOADERS = {
+    "s3://": 's3',
+    "gs://": 'gs',
+    "azure://": 'abfs',
+    "local:": 'file',
+    "": 'file',
+}
+
+
+class FsspecDownloader(Downloader):
+    def __init__(
+        self,
+        cloud_provider: str,
+        remote_dir: str,
+        cache_dir: str,
+        chunks: List[Dict[str, Any]],
+        storage_options: Dict | None = {},
+    ):
+        remote_dir = remote_dir.replace("local:", "")
+        super().__init__(cloud_provider, remote_dir, cache_dir, chunks, storage_options)
+
+    def download_file(self, remote_filepath: str, local_filepath: str) -> None:
+        if os.path.exists(local_filepath) or remote_filepath == local_filepath:
+            return
+        try:
+            with FileLock(local_filepath + ".lock", timeout=3):
+                self.fs.get(remote_filepath, local_filepath, recursive=True, **self._storage_options)
+        except Timeout:
+            # another process is responsible to download that file, continue
+            pass
+
+
 def get_downloader_cls(
     remote_dir: str, cache_dir: str, chunks: List[Dict[str, Any]], storage_options: Optional[Dict] = {}
 ) -> Downloader:
-    for k, cls in _DOWNLOADERS.items():
+    for k, fs_cloud_provider in _DOWNLOADERS.items():
         if str(remote_dir).startswith(k):
-            return cls(remote_dir, cache_dir, chunks, storage_options)
+            return FsspecDownloader(fs_cloud_provider, remote_dir, cache_dir, chunks, storage_options)
     raise ValueError(f"The provided `remote_dir` {remote_dir} doesn't have a downloader associated.")
