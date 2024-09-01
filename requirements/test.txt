@@ -10,4 +10,4 @@ pandas
 lightning
 lightning-cloud == 0.5.70 # Must be pinned to ensure compatibility
 zstd
-numpy < 2.0
+numpy < 3.0
