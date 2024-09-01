@@ -34,7 +34,7 @@ class Downloader(ABC):
         chunks: List[Dict[str, Any]],
         storage_options: Optional[Dict] = {},
     ):
-        print("-"*100)
+        print("-" * 100)
         print(f"{cloud_provider=}")
         print("-" * 100)
         self.fs = fsspec.filesystem(cloud_provider)
@@ -199,11 +199,11 @@ _DOWNLOADERS = {
 
 
 _DOWNLOADERS = {
-    "s3://": 's3',
-    "gs://": 'gs',
-    "azure://": 'abfs',
-    "local:": 'file',
-    "": 'file',
+    "s3://": "s3",
+    "gs://": "gs",
+    "azure://": "abfs",
+    "local:": "file",
+    "": "file",
 }
 
 
