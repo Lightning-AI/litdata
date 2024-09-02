@@ -52,6 +52,9 @@ def subsample_streaming_dataset(
         downloader = get_downloader_cls(input_dir.url, input_dir.path, [], storage_options)
         downloader.download_file(os.path.join(input_dir.url, _INDEX_FILENAME), cache_index_filepath)
 
+    if not os.path.exists(input_dir.path):
+        raise FileNotFoundError(f"The provided dataset path `{input_dir.path}` does not exist.")
+
     if os.path.exists(os.path.join(input_dir.path, _INDEX_FILENAME)):
         # load chunks from `index.json` file
         data = load_index_file(input_dir.path)
