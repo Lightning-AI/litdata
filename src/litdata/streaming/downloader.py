@@ -34,14 +34,10 @@ class Downloader(ABC):
         chunks: List[Dict[str, Any]],
         storage_options: Optional[Dict] = {},
     ):
-        print("-" * 100)
-        print(f"{cloud_provider=}")
-        print("-" * 100)
-        self.fs = fsspec.filesystem(cloud_provider)
         self._remote_dir = remote_dir
         self._cache_dir = cache_dir
         self._chunks = chunks
-        self._storage_options = storage_options or {}
+        self.fs = fsspec.filesystem(cloud_provider, **storage_options)
 
     def download_chunk_from_index(self, chunk_index: int) -> None:
         chunk_filename = self._chunks[chunk_index]["filename"]
@@ -224,7 +220,7 @@ class FsspecDownloader(Downloader):
             return
         try:
             with FileLock(local_filepath + ".lock", timeout=3):
-                self.fs.get(remote_filepath, local_filepath, recursive=True, **self._storage_options)
+                self.fs.get(remote_filepath, local_filepath, recursive=True)
         except Timeout:
             # another process is responsible to download that file, continue
             pass
