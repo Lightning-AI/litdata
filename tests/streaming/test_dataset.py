@@ -63,6 +63,9 @@ def seed_everything(random_seed):
 def test_streaming_dataset(tmpdir, monkeypatch, compression):
     seed_everything(42)
 
+    with pytest.raises(FileNotFoundError, match="The provided dataset path"):
+        dataset = StreamingDataset(input_dir=str(tmpdir.join("tmpfolder")))
+
     with pytest.raises(ValueError, match="The provided dataset"):
         dataset = StreamingDataset(input_dir=str(tmpdir))
 
