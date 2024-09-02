@@ -155,7 +155,8 @@ class StreamingDataset(IterableDataset):
     def _create_cache(self, worker_env: _WorkerEnv) -> Cache:
         if _should_replace_path(self.input_dir.path):
             cache_path = _try_create_cache_dir(
-                input_dir=self.input_dir.path if self.input_dir.path else self.input_dir.url
+                input_dir=self.input_dir.path if self.input_dir.path else self.input_dir.url,
+                storage_options=self.storage_options,
             )
             if cache_path is not None:
                 self.input_dir.path = cache_path
@@ -438,7 +439,8 @@ class StreamingDataset(IterableDataset):
         # In this case, validate the cache folder is the same.
         if _should_replace_path(state["input_dir_path"]):
             cache_path = _try_create_cache_dir(
-                input_dir=state["input_dir_path"] if state["input_dir_path"] else state["input_dir_url"]
+                input_dir=state["input_dir_path"] if state["input_dir_path"] else state["input_dir_url"],
+                storage_options=self.storage_options,
             )
             if cache_path != self.input_dir.path:
                 raise ValueError(
