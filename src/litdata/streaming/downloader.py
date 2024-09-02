@@ -169,8 +169,15 @@ class LocalDownloader(Downloader):
         if not os.path.exists(remote_filepath):
             raise FileNotFoundError(f"The provided remote_path doesn't exist: {remote_filepath}")
 
-        if remote_filepath != local_filepath and not os.path.exists(local_filepath):
-            shutil.copy(remote_filepath, local_filepath)
+        try:
+            with FileLock(local_filepath + ".lock", timeout=3 if remote_filepath.endswith(_INDEX_FILENAME) else 0):
+                if remote_filepath != local_filepath and not os.path.exists(local_filepath):
+                    # make an atomic operation to be safe
+                    temp_file_path = local_filepath + ".tmp"
+                    shutil.copy(remote_filepath, temp_file_path)
+                    os.rename(temp_file_path, local_filepath)
+        except Timeout:
+            pass
 
 
 class LocalDownloaderWithCache(LocalDownloader):
