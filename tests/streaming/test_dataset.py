@@ -23,6 +23,8 @@ from unittest import mock
 import numpy as np
 import pytest
 import torch
+from torch.utils.data import DataLoader
+
 from litdata import optimize, train_test_split
 from litdata.constants import _ZSTD_AVAILABLE
 from litdata.processing import functions
@@ -43,7 +45,6 @@ from litdata.utilities import dataset_utilities as dataset_utilities_module
 from litdata.utilities.dataset_utilities import load_index_file
 from litdata.utilities.env import _DistributedEnv, _WorkerEnv
 from litdata.utilities.shuffle import _associate_chunks_and_intervals_to_workers
-from torch.utils.data import DataLoader
 
 
 def seed_everything(random_seed):
@@ -62,6 +63,9 @@ def seed_everything(random_seed):
 @pytest.mark.timeout(30)
 def test_streaming_dataset(tmpdir, monkeypatch, compression):
     seed_everything(42)
+
+    with pytest.raises(FileNotFoundError, match="The provided dataset path"):
+        dataset = StreamingDataset(input_dir=str(tmpdir.join("tmpfolder")))
 
     with pytest.raises(ValueError, match="The provided dataset"):
         dataset = StreamingDataset(input_dir=str(tmpdir))
