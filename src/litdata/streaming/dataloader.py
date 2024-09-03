@@ -666,6 +666,8 @@ class StreamingDataLoader(DataLoader):
             }
 
         num_samples_yieled = [0 for _ in range(len(list(self._num_samples_yielded_combined.values())[0]))]
+        # TODO: Check if above line could be replaced with: num_samples_yieled = [0 for _ in range(len(self.dataset._datasets))]
+
         for worker_idx in self._num_samples_yielded_combined:
             for dataset_idx, samples_yieled in enumerate(self._num_samples_yielded_combined[worker_idx]):
                 num_samples_yieled[dataset_idx] += samples_yieled
@@ -701,21 +703,24 @@ class StreamingDataLoader(DataLoader):
 
         # Inform we are resuming and disable resetting the StreamingDataLoader state.
         # This is toggle back to False when the `__iter__` method of the StreamingDataLoader completes.
-        # self.restore = True
-
         if isinstance(self.dataset, CombinedStreamingDataset):
             self.dataset._set_use_streaming_dataloader(True)
             self.dataset.load_state_dict(obj)
 
-            # Inform that the dataloader is resuming.
-            # TODO: Check if the number of samples yielded is less than the length of the dataset.
-            # Also, len is not available for CombinedStreamingDataset incase of provided weights.
-            self.restore = True
+            total_samples_yielded = sum([sum(samples) for samples in self._num_samples_yielded_combined.values()])
+
+            # Check if we need to restore for the case without weights.
+            if self.dataset._iterate_over_all and total_samples_yielded < len(self.dataset):
+                self.restore = True
+
+            # Check if we need to restore for the case with weights.
+            # Note: `len` is not available for CombinedStreamingDataset in case of provided weights.
+            if not self.dataset._iterate_over_all:
+                self.restore = True
 
         elif isinstance(self.dataset, StreamingDataset):
             self.dataset.load_state_dict(obj["dataset"])
 
-            # Inform that the dataloader is resuming.
             if self._num_samples_yielded_streaming < len(self.dataset):
                 self.restore = True
         else:
