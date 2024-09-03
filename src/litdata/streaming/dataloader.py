@@ -666,7 +666,7 @@ class StreamingDataLoader(DataLoader):
             }
 
         num_samples_yieled = [0 for _ in range(len(list(self._num_samples_yielded_combined.values())[0]))]
-        # TODO: Check if above line could be replaced with: 
+        # TODO: Check if above line could be replaced with:
         # num_samples_yieled = [0 for _ in range(len(self.dataset._datasets))]
 
         for worker_idx in self._num_samples_yielded_combined:
