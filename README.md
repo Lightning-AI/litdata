@@ -124,10 +124,10 @@ Load the data by replacing the PyTorch DataSet and DataLoader with the Streaming
 ```python
 import litdata as ld
 
-dataset = ld.StreamingDataset('s3://my-bucket/my_optimized_dataset', shuffle=True)
-dataloader = ld.StreamingDataLoader(dataset)
+train_dataset = ld.StreamingDataset('s3://my-bucket/my_optimized_dataset', shuffle=True, drop_last=True)
+train_dataloader = ld.StreamingDataLoader(train_dataset)
 
-for sample in dataloader:
+for sample in train_dataloader:
     img, cls = sample['image'], sample['class']
 ```
 
@@ -190,7 +190,6 @@ ld.map(
 
 ## Features for optimizing and streaming datasets for model training
 
-
 <details>
   <summary> ✅ Stream large cloud datasets</summary>
 &nbsp;
@@ -238,6 +237,23 @@ Data optimized and loaded with Lightning automatically streams efficiently in di
 The `StreamingDataset` and `StreamingDataLoader` automatically make sure each rank receives the same quantity of varied batches of data, so it works out of the box with your favorite frameworks ([PyTorch Lightning](https://lightning.ai/docs/pytorch/stable/), [Lightning Fabric](https://lightning.ai/docs/fabric/stable/), or [PyTorch](https://pytorch.org/docs/stable/index.html)) to do distributed training.
 
 Here you can see an illustration showing how the Streaming Dataset works with multi node / multi gpu under the hood.
+
+```python
+from litdata import StreamingDataset, StreamingDataLoader
+
+# For the training dataset, don't forget to enable shuffle and drop_last !!! 
+train_dataset = StreamingDataset('s3://my-bucket/my-train-data', shuffle=True, drop_last=True)
+train_dataloader = StreamingDataLoader(train_dataset, batch_size=64)
+
+for batch in train_dataloader:
+    process(batch)  # Replace with your data processing logic
+
+val_dataset = StreamingDataset('s3://my-bucket/my-val-data', shuffle=False, drop_last=False)
+val_dataloader = StreamingDataLoader(val_dataset, batch_size=64)
+
+for batch in val_dataloader:
+    process(batch)  # Replace with your data processing logic
+```
 
 ![An illustration showing how the Streaming Dataset works with multi node.](https://pl-flash-data.s3.amazonaws.com/streaming_dataset.gif)
 
