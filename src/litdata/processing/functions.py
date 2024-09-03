@@ -27,7 +27,7 @@ from urllib import parse
 
 import torch
 
-from litdata.constants import _INDEX_FILENAME, _IS_IN_STUDIO
+from litdata.constants import _INDEX_FILENAME, _IS_IN_STUDIO, _SUPPORTED_CLOUD_PROVIDERS
 from litdata.processing.data_processor import DataChunkRecipe, DataProcessor, DataTransformRecipe
 from litdata.processing.readers import BaseReader
 from litdata.processing.utilities import (
@@ -36,8 +36,8 @@ from litdata.processing.utilities import (
     optimize_dns_context,
     read_index_file_content,
 )
-from litdata.streaming.client import S3Client
 from litdata.streaming.dataloader import StreamingDataLoader
+from litdata.streaming.downloader import copy_file_or_directory, upload_file_or_directory
 from litdata.streaming.item_loader import BaseItemLoader
 from litdata.streaming.resolver import (
     Dir,
@@ -53,7 +53,7 @@ from litdata.utilities.format import _get_tqdm_iterator_if_available
 
 def _is_remote_file(path: str) -> bool:
     obj = parse.urlparse(path)
-    return obj.scheme in ["s3", "gcs"]
+    return obj.scheme in _SUPPORTED_CLOUD_PROVIDERS
 
 
 def _get_indexed_paths(data: Any) -> Dict[int, str]:
@@ -595,15 +595,10 @@ def _apply_copy(copy_info: CopyInfo, output_dir: Dir) -> None:
         shutil.copyfile(input_filepath, output_filepath)
 
     elif output_dir.url and copy_info.input_dir.url:
-        input_obj = parse.urlparse(os.path.join(copy_info.input_dir.url, copy_info.old_filename))
-        output_obj = parse.urlparse(os.path.join(output_dir.url, copy_info.new_filename))
+        input_obj = os.path.join(copy_info.input_dir.url, copy_info.old_filename)
+        output_obj = os.path.join(output_dir.url, copy_info.new_filename)
 
-        s3 = S3Client()
-        s3.client.copy(
-            {"Bucket": input_obj.netloc, "Key": input_obj.path.lstrip("/")},
-            output_obj.netloc,
-            output_obj.path.lstrip("/"),
-        )
+        copy_file_or_directory(input_obj, output_obj)
     else:
         raise NotImplementedError
 
@@ -619,11 +614,4 @@ def _save_index(index_json: Dict, output_dir: Dir) -> None:
 
             f.flush()
 
-            obj = parse.urlparse(os.path.join(output_dir.url, _INDEX_FILENAME))
-
-            s3 = S3Client()
-            s3.client.upload_file(
-                f.name,
-                obj.netloc,
-                obj.path.lstrip("/"),
-            )
+            upload_file_or_directory(f.name, os.path.join(output_dir.url, _INDEX_FILENAME))
