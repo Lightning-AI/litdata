@@ -11,6 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import contextlib
 import os
 import shutil
 import subprocess
@@ -176,7 +177,8 @@ class LocalDownloader(Downloader):
                     temp_file_path = local_filepath + ".tmp"
                     shutil.copy(remote_filepath, temp_file_path)
                     os.rename(temp_file_path, local_filepath)
-                    os.remove(local_filepath + ".lock")
+                    with contextlib.suppress(Exception):
+                        os.remove(local_filepath + ".lock")
         except Timeout:
             pass
 
