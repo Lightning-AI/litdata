@@ -45,6 +45,7 @@ from litdata.utilities.env import _DistributedEnv, _WorkerEnv
 from litdata.utilities.shuffle import _associate_chunks_and_intervals_to_workers
 from torch.utils.data import DataLoader
 
+from tests.streaming.utils import filter_lock_files
 
 def seed_everything(random_seed):
     random.seed(random_seed)
@@ -861,13 +862,13 @@ def test_resumable_dataset_two_workers_2_epochs(tmpdir):
     for batch in dataloader:
         batches_epoch_1.append(batch)
 
-    assert len(os.listdir(cache_dir)) == 51
+    assert len(filter_lock_files(os.listdir(cache_dir))) == 51
 
     batches_epoch_2 = []
     for batch in dataloader:
         batches_epoch_2.append(batch)
 
-    assert len(os.listdir(cache_dir)) == 51
+    assert len(filter_lock_files(os.listdir(cache_dir))) == 51
     assert not all(torch.equal(b1, b2) for b1, b2 in zip(batches_epoch_1, batches_epoch_2))
 
 
