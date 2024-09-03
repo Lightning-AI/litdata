@@ -104,7 +104,7 @@ if __name__ == "__main__":
     ld.optimize(
         fn=random_images,                   # the function applied to each input
         inputs=list(range(1000)),           # the inputs to the function (here it's a list of numbers)
-        output_dir="my_optimized_dataset",  # optimized data is stored here
+        output_dir="fast_data",  # optimized data is stored here
         num_workers=4,                      # The number of workers on the same machine
         chunk_bytes="64MB"                  # size of each chunk
     )
@@ -114,7 +114,7 @@ if __name__ == "__main__":
 
 Upload the data to a [Lightning Studio](https://lightning.ai) (backed by S3) or your own S3 bucket:
 ```bash
-aws s3 cp --recursive my_optimized_dataset s3://my-bucket/my_optimized_dataset
+aws s3 cp --recursive fast_data s3://my-bucket/fast_data
 ```
 
 **Step 3: Stream the data during training**
@@ -124,11 +124,7 @@ Load the data by replacing the PyTorch DataSet and DataLoader with the Streaming
 ```python
 import litdata as ld
 
-train_dataset = ld.StreamingDataset(
-  's3://my-bucket/my_optimized_dataset', 
-  shuffle=True, 
-  drop_last=True,
-)
+train_dataset = ld.StreamingDataset('s3://my-bucket/fast_data', shuffle=True, drop_last=True)
 train_dataloader = ld.StreamingDataLoader(train_dataset)
 
 for sample in train_dataloader:
