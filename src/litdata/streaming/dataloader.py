@@ -711,11 +711,12 @@ class StreamingDataLoader(DataLoader):
             total_samples_yielded = sum([sum(samples) for samples in self._num_samples_yielded_combined.values()])
 
             # Check if we need to restore for the case without weights.
-            if self.dataset._iterate_over_all and total_samples_yielded < len(self.dataset):
+            if self.dataset._iterate_over_all and total_samples_yielded < len(self.dataset):  # type: ignore
                 self.restore = True
 
             # Check if we need to restore for the case with weights.
             # Note: `len` is not available for CombinedStreamingDataset in case of provided weights.
+            # TODO: handle the case with weights.
             if not self.dataset._iterate_over_all:
                 self.restore = True
 
