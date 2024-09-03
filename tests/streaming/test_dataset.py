@@ -47,6 +47,7 @@ from torch.utils.data import DataLoader
 
 from tests.streaming.utils import filter_lock_files
 
+
 def seed_everything(random_seed):
     random.seed(random_seed)
     np.random.seed(random_seed)
