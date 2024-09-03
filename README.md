@@ -104,7 +104,7 @@ if __name__ == "__main__":
     ld.optimize(
         fn=random_images,                   # the function applied to each input
         inputs=list(range(1000)),           # the inputs to the function (here it's a list of numbers)
-        output_dir="fast_data",  # optimized data is stored here
+        output_dir="fast_data",             # optimized data is stored here
         num_workers=4,                      # The number of workers on the same machine
         chunk_bytes="64MB"                  # size of each chunk
     )
