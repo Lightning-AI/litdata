@@ -102,7 +102,11 @@ def _get_cache_data_dir(name: Optional[str] = None) -> str:
 
 
 def _wait_for_file_to_exist(remote_filepath: str, sleep_time: int = 2, wait_for_count: int = 5) -> Any:
-    """This function check if a file exists on the remote storage. If not, it waits for a while and tries again."""
+    """This function check if a file exists on the remote storage.
+
+    If not, it waits for a while and tries again.
+
+    """
     cloud_provider = get_cloud_provider(remote_filepath)
     while True:
         try:

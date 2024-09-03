@@ -247,7 +247,7 @@ def list_directory(
     cloud_provider: Union[str, None] = None,
     storage_options: Optional[Dict] = {},
 ) -> List[str]:
-    """returns a list of filenames in a remote directory"""
+    """Returns a list of filenames in a remote directory."""
     if cloud_provider is None:
         cloud_provider = get_cloud_provider(remote_directory)
 
@@ -256,14 +256,14 @@ def list_directory(
 
 
 def download_file_or_directory(remote_filepath: str, local_filepath: str, storage_options: Optional[Dict] = {}) -> None:
-    """upload a file to the remote cloud storage"""
+    """Upload a file to the remote cloud storage."""
     fs_cloud_provider = get_cloud_provider(remote_filepath)
     fs = fsspec.filesystem(fs_cloud_provider, **storage_options)
     fs.get(remote_filepath, local_filepath, recursive=True)
 
 
 def upload_file_or_directory(local_filepath: str, remote_filepath: str, storage_options: Optional[Dict] = {}) -> None:
-    """upload a file to the remote cloud storage"""
+    """Upload a file to the remote cloud storage."""
     print(f"{local_filepath=}; {remote_filepath=}")
     fs_cloud_provider = get_cloud_provider(remote_filepath)
     fs = fsspec.filesystem(fs_cloud_provider, **storage_options)
@@ -273,14 +273,14 @@ def upload_file_or_directory(local_filepath: str, remote_filepath: str, storage_
 def copy_file_or_directory(
     remote_filepath_src: str, remote_filepath_tg: str, storage_options: Optional[Dict] = {}
 ) -> None:
-    """copy a file from src to target on the remote cloud storage"""
+    """Copy a file from src to target on the remote cloud storage."""
     fs_cloud_provider = get_cloud_provider(remote_filepath_src)
     fs = fsspec.filesystem(fs_cloud_provider, **storage_options)
     fs.copy(remote_filepath_src, remote_filepath_tg, recursive=True)
 
 
 def remove_file_or_directory(remote_filepath: str, storage_options: Optional[Dict] = {}) -> None:
-    """remove a file from the remote cloud storage"""
+    """Remove a file from the remote cloud storage."""
     fs_cloud_provider = get_cloud_provider(remote_filepath)
     fs = fsspec.filesystem(fs_cloud_provider, **storage_options)
     fs.rm(remote_filepath, recursive=True)
