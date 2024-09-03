@@ -124,7 +124,11 @@ Load the data by replacing the PyTorch DataSet and DataLoader with the Streaming
 ```python
 import litdata as ld
 
-train_dataset = ld.StreamingDataset('s3://my-bucket/my_optimized_dataset', shuffle=True, drop_last=True)
+train_dataset = ld.StreamingDataset(
+  's3://my-bucket/my_optimized_dataset', 
+  shuffle=True, 
+  drop_last=True,
+)
 train_dataloader = ld.StreamingDataLoader(train_dataset)
 
 for sample in train_dataloader:
