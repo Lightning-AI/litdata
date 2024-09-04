@@ -78,7 +78,7 @@ def test_download_with_cache(tmpdir, monkeypatch):
         f.write("hello")
 
     try:
-        local_downloader = LocalDownloaderWithCache(tmpdir, tmpdir, [])
+        local_downloader = LocalDownloaderWithCache("file", tmpdir, tmpdir, [])
         shutil_mock = MagicMock()
         monkeypatch.setattr(shutil, "copy", shutil_mock)
         local_downloader.download_file("local:a.txt", os.path.join(tmpdir, "a.txt"))

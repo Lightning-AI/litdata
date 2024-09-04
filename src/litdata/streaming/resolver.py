@@ -90,14 +90,11 @@ def _match_studio(target_id: Optional[str], target_name: Optional[str], cloudspa
     if target_id is not None and cloudspace.id == target_id:
         return True
 
-    if (
+    return bool(
         cloudspace.display_name is not None
         and target_name is not None
         and cloudspace.display_name.lower() == target_name.lower()
-    ):
-        return True
-
-    return False
+    )
 
 
 def _resolve_studio(dir_path: str, target_name: Optional[str], target_id: Optional[str]) -> Dir:
@@ -229,7 +226,7 @@ def _assert_dir_is_empty(output_dir: Dir, append: bool = False, overwrite: bool 
         return
 
     # We aren't alloweing to add more data
-    if len(object_list) > 0:
+    if object_list is not None and len(object_list) > 0:
         raise RuntimeError(
             f"The provided output_dir `{output_dir.path}` already contains data and datasets are meant to be immutable."
             " HINT: Did you consider changing the `output_dir` with your own versioning as a suffix?"
@@ -289,7 +286,7 @@ def _assert_dir_has_index_file(
         objects_list = list_directory(output_dir.url)
 
     # No files are found in this folder
-    if len(objects_list) == 0:
+    if objects_list is None or len(objects_list) == 0:
         return
 
     # Check the index file exists
