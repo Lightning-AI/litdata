@@ -5,6 +5,3 @@ numpy
 boto3
 requests
 fsspec
-fsspec[s3] # aws s3
-fsspec[gs] # google cloud storage
-fsspec[abfs] # azure blob
