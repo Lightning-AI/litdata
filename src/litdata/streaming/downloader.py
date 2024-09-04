@@ -226,6 +226,9 @@ class FsspecDownloader(Downloader):
         try:
             with FileLock(local_filepath + ".lock", timeout=3):
                 self.fs.get(remote_filepath, local_filepath, recursive=True)
+            # remove the lock file
+            if os.path.exists(local_filepath + ".lock"):
+                os.remove(local_filepath + ".lock")
         except Timeout:
             # another process is responsible to download that file, continue
             pass
