@@ -5,7 +5,6 @@ from unittest.mock import Mock
 
 import pytest
 import torch.distributed
-
 from litdata.streaming.reader import PrepareChunksThread
 
 

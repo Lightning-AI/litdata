@@ -13,10 +13,8 @@
 
 import os
 import shutil
-import subprocess
 from abc import ABC
 from typing import Any, Dict, List, Optional, Union
-from urllib import parse
 
 import fsspec
 from filelock import FileLock, Timeout
