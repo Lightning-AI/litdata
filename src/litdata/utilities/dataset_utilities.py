@@ -95,7 +95,7 @@ def _should_replace_path(path: Optional[str]) -> bool:
     return path.startswith("/teamspace/datasets/") or path.startswith("/teamspace/s3_connections/")
 
 
-def _read_updated_at(input_dir: Optional[Dir], storage_options: Optional[Dict]) -> str:
+def _read_updated_at(input_dir: Optional[Dir], storage_options: Optional[Dict]={}) -> str:
     """Read last updated timestamp from index.json file."""
     last_updation_timestamp = "0"
     index_json_content = None
@@ -134,7 +134,7 @@ def _clear_cache_dir_if_updated(input_dir_hash_filepath: str, updated_at_hash: s
             shutil.rmtree(input_dir_hash_filepath)
 
 
-def _try_create_cache_dir(input_dir: Optional[str], storage_options: Optional[Dict]) -> Optional[str]:
+def _try_create_cache_dir(input_dir: Optional[str], storage_options: Optional[Dict]={}) -> Optional[str]:
     resolved_input_dir = _resolve_dir(input_dir)
     updated_at = _read_updated_at(resolved_input_dir, storage_options)
 
