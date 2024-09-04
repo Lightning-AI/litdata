@@ -65,7 +65,7 @@ class Downloader(ABC):
 #         obj = parse.urlparse(remote_filepath)
 
 #         if obj.scheme != "s3":
-#             raise ValueError(f"Expected obj.scheme to be `s3`, instead, got {obj.scheme} for remote={remote_filepath}")
+#             raise ValueError(f"Expected obj.scheme to be `s3`, instead, got {obj.scheme} for {remote_filepath}")
 
 #         if os.path.exists(local_filepath):
 #             return
@@ -115,7 +115,7 @@ class Downloader(ABC):
 #         obj = parse.urlparse(remote_filepath)
 
 #         if obj.scheme != "gs":
-#             raise ValueError(f"Expected obj.scheme to be `gs`, instead, got {obj.scheme} for remote={remote_filepath}")
+#             raise ValueError(f"Expected obj.scheme to be `gs`, instead, got {obj.scheme} for {remote_filepath}")
 
 #         if os.path.exists(local_filepath):
 #             return
@@ -153,7 +153,7 @@ class Downloader(ABC):
 
 #         if obj.scheme != "azure":
 #             raise ValueError(
-#                 f"Expected obj.scheme to be `azure`, instead, got {obj.scheme} for remote={remote_filepath}"
+#                 f"Expected obj.scheme to be `azure`, instead, got {obj.scheme} for {remote_filepath}"
 #             )
 
 #         if os.path.exists(local_filepath):

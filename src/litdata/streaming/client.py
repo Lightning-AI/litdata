@@ -34,7 +34,7 @@
 
 #     def _create_client(self) -> None:
 #         has_shared_credentials_file = (
-#             os.getenv("AWS_SHARED_CREDENTIALS_FILE") == os.getenv("AWS_CONFIG_FILE") == "/.credentials/.aws_credentials"
+#           os.getenv("AWS_SHARED_CREDENTIALS_FILE") == os.getenv("AWS_CONFIG_FILE") == "/.credentials/.aws_credentials"
 #         )
 
 #         if has_shared_credentials_file or not _IS_IN_STUDIO:
@@ -46,7 +46,7 @@
 #                 },
 #             )
 #         else:
-#             provider = InstanceMetadataProvider(iam_role_fetcher=InstanceMetadataFetcher(timeout=3600, num_attempts=5))
+#           provider = InstanceMetadataProvider(iam_role_fetcher=InstanceMetadataFetcher(timeout=3600, num_attempts=5))
 #             credentials = provider.load()
 #             self._client = boto3.client(
 #                 "s3",
