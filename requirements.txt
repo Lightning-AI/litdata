@@ -2,6 +2,6 @@ torch
 lightning-utilities
 filelock
 numpy
-boto3
+# boto3
 requests
 fsspec
