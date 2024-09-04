@@ -11,6 +11,8 @@ from litdata.streaming.reader import _END_TOKEN, PrepareChunksThread, _get_folde
 from litdata.streaming.resolver import Dir
 from litdata.utilities.env import _DistributedEnv
 
+from tests.streaming.utils import filter_lock_files
+
 
 def test_reader_chunk_removal(tmpdir):
     cache_dir = os.path.join(tmpdir, "cache_dir")
@@ -32,7 +34,7 @@ def test_reader_chunk_removal(tmpdir):
         index = ChunkedIndex(*cache._get_chunk_index_from_index(i), is_last_index=i == 24)
         assert cache[index] == i
 
-    assert len(os.listdir(cache_dir)) == 14
+    assert len(filter_lock_files(os.listdir(cache_dir))) == 14
 
     cache = Cache(input_dir=Dir(path=cache_dir, url=remote_dir), chunk_size=2, max_cache_size=2800)
 
@@ -40,11 +42,11 @@ def test_reader_chunk_removal(tmpdir):
     os.makedirs(cache_dir, exist_ok=True)
 
     for i in range(25):
-        assert len(os.listdir(cache_dir)) <= 3
+        assert len(filter_lock_files(os.listdir(cache_dir))) <= 3
         index = ChunkedIndex(*cache._get_chunk_index_from_index(i), is_last_index=i == 24)
         assert cache[index] == i
 
-    assert len(os.listdir(cache_dir)) in [2, 3]
+    assert len(filter_lock_files(os.listdir(cache_dir))) in [2, 3]
 
 
 def test_get_folder_size(tmpdir):
