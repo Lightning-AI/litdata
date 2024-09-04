@@ -10,7 +10,6 @@ import numpy as np
 import pytest
 import torch
 from lightning_utilities.core.imports import RequirementCache
-
 from litdata.constants import _TORCH_AUDIO_AVAILABLE, _ZSTD_AVAILABLE
 from litdata.processing import data_processor as data_processor_module
 from litdata.processing import functions
@@ -220,7 +219,7 @@ def test_wait_for_file_to_exist(monkeypatch):
     def fn(*_, **__):
         value = raise_error.pop(0)
         if value:
-            raise Exception({"Error": {"Code": "404", "Message": "Not Found"}}, "HeadObject") # some exception
+            raise Exception({"Error": {"Code": "404", "Message": "Not Found"}}, "HeadObject")  # some exception
         return
 
     monkeypatch.setattr(data_processor_module, "does_file_exist", fn)

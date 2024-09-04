@@ -15,7 +15,6 @@ from lightning_cloud.openapi import (
     V1ListClustersResponse,
     V1ListDataConnectionsResponse,
 )
-
 from litdata.streaming import resolver
 
 
@@ -303,8 +302,10 @@ def test_execute(phase, monkeypatch, lightning_sdk_mock):
 def test_assert_dir_is_empty(monkeypatch):
     def mock_list_directory(*args, **kwargs):
         return ["a.txt", "b.txt"]
+
     def mock_empty_list_directory(*args, **kwargs):
         return []
+
     monkeypatch.setattr(resolver, "list_directory", mock_list_directory)
 
     with pytest.raises(RuntimeError, match="The provided output_dir"):
@@ -320,13 +321,13 @@ def test_assert_dir_has_index_file(monkeypatch):
         return []
 
     def mock_list_directory_1(*args, **kwargs):
-        return ['a.txt', 'b.txt']
+        return ["a.txt", "b.txt"]
 
     def mock_list_directory_2(*args, **kwargs):
         return ["index.json"]
 
     def mock_does_file_exist_1(*args, **kwargs):
-        raise Exception({"Error": {"Code": "404", "Message": "Not Found"}}, "HeadObject") # some exception
+        raise Exception({"Error": {"Code": "404", "Message": "Not Found"}}, "HeadObject")  # some exception
 
     def mock_does_file_exist_2(*args, **kwargs):
         return True
@@ -346,7 +347,7 @@ def test_assert_dir_has_index_file(monkeypatch):
     with pytest.raises(RuntimeError, match="The provided output_dir"):
         resolver._assert_dir_has_index_file(resolver.Dir(path="/teamspace/...", url="s3://"))
 
-    resolver._assert_dir_has_index_file(resolver.Dir(path="/teamspace/...", url="s3://"), mode='overwrite')
+    resolver._assert_dir_has_index_file(resolver.Dir(path="/teamspace/...", url="s3://"), mode="overwrite")
 
 
 def test_resolve_dir_absolute(tmp_path, monkeypatch):

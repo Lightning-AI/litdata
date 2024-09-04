@@ -57,7 +57,7 @@ class S3Downloader(Downloader):
     def __init__(
         self, remote_dir: str, cache_dir: str, chunks: List[Dict[str, Any]], storage_options: Optional[Dict] = {}
     ):
-        super().__init__("s3",remote_dir, cache_dir, chunks, storage_options)
+        super().__init__("s3", remote_dir, cache_dir, chunks, storage_options)
         self._s5cmd_available = os.system("s5cmd > /dev/null 2>&1") == 0
 
         if not self._s5cmd_available:
@@ -109,7 +109,7 @@ class GCPDownloader(Downloader):
         if not _GOOGLE_STORAGE_AVAILABLE:
             raise ModuleNotFoundError(str(_GOOGLE_STORAGE_AVAILABLE))
 
-        super().__init__("gs",remote_dir, cache_dir, chunks, storage_options)
+        super().__init__("gs", remote_dir, cache_dir, chunks, storage_options)
 
     def download_file(self, remote_filepath: str, local_filepath: str) -> None:
         from google.cloud import storage
@@ -146,7 +146,7 @@ class AzureDownloader(Downloader):
         if not _AZURE_STORAGE_AVAILABLE:
             raise ModuleNotFoundError(str(_AZURE_STORAGE_AVAILABLE))
 
-        super().__init__("abfs",remote_dir, cache_dir, chunks, storage_options)
+        super().__init__("abfs", remote_dir, cache_dir, chunks, storage_options)
 
     def download_file(self, remote_filepath: str, local_filepath: str) -> None:
         from azure.storage.blob import BlobServiceClient
@@ -259,7 +259,7 @@ def list_directory(
 
 
 def download_file_or_directory(remote_filepath: str, local_filepath: str, storage_options: Optional[Dict] = {}) -> None:
-    """download a file from the remote cloud storage."""
+    """Download a file from the remote cloud storage."""
     try:
         with FileLock(local_filepath + ".lock", timeout=3):
             fs_cloud_provider = get_cloud_provider(remote_filepath)
@@ -268,7 +268,6 @@ def download_file_or_directory(remote_filepath: str, local_filepath: str, storag
     except Timeout:
         # another process is responsible to download that file, continue
         pass
-
 
 
 def upload_file_or_directory(local_filepath: str, remote_filepath: str, storage_options: Optional[Dict] = {}) -> None:
@@ -281,7 +280,6 @@ def upload_file_or_directory(local_filepath: str, remote_filepath: str, storage_
     except Timeout:
         # another process is responsible to upload that file, continue
         pass
-
 
 
 def copy_file_or_directory(

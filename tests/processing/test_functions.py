@@ -1,5 +1,4 @@
 import os
-import shutil
 import sys
 from unittest import mock
 
@@ -11,7 +10,6 @@ from litdata.processing.functions import _get_input_dir, _resolve_dir
 from litdata.streaming.cache import Cache
 from litdata.utilities.encryption import FernetEncryption, RSAEncryption
 from PIL import Image
-import fsspec
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="currently not supported for windows.")
