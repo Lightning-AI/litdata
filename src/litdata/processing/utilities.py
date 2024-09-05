@@ -181,7 +181,7 @@ def _get_work_dir() -> str:
     return f"s3://{bucket_name}/projects/{project_id}/lightningapps/{app_id}/artifacts/{work_id}/content/"
 
 
-def read_index_file_content(output_dir: Dir) -> Optional[Dict[str, Any]]:
+def read_index_file_content(output_dir: Dir, storage_options: Optional[Dict] = {}) -> Optional[Dict[str, Any]]:
     """Read the index file content."""
     if not isinstance(output_dir, Dir):
         raise ValueError("The provided output_dir should be a Dir object.")
@@ -209,7 +209,9 @@ def read_index_file_content(output_dir: Dir) -> Optional[Dict[str, Any]]:
             # Create a temporary file
             with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as temp_file:
                 temp_file_name = temp_file.name
-                download_file_or_directory(os.path.join(output_dir.url, _INDEX_FILENAME), temp_file_name)
+                download_file_or_directory(
+                    os.path.join(output_dir.url, _INDEX_FILENAME), temp_file_name, storage_options=storage_options
+                )
             # Read data from the temporary file
             with open(temp_file_name) as temp_file:
                 data = json.load(temp_file)

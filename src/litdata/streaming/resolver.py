@@ -20,7 +20,7 @@ from contextlib import suppress
 from dataclasses import dataclass
 from pathlib import Path
 from time import sleep
-from typing import TYPE_CHECKING, Any, Literal, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, Literal, Optional, Union
 from urllib import parse
 
 from litdata.constants import _LIGHTNING_SDK_AVAILABLE, _SUPPORTED_CLOUD_PROVIDERS
@@ -208,7 +208,9 @@ def _resolve_datasets(dir_path: str) -> Dir:
     )
 
 
-def _assert_dir_is_empty(output_dir: Dir, append: bool = False, overwrite: bool = False) -> None:
+def _assert_dir_is_empty(
+    output_dir: Dir, append: bool = False, overwrite: bool = False, storage_options: Optional[Dict] = {}
+) -> None:
     if not isinstance(output_dir, Dir):
         raise ValueError("The provided output_dir isn't a Dir Object.")
 
@@ -221,7 +223,7 @@ def _assert_dir_is_empty(output_dir: Dir, append: bool = False, overwrite: bool 
         raise ValueError(f"The provided folder should start with {_SUPPORTED_CLOUD_PROVIDERS}. Found {output_dir.url}.")
 
     try:
-        object_list = list_directory(output_dir.url)
+        object_list = list_directory(output_dir.url, storage_options=storage_options)
     except FileNotFoundError:
         return
     print(f"{object_list=}")
@@ -234,7 +236,8 @@ def _assert_dir_is_empty(output_dir: Dir, append: bool = False, overwrite: bool 
 
 
 def _assert_dir_has_index_file(
-    output_dir: Dir, mode: Optional[Literal["append", "overwrite"]] = None, use_checkpoint: bool = False
+    output_dir: Dir, mode: Optional[Literal["append", "overwrite"]] = None, use_checkpoint: bool = False,
+    storage_options: Optional[Dict] = {}
 ) -> None:
     if mode is not None and mode not in ["append", "overwrite"]:
         raise ValueError(f"The provided `mode` should be either `append` or `overwrite`. Found {mode}.")
@@ -283,14 +286,14 @@ def _assert_dir_has_index_file(
 
     objects_list = []
     with suppress(FileNotFoundError):
-        objects_list = list_directory(output_dir.url)
+        objects_list = list_directory(output_dir.url, storage_options=storage_options)
 
     # No files are found in this folder
     if objects_list is None or len(objects_list) == 0:
         return
 
     # Check the index file exists
-    has_index_file = does_file_exist(os.path.join(output_dir.url, "index.json"))
+    has_index_file = does_file_exist(os.path.join(output_dir.url, "index.json"), storage_options=storage_options)
 
     if has_index_file and mode is None:
         raise RuntimeError(
@@ -300,7 +303,7 @@ def _assert_dir_has_index_file(
         )
 
     if mode == "overwrite" or (mode is None and not use_checkpoint):
-        remove_file_or_directory(output_dir.url)
+        remove_file_or_directory(output_dir.url, storage_options=storage_options)
 
 
 def _get_lightning_cloud_url() -> str:

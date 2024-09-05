@@ -211,6 +211,7 @@ _DOWNLOADERS = {
     "s3://": "s3",
     "gs://": "gs",
     "azure://": "abfs",
+    "abfs://": "abfs",
     "local:": "file",
     "": "file",
 }
@@ -256,7 +257,7 @@ def does_file_exist(
 def list_directory(
     remote_directory: str,
     detail: bool = False,
-    cloud_provider: Union[str, None] = None,
+    cloud_provider: Optional[str] = None,
     storage_options: Optional[Dict] = {},
 ) -> List[str]:
     """Returns a list of filenames in a remote directory."""

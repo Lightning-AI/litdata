@@ -101,7 +101,9 @@ def _get_cache_data_dir(name: Optional[str] = None) -> str:
     return os.path.join(cache_dir, name.lstrip("/"))
 
 
-def _wait_for_file_to_exist(remote_filepath: str, sleep_time: int = 2, wait_for_count: int = 5) -> Any:
+def _wait_for_file_to_exist(
+    remote_filepath: str, sleep_time: int = 2, wait_for_count: int = 5, storage_options: Optional[Dict] = {}
+) -> Any:
     """This function check if a file exists on the remote storage.
 
     If not, it waits for a while and tries again.
@@ -110,7 +112,7 @@ def _wait_for_file_to_exist(remote_filepath: str, sleep_time: int = 2, wait_for_
     cloud_provider = get_cloud_provider(remote_filepath)
     while True:
         try:
-            return does_file_exist(remote_filepath, cloud_provider)
+            return does_file_exist(remote_filepath, cloud_provider, storage_options=storage_options)
         except Exception as e:
             if wait_for_count > 0:
                 sleep(sleep_time)
@@ -129,7 +131,9 @@ def _wait_for_disk_usage_higher_than_threshold(input_dir: str, threshold_in_gb: 
     return
 
 
-def _download_data_target(input_dir: Dir, cache_dir: str, queue_in: Queue, queue_out: Queue) -> None:
+def _download_data_target(
+    input_dir: Dir, cache_dir: str, queue_in: Queue, queue_out: Queue, storage_options: Optional[Dict] = {}
+) -> None:
     """This function is used to download data from a remote directory to a cache directory to optimise reading."""
 
     while True:
@@ -170,7 +174,7 @@ def _download_data_target(input_dir: Dir, cache_dir: str, queue_in: Queue, queue
                     dirpath = os.path.dirname(local_path)
 
                     os.makedirs(dirpath, exist_ok=True)
-                    download_file_or_directory(path, local_path)
+                    download_file_or_directory(path, local_path, storage_options=storage_options)
 
                 elif os.path.isfile(path):
                     if not path.startswith("/teamspace/studios/this_studio"):
@@ -206,7 +210,9 @@ def _remove_target(input_dir: Dir, cache_dir: str, queue_in: Queue) -> None:
                 os.remove(path)
 
 
-def _upload_fn(upload_queue: Queue, remove_queue: Queue, cache_dir: str, output_dir: Dir) -> None:
+def _upload_fn(
+    upload_queue: Queue, remove_queue: Queue, cache_dir: str, output_dir: Dir, storage_options: Optional[Dict] = {}
+) -> None:
     """This function is used to upload optimised chunks from a local to remote dataset directory."""
     obj = parse.urlparse(output_dir.url if output_dir.url else output_dir.path)
 
@@ -243,7 +249,7 @@ def _upload_fn(upload_queue: Queue, remove_queue: Queue, cache_dir: str, output_
 
                 output_filepath = remove_uuid_from_filename(output_filepath)  # remove unique id from checkpoints
                 remote_filepath = str(obj.scheme) + "://" + str(obj.netloc) + "/" + output_filepath
-                upload_file_or_directory(local_filepath, remote_filepath)
+                upload_file_or_directory(local_filepath, remote_filepath, storage_options=storage_options)
             except Exception as e:
                 print(e)
 
@@ -420,6 +426,7 @@ class BaseWorker:
         checkpoint_chunks_info: Optional[List[Dict[str, Any]]] = None,
         checkpoint_next_index: Optional[int] = None,
         item_loader: Optional[BaseItemLoader] = None,
+        storage_options: Optional[Dict] = {},
     ) -> None:
         """The BaseWorker is responsible to process the user data."""
         self.worker_index = worker_index
@@ -454,6 +461,7 @@ class BaseWorker:
         self.use_checkpoint: bool = use_checkpoint
         self.checkpoint_chunks_info: Optional[List[Dict[str, Any]]] = checkpoint_chunks_info
         self.checkpoint_next_index: Optional[int] = checkpoint_next_index
+        self.storage_options = storage_options
 
     def run(self) -> None:
         try:
@@ -630,6 +638,7 @@ class BaseWorker:
                     self.cache_data_dir,
                     to_download_queue,
                     self.ready_to_process_queue,
+                    self.storage_options,
                 ),
             )
             p.start()
@@ -669,6 +678,7 @@ class BaseWorker:
                     self.remove_queue,
                     self.cache_chunks_dir,
                     self.output_dir,
+                    self.storage_options,
                 ),
             )
             p.start()
@@ -770,6 +780,7 @@ class DataChunkRecipe(DataRecipe):
         chunk_bytes: Optional[Union[int, str]] = None,
         compression: Optional[str] = None,
         encryption: Optional[Encryption] = None,
+        storage_options: Optional[Dict] = {},
     ):
         super().__init__()
         if chunk_size is not None and chunk_bytes is not None:
@@ -779,6 +790,7 @@ class DataChunkRecipe(DataRecipe):
         self.chunk_bytes = 1 << 26 if chunk_size is None and chunk_bytes is None else chunk_bytes
         self.compression = compression
         self.encryption = encryption
+        self.storage_options = storage_options
 
     @abstractmethod
     def prepare_structure(self, input_dir: Optional[str]) -> List[T]:
@@ -850,6 +862,7 @@ class DataChunkRecipe(DataRecipe):
             upload_file_or_directory(
                 local_filepath,
                 remote_filepath + os.path.join(str(obj.path).lstrip("/"), os.path.basename(local_filepath)),
+                storage_options=self.storage_options,
             )
         elif output_dir.path and os.path.isdir(output_dir.path):
             shutil.copyfile(local_filepath, os.path.join(output_dir.path, os.path.basename(local_filepath)))
@@ -868,10 +881,11 @@ class DataChunkRecipe(DataRecipe):
                 remote_filepath = os.path.join(output_dir_path, f"{node_rank}-{_INDEX_FILENAME}")
                 node_index_filepath = os.path.join(cache_dir, os.path.basename(remote_filepath))
                 if obj.scheme in _SUPPORTED_CLOUD_PROVIDERS:
-                    _wait_for_file_to_exist(remote_filepath)
+                    _wait_for_file_to_exist(remote_filepath, storage_options=self.storage_options)
                     download_file_or_directory(
                         remote_filepath,
                         node_index_filepath,
+                        storage_options=self.storage_options,
                     )
                 elif output_dir.path and os.path.isdir(output_dir.path):
                     shutil.copyfile(remote_filepath, node_index_filepath)
@@ -913,6 +927,7 @@ class DataProcessor:
         use_checkpoint: bool = False,
         item_loader: Optional[BaseItemLoader] = None,
         start_method: Optional[str] = None,
+        storage_options: Optional[Dict] = {},
     ):
         """The `DatasetOptimiser` provides an efficient way to process data across multiple machine into chunks to make
         training faster.
@@ -938,6 +953,7 @@ class DataProcessor:
                     the format in which the data is stored and optimized for loading.
             start_method: The start method used by python multiprocessing package. Default to spawn unless running
                 inside an interactive shell like Ipython.
+            storage_options: The storage options used by the cloud provider.
 
         """
         # spawn doesn't work in IPython
@@ -974,6 +990,7 @@ class DataProcessor:
         self.item_loader = item_loader
 
         self.state_dict = state_dict or {rank: 0 for rank in range(self.num_workers)}
+        self.storage_options = storage_options
 
         if self.reader is not None and self.weights is not None:
             raise ValueError("Either the reader or the weights needs to be defined.")
@@ -1193,6 +1210,7 @@ class DataProcessor:
                 self.checkpoint_chunks_info[worker_idx] if self.checkpoint_chunks_info else None,
                 self.checkpoint_next_index[worker_idx] if self.checkpoint_next_index else None,
                 self.item_loader,
+                storage_options=self.storage_options,
             )
             worker.start()
             workers.append(worker)
@@ -1249,7 +1267,9 @@ class DataProcessor:
                 f"The provided folder should start with {_SUPPORTED_CLOUD_PROVIDERS}. Found {self.output_dir.path}."
             )
         with suppress(FileNotFoundError):
-            remove_file_or_directory(os.path.join(self.output_dir.url, ".checkpoints"))
+            remove_file_or_directory(
+                os.path.join(self.output_dir.url, ".checkpoints"), storage_options=self.storage_options
+            )
 
     def _save_current_config(self, workers_user_items: List[List[Any]]) -> None:
         if not self.use_checkpoint:
@@ -1286,7 +1306,9 @@ class DataProcessor:
                 with open(temp_file_name, "w") as f:
                     json.dump(config, f)
                 upload_file_or_directory(
-                    temp_file_name, os.path.join(self.output_dir.url, ".checkpoints", "config.json")
+                    temp_file_name,
+                    os.path.join(self.output_dir.url, ".checkpoints", "config.json"),
+                    storage_options=self.storage_options,
                 )
         except Exception as e:
             print(e)
@@ -1345,7 +1367,9 @@ class DataProcessor:
         # download all the checkpoint files in tempdir and read them
         with tempfile.TemporaryDirectory() as temp_dir:
             try:
-                download_file_or_directory(os.path.join(self.output_dir.url, ".checkpoints/"), temp_dir)
+                download_file_or_directory(
+                    os.path.join(self.output_dir.url, ".checkpoints/"), temp_dir, storage_options=self.storage_options
+                )
             except FileNotFoundError:
                 return
             if not os.path.exists(os.path.join(temp_dir, "config.json")):
