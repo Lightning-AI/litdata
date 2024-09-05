@@ -14,8 +14,10 @@
 import contextlib
 import os
 import shutil
+import subprocess
 from abc import ABC
 from typing import Any, Dict, List, Optional, Union
+from urllib import parse
 
 import fsspec
 from filelock import FileLock, Timeout
@@ -24,6 +26,7 @@ from litdata.constants import _INDEX_FILENAME
 
 # from litdata.streaming.client import S3Client
 
+_USE_S5CMD_FOR_S3 = True
 
 class Downloader(ABC):
     def __init__(
@@ -202,6 +205,34 @@ class LocalDownloaderWithCache(LocalDownloader):
 #     "": LocalDownloader,
 # }
 
+def download_s3_file_via_s5cmd(remote_filepath: str, local_filepath: str) -> None:
+
+    _s5cmd_available = os.system("s5cmd > /dev/null 2>&1") == 0
+
+    if _s5cmd_available is False:
+        raise ModuleNotFoundError(str(_s5cmd_available))
+
+    obj = parse.urlparse(remote_filepath)
+
+
+    if obj.scheme != "s3":
+        raise ValueError(f"Expected obj.scheme to be `s3`, instead, got {obj.scheme} for {remote_filepath}")
+
+    if os.path.exists(local_filepath):
+        return
+
+    try:
+        with FileLock(local_filepath + ".lock", timeout=3 if obj.path.endswith(_INDEX_FILENAME) else 0):
+            proc = subprocess.Popen(
+                f"s5cmd cp {remote_filepath} {local_filepath}",
+                shell=True,
+                stdout=subprocess.PIPE,
+            )
+            proc.wait()
+    except Timeout:
+        # another process is responsible to download that file, continue
+        pass
+
 
 _DOWNLOADERS = {
     "s3://": "s3",
@@ -225,9 +256,14 @@ class FsspecDownloader(Downloader):
         remote_dir = remote_dir.replace("local:", "")
         self.is_local = False
         super().__init__(cloud_provider, remote_dir, cache_dir, chunks, storage_options)
+        self.cloud_provider = cloud_provider
+        self.use_s5cmd = cloud_provider=='s3' and os.system("s5cmd > /dev/null 2>&1") == 0
 
     def download_file(self, remote_filepath: str, local_filepath: str) -> None:
         if os.path.exists(local_filepath) or remote_filepath == local_filepath:
+            return
+        if self.use_s5cmd and _USE_S5CMD_FOR_S3:
+            download_s3_file_via_s5cmd(remote_filepath, local_filepath)
             return
         try:
             with FileLock(local_filepath + ".lock", timeout=3):
@@ -266,9 +302,13 @@ def list_directory(
 
 def download_file_or_directory(remote_filepath: str, local_filepath: str, storage_options: Optional[Dict] = {}) -> None:
     """Download a file from the remote cloud storage."""
+    fs_cloud_provider = get_cloud_provider(remote_filepath)
+    use_s5cmd = fs_cloud_provider == "s3" and os.system("s5cmd > /dev/null 2>&1") == 0
+    if use_s5cmd and _USE_S5CMD_FOR_S3:
+        download_s3_file_via_s5cmd(remote_filepath, local_filepath)
+        return
     try:
         with FileLock(local_filepath + ".lock", timeout=3):
-            fs_cloud_provider = get_cloud_provider(remote_filepath)
             fs = fsspec.filesystem(fs_cloud_provider, **storage_options)
             fs.get(remote_filepath, local_filepath, recursive=True)
     except Timeout:

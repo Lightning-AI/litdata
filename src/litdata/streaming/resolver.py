@@ -226,7 +226,7 @@ def _assert_dir_is_empty(
         object_list = list_directory(output_dir.url, storage_options=storage_options)
     except FileNotFoundError:
         return
-    print(f"{object_list=}")
+
     # We aren't alloweing to add more data
     if object_list is not None and len(object_list) > 0:
         raise RuntimeError(
