@@ -34,9 +34,6 @@ class Downloader(ABC):
         chunks: List[Dict[str, Any]],
         storage_options: Optional[Dict] = {},
     ):
-        print("-" * 80)
-        print(f"{cloud_provider=}")
-        print("-" * 80)
 
         self._remote_dir = remote_dir
         self._cache_dir = cache_dir
