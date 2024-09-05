@@ -34,7 +34,6 @@ class Downloader(ABC):
         chunks: List[Dict[str, Any]],
         storage_options: Optional[Dict] = {},
     ):
-
         self._remote_dir = remote_dir
         self._cache_dir = cache_dir
         self._chunks = chunks
