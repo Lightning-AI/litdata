@@ -5,6 +5,5 @@ pyarrow
 tqdm
 lightning-cloud == 0.5.70 # Must be pinned to ensure compatibility
 google-cloud-storage
-fsspec[s3] # aws s3
 fsspec[gs] # google cloud storage
 fsspec[abfs] # azure blob
