@@ -665,7 +665,7 @@ class StreamingDataLoader(DataLoader):
                 "latest_worker_idx": self._latest_worker_idx,
             }
 
-        # num_samples_yieled = [0 for _ in range(len(list(self._num_samples_yielded_combined.values())[0]))]
+        # Initialize a list to track the number of samples yielded for each dataset
         num_samples_yieled = [0 for _ in range(len(self.dataset._datasets))]
 
         for worker_idx in self._num_samples_yielded_combined:
