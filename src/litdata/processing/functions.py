@@ -154,7 +154,10 @@ class LambdaDataChunkRecipe(DataChunkRecipe):
         storage_options: Optional[Dict] = {},
     ):
         super().__init__(
-            chunk_size=chunk_size, chunk_bytes=chunk_bytes, compression=compression, encryption=encryption,
+            chunk_size=chunk_size,
+            chunk_bytes=chunk_bytes,
+            compression=compression,
+            encryption=encryption,
             storage_options=storage_options,
         )
         self._fn = fn
@@ -428,9 +431,9 @@ def optimize(
         num_workers = num_workers or _get_default_num_workers()
         state_dict = {rank: 0 for rank in range(num_workers)}
 
-        existing_index_file_content = read_index_file_content(
-            _output_dir, storage_options=storage_options
-        ) if mode == "append" else None
+        existing_index_file_content = (
+            read_index_file_content(_output_dir, storage_options=storage_options) if mode == "append" else None
+        )
 
         if existing_index_file_content is not None:
             for chunk in existing_index_file_content["chunks"]:

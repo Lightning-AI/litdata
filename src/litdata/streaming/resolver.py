@@ -236,8 +236,10 @@ def _assert_dir_is_empty(
 
 
 def _assert_dir_has_index_file(
-    output_dir: Dir, mode: Optional[Literal["append", "overwrite"]] = None, use_checkpoint: bool = False,
-    storage_options: Optional[Dict] = {}
+    output_dir: Dir,
+    mode: Optional[Literal["append", "overwrite"]] = None,
+    use_checkpoint: bool = False,
+    storage_options: Optional[Dict] = {},
 ) -> None:
     if mode is not None and mode not in ["append", "overwrite"]:
         raise ValueError(f"The provided `mode` should be either `append` or `overwrite`. Found {mode}.")
