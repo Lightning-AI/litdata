@@ -28,6 +28,7 @@ from litdata.constants import _INDEX_FILENAME
 
 _USE_S5CMD_FOR_S3 = True
 
+
 class Downloader(ABC):
     def __init__(
         self,
@@ -205,15 +206,14 @@ class LocalDownloaderWithCache(LocalDownloader):
 #     "": LocalDownloader,
 # }
 
-def download_s3_file_via_s5cmd(remote_filepath: str, local_filepath: str) -> None:
 
+def download_s3_file_via_s5cmd(remote_filepath: str, local_filepath: str) -> None:
     _s5cmd_available = os.system("s5cmd > /dev/null 2>&1") == 0
 
     if _s5cmd_available is False:
         raise ModuleNotFoundError(str(_s5cmd_available))
 
     obj = parse.urlparse(remote_filepath)
-
 
     if obj.scheme != "s3":
         raise ValueError(f"Expected obj.scheme to be `s3`, instead, got {obj.scheme} for {remote_filepath}")
@@ -257,7 +257,7 @@ class FsspecDownloader(Downloader):
         self.is_local = False
         super().__init__(cloud_provider, remote_dir, cache_dir, chunks, storage_options)
         self.cloud_provider = cloud_provider
-        self.use_s5cmd = cloud_provider=='s3' and os.system("s5cmd > /dev/null 2>&1") == 0
+        self.use_s5cmd = cloud_provider == "s3" and os.system("s5cmd > /dev/null 2>&1") == 0
 
     def download_file(self, remote_filepath: str, local_filepath: str) -> None:
         if os.path.exists(local_filepath) or remote_filepath == local_filepath:
