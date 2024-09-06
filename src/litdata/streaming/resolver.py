@@ -57,9 +57,9 @@ def _resolve_dir(dir_path: Optional[Union[str, Dir]]) -> Dir:
     cloud_prefixes = _SUPPORTED_CLOUD_PROVIDERS
     dir_scheme = parse.urlparse(dir_path).scheme
     if bool(dir_scheme):
-        print("="*80)
+        print("=" * 80)
         print(f"{dir_scheme=}")
-        print("="*80)
+        print("=" * 80)
         if any(dir_path.startswith(cloud_prefix) for cloud_prefix in cloud_prefixes):
             return Dir(path=None, url=dir_path)
         raise ValueError(
