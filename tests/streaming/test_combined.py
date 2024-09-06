@@ -5,13 +5,12 @@ from unittest.mock import ANY, MagicMock
 import numpy as np
 import pytest
 import torch
-from torch.utils.data import IterableDataset
-from torch.utils.data.dataloader import DataLoader
-
 from litdata.streaming.cache import Cache
 from litdata.streaming.combined import CombinedStreamingDataset
 from litdata.streaming.dataloader import StreamingDataLoader
 from litdata.streaming.dataset import Dir, StreamingDataset
+from torch.utils.data import IterableDataset
+from torch.utils.data.dataloader import DataLoader
 
 
 class TestCombinedStreamingDataset(CombinedStreamingDataset):
