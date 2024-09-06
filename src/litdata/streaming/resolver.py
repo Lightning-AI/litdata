@@ -55,8 +55,14 @@ def _resolve_dir(dir_path: Optional[Union[str, Dir]]) -> Dir:
     assert isinstance(dir_path, str)
 
     cloud_prefixes = _SUPPORTED_CLOUD_PROVIDERS
-    if any(dir_path.startswith(cloud_prefix) for cloud_prefix in cloud_prefixes):
-        return Dir(path=None, url=dir_path)
+    dir_scheme = parse.urlparse(dir_path).scheme
+    if bool(dir_scheme):
+        if any(dir_path.startswith(cloud_prefix) for cloud_prefix in cloud_prefixes):
+            return Dir(path=None, url=dir_path)
+        raise ValueError(
+            f"The provided dir_path `{dir_path}` is not supported.",
+            f" HINT: Only the following cloud providers are supported: {_SUPPORTED_CLOUD_PROVIDERS}.",
+        )
 
     if dir_path.startswith("local:"):
         return Dir(path=None, url=dir_path)

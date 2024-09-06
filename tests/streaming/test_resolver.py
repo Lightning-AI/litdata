@@ -15,6 +15,7 @@ from lightning_cloud.openapi import (
     V1ListClustersResponse,
     V1ListDataConnectionsResponse,
 )
+
 from litdata.streaming import resolver
 
 
@@ -367,3 +368,10 @@ def test_resolve_dir_absolute(tmp_path, monkeypatch):
     link.symlink_to(src)
     assert link.resolve() == src
     assert resolver._resolve_dir(str(link)).path == str(src)
+
+def test_resolve_dir_unsupported_cloud_provider(monkeypatch, tmp_path):
+    """Test that the unsupported cloud provider is handled correctly."""
+
+    test_dir = "some-random-cloud-provider://some-random-bucket"
+    with pytest.raises(ValueError, match="The provided dir_path"):
+        resolver._resolve_dir(test_dir)
