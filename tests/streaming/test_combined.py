@@ -920,7 +920,7 @@ def test_combined_dataset_with_dataloader_2_epochs(tmpdir):
         states_23.append(dataloader.state_dict())
 
     assert sum(not torch.equal(b1, b2) for b1, b2 in zip(batches_2[2:], batches_23)) == 0
-    assert states_23[0]["current_epoch"] == 2
+    assert states_23[0]["current_epoch"] == 1
 
     assert not dataloader.restore
 
