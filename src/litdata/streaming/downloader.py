@@ -244,8 +244,9 @@ _DOWNLOADERS = {
 }
 
 _DEFAULT_STORAGE_OPTIONS = {
-    "s3":{"config_kwargs": {"retries":{"max_attempts": 1000, "mode": "adaptive"}}},
+    "s3": {"config_kwargs": {"retries": {"max_attempts": 1000, "mode": "adaptive"}}},
 }
+
 
 def get_complete_storage_options(cloud_provider: str, storage_options: Optional[Dict] = {}) -> Dict:
     if storage_options is None:
