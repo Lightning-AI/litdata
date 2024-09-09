@@ -949,7 +949,7 @@ def test_combined_dataset_dataloader_states(tmpdir):
     assert len(dataloader) == 25, "Dataloader length should be 25 (50+50 items / batch size 4)"
 
     # Test dataloader with num workers
-    dataloader = StreamingDataLoader(combined_dataset, batch_size=4, num_workers=2)
+    dataloader = StreamingDataLoader(combined_dataset, batch_size=4, num_workers=4)
     assert len(dataloader) == 25, "Dataloader length should be 25 (50+50 items / batch size 4)"
 
     # Verify dataloader state after partial iteration
