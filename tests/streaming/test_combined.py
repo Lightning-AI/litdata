@@ -964,7 +964,7 @@ def test_combined_dataset_dataloader_states(tmpdir):
     # Verify remaining batches in the first epoch
     count = 0
     for _ in dataloader:
-        # assert dataloader.current_epoch == 1, "Current epoch should be 1"
+        assert dataloader.current_epoch == 1, "Current epoch should be 1"
         count += 1
     assert count == 15, "There should be atleast 15 batches remaining in the first epoch"
     assert not dataloader.restore
@@ -972,7 +972,7 @@ def test_combined_dataset_dataloader_states(tmpdir):
     # Verify batches in the second epoch
     count = 0
     for _ in dataloader:
-        # assert dataloader.current_epoch == 2, "Current epoch should be 2"
+        assert dataloader.current_epoch == 2, "Current epoch should be 2"
         count += 1
     assert count >= 25, "There should be at least 25 batches in the second epoch"
 
