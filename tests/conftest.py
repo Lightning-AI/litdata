@@ -66,10 +66,10 @@ def azure_mock(monkeypatch):
 
 @pytest.fixture()
 def lightning_cloud_mock(monkeypatch):
-    lightning_cloud = ModuleType("lightning_cloud")
-    monkeypatch.setitem(sys.modules, "lightning_cloud", lightning_cloud)
+    lightning_cloud = ModuleType("lightning_sdk.lightning_cloud")
+    monkeypatch.setitem(sys.modules, "lightning_sdk.lightning_cloud", lightning_cloud)
     rest_client = ModuleType("rest_client")
-    monkeypatch.setitem(sys.modules, "lightning_cloud.rest_client", rest_client)
+    monkeypatch.setitem(sys.modules, "lightning_sdk.lightning_cloud.rest_client", rest_client)
     lightning_cloud.rest_client = rest_client
     rest_client.LightningClient = Mock()
     return lightning_cloud
