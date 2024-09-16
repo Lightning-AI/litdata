@@ -3,8 +3,8 @@ from pathlib import Path
 from unittest import mock
 
 import pytest
-from lightning_cloud import login
-from lightning_cloud.openapi import (
+from lightning_sdk.lightning_cloud import login
+from lightning_sdk.lightning_cloud.openapi import (
     Externalv1Cluster,
     V1AwsDataConnection,
     V1AWSDirectV1,
