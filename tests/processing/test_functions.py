@@ -1,4 +1,3 @@
-
 import glob
 import os
 import random
@@ -11,12 +10,11 @@ import cryptography
 import numpy as np
 import pytest
 import requests
-from PIL import Image
-
 from litdata import StreamingDataset, merge_datasets, optimize, walk
 from litdata.processing.functions import _get_input_dir, _resolve_dir
 from litdata.streaming.cache import Cache
 from litdata.utilities.encryption import FernetEncryption, RSAEncryption
+from PIL import Image
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="currently not supported for windows.")
@@ -484,16 +482,16 @@ def test_optimize_with_rsa_encryption(tmpdir):
     # )
 
 
-
-
 def tokenize(filename: str):
-    with open(filename, "r", encoding="utf-8") as file:
+    with open(filename, encoding="utf-8") as file:
         text = file.read()
     text = text.strip().split(" ")
     word_to_int = {word: random.randint(1, 1000) for word in set(text)}
     tokenized = [word_to_int[word] for word in text]
 
     yield tokenized
+
+
 @pytest.mark.skipif(sys.platform == "win32", reason="Not tested on windows")
 def test_optimize_race_condition(tmpdir):
     # issue: https://github.com/Lightning-AI/litdata/issues/367
@@ -519,13 +517,12 @@ def test_optimize_race_condition(tmpdir):
                 for chunk in r.iter_content(chunk_size=8192):
                     f.write(chunk)
 
-    print("="*100)
-
+    print("=" * 100)
 
     train_files = sorted(glob.glob(str(Path(f"{tmpdir}/custom_texts") / "*.txt")))
-    print("="*100)
+    print("=" * 100)
     print(train_files)
-    print("="*100)
+    print("=" * 100)
     optimize(
         fn=tokenize,
         inputs=train_files,
