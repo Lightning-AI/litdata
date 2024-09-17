@@ -34,7 +34,7 @@ class _DistributedEnv:
 
     @classmethod
     def detect(cls) -> "_DistributedEnv":
-        """Tries to automatically detect the distributed environment paramters.
+        """Tries to automatically detect the distributed environment parameters.
 
         Note:
             This detection may not work in processes spawned from the distributed processes (e.g. DataLoader workers)

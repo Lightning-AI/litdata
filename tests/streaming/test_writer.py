@@ -40,7 +40,7 @@ def test_binary_writer_with_ints_and_chunk_bytes(tmpdir):
     match = (
         "The provided compression something_else isn't available"
         if _ZSTD_AVAILABLE
-        else "No compresion algorithms are installed."
+        else "No compression algorithms are installed."
     )
 
     with pytest.raises(ValueError, match=match):
@@ -81,7 +81,7 @@ def test_binary_writer_with_ints_and_chunk_size(tmpdir):
     match = (
         "The provided compression something_else isn't available"
         if _ZSTD_AVAILABLE
-        else "No compresion algorithms are installed."
+        else "No compression algorithms are installed."
     )
 
     with pytest.raises(ValueError, match=match):
