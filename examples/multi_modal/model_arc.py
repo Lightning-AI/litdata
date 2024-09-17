@@ -1,4 +1,4 @@
-"""Architecure Bert & Resnet lightning."""
+"""Architecture Bert & Resnet lightning."""
 
 import logging
 
@@ -73,7 +73,7 @@ class BertResNetClassifier(nn.Module):
 
     def get_bert_model(self):
         """
-        Load the pre trained bert model weigths
+        Load the pre trained bert model weights
         Returns: model
         """
         model = BertModel.from_pretrained("bert-base-cased")
@@ -89,9 +89,9 @@ class BertResNetClassifier(nn.Module):
         validation.
 
         Args:
-            x (torch.Tensor): Tensor with id tokesn
+            x (torch.Tensor): Tensor with id token
             y (torch.Tensor): Tensor with attention tokens.
-            z (torch.Tensor): Tensor with iamge.
+            z (torch.Tensor): Tensor with image.
 
         Returns:
             torch.Tensor: The output tensor representing the computational graph.

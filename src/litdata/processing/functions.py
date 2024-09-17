@@ -180,7 +180,7 @@ class LambdaDataChunkRecipe(DataChunkRecipe):
         return self._inputs
 
     def prepare_item(self, item_metadata: Any) -> Any:
-        """This method is overriden dynamically."""
+        """This method is overridden dynamically."""
 
 
 def map(
