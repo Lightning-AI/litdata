@@ -33,7 +33,7 @@ class EncoderAndTokenizer:
         return joblib.load(self.hyperparameters["label_encoder_name"])
 
     def load_tokenizer(self):
-        """Load the tokenizer files and the pre-training model path from s3 specified in the hyperparameters
+        """Loads the tokenizer files and the pre-training model path from s3 specified in the hyperparameters.
 
         Returns: tokenizer
         """
@@ -92,10 +92,9 @@ class MixedDataModule(pl.LightningDataModule):
     """Own DataModule form the pytorch lightning DataModule."""
 
     def __init__(self, hyperparameters: dict):
-        """Init if the Data Module
+        """Initialize if the Data Module.
 
         Args:
-            data_path: dataframe with the data
             hyperparameters:  Hyperparameters.
         """
         super().__init__()
@@ -145,7 +144,7 @@ class MixedDataModule(pl.LightningDataModule):
         )
 
     def val_dataloader(self) -> DataLoader:
-        """Define the validation dataloader
+        """Defines the validation dataloader.
 
         Returns:
             validation dataloader.
@@ -164,10 +163,10 @@ class MixedDataModule(pl.LightningDataModule):
         )
 
     def test_dataloader(self) -> DataLoader:
-        """Define the test dataloader
+        """Defines the test dataloader.
 
         Returns:
-            test dataloader.
+            test dataloader
         """
         dataset_test = DocumentClassificationDataset(
             hyperparameters=self.hyperparameters,
