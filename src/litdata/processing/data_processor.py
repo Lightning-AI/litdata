@@ -456,6 +456,7 @@ class BaseWorker:
         try:
             self._setup()
             self._loop()
+            self._terminate()
         except Exception:
             traceback_format = traceback.format_exc()
             self.error_queue.put(traceback_format)
@@ -468,6 +469,19 @@ class BaseWorker:
         self._start_downloaders()
         self._start_uploaders()
         self._start_remover()
+
+    def _terminate(self) -> None:
+        """make sure all the uploaders, downloaders and removers are terminated"""
+        for uploader in self.uploaders:
+            if uploader.is_alive():
+                uploader.join()
+
+        for downloader in self.downloaders:
+            if downloader.is_alive():
+                downloader.join()
+
+        if self.remover and self.remover.is_alive():
+            self.remover.join()
 
     def _loop(self) -> None:
         num_downloader_finished = 0
@@ -1111,6 +1125,10 @@ class DataProcessor:
 
             current_total = new_total
             if current_total == num_items:
+                # make sure all processes are terminated
+                for w in self.workers:
+                    if w.is_alive():
+                        w.join()
                 break
 
             if _IS_IN_STUDIO and node_rank == 0 and _ENABLE_STATUS:
@@ -1119,16 +1137,12 @@ class DataProcessor:
 
             # Exit early if all the workers are done.
             # This means there were some kinda of errors.
+            # TODO: Check whether this is still required.
             if all(not w.is_alive() for w in self.workers):
                 raise RuntimeError("One of the worker has failed")
 
         if _TQDM_AVAILABLE:
             pbar.close()
-
-        # TODO: Check whether this is still required.
-        if num_nodes == 1:
-            for w in self.workers:
-                w.join()
 
         print("Workers are finished.")
         result = data_recipe._done(len(user_items), self.delete_cached_files, self.output_dir)
