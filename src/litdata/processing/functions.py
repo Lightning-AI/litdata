@@ -180,7 +180,7 @@ class LambdaDataChunkRecipe(DataChunkRecipe):
         return self._inputs
 
     def prepare_item(self, item_metadata: Any) -> Any:
-        """Being overriden dynamically."""
+        """Being overridden dynamically."""
 
 
 def map(
@@ -524,8 +524,7 @@ class CopyInfo:
 def merge_datasets(input_dirs: List[str], output_dir: str) -> None:
     """Enables to merge multiple existing optimized datasets into a single optimized dataset.
 
-    Arguments:
-    ---------
+    Args:
         input_dirs: A list of directories pointing to the existing optimized datasets.
         output_dir: The directory where the merged dataset would be stored.
 

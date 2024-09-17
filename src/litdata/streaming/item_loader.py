@@ -76,12 +76,10 @@ class BaseItemLoader(ABC):
 
         region_of_interest: indicates the indexes a chunk our StreamingDataset is allowed to read.
         """
-        pass
 
     @abstractmethod
     def pre_load_chunk(self, chunk_index: int, chunk_filepath: str) -> None:
         """Logic to load the chunk in background to gain some time."""
-        pass
 
     @abstractmethod
     def load_item_from_chunk(
@@ -93,12 +91,10 @@ class BaseItemLoader(ABC):
         chunk_bytes: int,
     ) -> Any:
         """Returns an item loaded from a chunk."""
-        pass
 
     @abstractmethod
     def delete(self, chunk_index: int, chunk_filepath: str) -> None:
         """Delete a chunk from the local filesystem."""
-        pass
 
     @abstractmethod
     def encode_data(self, data: List[bytes], sizes: List[int], flattened: List[Any]) -> Any:

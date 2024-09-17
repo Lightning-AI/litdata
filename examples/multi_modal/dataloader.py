@@ -33,8 +33,9 @@ class EncoderAndTokenizer:
         return joblib.load(self.hyperparameters["label_encoder_name"])
 
     def load_tokenizer(self):
-        """Load the tokenizer files and the pre-training model path from s3 spezified in the hyperparameters
-        Returns: tokenizer.
+        """Load the tokenizer files and the pre-training model path from s3 specified in the hyperparameters
+
+        Returns: tokenizer
         """
         # Load Bert tokenizer
         return BertTokenizerFast.from_pretrained("bert-base-cased")
@@ -92,6 +93,7 @@ class MixedDataModule(pl.LightningDataModule):
 
     def __init__(self, hyperparameters: dict):
         """Init if the Data Module
+
         Args:
             data_path: dataframe with the data
             hyperparameters:  Hyperparameters.
@@ -125,7 +127,6 @@ class MixedDataModule(pl.LightningDataModule):
         """Define the training dataloader.
 
         Returns:
-        -------
             training dataloader.
 
         """
@@ -145,6 +146,7 @@ class MixedDataModule(pl.LightningDataModule):
 
     def val_dataloader(self) -> DataLoader:
         """Define the validation dataloader
+
         Returns:
             validation dataloader.
         """
@@ -163,6 +165,7 @@ class MixedDataModule(pl.LightningDataModule):
 
     def test_dataloader(self) -> DataLoader:
         """Define the test dataloader
+
         Returns:
             test dataloader.
         """

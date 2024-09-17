@@ -13,7 +13,7 @@ def shuffle_lists_together(
         list1: The first list to shuffle.
         list2: The second list to shuffle in correspondence with list1.
         random_seed_sampler: Random seed sampler to be used for shuffling
-        seed: Seed to use incase random_seed_sampler is not provided
+        seed: Seed to use in case random_seed_sampler is not provided
 
     Returns:
     -------

@@ -1,4 +1,4 @@
-"""Architecure Bert & Resnet lightning."""
+"""Architecture Bert & Resnet lightning."""
 
 import logging
 
@@ -70,7 +70,7 @@ class BertResNetClassifier(nn.Module):
         self.dropout = nn.Dropout(self.hyperparameters["dropout"])
 
     def get_bert_model(self):
-        """Load the pre-trained bert model weigths.
+        """Load the pre-trained bert model weights.
 
         Returns: model.
         """
@@ -87,13 +87,11 @@ class BertResNetClassifier(nn.Module):
         validation.
 
         Args:
-        ----
-            x: Tensor with id tokesn
+            x: Tensor with id token
             y: Tensor with attention tokens.
-            z: Tensor with iamge.
+            z: Tensor with image.
 
         Returns:
-        -------
             torch.Tensor: The output tensor representing the computational graph.
 
         """

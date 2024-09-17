@@ -108,10 +108,10 @@ def _resolve_studio(dir_path: str, target_name: Optional[str], target_id: Option
     project_id = os.getenv("LIGHTNING_CLOUD_PROJECT_ID", None)
 
     if cluster_id is None:
-        raise RuntimeError("The `cluster_id` couldn't be found from the environement variables.")
+        raise RuntimeError("The `cluster_id` couldn't be found from the environment variables.")
 
     if project_id is None:
-        raise RuntimeError("The `project_id` couldn't be found from the environement variables.")
+        raise RuntimeError("The `project_id` couldn't be found from the environment variables.")
 
     clusters = client.cluster_service_list_project_clusters(project_id).clusters
 
@@ -147,7 +147,7 @@ def _resolve_s3_connections(dir_path: str) -> Dir:
     # Get the ids from env variables
     project_id = os.getenv("LIGHTNING_CLOUD_PROJECT_ID", None)
     if project_id is None:
-        raise RuntimeError("The `project_id` couldn't be found from the environement variables.")
+        raise RuntimeError("The `project_id` couldn't be found from the environment variables.")
 
     target_name = dir_path.split("/")[3]
 
@@ -172,13 +172,13 @@ def _resolve_datasets(dir_path: str) -> Dir:
     cloud_space_id = os.getenv("LIGHTNING_CLOUD_SPACE_ID", None)
 
     if cluster_id is None:
-        raise RuntimeError("The `cluster_id` couldn't be found from the environement variables.")
+        raise RuntimeError("The `cluster_id` couldn't be found from the environment variables.")
 
     if project_id is None:
-        raise RuntimeError("The `project_id` couldn't be found from the environement variables.")
+        raise RuntimeError("The `project_id` couldn't be found from the environment variables.")
 
     if cloud_space_id is None:
-        raise RuntimeError("The `cloud_space_id` couldn't be found from the environement variables.")
+        raise RuntimeError("The `cloud_space_id` couldn't be found from the environment variables.")
 
     clusters = client.cluster_service_list_project_clusters(project_id).clusters
 

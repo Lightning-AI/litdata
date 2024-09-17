@@ -28,7 +28,7 @@ class CombinedStreamingDataset(IterableDataset):
     """Enables to stream data from multiple StreamingDataset with the sampling ratio of
     your choice.
 
-    Addtionally, the `CombinedStreamingDataset` keeps track of the number of samples fetched to enable resumability
+    Additionally, the `CombinedStreamingDataset` keeps track of the number of samples fetched to enable reusability
     of the datasets.
 
     Note that due to the random sampling, the number of samples returned from the iterator is variable and a function

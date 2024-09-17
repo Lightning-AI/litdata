@@ -84,7 +84,7 @@ class SklearnMetricsCallback(pl.Callback):
         df_cr = pd.DataFrame(report).transpose()
         df_cm.to_csv(f"{model_dir}/{mode}_confusion_matrix.csv", sep=";")
         df_cr.to_csv(f"{model_dir}/{mode}_classification_report.csv", sep=";")
-        logger.info("Confusion Matrix and Classication report are saved.")
+        logger.info("Confusion Matrix and Classification report are saved.")
 
     def save_test_evaluations(self, model_dir, mode, y_pred, y_true, confis, numerical_id_):
         """Save pandas dataframe with prediction and ground truth and identifier (numerical id) of the test dataset."""
