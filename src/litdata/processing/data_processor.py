@@ -471,7 +471,7 @@ class BaseWorker:
         self._start_remover()
 
     def _terminate(self) -> None:
-        """make sure all the uploaders, downloaders and removers are terminated"""
+        """Make sure all the uploaders, downloaders and removers are terminated."""
         for uploader in self.uploaders:
             if uploader.is_alive():
                 uploader.join()
