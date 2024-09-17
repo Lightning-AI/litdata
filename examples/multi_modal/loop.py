@@ -73,7 +73,6 @@ class SklearnMetricsCallback(pl.Callback):
         """Save classification report and confusion matrix to csv file.
 
         Args:
-        ----
             model_dir: path
             mode: train, test or val
             report_confusion_matrix: sklearn confusion matrix
@@ -181,12 +180,10 @@ class LitModel(pl.LightningModule):
         """Calculate the desired metrics.
 
         Args:
-        ----
             batch: tensor
             mode: train, test or val
 
         Returns:
-        -------
             dict with loss, outputs and ground_truth
 
         """
@@ -254,7 +251,6 @@ class LitModel(pl.LightningModule):
         """Configure the optimizer.
 
         Returns:
-        -------
             optimizer
 
         """

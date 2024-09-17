@@ -20,12 +20,10 @@ def lightning_training(model_dir: str, hyperparameters: dict) -> object:
     model, and then training, validating, and testing the model.
 
     Args:
-    ----
         model_dir (str): The path where the model output will be saved.
         hyperparameters (dict): A dictionary containing the hyperparameters for training.
 
     Returns:
-    -------
         model: The trained model.
 
     """
