@@ -20,9 +20,10 @@ def train_test_split(
     These subsets can be used for training, testing, and validation purposes.
 
     Args:
-        streaming_dataset (StreamingDataset): An instance of StreamingDataset that needs to be split.
-        splits (List[float]): A list of floats representing the proportion of data to be allocated to each split
+        streaming_dataset: An instance of StreamingDataset that needs to be split.
+        splits: A list of floats representing the proportion of data to be allocated to each split
                              (e.g., [0.8, 0.1, 0.1] for 80% training, 10% testing, and 10% validation).
+        seed: An integer used to seed the random number generator for reproducibility.
 
     Returns:
         List[StreamingDataset]: A list of StreamingDataset instances, where each element represents a split of the

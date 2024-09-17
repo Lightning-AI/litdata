@@ -251,7 +251,6 @@ def remove_uuid_from_filename(filepath: str) -> str:
         -> `checkpoint-0.json`
 
     """
-
     if not filepath.__contains__(".checkpoints"):
         return filepath
 

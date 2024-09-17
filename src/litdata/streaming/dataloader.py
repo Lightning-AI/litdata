@@ -80,11 +80,11 @@ class CacheDataset(Dataset):
     ):
         """The `CacheDataset` is a dataset wrapper to provide a beginner experience with the Cache.
 
-        Arguments:
+        Args:
             dataset: The dataset of the user
             cache_dir: The folder where the chunks are written to.
             chunk_bytes: The maximal number of bytes to write within a chunk.
-            chunk_sie: The maximal number of items to write to a chunk.
+            chunk_size: The maximal number of items to write to a chunk.
             compression: The compression algorithm to use to reduce the size of the chunk.
 
         """
