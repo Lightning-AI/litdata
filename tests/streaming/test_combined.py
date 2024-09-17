@@ -989,8 +989,6 @@ def test_combined_dataset_dataloader_states_partial_iterations(tmpdir):
     dataloader.load_state_dict(state_dict)
     assert dataloader.restore
 
-    print(dataloader.state_dict())
-
     # Verify remaining batches in the first epoch
     count = 0
     for _ in dataloader:
