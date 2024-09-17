@@ -16,6 +16,7 @@ import os
 import shutil
 import subprocess
 from abc import ABC
+from contextlib import suppress
 from typing import Any, Dict, List, Optional
 from urllib import parse
 
@@ -63,34 +64,32 @@ class S3Downloader(Downloader):
         if os.path.exists(local_filepath):
             return
 
-        try:
-            with FileLock(local_filepath + ".lock", timeout=3 if obj.path.endswith(_INDEX_FILENAME) else 0):
-                if self._s5cmd_available:
-                    proc = subprocess.Popen(
-                        f"s5cmd cp {remote_filepath} {local_filepath}",
-                        shell=True,
-                        stdout=subprocess.PIPE,
+        with suppress(Timeout), FileLock(
+            local_filepath + ".lock", timeout=3 if obj.path.endswith(_INDEX_FILENAME) else 0
+        ):
+            if self._s5cmd_available:
+                proc = subprocess.Popen(
+                    f"s5cmd cp {remote_filepath} {local_filepath}",
+                    shell=True,
+                    stdout=subprocess.PIPE,
+                )
+                proc.wait()
+            else:
+                from boto3.s3.transfer import TransferConfig
+
+                extra_args: Dict[str, Any] = {}
+
+                # try:
+                #     with FileLock(local_filepath + ".lock", timeout=1):
+                if not os.path.exists(local_filepath):
+                    # Issue: https://github.com/boto/boto3/issues/3113
+                    self._client.client.download_file(
+                        obj.netloc,
+                        obj.path.lstrip("/"),
+                        local_filepath,
+                        ExtraArgs=extra_args,
+                        Config=TransferConfig(use_threads=False),
                     )
-                    proc.wait()
-                else:
-                    from boto3.s3.transfer import TransferConfig
-
-                    extra_args: Dict[str, Any] = {}
-
-                    # try:
-                    #     with FileLock(local_filepath + ".lock", timeout=1):
-                    if not os.path.exists(local_filepath):
-                        # Issue: https://github.com/boto/boto3/issues/3113
-                        self._client.client.download_file(
-                            obj.netloc,
-                            obj.path.lstrip("/"),
-                            local_filepath,
-                            ExtraArgs=extra_args,
-                            Config=TransferConfig(use_threads=False),
-                        )
-        except Timeout:
-            # another process is responsible to download that file, continue
-            pass
 
 
 class GCPDownloader(Downloader):
@@ -113,21 +112,19 @@ class GCPDownloader(Downloader):
         if os.path.exists(local_filepath):
             return
 
-        try:
-            with FileLock(local_filepath + ".lock", timeout=3 if obj.path.endswith(_INDEX_FILENAME) else 0):
-                bucket_name = obj.netloc
-                key = obj.path
-                # Remove the leading "/":
-                if key[0] == "/":
-                    key = key[1:]
+        with suppress(Timeout), FileLock(
+            local_filepath + ".lock", timeout=3 if obj.path.endswith(_INDEX_FILENAME) else 0
+        ):
+            bucket_name = obj.netloc
+            key = obj.path
+            # Remove the leading "/":
+            if key[0] == "/":
+                key = key[1:]
 
-                client = storage.Client(**self._storage_options)
-                bucket = client.bucket(bucket_name)
-                blob = bucket.blob(key)
-                blob.download_to_filename(local_filepath)
-        except Timeout:
-            # another process is responsible to download that file, continue
-            pass
+            client = storage.Client(**self._storage_options)
+            bucket = client.bucket(bucket_name)
+            blob = bucket.blob(key)
+            blob.download_to_filename(local_filepath)
 
 
 class AzureDownloader(Downloader):
@@ -152,17 +149,14 @@ class AzureDownloader(Downloader):
         if os.path.exists(local_filepath):
             return
 
-        try:
-            with FileLock(local_filepath + ".lock", timeout=3 if obj.path.endswith(_INDEX_FILENAME) else 0):
-                service = BlobServiceClient(**self._storage_options)
-                blob_client = service.get_blob_client(container=obj.netloc, blob=obj.path.lstrip("/"))
-                with open(local_filepath, "wb") as download_file:
-                    blob_data = blob_client.download_blob()
-                    blob_data.readinto(download_file)
-
-        except Timeout:
-            # another process is responsible to download that file, continue
-            pass
+        with suppress(Timeout), FileLock(
+            local_filepath + ".lock", timeout=3 if obj.path.endswith(_INDEX_FILENAME) else 0
+        ):
+            service = BlobServiceClient(**self._storage_options)
+            blob_client = service.get_blob_client(container=obj.netloc, blob=obj.path.lstrip("/"))
+            with open(local_filepath, "wb") as download_file:
+                blob_data = blob_client.download_blob()
+                blob_data.readinto(download_file)
 
 
 class LocalDownloader(Downloader):
@@ -170,17 +164,17 @@ class LocalDownloader(Downloader):
         if not os.path.exists(remote_filepath):
             raise FileNotFoundError(f"The provided remote_path doesn't exist: {remote_filepath}")
 
-        try:
-            with FileLock(local_filepath + ".lock", timeout=3 if remote_filepath.endswith(_INDEX_FILENAME) else 0):
-                if remote_filepath != local_filepath and not os.path.exists(local_filepath):
-                    # make an atomic operation to be safe
-                    temp_file_path = local_filepath + ".tmp"
-                    shutil.copy(remote_filepath, temp_file_path)
-                    os.rename(temp_file_path, local_filepath)
-                    with contextlib.suppress(Exception):
-                        os.remove(local_filepath + ".lock")
-        except Timeout:
-            pass
+        with suppress(Timeout), FileLock(
+            local_filepath + ".lock", timeout=3 if remote_filepath.endswith(_INDEX_FILENAME) else 0
+        ):
+            if remote_filepath == local_filepath or os.path.exists(local_filepath):
+                return
+            # make an atomic operation to be safe
+            temp_file_path = local_filepath + ".tmp"
+            shutil.copy(remote_filepath, temp_file_path)
+            os.rename(temp_file_path, local_filepath)
+            with contextlib.suppress(Exception):
+                os.remove(local_filepath + ".lock")
 
 
 class LocalDownloaderWithCache(LocalDownloader):

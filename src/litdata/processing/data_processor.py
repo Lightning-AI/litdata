@@ -1136,12 +1136,11 @@ class DataProcessor:
         if num_nodes == node_rank + 1 and self.output_dir.url and self.output_dir.path is not None and _IS_IN_STUDIO:
             from lightning_sdk.lightning_cloud.openapi import V1DatasetType
 
+            data_type = V1DatasetType.CHUNKED if isinstance(data_recipe, DataChunkRecipe) else V1DatasetType.TRANSFORMED
             _create_dataset(
                 input_dir=self.input_dir.path,
                 storage_dir=self.output_dir.path,
-                dataset_type=V1DatasetType.CHUNKED
-                if isinstance(data_recipe, DataChunkRecipe)
-                else V1DatasetType.TRANSFORMED,
+                dataset_type=data_type,
                 empty=False,
                 size=result.size,
                 num_bytes=result.num_bytes,
