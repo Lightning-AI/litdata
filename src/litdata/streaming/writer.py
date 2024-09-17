@@ -91,7 +91,7 @@ class BinaryWriter:
 
         if self._compression:
             if len(_COMPRESSORS) == 0:
-                raise ValueError("No compresion algorithms are installed.")
+                raise ValueError("No compression algorithms are installed.")
 
             if self._compression not in _COMPRESSORS:
                 raise ValueError(
