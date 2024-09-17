@@ -713,8 +713,8 @@ class StreamingDataLoader(DataLoader):
             if (
                 self.dataset._iterate_over_all
                 and total_samples_yielded > 0
-                and total_samples_yielded < len(self.dataset)
-            ):  # type: ignore
+                and total_samples_yielded < len(self.dataset)  # type: ignore
+            ):
                 self.restore = True
 
             # Check if we need to restore for the case with weights.
