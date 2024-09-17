@@ -486,7 +486,7 @@ def tokenize(filename: str):
     with open(filename, encoding="utf-8") as file:
         text = file.read()
     text = text.strip().split(" ")
-    word_to_int = {word: random.randint(1, 1000) for word in set(text)}
+    word_to_int = {word: random.randint(1, 1000) for word in set(text)} # noqa: S311
     tokenized = [word_to_int[word] for word in text]
 
     yield tokenized
