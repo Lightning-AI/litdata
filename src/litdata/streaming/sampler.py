@@ -72,7 +72,7 @@ class CacheBatchSampler:
         self._validate()
 
     def _validate(self) -> None:
-        """Checks each worker is getting sucessive indices."""
+        """Checks each worker is getting successive indices."""
         if self._num_workers > 1 and not self._cache.filled:
             batches: Dict[int, Any] = {}
             for batch_index, batch_indices in enumerate(self):

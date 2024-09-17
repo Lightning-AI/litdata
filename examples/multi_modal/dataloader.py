@@ -37,7 +37,7 @@ class EncoderAndTokenizer:
 
     def load_tokenizer(self):
         """
-        load the tokenizer files and the pre training model path from s3 spezified in the hyperparameters
+        load the tokenizer files and the pre-training model path from s3 specified in the hyperparameters
         Returns: tokenizer
         """
         # Load Bert tokenizer
