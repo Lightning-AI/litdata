@@ -45,8 +45,7 @@ class CacheBatchSampler:
         If the cache isn't filled, the batch sampler alternates with ordered indices for the writer to chunk the dataset
         If the cache is filled, it acts as normal BatchSampler.
 
-        Arguments:
-        ---------
+        Args:
             dataset_size: The size of the dataset.
             num_replicas: The number of processes involves in the distributed training.
             global_rank: The global_rank of the given process

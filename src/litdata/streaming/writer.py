@@ -445,8 +445,7 @@ class BinaryWriter:
         """Once all the workers have written their own index, the merge function is responsible to read and merge them
         into a single index.
 
-        Arguments:
-        ---------
+        Args:
             node_rank: The node rank of the index file
             existing_index: Existing index to be added to the newly created one.
 

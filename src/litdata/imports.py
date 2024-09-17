@@ -65,7 +65,6 @@ class RequirementCache:
     """Boolean-like class to check for requirement and module availability.
 
     Args:
-    ----
         requirement: The requirement to check, version specifiers are allowed.
         module: The optional module to try to import if the requirement check fails.
 

@@ -59,8 +59,7 @@ class StreamingDataset(IterableDataset):
     ) -> None:
         """The streaming dataset can be used once your data have been optimised using the DatasetOptimiser class.
 
-        Arguments:
-        ---------
+        Args:
             input_dir: Path to the folder where the input data is stored.
             item_loader: The logic to load an item from a chunk.
             shuffle: Whether to shuffle the data.

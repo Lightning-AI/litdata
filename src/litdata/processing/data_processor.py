@@ -911,8 +911,7 @@ class DataProcessor:
     ):
         """Provides an efficient way to process data across multiple machine into chunks to make training faster.
 
-        Arguments:
-        ---------
+        Args:
             input_dir: The path to where the input data are stored.
             output_dir: The path to where the output data are stored.
             num_workers: The number of worker threads to use.

@@ -45,8 +45,7 @@ class CombinedStreamingDataset(IterableDataset):
     ) -> None:
         """Enable to stream data from multiple StreamingDataset with the sampling ratio of your choice.
 
-        Arguments:
-        ---------
+        Args:
             datasets: The list of the StreamingDataset to use.
             seed: The random seed to initialize the sampler
             weights: The sampling ratio for the datasets

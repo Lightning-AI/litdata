@@ -256,8 +256,7 @@ class TokensLoader(BaseItemLoader):
     def __init__(self, block_size: Optional[int] = None):
         """The Tokens Loader is an optimizer item loader for NLP.
 
-        Arguments:
-        ---------
+        Args:
             block_size: The context length to use during training.
 
         """

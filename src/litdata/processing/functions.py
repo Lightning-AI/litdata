@@ -470,7 +470,7 @@ def _listdir(folder: str) -> Tuple[str, List[str]]:
 class walk:
     """This class is an optimized version of os.walk for listing files and folders from cloud filesystem.
 
-    Note: The order of files and folders yielded aren't depth-first anymore due to the asynchronous listing call.
+    .. note:: The order of files and folders yielded aren't depth-first anymore due to the asynchronous listing call.
 
     """
 

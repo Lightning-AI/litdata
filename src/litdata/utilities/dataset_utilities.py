@@ -182,15 +182,12 @@ def load_index_file(input_dir: str) -> Dict[str, Any]:
     For shard-based files, it adapts the format to be compatible with chunk-based processing.
 
     Args:
-    ----
         input_dir (str): The directory containing the index file.
 
     Returns:
-    -------
         Dict[str, Any]: The loaded and possibly adapted index data.
 
     Raises:
-    ------
         FileNotFoundError: If the index file does not exist in the input directory.
 
     """
@@ -213,11 +210,9 @@ def adapt_mds_shards_to_chunks(data: Dict[str, Any]) -> Dict[str, Any]:
     For more details about MDS, refer to the MosaicML Streaming documentation: https://github.com/mosaicml/streaming.
 
     Args:
-    ----
         data (Dict[str, Any]): The original index data containing shards.
 
     Returns:
-    -------
         Dict[str, Any]: Adapted index data with chunks format.
 
     """
