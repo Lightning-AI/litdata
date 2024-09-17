@@ -10,7 +10,7 @@ from litdata.streaming.reader import PrepareChunksThread
 
 @pytest.fixture(autouse=True)
 def teardown_process_group():  # noqa: PT004
-    """Ensures that the distributed process group gets closed before the next test runs."""
+    """Ensures distributed process group gets closed before the next test runs."""
     yield
     if torch.distributed.is_available() and torch.distributed.is_initialized():
         torch.distributed.destroy_process_group()
@@ -84,7 +84,7 @@ def lightning_sdk_mock(monkeypatch):
 
 @pytest.fixture(autouse=True)
 def _thread_police():
-    """Attempts to stop left-over threads to avoid test interactions.
+    """Attempts stopping left-over threads to avoid test interactions.
 
     Adapted from PyTorch Lightning.
 

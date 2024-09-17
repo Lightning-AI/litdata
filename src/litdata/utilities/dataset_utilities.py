@@ -210,7 +210,7 @@ def load_index_file(input_dir: str) -> Dict[str, Any]:
 
 def adapt_mds_shards_to_chunks(data: Dict[str, Any]) -> Dict[str, Any]:
     """Adapt mds shard-based index data to chunk-based format for compatibility.
-    For more details about MDS, refer to the MosaicML Streaming documentation: https://github.com/mosaicml/streaming
+    For more details about MDS, refer to the MosaicML Streaming documentation: https://github.com/mosaicml/streaming.
 
     Args:
     ----

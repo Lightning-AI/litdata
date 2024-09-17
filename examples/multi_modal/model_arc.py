@@ -42,10 +42,6 @@ class BertClassifier(nn.Module):
 
         Used for train, test and val.
 
-        Args:
-        ----
-            input_ids
-            attention_mask
         Returns:
             computional graph
 
@@ -74,8 +70,9 @@ class BertResNetClassifier(nn.Module):
         self.dropout = nn.Dropout(self.hyperparameters["dropout"])
 
     def get_bert_model(self):
-        """Load the pre trained bert model weigths
-        Returns: model
+        """Load the pre-trained bert model weigths.
+
+        Returns: model.
         """
         model = BertModel.from_pretrained("bert-base-cased")
         return BertClassifier(model)
@@ -91,9 +88,9 @@ class BertResNetClassifier(nn.Module):
 
         Args:
         ----
-            x (torch.Tensor): Tensor with id tokesn
-            y (torch.Tensor): Tensor with attention tokens.
-            z (torch.Tensor): Tensor with iamge.
+            x: Tensor with id tokesn
+            y: Tensor with attention tokens.
+            z: Tensor with iamge.
 
         Returns:
         -------

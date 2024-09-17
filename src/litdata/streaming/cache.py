@@ -51,12 +51,12 @@ class Cache:
         """The Cache enables to optimise dataset format for cloud training. This is done by grouping several elements
         together in order to accelerate fetching.
 
-        Arguments:
-        ---------
+        Args:
             input_dir: The path to where the chunks will be or are stored.
             subsampled_files: List of subsampled chunk files loaded from `input_dir/index.json` file.
             region_of_interest: List of tuples of (start,end) of region of interest for each chunk.
             compression: The name of the algorithm to reduce the size of the chunks.
+            encryption: The encryption algorithm to use.
             chunk_bytes: The maximum number of bytes within a chunk.
             chunk_size: The maximum number of items within a chunk.
             item_loader: The object responsible to generate the chunk intervals and load an item froma chunk.

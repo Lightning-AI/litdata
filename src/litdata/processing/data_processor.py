@@ -119,7 +119,7 @@ def _wait_for_disk_usage_higher_than_threshold(input_dir: str, threshold_in_gb: 
 
 
 def _download_data_target(input_dir: Dir, cache_dir: str, queue_in: Queue, queue_out: Queue) -> None:
-    """This function is used to download data from a remote directory to a cache directory to optimise reading."""
+    """Download data from a remote directory to a cache directory to optimise reading."""
     s3 = S3Client()
 
     while True:
@@ -176,7 +176,7 @@ def _download_data_target(input_dir: Dir, cache_dir: str, queue_in: Queue, queue
 
 
 def _remove_target(input_dir: Dir, cache_dir: str, queue_in: Queue) -> None:
-    """This function is used to delete files from the cache directory to minimise disk space."""
+    """Delete files from the cache directory to minimise disk space."""
     while True:
         # 1. Collect paths
         paths = queue_in.get()
@@ -199,7 +199,7 @@ def _remove_target(input_dir: Dir, cache_dir: str, queue_in: Queue) -> None:
 
 
 def _upload_fn(upload_queue: Queue, remove_queue: Queue, cache_dir: str, output_dir: Dir) -> None:
-    """This function is used to upload optimised chunks from a local to remote dataset directory."""
+    """Upload optimised chunks from a local to remote dataset directory."""
     obj = parse.urlparse(output_dir.url if output_dir.url else output_dir.path)
 
     if obj.scheme == "s3":
@@ -787,7 +787,7 @@ class DataChunkRecipe(DataRecipe):
 
     @abstractmethod
     def prepare_item(self, item_metadata: T) -> Any:
-        """The return of this `prepare_item` method is persisted in chunked binary files."""
+        """Returns `prepare_item` method is persisted in chunked binary files."""
 
     def _done(self, size: int, delete_cached_files: bool, output_dir: Dir) -> _Result:
         num_nodes = _get_num_nodes()
@@ -832,7 +832,7 @@ class DataChunkRecipe(DataRecipe):
         )
 
     def _upload_index(self, output_dir: Dir, cache_dir: str, num_nodes: int, node_rank: Optional[int]) -> None:
-        """This method upload the index file to the remote cloud directory."""
+        """Upload the index file to the remote cloud directory."""
         if output_dir.path is None and output_dir.url is None:
             return
 
@@ -909,8 +909,7 @@ class DataProcessor:
         item_loader: Optional[BaseItemLoader] = None,
         start_method: Optional[str] = None,
     ):
-        """The `DatasetOptimiser` provides an efficient way to process data across multiple machine into chunks to make
-        training faster.
+        """Provides an efficient way to process data across multiple machine into chunks to make training faster.
 
         Arguments:
         ---------
@@ -985,7 +984,7 @@ class DataProcessor:
         self.random_seed = random_seed
 
     def run(self, data_recipe: DataRecipe) -> None:
-        """The `DataProcessor.run(...)` method triggers the data recipe processing over your dataset."""
+        """Triggers the data recipe processing over your dataset."""
         if not isinstance(data_recipe, DataRecipe):
             raise ValueError("The provided value should be a data recipe.")
         if not self.use_checkpoint and isinstance(data_recipe, DataChunkRecipe):
@@ -1394,7 +1393,7 @@ class DataProcessor:
 
 
 def in_notebook() -> bool:
-    """Returns ``True`` if the module is running in IPython kernel, ``False`` if in IPython shell or other Python
+    """Returns ``True`` if the module is running in IPython kernel, ``False`` if in IPython or other Python
     shell.
     """
     return "ipykernel" in sys.modules

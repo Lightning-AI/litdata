@@ -33,7 +33,7 @@ class BaseReader(ABC):
 
     @abstractmethod
     def remap_items(self, items: Any, num_workers: int) -> List[Any]:
-        """This method is meant to remap the items provided by the users into items more adapted to be distributed."""
+        """Remap the items provided by the users into items more adapted to be distributed."""
         pass
 
     @abstractmethod

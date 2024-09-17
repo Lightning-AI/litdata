@@ -29,14 +29,12 @@ class EncoderAndTokenizer:
         self.hyperparameters = HYPERPARAMETERS
 
     def load_labelencoder(self):
-        """Function to load the label encoder from s3
-        Returns:
-        """
+        """Function to load the label encoder from s3."""
         return joblib.load(self.hyperparameters["label_encoder_name"])
 
     def load_tokenizer(self):
-        """Load the tokenizer files and the pre training model path from s3 spezified in the hyperparameters
-        Returns: tokenizer
+        """Load the tokenizer files and the pre-training model path from s3 spezified in the hyperparameters
+        Returns: tokenizer.
         """
         # Load Bert tokenizer
         return BertTokenizerFast.from_pretrained("bert-base-cased")
@@ -60,12 +58,10 @@ class DocumentClassificationDataset(StreamingDataset):
         self.labelencoder = EC.load_labelencoder()
 
     def tokenize_data(self, tokenizer, texts, max_length: int):
-        """Tokenize the text
-        Args:
-            tokenizer:
-            texts:
-            max_length:
-        Returns: input_ids, attention_masks
+        """Tokenize the text.
+
+        Returns: input_ids, attention_masks.
+
         """
         encoded_text = tokenizer(
             texts,
@@ -98,7 +94,7 @@ class MixedDataModule(pl.LightningDataModule):
         """Init if the Data Module
         Args:
             data_path: dataframe with the data
-            hyperparameters:  Hyperparameters
+            hyperparameters:  Hyperparameters.
         """
         super().__init__()
         self.hyperparameters = hyperparameters
@@ -126,9 +122,12 @@ class MixedDataModule(pl.LightningDataModule):
         )
 
     def train_dataloader(self) -> DataLoader:
-        """Define the training dataloader
+        """Define the training dataloader.
+
         Returns:
-            training dataloader
+        -------
+            training dataloader.
+
         """
         dataset_train = DocumentClassificationDataset(
             hyperparameters=self.hyperparameters,
@@ -147,7 +146,7 @@ class MixedDataModule(pl.LightningDataModule):
     def val_dataloader(self) -> DataLoader:
         """Define the validation dataloader
         Returns:
-            validation dataloader
+            validation dataloader.
         """
         dataset_val = DocumentClassificationDataset(
             hyperparameters=self.hyperparameters,
@@ -165,7 +164,7 @@ class MixedDataModule(pl.LightningDataModule):
     def test_dataloader(self) -> DataLoader:
         """Define the test dataloader
         Returns:
-            test dataloader
+            test dataloader.
         """
         dataset_test = DocumentClassificationDataset(
             hyperparameters=self.hyperparameters,

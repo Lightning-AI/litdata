@@ -58,15 +58,16 @@ class BinaryWriter:
     ):
         """The BinaryWriter enables to chunk dataset into an efficient streaming format for cloud training.
 
-        Arguments:
-        ---------
+        Args:
             cache_dir: The path to where the chunks will be saved.
             chunk_bytes: The maximum number of bytes within a chunk.
             chunk_size: The maximum number of items within a chunk.
             compression: The compression algorithm to use.
             encryption: The encryption algorithm to use.
+            follow_tensor_dimension: Whether to follow the tensor dimension when serializing the data.
             serializers: Provide your own serializers.
             chunk_index: The index of the chunk to start from.
+            item_loader: The object responsible to generate the chunk intervals and load an item from a chunk.
 
         """
         self._cache_dir = cache_dir
