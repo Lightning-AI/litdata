@@ -59,6 +59,7 @@ class BinaryWriter:
         """The BinaryWriter enables to chunk dataset into an efficient streaming format for cloud training.
 
         Arguments:
+        ---------
             cache_dir: The path to where the chunks will be saved.
             chunk_bytes: The maximum number of bytes within a chunk.
             chunk_size: The maximum number of items within a chunk.
@@ -155,7 +156,6 @@ class BinaryWriter:
 
     def serialize(self, items: Any) -> Tuple[bytes, Optional[int]]:
         """Serialize a dictionary into its binary format."""
-
         # Flatten the items provided by the users
         flattened, data_spec = tree_flatten(items)
 
@@ -289,8 +289,8 @@ class BinaryWriter:
 
     def add_item(self, index: int, items: Any) -> Optional[str]:
         """Given an index and items will serialize the items and store an Item object to the growing
-        `_serialized_items`."""
-
+        `_serialized_items`.
+        """
         if index in self._serialized_items:
             raise ValueError(f"The provided index {index} already exists in the cache.")
 
@@ -413,7 +413,8 @@ class BinaryWriter:
 
     def merge(self, num_workers: int = 1, node_rank: Optional[int] = None) -> None:
         """Once all the workers have written their own index, the merge function is responsible to read and merge them
-        into a single index."""
+        into a single index.
+        """
         num_workers = num_workers or 1
 
         # Only for non rank 0
@@ -444,6 +445,7 @@ class BinaryWriter:
         into a single index.
 
         Arguments:
+        ---------
             node_rank: The node rank of the index file
             existing_index: Existing index to be added to the newly created one.
 

@@ -22,6 +22,7 @@ class _DistributedEnv:
     """The environment of the distributed training.
 
     Args:
+    ----
         world_size: The number of total distributed training processes
         global_rank: The rank of the current process within this pool of training processes
 
@@ -37,6 +38,7 @@ class _DistributedEnv:
         """Tries to automatically detect the distributed environment paramters.
 
         Note:
+        ----
             This detection may not work in processes spawned from the distributed processes (e.g. DataLoader workers)
             as the distributed framework won't be initialized there.
             It will default to 1 distributed process in this case.
@@ -90,6 +92,7 @@ class _WorkerEnv:
     """Contains the environment for the current dataloader within the current training process.
 
     Args:
+    ----
         world_size: The number of dataloader workers for the current training process
         rank: The rank of the current worker within the number of workers
 
@@ -104,6 +107,7 @@ class _WorkerEnv:
         """Automatically detects the number of workers and the current rank.
 
         Note:
+        ----
             This only works reliably within a dataloader worker as otherwise the necessary information won't be present.
             In such a case it will default to 1 worker
 
@@ -126,6 +130,7 @@ class Environment:
     """Contains the compute environment. If not passed, will try to detect.
 
     Args:
+    ----
         dist_env: The distributed environment (distributed worldsize and global rank)
         worker_env: The worker environment (number of workers, worker rank)
 
@@ -146,6 +151,7 @@ class Environment:
         """Generates the Environment class by already given arguments instead of detecting them.
 
         Args:
+        ----
             dist_world_size: The worldsize used for distributed training (=total number of distributed processes)
             global_rank: The distributed global rank of the current process
             num_workers: The number of workers per distributed training process
@@ -163,6 +169,7 @@ class Environment:
         """Returns the total number of shards.
 
         Note:
+        ----
             This may not be accurate in a non-dataloader-worker process like the main training process
             as it doesn't necessarily know about the number of dataloader workers.
 
@@ -176,6 +183,7 @@ class Environment:
         """Returns the rank of the current process wrt. the total number of shards.
 
         Note:
+        ----
             This may not be accurate in a non-dataloader-worker process like the main training process as it
             doesn't necessarily know about the number of dataloader workers.
 

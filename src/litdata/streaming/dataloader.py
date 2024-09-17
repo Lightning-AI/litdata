@@ -81,6 +81,7 @@ class CacheDataset(Dataset):
         """The `CacheDataset` is a dataset wraper to provide a beginner experience with the Cache.
 
         Arguments:
+        ---------
             dataset: The dataset of the user
             cache_dir: The folder where the chunks are written to.
             chunk_bytes: The maximal number of bytes to write within a chunk.
@@ -502,6 +503,7 @@ class StreamingDataLoader(DataLoader):
     See :py:mod:`torch.utils.data` documentation page for more details.
 
     Args:
+    ----
         dataset (Dataset): dataset from which to load the data.
         batch_size (int, optional): how many samples per batch to load
             (default: ``1``).
@@ -683,6 +685,7 @@ class StreamingDataLoader(DataLoader):
         This is called on each copy of the dataset when resuming.
 
         Args:
+        ----
             obj (Any): The state.
 
         """

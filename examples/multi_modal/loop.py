@@ -73,6 +73,7 @@ class SklearnMetricsCallback(pl.Callback):
         """Save classification report and confusion matrix to csv file.
 
         Args:
+        ----
             model_dir: path
             mode: train, test or val
             report_confusion_matrix: sklearn confusion matrix
@@ -87,8 +88,7 @@ class SklearnMetricsCallback(pl.Callback):
         logger.info("Confusion Matrix and Classication report are saved.")
 
     def save_test_evaluations(self, model_dir, mode, y_pred, y_true, confis, numerical_id_):
-        """
-        Save a pandas dataframe with prediction and ground truth and identifier (numerical id) of the test dataset
+        """Save a pandas dataframe with prediction and ground truth and identifier (numerical id) of the test dataset
         Args:
             model_dir:
             mode:
@@ -151,7 +151,9 @@ class LitModel(pl.LightningModule):
         """Forward path, calculate the computational graph in the forward direction.
 
         Used for train, test and val.
+
         Args:
+        ----
             y: tensor with text data as tokens
         Returns:
             computional graph
@@ -160,8 +162,7 @@ class LitModel(pl.LightningModule):
         return self.module(x, y, z)
 
     def training_step(self, batch: Dict[str, torch.Tensor]) -> Dict:
-        """
-        Call the eval share for training
+        """Call the eval share for training
         Args:
             batch: tensor
         Returns:
@@ -170,8 +171,7 @@ class LitModel(pl.LightningModule):
         return self._shared_eval_step(batch, "train")
 
     def validation_step(self, batch: Dict[str, torch.Tensor], batch_idx: int) -> Dict:
-        """
-        Call the eval share for validation
+        """Call the eval share for validation
         Args:
             batch:
             batch_idx:
@@ -181,8 +181,7 @@ class LitModel(pl.LightningModule):
         return self._shared_eval_step(batch, "val")
 
     def test_step(self, batch: Dict[str, torch.Tensor], batch_idx: int) -> Dict:
-        """
-        Call the eval share for test
+        """Call the eval share for test
         Args:
             batch:
             batch_idx:
@@ -197,6 +196,7 @@ class LitModel(pl.LightningModule):
         """Calculate the desired metrics.
 
         Args:
+        ----
             batch: tensor
             mode: train, test or val
         Returns:
@@ -228,8 +228,7 @@ class LitModel(pl.LightningModule):
         return {"outputs": out, "loss": loss, "ground_truth": ground_truth, "numerical_id": numerical_id}
 
     def _epoch_end(self, mode: str):
-        """
-        Calculate loss and metricies at end of epoch
+        """Calculate loss and metricies at end of epoch
         Args:
             mode:
         Returns:
@@ -252,6 +251,7 @@ class LitModel(pl.LightningModule):
         """Model prediction  without softmax and argmax to predict class label.
 
         Args:
+        ----
             outputs:
         Returns:
             None
@@ -265,8 +265,7 @@ class LitModel(pl.LightningModule):
             return self.forward(ids, atts, img)
 
     def on_test_epoch_end(self) -> None:
-        """
-        Calculate the metrics at the end of epoch for test step
+        """Calculate the metrics at the end of epoch for test step
         Args:
             outputs:
         Returns:
@@ -275,8 +274,7 @@ class LitModel(pl.LightningModule):
         self._epoch_end("test")
 
     def on_validation_epoch_end(self):
-        """
-        Calculate the metrics at the end of epoch for val step
+        """Calculate the metrics at the end of epoch for val step
         Args:
             outputs:
         Returns:
@@ -285,8 +283,7 @@ class LitModel(pl.LightningModule):
         self._epoch_end("val")
 
     def on_train_epoch_end(self):
-        """
-        Calculate the metrics at the end of epoch for train step
+        """Calculate the metrics at the end of epoch for train step
         Args:
             outputs:
         Returns:
@@ -295,8 +292,7 @@ class LitModel(pl.LightningModule):
         self._epoch_end("train")
 
     def configure_optimizers(self) -> Any:
-        """
-        Configure the optimizer
+        """Configure the optimizer
         Returns:
             optimizer
         """
@@ -307,7 +303,8 @@ class LitModel(pl.LightningModule):
     def configure_callbacks(self) -> Union[Sequence[pl.pytorch.Callback], pl.pytorch.Callback]:
         """Configure Early stopping or Model Checkpointing.
 
-        Returns:
+        Returns
+        -------
 
         """
         early_stop = EarlyStopping(

@@ -168,7 +168,6 @@ class PyTreeLoader(BaseItemLoader):
         self, chunk_filepath: str, chunk_index: int, offset: int, encryption: Optional[Encryption]
     ) -> bytes:
         """Load and decrypt data from chunk based on the encryption configuration."""
-
         # Validate the provided encryption object against the expected configuration.
         self._validate_encryption(encryption)
 
@@ -262,10 +261,10 @@ class TokensLoader(BaseItemLoader):
         """The Tokens Loader is an optimizer item loader for NLP.
 
         Arguments:
+        ---------
             block_size: The context length to use during training.
 
         """
-
         super().__init__()
         self._block_size = block_size
         self._mmaps: Dict[int, np.memmap] = {}

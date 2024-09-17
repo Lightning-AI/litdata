@@ -3,8 +3,7 @@ from sklearn.preprocessing import LabelEncoder
 
 
 def create_labelencoder():
-    """
-    Create a label encoder
+    """Create a label encoder
     Returns:
 
     """

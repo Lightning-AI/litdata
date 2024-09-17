@@ -913,6 +913,7 @@ class DataProcessor:
         training faster.
 
         Arguments:
+        ---------
             input_dir: The path to where the input data are stored.
             output_dir: The path to where the output data are stored.
             num_workers: The number of worker threads to use.
@@ -1394,5 +1395,6 @@ class DataProcessor:
 
 def in_notebook() -> bool:
     """Returns ``True`` if the module is running in IPython kernel, ``False`` if in IPython shell or other Python
-    shell."""
+    shell.
+    """
     return "ipykernel" in sys.modules

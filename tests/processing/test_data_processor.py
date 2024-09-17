@@ -461,7 +461,6 @@ class TestDataProcessor(DataProcessor):
 )
 def test_data_processsor_distributed(fast_dev_run, delete_cached_files, tmpdir, monkeypatch):
     """This test ensures the data optimizer works in a fully distributed settings."""
-
     seed_everything(42)
 
     monkeypatch.setattr(data_processor_module.os, "_exit", mock.MagicMock())

@@ -59,7 +59,8 @@ class Shuffle(ABC):
 
 class NoShuffle(Shuffle):
     """NoShuffle doesn't shuffle the items and ensure all the processes receive the same number of items if drop_last
-    is True."""
+    is True.
+    """
 
     @lru_cache(maxsize=10)
     def get_chunks_and_intervals_per_workers(

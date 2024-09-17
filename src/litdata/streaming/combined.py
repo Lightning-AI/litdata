@@ -51,7 +51,6 @@ class CombinedStreamingDataset(IterableDataset):
             iterate_over_all: When iterate_over_all is True, the combined dataset iterates over all the datasets.
                 Otherwise, it stops as soon as one raises a StopIteration.
         """
-
         self._check_datasets(datasets)
 
         self._seed = seed

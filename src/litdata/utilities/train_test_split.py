@@ -20,15 +20,18 @@ def train_test_split(
     These subsets can be used for training, testing, and validation purposes.
 
     Args:
+    ----
         streaming_dataset (StreamingDataset): An instance of StreamingDataset that needs to be split.
         splits (List[float]): A list of floats representing the proportion of data to be allocated to each split
                              (e.g., [0.8, 0.1, 0.1] for 80% training, 10% testing, and 10% validation).
 
     Returns:
+    -------
         List[StreamingDataset]: A list of StreamingDataset instances, where each element represents a split of the
                                 original dataset according to the proportions specified in the 'splits' argument.
 
     Raises:
+    ------
         ValueError: If any element in the 'splits' list is not a float between 0 (inclusive) and 1 (exclusive).
         ValueError: If the sum of the values in the 'splits' list is greater than 1.
         Exception: If the provided StreamingDataset is already a subsample (not currently supported).

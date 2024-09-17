@@ -348,7 +348,6 @@ def _execute(
     command: Optional[str] = None,
 ) -> None:
     """Remotely execute the current operator."""
-
     if not _LIGHTNING_SDK_AVAILABLE:
         raise ModuleNotFoundError("The `lightning_sdk` is required.")
 

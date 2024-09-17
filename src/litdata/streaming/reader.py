@@ -175,6 +175,7 @@ class BinaryReader:
         """The BinaryReader enables to read chunked dataset in an efficient way.
 
         Arguments:
+        ---------
             cache_dir: The path to cache folder.
             subsampled_files: List of subsampled chunk files loaded from `input_dir/index.json` file.
             region_of_interest: List of tuples of {start,end} of region of interest for each chunk.

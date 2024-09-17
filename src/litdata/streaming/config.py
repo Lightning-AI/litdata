@@ -39,6 +39,7 @@ class ChunksConfig:
         chunk.
 
         Arguments:
+        ---------
             cache_dir: The path to cache folder.
             serializers: The serializers used to serialize and deserialize the chunks.
             remote_dir: The path to a remote folder where the data are located.

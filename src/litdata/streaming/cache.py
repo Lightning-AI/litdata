@@ -52,6 +52,7 @@ class Cache:
         together in order to accelerate fetching.
 
         Arguments:
+        ---------
             input_dir: The path to where the chunks will be or are stored.
             subsampled_files: List of subsampled chunk files loaded from `input_dir/index.json` file.
             region_of_interest: List of tuples of (start,end) of region of interest for each chunk.

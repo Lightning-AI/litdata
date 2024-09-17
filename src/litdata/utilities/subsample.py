@@ -9,12 +9,14 @@ def shuffle_lists_together(
     """Shuffles list1 and applies the same shuffle order to list2.
 
     Args:
+    ----
         list1: The first list to shuffle.
         list2: The second list to shuffle in correspondence with list1.
         random_seed_sampler: Random seed sampler to be used for shuffling
         seed: Seed to use incase random_seed_sampler is not provided
 
     Returns:
+    -------
         A tuple containing the shuffled versions of list1 and list2.
 
     """

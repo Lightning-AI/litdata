@@ -203,6 +203,7 @@ def map(
     """This function maps a callable over a collection of inputs, possibly in a distributed way.
 
     Arguments:
+    ---------
         fn: A function to be executed over each input element
         inputs: A sequence of input to be processed by the `fn` function, or a streaming dataloader.
         output_dir: The folder where the processed data should be stored.
@@ -318,6 +319,7 @@ def optimize(
     """This function converts a dataset into chunks, possibly in a distributed way.
 
     Arguments:
+    ---------
         fn: A function to be executed over each input element. The function should return the data sample that
             corresponds to the input. Every invocation of the function should return a similar hierarchy of objects,
             where the object types and list sizes don't change.
@@ -524,6 +526,7 @@ def merge_datasets(input_dirs: List[str], output_dir: str) -> None:
     dataset.
 
     Arguments:
+    ---------
         input_dirs: A list of directories pointing to the existing optimized datasets.
         output_dir: The directory where the merged dataset would be stored.
 

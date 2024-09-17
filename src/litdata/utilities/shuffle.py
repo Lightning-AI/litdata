@@ -51,7 +51,8 @@ def _group_chunks_by_nodes(
     num_workers_per_process: int,
 ) -> List[List[int]]:
     """Takes a list representing chunks grouped by worker (global worker id across ranks and nodes) and returns a list
-    in which the chunks are grouped by node."""
+    in which the chunks are grouped by node.
+    """
     chunk_indexes_per_nodes: Any = [[] for _ in range(num_nodes)]
     num_processes_per_node = world_size // num_nodes
     for worker_global_id, chunks in enumerate(chunks_per_workers):
@@ -135,7 +136,6 @@ def _find_chunks_per_workers_on_which_to_skip_deletion(
     to only let the worker delete a chunk when that worker is the last to read from it.
 
     """
-
     # Shared chunks across all workers and ranks
     shared_chunks = _get_shared_chunks(workers_chunks)
 
@@ -279,7 +279,8 @@ def _aggregate_shared_chunks_per_rank(
 
 def _map_node_worker_rank_to_chunk_indexes_to_not_delete(to_disable: Dict[int, List[int]]) -> Dict[int, List[int]]:
     """Takes a dictionary mapping a chunk index to a list of workers and inverts the map such that it returns a
-    dictionary mapping a worker to a list of chunk indexes (that should not be deleted by that worker)."""
+    dictionary mapping a worker to a list of chunk indexes (that should not be deleted by that worker).
+    """
     map_node_worker_rank_to_chunk_indexes: Dict[int, List[int]] = {}
     for chunk_index, worker_ids in to_disable.items():
         for worker_idx in worker_ids:

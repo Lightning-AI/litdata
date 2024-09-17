@@ -41,7 +41,9 @@ class BertClassifier(nn.Module):
         """Forward path, calculate the computational graph in the forward direction.
 
         Used for train, test and val.
+
         Args:
+        ----
             input_ids
             attention_mask
         Returns:
@@ -72,8 +74,7 @@ class BertResNetClassifier(nn.Module):
         self.dropout = nn.Dropout(self.hyperparameters["dropout"])
 
     def get_bert_model(self):
-        """
-        Load the pre trained bert model weigths
+        """Load the pre trained bert model weigths
         Returns: model
         """
         model = BertModel.from_pretrained("bert-base-cased")
@@ -89,11 +90,13 @@ class BertResNetClassifier(nn.Module):
         validation.
 
         Args:
+        ----
             x (torch.Tensor): Tensor with id tokesn
             y (torch.Tensor): Tensor with attention tokens.
             z (torch.Tensor): Tensor with iamge.
 
         Returns:
+        -------
             torch.Tensor: The output tensor representing the computational graph.
 
         """

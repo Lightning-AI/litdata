@@ -68,9 +68,11 @@ def generate_document(template_name) -> str:
     """Generates a document based on the given template name by filling it with random sample data.
 
     Args:
+    ----
         template_name (str): The name of the template to use for generating the document.
 
     Returns:
+    -------
         str: The filled template as a string.
 
     """
@@ -88,6 +90,7 @@ def save_as_pdf(text, filename):
     """Saves the given text as a PDF file.
 
     Args:
+    ----
         text (str): The text to be saved in the PDF.
         filename (str): The path to the PDF file to be created.
 
@@ -103,9 +106,11 @@ def convert_pdf_to_jpg(pdf_filename):
     """Converts a PDF file to a JPEG image.
 
     Args:
+    ----
         pdf_filename (str): The path to the PDF file to be converted.
 
     Returns:
+    -------
         bytes: The binary content of the converted JPEG image.
 
     """
@@ -121,10 +126,12 @@ def generate_single_dataframe(index, num_entries):
     """Generates a single dataframe containing randomly generated documents and their corresponding metadata.
 
     Args:
+    ----
         index (int): The index of the dataframe.
         num_entries (int): The number of entries (documents) to generate.
 
     Returns:
+    -------
         tuple: A tuple containing the index and the generated dataframe.
 
     """
@@ -153,6 +160,7 @@ def save_dataframe(args, output_dir):
     """Saves a dataframe as a Parquet file.
 
     Args:
+    ----
         args (tuple): A tuple containing the index and the dataframe.
         output_dir (str): The directory where the Parquet file will be saved.
 
@@ -165,6 +173,7 @@ def generate_data_set(output_dir: str, num_pds: int = 10, num_entries=10):
     """Generates a dataset by creating multiple dataframes in parallel.
 
     Args:
+    ----
         output_dir (str): The directory where the generated dataframes will be saved.
         num_pds (int): The number of dataframes to generate.
         num_entries (int): The number of entries (documents) per dataframe.
