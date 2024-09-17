@@ -58,6 +58,7 @@ lint.select = [
     "UP", # see: pyupgrade
 ]
 lint.extend-select = [
+    "D",
     "I",  # see: isort
     "C4",  # see: https://pypi.org/project/flake8-comprehensions
     "SIM",  # see: https://pypi.org/project/flake8-simplify
@@ -92,6 +93,7 @@ lint.ignore-init-module-imports = true
 ]
 "tests/**" = [
     "S105", "S106",  # todo: Possible hardcoded password: ...
+    "D100", "D101", "D102", "D103", "D104", "D105",
 ]
 
 [tool.ruff.lint.mccabe]
