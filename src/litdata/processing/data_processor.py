@@ -1134,7 +1134,7 @@ class DataProcessor:
         result = data_recipe._done(len(user_items), self.delete_cached_files, self.output_dir)
 
         if num_nodes == node_rank + 1 and self.output_dir.url and self.output_dir.path is not None and _IS_IN_STUDIO:
-            from lightning_cloud.openapi import V1DatasetType
+            from lightning_sdk.lightning_cloud.openapi import V1DatasetType
 
             _create_dataset(
                 input_dir=self.input_dir.path,
