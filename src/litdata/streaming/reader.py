@@ -19,7 +19,6 @@ from queue import Empty, Queue
 from threading import Event, Thread
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-from litdata.constants import _TORCH_GREATER_EQUAL_2_1_0
 from litdata.streaming.config import ChunksConfig, Interval
 from litdata.streaming.item_loader import BaseItemLoader, PyTreeLoader
 from litdata.streaming.sampler import ChunkedIndex
@@ -28,9 +27,6 @@ from litdata.utilities.encryption import Encryption
 from litdata.utilities.env import _DistributedEnv, _WorkerEnv
 
 warnings.filterwarnings("ignore", message=".*The given buffer is not writable.*")
-
-if _TORCH_GREATER_EQUAL_2_1_0:
-    pass
 
 
 logger = Logger(__name__)

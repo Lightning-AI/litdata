@@ -17,6 +17,7 @@ import pickle
 import tempfile
 from abc import ABC, abstractmethod
 from collections import OrderedDict
+from contextlib import suppress
 from copy import deepcopy
 from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Union
 
@@ -128,11 +129,9 @@ class JPEGSerializer(Serializer):
             from torchvision.transforms.functional import pil_to_tensor
 
             array = torch.frombuffer(data, dtype=torch.uint8)
-            try:
+            # Note: Some datasets like Imagenet contains some PNG images with JPEG extension, so we fallback to PIL
+            with suppress(RuntimeError):
                 return decode_jpeg(array)
-            except RuntimeError:
-                # Note: Some datasets like Imagenet contains some PNG images with JPEG extension, so we fallback to PIL
-                pass
 
         img = PILSerializer.deserialize(data)
         if _TORCH_VISION_AVAILABLE:
