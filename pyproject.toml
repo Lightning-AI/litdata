@@ -68,14 +68,12 @@ lint.extend-select = [
 ]
 lint.ignore = [
     "E731",  # Do not assign a lambda expression, use a def
-    "S108",
-    "E203", # conflicts with black
+    "S101",  # todo: Use of `assert` detected
 ]
 # Exclude a variety of commonly ignored directories.
 exclude = [
     ".git",
     "docs",
-    "_notebooks",
     "src/litdata/utilities/_pytree.py",
 ]
 lint.ignore-init-module-imports = true
@@ -84,40 +82,16 @@ lint.ignore-init-module-imports = true
 ".actions/*" = ["S101", "S310"]
 "setup.py" = ["S101", "SIM115"]
 "examples/**" = [
-    "S101",  # todo: Use of `assert` detected
-    "S403",  # todo: `pickle`, `cPickle`, `dill`, and `shelve` modules are possibly insecure
-    "S404",  # todo: `subprocess` module is possibly insecure
-    "S602",  # todo: `subprocess` call with `shell=True` identified, security issue
-    "S603",  # todo: `subprocess` call: check for execution of untrusted input
-    "S605",  # todo: Starting a process with a shell: seems safe, but may be changed in the future; consider rewriting without `shell`
-    "S607",  # todo: Starting a process with a partial executable path
-    "S310",  # todo: Audit URL open for permitted schemes. Allowing use of `file:` or custom schemes is often unexpected.
     "S311",  # Standard pseudo-random generators are not suitable for cryptographic purposes
 ]
 "src/**" = [
-    "S101",  # todo: Use of `assert` detected
-    "S403",  # todo: `pickle`, `cPickle`, `dill`, and `shelve` modules are possibly insecure
-    "S404",  # todo: `subprocess` module is possibly insecure
     "S602",  # todo: `subprocess` call with `shell=True` identified, security issue
-    "S603",  # todo: `subprocess` call: check for execution of untrusted input
     "S605",  # todo: Starting a process with a shell: seems safe, but may be changed in the future; consider rewriting without `shell`
     "S607",  # todo: Starting a process with a partial executable path
     "S310",  # todo: Audit URL open for permitted schemes. Allowing use of `file:` or custom schemes is often unexpected.
 ]
 "tests/**" = [
-    "S101",  # Use of `assert` detected
     "S105", "S106",  # todo: Possible hardcoded password: ...
-    "S301",  # `pickle` and modules that wrap it can be unsafe when used to deserialize untrusted data, possible security issue
-    "S113",  # todo: Probable use of requests call without timeout
-    "S311",  # todo: Standard pseudo-random generators are not suitable for cryptographic purposes
-    "S108",  # todo: Probable insecure usage of temporary file or directory: "/tmp/sys-customizations-sync"
-    "S202",  # Uses of `tarfile.extractall()`
-    "S403",  # `pickle`, `cPickle`, `dill`, and `shelve` modules are possibly insecure
-    "S404",  # `subprocess` module is possibly insecure
-    "S602",  # todo: `subprocess` call with `shell=True` identified, security issue
-    "S603",  # todo: `subprocess` call: check for execution of untrusted input
-    "S605",  # todo: Starting a process with a shell: seems safe, but may be changed in the future; consider rewriting without `shell`
-    "S607",  # todo: Starting a process with a partial executable path
 ]
 
 [tool.ruff.lint.mccabe]
