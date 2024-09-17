@@ -53,9 +53,9 @@ def _create_dataset(
     if not storage_dir:
         raise ValueError("The storage_dir should be defined.")
 
-    from lightning_cloud.openapi import ProjectIdDatasetsBody
-    from lightning_cloud.openapi.rest import ApiException
-    from lightning_cloud.rest_client import LightningClient
+    from lightning_sdk.lightning_cloud.openapi import ProjectIdDatasetsBody
+    from lightning_sdk.lightning_cloud.openapi.rest import ApiException
+    from lightning_sdk.lightning_cloud.rest_client import LightningClient
 
     client = LightningClient(retry=False)
 

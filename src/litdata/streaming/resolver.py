@@ -104,7 +104,7 @@ def _match_studio(target_id: Optional[str], target_name: Optional[str], cloudspa
 
 
 def _resolve_studio(dir_path: str, target_name: Optional[str], target_id: Optional[str]) -> Dir:
-    from lightning_cloud.rest_client import LightningClient
+    from lightning_sdk.lightning_cloud.rest_client import LightningClient
 
     client = LightningClient(max_tries=2)
 
@@ -145,7 +145,7 @@ def _resolve_studio(dir_path: str, target_name: Optional[str], target_id: Option
 
 
 def _resolve_s3_connections(dir_path: str) -> Dir:
-    from lightning_cloud.rest_client import LightningClient
+    from lightning_sdk.lightning_cloud.rest_client import LightningClient
 
     client = LightningClient(max_tries=2)
 
@@ -167,7 +167,7 @@ def _resolve_s3_connections(dir_path: str) -> Dir:
 
 
 def _resolve_datasets(dir_path: str) -> Dir:
-    from lightning_cloud.rest_client import LightningClient
+    from lightning_sdk.lightning_cloud.rest_client import LightningClient
 
     client = LightningClient(max_tries=2)
 
