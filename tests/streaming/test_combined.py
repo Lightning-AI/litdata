@@ -926,7 +926,7 @@ def test_combined_dataset_with_dataloader_2_epochs(tmpdir):
 
 
 @pytest.mark.timeout(120)
-def test_combined_dataset_dataloader_states(tmpdir):
+def test_combined_dataset_dataloader_states_complete_iterations(tmpdir):
     datasets = [str(tmpdir.join(f"dataset_{i}")) for i in range(2)]
     for dataset in datasets:
         cache = Cache(input_dir=dataset, chunk_bytes="64MB")
@@ -961,17 +961,35 @@ def test_combined_dataset_dataloader_states(tmpdir):
     for batch in dataloader:
         assert dataloader.current_epoch == 2, "Current epoch should be 2"
         pass
+    assert not dataloader.restore
+
+
+@pytest.mark.timeout(120)
+def test_combined_dataset_dataloader_states_partial_iterations(tmpdir):
+    datasets = [str(tmpdir.join(f"dataset_{i}")) for i in range(2)]
+    for dataset in datasets:
+        cache = Cache(input_dir=dataset, chunk_bytes="64MB")
+        for i in range(50):
+            cache[i] = i
+        cache.done()
+        cache.merge()
+
+    dataset_1 = StreamingDataset(datasets[0], shuffle=True)
+    dataset_2 = StreamingDataset(datasets[1], shuffle=True)
+    combined_dataset = CombinedStreamingDataset(datasets=[dataset_1, dataset_2])
 
     # Verify dataloader state after partial last iteration
     dataloader = StreamingDataLoader(combined_dataset, batch_size=4, num_workers=4)
+
     for batch_idx, batch in enumerate(dataloader):
         assert dataloader.current_epoch == 1, "Current epoch should be 1"
-        if batch_idx == 10:
+        if batch_idx == 15:
             break
     state_dict = dataloader.state_dict()
-    print(state_dict)
     dataloader.load_state_dict(state_dict)
     assert dataloader.restore
+
+    print(dataloader.state_dict())
 
     # Verify remaining batches in the first epoch
     count = 0
