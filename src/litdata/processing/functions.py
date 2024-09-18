@@ -546,6 +546,7 @@ def merge_datasets(input_dirs: List[str], output_dir: str, storage_options: Opti
     Args:
         input_dirs: A list of directories pointing to the existing optimized datasets.
         output_dir: The directory where the merged dataset would be stored.
+        storage_options: A dictionary of storage options to be passed to the fsspec library.
 
     """
     if len(input_dirs) == 0:
