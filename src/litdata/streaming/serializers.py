@@ -103,7 +103,7 @@ class JPEGSerializer(Serializer):
         if isinstance(item, JpegImageFile):
             if not hasattr(item, "filename"):
                 raise ValueError(
-                    "The JPEG Image's filename isn't defined. HINT: Open the image in your Dataset __getitem__ method."
+                    "The JPEG Image's filename isn't defined.\n HINT: Open the image in your Dataset __getitem__ method."
                 )
             if item.filename and os.path.isfile(item.filename):
                 # read the content of the file directly
