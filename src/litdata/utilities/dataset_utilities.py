@@ -64,7 +64,7 @@ def subsample_streaming_dataset(
     else:
         raise ValueError(
             f"The provided dataset `{input_dir.path}` doesn't contain any {_INDEX_FILENAME} file."
-            " HINT: Did you successfully optimize a dataset to the provided `input_dir`?"
+            "\n HINT: Did you successfully optimize a dataset to the provided `input_dir`?"
         )
 
     assert len(original_chunks) > 0, f"No chunks found in the `{input_dir}/index.json` file"

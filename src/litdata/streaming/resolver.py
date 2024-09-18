@@ -108,10 +108,10 @@ def _resolve_studio(dir_path: str, target_name: Optional[str], target_id: Option
     project_id = os.getenv("LIGHTNING_CLOUD_PROJECT_ID", None)
 
     if cluster_id is None:
-        raise RuntimeError("The `cluster_id` couldn't be found from the environment variables.")
+        raise RuntimeError("The `LIGHTNING_CLUSTER_ID` couldn't be found from the environment variables.")
 
     if project_id is None:
-        raise RuntimeError("The `project_id` couldn't be found from the environment variables.")
+        raise RuntimeError("The `LIGHTNING_CLOUD_PROJECT_ID` couldn't be found from the environment variables.")
 
     clusters = client.cluster_service_list_project_clusters(project_id).clusters
 
@@ -147,7 +147,7 @@ def _resolve_s3_connections(dir_path: str) -> Dir:
     # Get the ids from env variables
     project_id = os.getenv("LIGHTNING_CLOUD_PROJECT_ID", None)
     if project_id is None:
-        raise RuntimeError("The `project_id` couldn't be found from the environment variables.")
+        raise RuntimeError("The `LIGHTNING_CLOUD_PROJECT_ID` couldn't be found from the environment variables.")
 
     target_name = dir_path.split("/")[3]
 
@@ -169,16 +169,16 @@ def _resolve_datasets(dir_path: str) -> Dir:
     # Get the ids from env variables
     cluster_id = os.getenv("LIGHTNING_CLUSTER_ID", None)
     project_id = os.getenv("LIGHTNING_CLOUD_PROJECT_ID", None)
-    cloud_space_id = os.getenv("LIGHTNING_CLOUD_SPACE_ID", None)
+    studio_id = os.getenv("LIGHTNING_CLOUD_SPACE_ID", None)
 
     if cluster_id is None:
-        raise RuntimeError("The `cluster_id` couldn't be found from the environment variables.")
+        raise RuntimeError("The `LIGHTNING_CLUSTER_ID` couldn't be found from the environment variables.")
 
     if project_id is None:
-        raise RuntimeError("The `project_id` couldn't be found from the environment variables.")
+        raise RuntimeError("The `LIGHTNING_CLOUD_PROJECT_ID` couldn't be found from the environment variables.")
 
-    if cloud_space_id is None:
-        raise RuntimeError("The `cloud_space_id` couldn't be found from the environment variables.")
+    if studio_id is None:
+        raise RuntimeError("The `LIGHTNING_CLOUD_SPACE_ID` couldn't be found from the environment variables.")
 
     clusters = client.cluster_service_list_project_clusters(project_id).clusters
 
@@ -187,17 +187,17 @@ def _resolve_datasets(dir_path: str) -> Dir:
         for cloudspace in client.cloud_space_service_list_cloud_spaces(
             project_id=project_id, cluster_id=cluster_id
         ).cloudspaces
-        if cloudspace.id == cloud_space_id
+        if cloudspace.id == studio_id
     ]
 
     if not target_cloud_space:
-        raise ValueError(f"We didn't find any matching Studio for the provided id `{cloud_space_id}`.")
+        raise ValueError(f"We didn't find any matching Studio for the provided id `{studio_id}`.")
 
     target_cluster = [cluster for cluster in clusters if cluster.id == target_cloud_space[0].cluster_id]
 
     if not target_cluster:
         raise ValueError(
-            f"We didn't find a matching cluster associated with the id {target_cloud_space[0].cluster_id}."
+            f"We didn't find a matching cluster associated with the id `{target_cloud_space[0].cluster_id}`."
         )
 
     return Dir(
@@ -211,7 +211,7 @@ def _resolve_datasets(dir_path: str) -> Dir:
 
 def _assert_dir_is_empty(output_dir: Dir, append: bool = False, overwrite: bool = False) -> None:
     if not isinstance(output_dir, Dir):
-        raise ValueError("The provided output_dir isn't a Dir Object.")
+        raise ValueError("The provided output_dir isn't a `Dir` Object.")
 
     if output_dir.url is None:
         return
@@ -234,7 +234,7 @@ def _assert_dir_is_empty(output_dir: Dir, append: bool = False, overwrite: bool 
     if objects["KeyCount"] > 0:
         raise RuntimeError(
             f"The provided output_dir `{output_dir.path}` already contains data and datasets are meant to be immutable."
-            " HINT: Did you consider changing the `output_dir` with your own versioning as a suffix?"
+            "\n HINT: Did you consider changing the `output_dir` with your own versioning as a suffix?"
         )
 
 
@@ -261,8 +261,8 @@ def _assert_dir_has_index_file(
             if os.path.exists(index_file) and mode is None:
                 raise RuntimeError(
                     f"The provided output_dir `{output_dir.path}` already contains an optimized immutable datasets."
-                    " HINT: Did you consider changing the `output_dir` with your own versioning as a suffix?"
-                    " HINT: If you want to append/overwrite to the existing dataset, use `mode='append | overwrite'`."
+                    "\n HINT: Did you consider changing the `output_dir` with your own versioning as a suffix?"
+                    "\n HINT: If you want to append/overwrite to the existing dataset, use `mode='append | overwrite'`."
                 )
 
             # delete index.json file and chunks
@@ -310,8 +310,8 @@ def _assert_dir_has_index_file(
     if has_index_file and mode is None:
         raise RuntimeError(
             f"The provided output_dir `{output_dir.path}` already contains an optimized immutable datasets."
-            " HINT: Did you consider changing the `output_dir` with your own versioning as a suffix?"
-            " HINT: If you want to append/overwrite to the existing dataset, use `mode='append | overwrite'`."
+            "\n HINT: Did you consider changing the `output_dir` with your own versioning as a suffix?"
+            "\n HINT: If you want to append/overwrite to the existing dataset, use `mode='append | overwrite'`."
         )
 
     # Delete all the files (including the index file in overwrite mode)
