@@ -60,12 +60,12 @@ def test_src_resolver_studios(monkeypatch, lightning_cloud_mock):
     auth = login.Auth()
     auth.save(user_id="7c8455e3-7c5f-4697-8a6d-105971d6b9bd", api_key="e63fae57-2b50-498b-bc46-d6204cbf330e")
 
-    with pytest.raises(RuntimeError, match="`cluster_id`"):
+    with pytest.raises(RuntimeError, match="`LIGHTNING_CLUSTER_ID`"):
         resolver._resolve_dir("/teamspace/studios/other_studio")
 
     monkeypatch.setenv("LIGHTNING_CLUSTER_ID", "cluster_id")
 
-    with pytest.raises(RuntimeError, match="`project_id`"):
+    with pytest.raises(RuntimeError, match="`LIGHTNING_CLOUD_PROJECT_ID`"):
         resolver._resolve_dir("/teamspace/studios/other_studio")
 
     monkeypatch.setenv("LIGHTNING_CLOUD_PROJECT_ID", "project_id")
@@ -138,17 +138,17 @@ def test_src_resolver_datasets(monkeypatch, lightning_cloud_mock):
 
     assert resolver._resolve_dir("s3://bucket_name").url == "s3://bucket_name"
 
-    with pytest.raises(RuntimeError, match="`cluster_id`"):
+    with pytest.raises(RuntimeError, match="`LIGHTNING_CLUSTER_ID`"):
         resolver._resolve_dir("/teamspace/datasets/imagenet")
 
     monkeypatch.setenv("LIGHTNING_CLUSTER_ID", "cluster_id")
 
-    with pytest.raises(RuntimeError, match="`project_id`"):
+    with pytest.raises(RuntimeError, match="`LIGHTNING_CLOUD_PROJECT_ID`"):
         resolver._resolve_dir("/teamspace/datasets/imagenet")
 
     monkeypatch.setenv("LIGHTNING_CLOUD_PROJECT_ID", "project_id")
 
-    with pytest.raises(RuntimeError, match="`cloud_space_id`"):
+    with pytest.raises(RuntimeError, match="`LIGHTNING_CLOUD_SPACE_ID`"):
         resolver._resolve_dir("/teamspace/datasets/imagenet")
 
     monkeypatch.setenv("LIGHTNING_CLOUD_SPACE_ID", "cloud_space_id")
