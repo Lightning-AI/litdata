@@ -371,7 +371,6 @@ def test_resolve_dir_absolute(tmp_path, monkeypatch):
 
 def test_resolve_dir_unsupported_cloud_provider(monkeypatch, tmp_path):
     """Test that the unsupported cloud provider is handled correctly."""
-
     test_dir = "some-random-cloud-provider://some-random-bucket"
     with pytest.raises(ValueError, match="The provided dir_path"):
         resolver._resolve_dir(test_dir)

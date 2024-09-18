@@ -135,7 +135,6 @@ def _download_data_target(
     input_dir: Dir, cache_dir: str, queue_in: Queue, queue_out: Queue, storage_options: Optional[Dict] = {}
 ) -> None:
     """This function is used to download data from a remote directory to a cache directory to optimise reading."""
-
     while True:
         # 2. Fetch from the queue
         r: Optional[Tuple[int, List[str]]] = queue_in.get()
