@@ -14,7 +14,7 @@
 
 import time
 
-__version__ = "0.2.26"
+__version__ = "0.2.27.dev"
 __author__ = "Lightning AI et al."
 __author_email__ = "pytorch@lightning.ai"
 __license__ = "Apache-2.0"
