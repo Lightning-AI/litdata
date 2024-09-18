@@ -1140,7 +1140,11 @@ class DataProcessor:
             # Exit early if all the workers are done.
             # This means there were some kinda of errors.
             if all(not w.is_alive() for w in self.workers):
-                raise RuntimeError("One of the worker has failed")
+                try:
+                    error = self.error_queue.get(timeout=0.001)
+                    self._exit_on_error(error)
+                except Empty:
+                    break
 
         if _TQDM_AVAILABLE:
             pbar.close()
