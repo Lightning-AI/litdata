@@ -23,7 +23,7 @@ def test_src_resolver_s3_connections(monkeypatch, lightning_cloud_mock):
     auth = login.Auth()
     auth.save(user_id="7c8455e3-7c5f-4697-8a6d-105971d6b9bd", api_key="e63fae57-2b50-498b-bc46-d6204cbf330e")
 
-    with pytest.raises(RuntimeError, match="`project_id` couldn't be found from the environment variables."):
+    with pytest.raises(RuntimeError, match="`LIGHTNING_CLOUD_PROJECT_ID` couldn't be found from the environment variables."):
         resolver._resolve_dir("/teamspace/s3_connections/imagenet")
 
     monkeypatch.setenv("LIGHTNING_CLOUD_PROJECT_ID", "project_id")

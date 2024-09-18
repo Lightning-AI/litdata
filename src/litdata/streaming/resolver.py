@@ -108,10 +108,10 @@ def _resolve_studio(dir_path: str, target_name: Optional[str], target_id: Option
     project_id = os.getenv("LIGHTNING_CLOUD_PROJECT_ID", None)
 
     if cluster_id is None:
-        raise RuntimeError("The `cluster_id` couldn't be found from the environment variables.")
+        raise RuntimeError("The `LIGHTNING_CLUSTER_ID` couldn't be found from the environment variables.")
 
     if project_id is None:
-        raise RuntimeError("The `project_id` couldn't be found from the environment variables.")
+        raise RuntimeError("The `LIGHTNING_CLOUD_PROJECT_ID` couldn't be found from the environment variables.")
 
     clusters = client.cluster_service_list_project_clusters(project_id).clusters
 
@@ -147,7 +147,7 @@ def _resolve_s3_connections(dir_path: str) -> Dir:
     # Get the ids from env variables
     project_id = os.getenv("LIGHTNING_CLOUD_PROJECT_ID", None)
     if project_id is None:
-        raise RuntimeError("The `project_id` couldn't be found from the environment variables.")
+        raise RuntimeError("The `LIGHTNING_CLOUD_PROJECT_ID` couldn't be found from the environment variables.")
 
     target_name = dir_path.split("/")[3]
 
