@@ -46,7 +46,7 @@ def _create_dataset(
     project_id = os.getenv("LIGHTNING_CLOUD_PROJECT_ID", None)
     cluster_id = os.getenv("LIGHTNING_CLUSTER_ID", None)
     user_id = os.getenv("LIGHTNING_USER_ID", None)
-    cloud_space_id = os.getenv("LIGHTNING_CLOUD_SPACE_ID", None)
+    studio_id = os.getenv("LIGHTNING_CLOUD_SPACE_ID", None)
     lightning_app_id = os.getenv("LIGHTNING_CLOUD_APP_ID", None)
 
     if project_id is None:
@@ -64,7 +64,7 @@ def _create_dataset(
     try:
         client.dataset_service_create_dataset(
             body=ProjectIdDatasetsBody(
-                cloud_space_id=cloud_space_id if lightning_app_id is None else None,
+                cloud_space_id=studio_id if lightning_app_id is None else None,
                 cluster_id=cluster_id,
                 creator_id=user_id,
                 empty=empty,

@@ -254,7 +254,7 @@ def map(
         if _output_dir.url and "cloudspaces" in _output_dir.url:
             raise ValueError(
                 f"The provided `output_dir` isn't valid. Found {_output_dir.path if _output_dir else None}."
-                " HINT: You can either use `/teamspace/s3_connections/...` or `/teamspace/datasets/...`."
+                "\n HINT: You can either use `/teamspace/s3_connections/...` or `/teamspace/datasets/...`."
             )
 
         if error_when_not_empty:
@@ -400,7 +400,7 @@ def optimize(
         if _output_dir.url is not None and "cloudspaces" in _output_dir.url:
             raise ValueError(
                 f"The provided `output_dir` isn't valid. Found {_output_dir.path}."
-                " HINT: You can either use `/teamspace/s3_connections/...` or `/teamspace/datasets/...`."
+                "\n HINT: You can either use `/teamspace/s3_connections/...` or `/teamspace/datasets/...`."
             )
 
         _assert_dir_has_index_file(_output_dir, mode=mode, use_checkpoint=use_checkpoint)
