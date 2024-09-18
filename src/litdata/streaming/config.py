@@ -35,14 +35,14 @@ class ChunksConfig:
         region_of_interest: Optional[List[Tuple[int, int]]] = None,
         storage_options: Optional[Dict] = {},
     ) -> None:
-        """The ChunksConfig reads the index files associated a chunked dataset and enables to map an index to its
-        chunk.
+        """Reads the index files associated a chunked dataset and enables to map an index to its chunk.
 
         Arguments:
             cache_dir: The path to cache folder.
             serializers: The serializers used to serialize and deserialize the chunks.
             remote_dir: The path to a remote folder where the data are located.
                 The scheme needs to be added to the path.
+            item_loader: The item loader used to load the data from the chunks.
             subsampled_files: List of subsampled chunk files loaded from `input_dir/index.json` file.
             region_of_interest: List of tuples of {start,end} of region of interest for each chunk.
             storage_options: Additional connection options for accessing storage services.

@@ -77,27 +77,16 @@ class SklearnMetricsCallback(pl.Callback):
             mode: train, test or val
             report_confusion_matrix: sklearn confusion matrix
             report: sklear classification report
-        Returns:
 
         """
         df_cm = pd.DataFrame(report_confusion_matrix)
         df_cr = pd.DataFrame(report).transpose()
         df_cm.to_csv(f"{model_dir}/{mode}_confusion_matrix.csv", sep=";")
         df_cr.to_csv(f"{model_dir}/{mode}_classification_report.csv", sep=";")
-        logger.info("Confusion Matrix and Classication report are saved.")
+        logger.info("Confusion Matrix and Classification report are saved.")
 
     def save_test_evaluations(self, model_dir, mode, y_pred, y_true, confis, numerical_id_):
-        """
-        Save a pandas dataframe with prediction and ground truth and identifier (numerical id) of the test dataset
-        Args:
-            model_dir:
-            mode:
-            y_pred:
-            y_true:
-            confis:
-            numerical_id_:
-        Returns:
-        """
+        """Save pandas dataframe with prediction and ground truth and identifier (numerical id) of the test dataset."""
         df_test = pd.DataFrame()
         df_test["pred"] = y_pred
         df_test["confidence"] = confis.max(axis=1)
@@ -151,8 +140,7 @@ class LitModel(pl.LightningModule):
         """Forward path, calculate the computational graph in the forward direction.
 
         Used for train, test and val.
-        Args:
-            y: tensor with text data as tokens
+
         Returns:
             computional graph
 
@@ -160,34 +148,29 @@ class LitModel(pl.LightningModule):
         return self.module(x, y, z)
 
     def training_step(self, batch: Dict[str, torch.Tensor]) -> Dict:
-        """
-        Call the eval share for training
-        Args:
-            batch: tensor
+        """Call the eval share for training.
+
         Returns:
-            dict with loss, outputs and ground_truth
+            dict with loss, outputs and ground_truth.
+
         """
         return self._shared_eval_step(batch, "train")
 
     def validation_step(self, batch: Dict[str, torch.Tensor], batch_idx: int) -> Dict:
-        """
-        Call the eval share for validation
-        Args:
-            batch:
-            batch_idx:
+        """Call the eval share for validation.
+
         Returns:
-            dict with loss, outputs and ground_truth
+            dict with loss, outputs and ground_truth.
+
         """
         return self._shared_eval_step(batch, "val")
 
     def test_step(self, batch: Dict[str, torch.Tensor], batch_idx: int) -> Dict:
-        """
-        Call the eval share for test
-        Args:
-            batch:
-            batch_idx:
+        """Call the eval share for test.
+
         Returns:
-            dict with loss, outputs and ground_truth
+            dict with loss, outputs and ground_truth.
+
         """
         ret = self._shared_eval_step(batch, "test")
         self.pred_list.append(ret)
@@ -199,6 +182,7 @@ class LitModel(pl.LightningModule):
         Args:
             batch: tensor
             mode: train, test or val
+
         Returns:
             dict with loss, outputs and ground_truth
 
@@ -227,14 +211,8 @@ class LitModel(pl.LightningModule):
 
         return {"outputs": out, "loss": loss, "ground_truth": ground_truth, "numerical_id": numerical_id}
 
-    def _epoch_end(self, mode: str):
-        """
-        Calculate loss and metricies at end of epoch
-        Args:
-            mode:
-        Returns:
-            None
-        """
+    def _epoch_end(self, mode: str) -> None:
+        """Calculate loss and metrics at end of epoch."""
         if mode == "val":
             output = self.val_metrics.compute()
             self.log_dict(output)
@@ -249,14 +227,7 @@ class LitModel(pl.LightningModule):
             self.test_metrics.reset()
 
     def predict(self, batch: Dict[str, torch.Tensor], batch_idx: int = 0, dataloader_idx: int = 0) -> torch.Tensor:
-        """Model prediction  without softmax and argmax to predict class label.
-
-        Args:
-            outputs:
-        Returns:
-            None
-
-        """
+        """Model prediction  without softmax and argmax to predict class label."""
         self.eval()
         with torch.no_grad():
             ids = batch["ID"]
@@ -265,51 +236,30 @@ class LitModel(pl.LightningModule):
             return self.forward(ids, atts, img)
 
     def on_test_epoch_end(self) -> None:
-        """
-        Calculate the metrics at the end of epoch for test step
-        Args:
-            outputs:
-        Returns:
-            None
-        """
+        """Calculate the metrics at the end of epoch for test step."""
         self._epoch_end("test")
 
-    def on_validation_epoch_end(self):
-        """
-        Calculate the metrics at the end of epoch for val step
-        Args:
-            outputs:
-        Returns:
-            None
-        """
+    def on_validation_epoch_end(self) -> None:
+        """Calculate the metrics at the end of epoch for val step."""
         self._epoch_end("val")
 
-    def on_train_epoch_end(self):
-        """
-        Calculate the metrics at the end of epoch for train step
-        Args:
-            outputs:
-        Returns:
-            None
-        """
+    def on_train_epoch_end(self) -> None:
+        """Calculate the metrics at the end of epoch for train step."""
         self._epoch_end("train")
 
     def configure_optimizers(self) -> Any:
-        """
-        Configure the optimizer
+        """Configure the optimizer.
+
         Returns:
             optimizer
+
         """
         optimizer = AdamW(self.parameters(), lr=self.learning_rate, weight_decay=self.hyperparameters["weight_decay"])
         scheduler = StepLR(optimizer, step_size=1, gamma=0.1)
         return [optimizer], [{"scheduler": scheduler, "interval": "epoch"}]
 
     def configure_callbacks(self) -> Union[Sequence[pl.pytorch.Callback], pl.pytorch.Callback]:
-        """Configure Early stopping or Model Checkpointing.
-
-        Returns:
-
-        """
+        """Configure Early stopping or Model Checkpointing."""
         early_stop = EarlyStopping(
             monitor="val_MulticlassAccuracy", patience=self.hyperparameters["patience"], mode="max"
         )

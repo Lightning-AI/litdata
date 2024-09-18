@@ -19,7 +19,6 @@ from queue import Empty, Queue
 from threading import Event, Thread
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-from litdata.constants import _TORCH_GREATER_EQUAL_2_1_0
 from litdata.streaming.config import ChunksConfig, Interval
 from litdata.streaming.item_loader import BaseItemLoader, PyTreeLoader
 from litdata.streaming.sampler import ChunkedIndex
@@ -28,9 +27,6 @@ from litdata.utilities.encryption import Encryption
 from litdata.utilities.env import _DistributedEnv, _WorkerEnv
 
 warnings.filterwarnings("ignore", message=".*The given buffer is not writable.*")
-
-if _TORCH_GREATER_EQUAL_2_1_0:
-    pass
 
 
 logger = Logger(__name__)
@@ -174,7 +170,7 @@ class BinaryReader:
     ) -> None:
         """The BinaryReader enables to read chunked dataset in an efficient way.
 
-        Arguments:
+        Args:
             cache_dir: The path to cache folder.
             subsampled_files: List of subsampled chunk files loaded from `input_dir/index.json` file.
             region_of_interest: List of tuples of {start,end} of region of interest for each chunk.

@@ -70,18 +70,16 @@ class BaseItemLoader(ABC):
 
     @abstractmethod
     def generate_intervals(self) -> List[Interval]:
-        """Returns a list of intervals: [chunk_start,
-        region_of_interest_start, region_of_interest_end, chunk_end]
+        """Returns a list of intervals.
+
+        The structure is: [chunk_start, region_of_interest_start, region_of_interest_end, chunk_end]
 
         region_of_interest: indicates the indexes a chunk our StreamingDataset is allowed to read.
-
         """
-        pass
 
     @abstractmethod
     def pre_load_chunk(self, chunk_index: int, chunk_filepath: str) -> None:
         """Logic to load the chunk in background to gain some time."""
-        pass
 
     @abstractmethod
     def load_item_from_chunk(
@@ -93,12 +91,10 @@ class BaseItemLoader(ABC):
         chunk_bytes: int,
     ) -> Any:
         """Returns an item loaded from a chunk."""
-        pass
 
     @abstractmethod
     def delete(self, chunk_index: int, chunk_filepath: str) -> None:
         """Delete a chunk from the local filesystem."""
-        pass
 
     @abstractmethod
     def encode_data(self, data: List[bytes], sizes: List[int], flattened: List[Any]) -> Any:
@@ -168,7 +164,6 @@ class PyTreeLoader(BaseItemLoader):
         self, chunk_filepath: str, chunk_index: int, offset: int, encryption: Optional[Encryption]
     ) -> bytes:
         """Load and decrypt data from chunk based on the encryption configuration."""
-
         # Validate the provided encryption object against the expected configuration.
         self._validate_encryption(encryption)
 
@@ -261,11 +256,10 @@ class TokensLoader(BaseItemLoader):
     def __init__(self, block_size: Optional[int] = None):
         """The Tokens Loader is an optimizer item loader for NLP.
 
-        Arguments:
+        Args:
             block_size: The context length to use during training.
 
         """
-
         super().__init__()
         self._block_size = block_size
         self._mmaps: Dict[int, np.memmap] = {}

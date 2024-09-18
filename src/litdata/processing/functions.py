@@ -187,7 +187,7 @@ class LambdaDataChunkRecipe(DataChunkRecipe):
         return self._inputs
 
     def prepare_item(self, item_metadata: Any) -> Any:
-        """This method is overriden dynamically."""
+        """Being overridden dynamically."""
 
 
 def map(
@@ -208,9 +208,9 @@ def map(
     batch_size: Optional[int] = None,
     storage_options: Optional[Dict] = {},
 ) -> None:
-    """This function maps a callable over a collection of inputs, possibly in a distributed way.
+    """Maps a callable over a collection of inputs, possibly in a distributed way.
 
-    Arguments:
+    Args:
         fn: A function to be executed over each input element
         inputs: A sequence of input to be processed by the `fn` function, or a streaming dataloader.
         output_dir: The folder where the processed data should be stored.
@@ -226,6 +226,7 @@ def map(
         reorder_files: By default, reorders the files by file size to distribute work equally among all workers.
             Set this to ``False`` if the order in which samples are processed should be preserved.
         error_when_not_empty: Whether we should error if the output folder isn't empty.
+        reader: The reader to use when reading the data. By default, it uses the `BaseReader`.
         batch_size: Group the inputs into batches of batch_size length.
         storage_options: The storage options used by the cloud provider.
 
@@ -328,7 +329,7 @@ def optimize(
 ) -> None:
     """This function converts a dataset into chunks, possibly in a distributed way.
 
-    Arguments:
+    Args:
         fn: A function to be executed over each input element. The function should return the data sample that
             corresponds to the input. Every invocation of the function should return a similar hierarchy of objects,
             where the object types and list sizes don't change.
@@ -347,6 +348,7 @@ def optimize(
         machine: When doing remote execution, the machine to use. Only supported on https://lightning.ai/.
         num_downloaders: The number of downloaders per worker.
         num_uploaders: The numbers of uploaders per worker.
+        reader: The reader to use when reading the data. By default, it uses the `BaseReader`.
         reorder_files: By default, reorders the files by file size to distribute work equally among all workers.
             Set this to ``False`` if the order in which samples are processed should be preserved.
         batch_size: Group the inputs into batches of batch_size length.
@@ -486,7 +488,7 @@ def _listdir(folder: str) -> Tuple[str, List[str]]:
 class walk:
     """This class is an optimized version of os.walk for listing files and folders from cloud filesystem.
 
-    Note: The order of files and folders yielded aren't depth-first anymore due to the asynchronous listing call.
+    .. note:: The order of files and folders yielded aren't depth-first anymore due to the asynchronous listing call.
 
     """
 
@@ -541,7 +543,7 @@ def merge_datasets(input_dirs: List[str], output_dir: str, storage_options: Opti
     """The merge_datasets utility enables to merge multiple existing optimized datasets into a single optimized
     dataset.
 
-    Arguments:
+    Args:
         input_dirs: A list of directories pointing to the existing optimized datasets.
         output_dir: The directory where the merged dataset would be stored.
 

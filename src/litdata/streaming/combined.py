@@ -25,10 +25,10 @@ __SAMPLES_KEY__ = "__SAMPLES__"
 
 
 class CombinedStreamingDataset(IterableDataset):
-    """The `CombinedStreamingDataset` enables to stream data from multiple StreamingDataset with the sampling ratio of
+    """Enables to stream data from multiple StreamingDataset with the sampling ratio of
     your choice.
 
-    Addtionally, the `CombinedStreamingDataset` keeps track of the number of samples fetched to enable resumability
+    Additionally, the `CombinedStreamingDataset` keeps track of the number of samples fetched to enable reusability
     of the datasets.
 
     Note that due to the random sampling, the number of samples returned from the iterator is variable and a function
@@ -43,15 +43,16 @@ class CombinedStreamingDataset(IterableDataset):
         weights: Optional[Sequence[float]] = None,
         iterate_over_all: bool = True,
     ) -> None:
-        """ "
-        Arguments:
+        """Enable to stream data from multiple StreamingDataset with the sampling ratio of your choice.
+
+        Args:
             datasets: The list of the StreamingDataset to use.
             seed: The random seed to initialize the sampler
             weights: The sampling ratio for the datasets
             iterate_over_all: When iterate_over_all is True, the combined dataset iterates over all the datasets.
                 Otherwise, it stops as soon as one raises a StopIteration.
-        """
 
+        """
         self._check_datasets(datasets)
 
         self._seed = seed
