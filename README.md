@@ -864,41 +864,6 @@ map(
 
 </details>
 
-<details>
-  <summary> ✅ Support S3-Compatible cloud object storage</summary>
-&nbsp;
-
-Use different cloud storage services, offering data storage flexibility and cost-saving options.
-
-Integrate S3-compatible object storage servers like [MinIO](https://min.io/) with litdata, ideal for on-premises infrastructure setups. Configure the endpoint and credentials using environment variables or configuration files.
-
-Set up the environment variables to connect to MinIO:
-
-```bash
-export AWS_ACCESS_KEY_ID=access_key
-export AWS_SECRET_ACCESS_KEY=secret_key
-export AWS_ENDPOINT_URL=http://localhost:9000  # MinIO endpoint
-```
-
-Alternatively, configure credentials and endpoint in `~/.aws/{credentials,config}`:
-
-```bash
-mkdir -p ~/.aws && \
-cat <<EOL >> ~/.aws/credentials
-[default]
-aws_access_key_id = access_key
-aws_secret_access_key = secret_key
-EOL
-
-cat <<EOL >> ~/.aws/config
-[default]
-endpoint_url = http://localhost:9000  # MinIO endpoint
-EOL
-```
-Explore an example setup of litdata with MinIO in the [LitData with MinIO](https://github.com/bhimrazy/litdata-with-minio) repository for practical implementation details.
-
-</details>
-
 &nbsp;
 
 ----
