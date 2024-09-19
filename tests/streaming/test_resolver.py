@@ -302,52 +302,54 @@ def test_execute(phase, monkeypatch, lightning_sdk_mock):
 
 
 def test_assert_dir_is_empty(monkeypatch):
-    boto3 = mock.MagicMock()
-    client_s3_mock = mock.MagicMock()
-    client_s3_mock.list_objects_v2.return_value = {"KeyCount": 1, "Contents": []}
-    boto3.client.return_value = client_s3_mock
-    resolver.boto3 = boto3
+    def mock_list_directory(*args, **kwargs):
+        return ["a.txt", "b.txt"]
+
+    def mock_empty_list_directory(*args, **kwargs):
+        return []
+
+    monkeypatch.setattr(resolver, "list_directory", mock_list_directory)
 
     with pytest.raises(RuntimeError, match="The provided output_dir"):
         resolver._assert_dir_is_empty(resolver.Dir(path="/teamspace/...", url="s3://"))
 
-    client_s3_mock.list_objects_v2.return_value = {"KeyCount": 0, "Contents": []}
-    boto3.client.return_value = client_s3_mock
-    resolver.boto3 = boto3
+    monkeypatch.setattr(resolver, "list_directory", mock_empty_list_directory)
 
     resolver._assert_dir_is_empty(resolver.Dir(path="/teamspace/...", url="s3://"))
 
 
 def test_assert_dir_has_index_file(monkeypatch):
-    boto3 = mock.MagicMock()
-    client_s3_mock = mock.MagicMock()
-    client_s3_mock.list_objects_v2.return_value = {"KeyCount": 1, "Contents": []}
-    boto3.client.return_value = client_s3_mock
-    resolver.boto3 = boto3
+    def mock_list_directory_0(*args, **kwargs):
+        return []
+
+    def mock_list_directory_1(*args, **kwargs):
+        return ["a.txt", "b.txt"]
+
+    def mock_list_directory_2(*args, **kwargs):
+        return ["index.json"]
+
+    def mock_does_file_exist_1(*args, **kwargs):
+        raise Exception({"Error": {"Code": "404", "Message": "Not Found"}}, "HeadObject")  # some exception
+
+    def mock_does_file_exist_2(*args, **kwargs):
+        return True
+
+    def mock_remove_file_or_directory(*args, **kwargs):
+        return
+
+    monkeypatch.setattr(resolver, "list_directory", mock_list_directory_0)
+    monkeypatch.setattr(resolver, "does_file_exist", mock_does_file_exist_1)
+    monkeypatch.setattr(resolver, "remove_file_or_directory", mock_remove_file_or_directory)
+
+    resolver._assert_dir_has_index_file(resolver.Dir(path="/teamspace/...", url="s3://"))
+
+    monkeypatch.setattr(resolver, "list_directory", mock_list_directory_2)
+    monkeypatch.setattr(resolver, "does_file_exist", mock_does_file_exist_2)
 
     with pytest.raises(RuntimeError, match="The provided output_dir"):
         resolver._assert_dir_has_index_file(resolver.Dir(path="/teamspace/...", url="s3://"))
 
-    client_s3_mock.list_objects_v2.return_value = {"KeyCount": 0, "Contents": []}
-    boto3.client.return_value = client_s3_mock
-    resolver.boto3 = boto3
-
-    resolver._assert_dir_has_index_file(resolver.Dir(path="/teamspace/...", url="s3://"))
-
-    client_s3_mock.list_objects_v2.return_value = {"KeyCount": 1, "Contents": []}
-
-    def head_object(*args, **kwargs):
-        import botocore
-
-        raise botocore.exceptions.ClientError({"Error": {"Code": "404", "Message": "Not Found"}}, "HeadObject")
-
-    client_s3_mock.head_object = head_object
-    boto3.client.return_value = client_s3_mock
-    resolver.boto3 = boto3
-
-    resolver._assert_dir_has_index_file(resolver.Dir(path="/teamspace/...", url="s3://"))
-
-    boto3.resource.assert_called()
+    resolver._assert_dir_has_index_file(resolver.Dir(path="/teamspace/...", url="s3://"), mode="overwrite")
 
 
 def test_resolve_dir_absolute(tmp_path, monkeypatch):
@@ -367,3 +369,10 @@ def test_resolve_dir_absolute(tmp_path, monkeypatch):
     link.symlink_to(src)
     assert link.resolve() == src
     assert resolver._resolve_dir(str(link)).path == str(src)
+
+
+def test_resolve_dir_unsupported_cloud_provider(monkeypatch, tmp_path):
+    """Test that the unsupported cloud provider is handled correctly."""
+    test_dir = "some-random-cloud-provider://some-random-bucket"
+    with pytest.raises(ValueError, match="The provided dir_path"):
+        resolver._resolve_dir(test_dir)
