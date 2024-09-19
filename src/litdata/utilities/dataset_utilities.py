@@ -64,7 +64,7 @@ def subsample_streaming_dataset(
     else:
         raise ValueError(
             f"The provided dataset `{input_dir.path}` doesn't contain any {_INDEX_FILENAME} file."
-            " HINT: Did you successfully optimize a dataset to the provided `input_dir`?"
+            "\n HINT: Did you successfully optimize a dataset to the provided `input_dir`?"
         )
 
     assert len(original_chunks) > 0, f"No chunks found in the `{input_dir}/index.json` file"
@@ -161,7 +161,7 @@ def _try_create_cache_dir(input_dir: Optional[str], storage_options: Optional[Di
 
 
 def generate_roi(chunks: List[Dict[str, Any]], item_loader: Optional[BaseItemLoader] = None) -> List[Tuple[int, int]]:
-    "Generates default region_of_interest for chunks."
+    """Generates default region_of_interest for chunks."""
     roi = []
 
     if isinstance(item_loader, TokensLoader):
@@ -207,13 +207,14 @@ def load_index_file(input_dir: str) -> Dict[str, Any]:
 
 def adapt_mds_shards_to_chunks(data: Dict[str, Any]) -> Dict[str, Any]:
     """Adapt mds shard-based index data to chunk-based format for compatibility.
-    For more details about MDS, refer to the MosaicML Streaming documentation: https://github.com/mosaicml/streaming
+    For more details about MDS, refer to the MosaicML Streaming documentation: https://github.com/mosaicml/streaming.
 
     Args:
         data (Dict[str, Any]): The original index data containing shards.
 
     Returns:
         Dict[str, Any]: Adapted index data with chunks format.
+
     """
     chunks = []
     shards = data["shards"]

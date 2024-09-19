@@ -36,7 +36,7 @@ class _DistributedEnv:
     def detect(cls) -> "_DistributedEnv":
         """Tries to automatically detect the distributed environment parameters.
 
-        Note:
+        .. note::
             This detection may not work in processes spawned from the distributed processes (e.g. DataLoader workers)
             as the distributed framework won't be initialized there.
             It will default to 1 distributed process in this case.
@@ -103,7 +103,7 @@ class _WorkerEnv:
     def detect(cls, get_worker_info_fn: Optional[Callable] = None) -> "_WorkerEnv":
         """Automatically detects the number of workers and the current rank.
 
-        Note:
+        .. note::
             This only works reliably within a dataloader worker as otherwise the necessary information won't be present.
             In such a case it will default to 1 worker
 
@@ -146,7 +146,7 @@ class Environment:
         """Generates the Environment class by already given arguments instead of detecting them.
 
         Args:
-            dist_world_size: The worldsize used for distributed training (=total number of distributed processes)
+            dist_world_size: The world-size used for distributed training (=total number of distributed processes)
             global_rank: The distributed global rank of the current process
             num_workers: The number of workers per distributed training process
             current_worker_rank: The rank of the current worker within the number of workers of
@@ -162,7 +162,7 @@ class Environment:
     def num_shards(self) -> int:
         """Returns the total number of shards.
 
-        Note:
+        .. note::
             This may not be accurate in a non-dataloader-worker process like the main training process
             as it doesn't necessarily know about the number of dataloader workers.
 
@@ -175,7 +175,7 @@ class Environment:
     def shard_rank(self) -> int:
         """Returns the rank of the current process wrt. the total number of shards.
 
-        Note:
+        .. note::
             This may not be accurate in a non-dataloader-worker process like the main training process as it
             doesn't necessarily know about the number of dataloader workers.
 

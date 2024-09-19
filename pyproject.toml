@@ -44,6 +44,12 @@ ignore-words-list = "cancelation"
 [tool.ruff]
 line-length = 120
 target-version = "py38"
+# Exclude a variety of commonly ignored directories.
+exclude = [
+    ".git",
+    "docs",
+    "src/litdata/utilities/_pytree.py",
+]
 # Enable Pyflakes `E` and `F` codes by default.
 lint.select = [
     "E", "W",  # see: https://pypi.org/project/pycodestyle
@@ -53,45 +59,54 @@ lint.select = [
     "UP", # see: pyupgrade
 ]
 lint.extend-select = [
+    "D",
     "I",  # see: isort
     "C4",  # see: https://pypi.org/project/flake8-comprehensions
     "SIM",  # see: https://pypi.org/project/flake8-simplify
     "RET",  # see: https://pypi.org/project/flake8-return
     "PT",  # see: https://pypi.org/project/flake8-pytest-style
     "NPY201",  # see: https://docs.astral.sh/ruff/rules/numpy2-deprecation
-    "RUF100" # yesqa
+    "RUF100",  # yesqa
 ]
 lint.ignore = [
     "E731",  # Do not assign a lambda expression, use a def
     "S101",  # todo: Use of `assert` detected
 ]
-# Exclude a variety of commonly ignored directories.
-exclude = [
-    ".git",
-    "docs",
-    "src/litdata/utilities/_pytree.py",
-]
 lint.ignore-init-module-imports = true
+# Unlike Flake8, default to a complexity level of 10.
+lint.mccabe.max-complexity = 10
+# Use Google-style docstrings.
+lint.pydocstyle.convention = "google"
 
 [tool.ruff.lint.per-file-ignores]
-".actions/*" = ["S101", "S310"]
-"setup.py" = ["S101", "SIM115"]
+"setup.py" = ["D100", "SIM115"]
 "examples/**" = [
+    "D100", "D101", "D102", "D103", "D104", "D105", "D107",  # Missing docstring in public module, class, method, function, package
+    "D205",  # todo: 1 blank line required between summary line and description
+    "D401", "D404",  # First line should be in imperative mood; try rephrasing
     "S311",  # Standard pseudo-random generators are not suitable for cryptographic purposes
 ]
 "src/**" = [
+    "D100",  # Missing docstring in public module
+    "D101",  # todo: Missing docstring in public class
+    "D102",  # todo: Missing docstring in public method
+    "D103",  # todo: Missing docstring in public function
+    "D104",  # Missing docstring in public package
+    "D105",  # todo: Missing docstring in magic method
+    "D107",  # todo: Missing docstring in __init__
+    "D205",  # todo: 1 blank line required between summary line and description
+    "D401", "D404",  # todo: First line should be in imperative mood; try rephrasing
     "S602",  # todo: `subprocess` call with `shell=True` identified, security issue
     "S605",  # todo: Starting a process with a shell: seems safe, but may be changed in the future; consider rewriting without `shell`
     "S607",  # todo: Starting a process with a partial executable path
     "S310",  # todo: Audit URL open for permitted schemes. Allowing use of `file:` or custom schemes is often unexpected.
 ]
 "tests/**" = [
+    "D100", "D101", "D102", "D103", "D104", "D105", "D107",  # Missing docstring in public module, class, method, function, package
+    "D401", "D404",  # First line should be in imperative mood; try rephrasing
     "S105", "S106",  # todo: Possible hardcoded password: ...
 ]
 
-[tool.ruff.lint.mccabe]
-# Unlike Flake8, default to a complexity level of 10.
-max-complexity = 10
 
 
 [tool.mypy]

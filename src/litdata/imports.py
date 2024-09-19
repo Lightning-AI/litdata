@@ -97,7 +97,7 @@ class RequirementCache:
             self.message = f"Requirement {self.requirement!r} met"
         except Exception as ex:
             self.available = False
-            self.message = f"{ex.__class__.__name__}: {ex}. HINT: Try running `pip install -U {self.requirement!r}`"
+            self.message = f"{ex.__class__.__name__}: {ex}.\n HINT: Try running `pip install -U {self.requirement!r}`"
             requirement_contains_version_specifier = any(c in self.requirement for c in "=<>")
             if not requirement_contains_version_specifier or self.module is not None:
                 module = self.requirement if self.module is None else self.module

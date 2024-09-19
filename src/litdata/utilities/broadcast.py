@@ -48,8 +48,7 @@ def _response(r: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 class _HTTPClient:
-    """A wrapper class around the requests library which handles chores like logging, retries, and timeouts
-    automatically."""
+    """A wrapper around the requests library which handles chores like logging, retries, and timeouts automatically."""
 
     def __init__(
         self,
