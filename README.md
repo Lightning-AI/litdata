@@ -217,9 +217,8 @@ Additionally, you can inject client connection settings for [S3](https://boto3.a
 from litdata import StreamingDataset
 
 storage_options = {
-    "endpoint_url": "your_endpoint_url",
-    "aws_access_key_id": "your_access_key_id",
-    "aws_secret_access_key": "your_secret_access_key",
+    "key": "your_access_key_id",
+    "secret": "your_secret_access_key",
 }
 
 dataset = StreamingDataset('s3://my-bucket/my-data', storage_options=storage_options)
@@ -366,7 +365,7 @@ for batch in val_dataloader:
 
 &nbsp;
 
-The StreamingDataset supports reading optimized datasets from common cloud providers. 
+The StreamingDataset supports reading optimized datasets from common cloud providers.
 
 ```python
 import os
@@ -374,24 +373,38 @@ import litdata as ld
 
 # Read data from AWS S3
 aws_storage_options={
-    "AWS_ACCESS_KEY_ID": os.environ['AWS_ACCESS_KEY_ID'],
-    "AWS_SECRET_ACCESS_KEY": os.environ['AWS_SECRET_ACCESS_KEY'],
+    "key": os.environ['AWS_ACCESS_KEY_ID'],
+    "secret": os.environ['AWS_SECRET_ACCESS_KEY'],
 }
 dataset = ld.StreamingDataset("s3://my-bucket/my-data", storage_options=aws_storage_options)
 
 # Read data from GCS
 gcp_storage_options={
-    "project": os.environ['PROJECT_ID'],
+    "token": {
+      # dumped from cat ~/.config/gcloud/application_default_credentials.json 
+        "account": "",
+        "client_id": "your_client_id",
+        "client_secret": "your_client_secret",
+        "quota_project_id": "your_quota_project_id",
+        "refresh_token": "your_refresh_token",
+        "type": "authorized_user",
+        "universe_domain": "googleapis.com",
+    }
 }
 dataset = ld.StreamingDataset("gs://my-bucket/my-data", storage_options=gcp_storage_options)
 
 # Read data from Azure
 azure_storage_options={
-    "account_url": f"https://{os.environ['AZURE_ACCOUNT_NAME']}.blob.core.windows.net",
-    "credential": os.environ['AZURE_ACCOUNT_ACCESS_KEY']
+    "account_name": "azure_account_name",
+    "account_key": os.environ['AZURE_ACCOUNT_ACCESS_KEY']
 }
 dataset = ld.StreamingDataset("azure://my-bucket/my-data", storage_options=azure_storage_options)
 ```
+
+- For more details on which storage options are supported, please refer to:
+  - [AWS S3 storage options](https://github.com/fsspec/s3fs/blob/main/s3fs/core.py#L176)
+  - [GCS storage options](https://github.com/fsspec/gcsfs/blob/main/gcsfs/core.py#L154)
+  - [Azure storage options](https://github.com/fsspec/adlfs/blob/main/adlfs/spec.py#L124)
 
 </details>  
 
