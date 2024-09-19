@@ -240,7 +240,7 @@ def test_dataloader_with_loading_states(tmpdir):
     for _ in dataloader:
         assert dataloader.current_epoch == 1, "Current epoch should be 1"
         count += 1
-    assert count == 15, "There should be atleast 15 batches remaining in the first epoch"
+    assert count == 15, "There should be at least 15 batches remaining in the first epoch"
     assert not dataloader.restore
 
     # Verify batches in the second epoch
@@ -289,7 +289,7 @@ def test_dataloader_states_with_persistent_workers(tmpdir):
     for _ in dataloader:
         assert dataloader.current_epoch == 1, "Current epoch should be 1"
         count += 1
-    assert count == 15, "There should be atleast 15 batches remaining in the first epoch"
+    assert count == 15, "There should be at least 15 batches remaining in the first epoch"
     assert not dataloader.restore
 
     # Verify batches in the second epoch

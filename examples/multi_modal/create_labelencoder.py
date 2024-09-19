@@ -3,11 +3,7 @@ from sklearn.preprocessing import LabelEncoder
 
 
 def create_labelencoder():
-    """
-    Create a label encoder
-    Returns:
-
-    """
+    """Create a label encoder."""
     data = ["Cancelation", "IBAN Change", "Damage Report"]
     # Create an instance of LabelEncoder
     label_encoder = LabelEncoder()

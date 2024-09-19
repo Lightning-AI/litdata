@@ -1,4 +1,4 @@
-"""Architecure Bert & Resnet lightning."""
+"""Architecture Bert & Resnet lightning."""
 
 import logging
 
@@ -41,9 +41,7 @@ class BertClassifier(nn.Module):
         """Forward path, calculate the computational graph in the forward direction.
 
         Used for train, test and val.
-        Args:
-            input_ids
-            attention_mask
+
         Returns:
             computional graph
 
@@ -72,9 +70,9 @@ class BertResNetClassifier(nn.Module):
         self.dropout = nn.Dropout(self.hyperparameters["dropout"])
 
     def get_bert_model(self):
-        """
-        Load the pre trained bert model weigths
-        Returns: model
+        """Load the pre-trained bert model weights.
+
+        Returns: model.
         """
         model = BertModel.from_pretrained("bert-base-cased")
         return BertClassifier(model)
@@ -89,9 +87,9 @@ class BertResNetClassifier(nn.Module):
         validation.
 
         Args:
-            x (torch.Tensor): Tensor with id tokesn
-            y (torch.Tensor): Tensor with attention tokens.
-            z (torch.Tensor): Tensor with iamge.
+            x: Tensor with id token
+            y: Tensor with attention tokens.
+            z: Tensor with image.
 
         Returns:
             torch.Tensor: The output tensor representing the computational graph.

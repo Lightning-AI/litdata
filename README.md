@@ -217,9 +217,8 @@ Additionally, you can inject client connection settings for [S3](https://boto3.a
 from litdata import StreamingDataset
 
 storage_options = {
-    "endpoint_url": "your_endpoint_url",
-    "aws_access_key_id": "your_access_key_id",
-    "aws_secret_access_key": "your_secret_access_key",
+    "key": "your_access_key_id",
+    "secret": "your_secret_access_key",
 }
 
 dataset = StreamingDataset('s3://my-bucket/my-data', storage_options=storage_options)
@@ -264,7 +263,7 @@ for batch in val_dataloader:
 
 &nbsp;
 
-The StreamingDataset supports reading optimized datasets from common cloud providers. 
+The StreamingDataset supports reading optimized datasets from common cloud providers.
 
 ```python
 import os
@@ -272,24 +271,38 @@ import litdata as ld
 
 # Read data from AWS S3
 aws_storage_options={
-    "AWS_ACCESS_KEY_ID": os.environ['AWS_ACCESS_KEY_ID'],
-    "AWS_SECRET_ACCESS_KEY": os.environ['AWS_SECRET_ACCESS_KEY'],
+    "key": os.environ['AWS_ACCESS_KEY_ID'],
+    "secret": os.environ['AWS_SECRET_ACCESS_KEY'],
 }
 dataset = ld.StreamingDataset("s3://my-bucket/my-data", storage_options=aws_storage_options)
 
 # Read data from GCS
 gcp_storage_options={
-    "project": os.environ['PROJECT_ID'],
+    "token": {
+      # dumped from cat ~/.config/gcloud/application_default_credentials.json 
+        "account": "",
+        "client_id": "your_client_id",
+        "client_secret": "your_client_secret",
+        "quota_project_id": "your_quota_project_id",
+        "refresh_token": "your_refresh_token",
+        "type": "authorized_user",
+        "universe_domain": "googleapis.com",
+    }
 }
 dataset = ld.StreamingDataset("gs://my-bucket/my-data", storage_options=gcp_storage_options)
 
 # Read data from Azure
 azure_storage_options={
-    "account_url": f"https://{os.environ['AZURE_ACCOUNT_NAME']}.blob.core.windows.net",
-    "credential": os.environ['AZURE_ACCOUNT_ACCESS_KEY']
+    "account_name": "azure_account_name",
+    "account_key": os.environ['AZURE_ACCOUNT_ACCESS_KEY']
 }
 dataset = ld.StreamingDataset("azure://my-bucket/my-data", storage_options=azure_storage_options)
 ```
+
+- For more details on which storage options are supported, please refer to:
+  - [AWS S3 storage options](https://github.com/fsspec/s3fs/blob/main/s3fs/core.py#L176)
+  - [GCS storage options](https://github.com/fsspec/gcsfs/blob/main/gcsfs/core.py#L154)
+  - [Azure storage options](https://github.com/fsspec/adlfs/blob/main/adlfs/spec.py#L124)
 
 </details>  
 
@@ -745,6 +758,75 @@ print(dataset[:])
 
 </details>
 
+<details>
+  <summary> ✅ Encrypt, decrypt data at chunk/sample level</summary>
+&nbsp;
+
+Secure data by applying encryption to individual samples or chunks, ensuring sensitive information is protected during storage.
+
+This example shows how to use the `FernetEncryption` class for sample-level encryption with a data optimization function.
+
+```python
+from litdata import optimize
+from litdata.utilities.encryption import FernetEncryption
+import numpy as np
+from PIL import Image
+
+# Initialize FernetEncryption with a password for sample-level encryption
+fernet = FernetEncryption(password="your_secure_password", level="sample")
+data_dir = "s3://my-bucket/optimized_data"
+
+def random_image(index):
+    """Generate a random image for demonstration purposes."""
+    fake_img = Image.fromarray(np.random.randint(0, 255, (32, 32, 3), dtype=np.uint8))
+    return {"image": fake_img, "class": index}
+
+# Optimize data while applying encryption
+optimize(
+    fn=random_image,
+    inputs=list(range(5)),  # Example inputs: [0, 1, 2, 3, 4]
+    num_workers=1,
+    output_dir=data_dir,
+    chunk_bytes="64MB",
+    encryption=fernet,
+)
+
+# Save the encryption key to a file for later use
+fernet.save("fernet.pem")
+```
+
+Load the encrypted data using the `StreamingDataset` class as follows:
+
+```python
+from litdata import StreamingDataset
+from litdata.utilities.encryption import FernetEncryption
+
+# Load the encryption key
+fernet = FernetEncryption(password="your_secure_password", level="sample")
+fernet.load("fernet.pem")
+
+# Create a streaming dataset for reading the encrypted samples
+ds = StreamingDataset(input_dir=data_dir, encryption=fernet)
+```
+
+Implement your own encryption method: Subclass the `Encryption` class and define the necessary methods:
+
+```python
+from litdata.utilities.encryption import Encryption
+
+class CustomEncryption(Encryption):
+    def encrypt(self, data):
+        # Implement your custom encryption logic here
+        return data
+
+    def decrypt(self, data):
+        # Implement your custom decryption logic here
+        return data
+```
+
+This allows the data to remain secure while maintaining flexibility in the encryption method.
+</details>
+
 &nbsp;
 
 ## Features for transforming datasets
@@ -815,75 +897,6 @@ EOL
 ```
 Explore an example setup of litdata with MinIO in the [LitData with MinIO](https://github.com/bhimrazy/litdata-with-minio) repository for practical implementation details.
 
-</details>
-
-<details>
-  <summary> ✅ Supports encryption and decryption of data at chunk/sample level</summary>
-&nbsp;
-
-Secure your data by applying encryption to individual samples or chunks, ensuring sensitive information is protected during storage.
-
-This example demonstrates how to use the `FernetEncryption` class for sample-level encryption with a data optimization function.
-
-```python
-from litdata import optimize
-from litdata.utilities.encryption import FernetEncryption
-import numpy as np
-from PIL import Image
-
-# Initialize FernetEncryption with a password for sample-level encryption
-fernet = FernetEncryption(password="your_secure_password", level="sample")
-data_dir = "s3://my-bucket/optimized_data"
-
-def random_image(index):
-    """Generate a random image for demonstration purposes."""
-    fake_img = Image.fromarray(np.random.randint(0, 255, (32, 32, 3), dtype=np.uint8))
-    return {"image": fake_img, "class": index}
-
-# Optimize data while applying encryption
-optimize(
-    fn=random_image,
-    inputs=list(range(5)),  # Example inputs: [0, 1, 2, 3, 4]
-    num_workers=1,
-    output_dir=data_dir,
-    chunk_bytes="64MB",
-    encryption=fernet,
-)
-
-# Save the encryption key to a file for later use
-fernet.save("fernet.pem")
-```
-
-You can load the encrypted data using the `StreamingDataset` class as follows:
-
-```python
-from litdata import StreamingDataset
-from litdata.utilities.encryption import FernetEncryption
-
-# Load the encryption key
-fernet = FernetEncryption(password="your_secure_password", level="sample")
-fernet.load("fernet.pem")
-
-# Create a streaming dataset for reading the encrypted samples
-ds = StreamingDataset(input_dir=data_dir, encryption=fernet)
-```
-
-If you want to implement your own encryption method, you can subclass the `Encryption` class and define the necessary methods:
-
-```python
-from litdata.utilities.encryption import Encryption
-
-class CustomEncryption(Encryption):
-    def encrypt(self, data):
-        # Implement your custom encryption logic here
-        return data
-
-    def decrypt(self, data):
-        # Implement your custom decryption logic here
-        return data
-```
-
-With this setup, you can ensure that your data remains secure while maintaining flexibility in how you handle encryption.
 </details>
 
 &nbsp;

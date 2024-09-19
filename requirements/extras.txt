@@ -5,3 +5,5 @@ pyarrow
 tqdm
 lightning-sdk ==0.1.17 # Must be pinned to ensure compatibility
 google-cloud-storage
+fsspec[gs] # google cloud storage
+fsspec[abfs] # azure blob

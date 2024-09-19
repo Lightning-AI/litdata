@@ -17,6 +17,7 @@ import pickle
 import tempfile
 from abc import ABC, abstractmethod
 from collections import OrderedDict
+from contextlib import suppress
 from copy import deepcopy
 from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Union
 
@@ -28,7 +29,6 @@ from litdata.constants import _NUMPY_DTYPES_MAPPING, _TORCH_DTYPES_MAPPING
 
 if TYPE_CHECKING:
     from PIL.JpegImagePlugin import JpegImageFile
-
 _PIL_AVAILABLE = RequirementCache("PIL")
 _TORCH_VISION_AVAILABLE = RequirementCache("torchvision")
 _AV_AVAILABLE = RequirementCache("av")
@@ -69,6 +69,8 @@ class PILSerializer(Serializer):
 
     @classmethod
     def deserialize(cls, data: bytes) -> Any:
+        if not _PIL_AVAILABLE:
+            raise ModuleNotFoundError("PIL is required. Run `pip install pillow`")
         from PIL import Image
 
         idx = 3 * 4
@@ -93,6 +95,9 @@ class JPEGSerializer(Serializer):
     """The JPEGSerializer serialize and deserialize JPEG image to and from bytes."""
 
     def serialize(self, item: Any) -> Tuple[bytes, Optional[str]]:
+        if not _PIL_AVAILABLE:
+            raise ModuleNotFoundError("PIL is required. Run `pip install pillow`")
+
         from PIL import Image
         from PIL.GifImagePlugin import GifImageFile
         from PIL.JpegImagePlugin import JpegImageFile
@@ -102,7 +107,8 @@ class JPEGSerializer(Serializer):
         if isinstance(item, JpegImageFile):
             if not hasattr(item, "filename"):
                 raise ValueError(
-                    "The JPEG Image's filename isn't defined. HINT: Open the image in your Dataset __getitem__ method."
+                    "The JPEG Image's filename isn't defined."
+                    "\n HINT: Open the image in your Dataset `__getitem__` method."
                 )
             if item.filename and os.path.isfile(item.filename):
                 # read the content of the file directly
@@ -120,7 +126,7 @@ class JPEGSerializer(Serializer):
             buff.seek(0)
             return buff.read(), None
 
-        raise TypeError(f"The provided item should be of type {JpegImageFile}. Found {item}.")
+        raise TypeError(f"The provided item should be of type `JpegImageFile`. Found {item}.")
 
     def deserialize(self, data: bytes) -> Union["JpegImageFile", torch.Tensor]:
         if _TORCH_VISION_AVAILABLE:
@@ -128,11 +134,9 @@ class JPEGSerializer(Serializer):
             from torchvision.transforms.functional import pil_to_tensor
 
             array = torch.frombuffer(data, dtype=torch.uint8)
-            try:
+            # Note: Some datasets like Imagenet contains some PNG images with JPEG extension, so we fallback to PIL
+            with suppress(RuntimeError):
                 return decode_jpeg(array)
-            except RuntimeError:
-                # Note: Some datasets like Imagenet contains some PNG images with JPEG extension, so we fallback to PIL
-                pass
 
         img = PILSerializer.deserialize(data)
         if _TORCH_VISION_AVAILABLE:
@@ -184,7 +188,7 @@ class TensorSerializer(Serializer):
         shape = []
         for shape_idx in range(shape_size):
             shape.append(np.frombuffer(data[8 + 4 * shape_idx : 8 + 4 * (shape_idx + 1)], np.uint32).item())
-        idx_start = 8 + 4 * (shape_idx + 1)
+        idx_start = 8 + 4 * shape_size
         idx_end = len(data)
         if idx_end > idx_start:
             tensor = torch.frombuffer(data[idx_start:idx_end], dtype=dtype)
@@ -250,7 +254,7 @@ class NumpySerializer(Serializer):
             shape.append(np.frombuffer(data[8 + 4 * shape_idx : 8 + 4 * (shape_idx + 1)], np.uint32).item())
 
         # deserialize the numpy array bytes
-        tensor = np.frombuffer(data[8 + 4 * (shape_idx + 1) : len(data)], dtype=dtype)
+        tensor = np.frombuffer(data[8 + 4 * shape_size : len(data)], dtype=dtype)
         if tensor.shape == shape:
             return tensor
         return np.reshape(tensor, shape)

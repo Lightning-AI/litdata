@@ -23,7 +23,9 @@ def test_src_resolver_s3_connections(monkeypatch, lightning_cloud_mock):
     auth = login.Auth()
     auth.save(user_id="7c8455e3-7c5f-4697-8a6d-105971d6b9bd", api_key="e63fae57-2b50-498b-bc46-d6204cbf330e")
 
-    with pytest.raises(RuntimeError, match="`project_id` couldn't be found from the environement variables."):
+    with pytest.raises(
+        RuntimeError, match="`LIGHTNING_CLOUD_PROJECT_ID` couldn't be found from the environment variables."
+    ):
         resolver._resolve_dir("/teamspace/s3_connections/imagenet")
 
     monkeypatch.setenv("LIGHTNING_CLOUD_PROJECT_ID", "project_id")
@@ -60,12 +62,12 @@ def test_src_resolver_studios(monkeypatch, lightning_cloud_mock):
     auth = login.Auth()
     auth.save(user_id="7c8455e3-7c5f-4697-8a6d-105971d6b9bd", api_key="e63fae57-2b50-498b-bc46-d6204cbf330e")
 
-    with pytest.raises(RuntimeError, match="`cluster_id`"):
+    with pytest.raises(RuntimeError, match="`LIGHTNING_CLUSTER_ID`"):
         resolver._resolve_dir("/teamspace/studios/other_studio")
 
     monkeypatch.setenv("LIGHTNING_CLUSTER_ID", "cluster_id")
 
-    with pytest.raises(RuntimeError, match="`project_id`"):
+    with pytest.raises(RuntimeError, match="`LIGHTNING_CLOUD_PROJECT_ID`"):
         resolver._resolve_dir("/teamspace/studios/other_studio")
 
     monkeypatch.setenv("LIGHTNING_CLOUD_PROJECT_ID", "project_id")
@@ -138,17 +140,17 @@ def test_src_resolver_datasets(monkeypatch, lightning_cloud_mock):
 
     assert resolver._resolve_dir("s3://bucket_name").url == "s3://bucket_name"
 
-    with pytest.raises(RuntimeError, match="`cluster_id`"):
+    with pytest.raises(RuntimeError, match="`LIGHTNING_CLUSTER_ID`"):
         resolver._resolve_dir("/teamspace/datasets/imagenet")
 
     monkeypatch.setenv("LIGHTNING_CLUSTER_ID", "cluster_id")
 
-    with pytest.raises(RuntimeError, match="`project_id`"):
+    with pytest.raises(RuntimeError, match="`LIGHTNING_CLOUD_PROJECT_ID`"):
         resolver._resolve_dir("/teamspace/datasets/imagenet")
 
     monkeypatch.setenv("LIGHTNING_CLOUD_PROJECT_ID", "project_id")
 
-    with pytest.raises(RuntimeError, match="`cloud_space_id`"):
+    with pytest.raises(RuntimeError, match="`LIGHTNING_CLOUD_SPACE_ID`"):
         resolver._resolve_dir("/teamspace/datasets/imagenet")
 
     monkeypatch.setenv("LIGHTNING_CLOUD_SPACE_ID", "cloud_space_id")
@@ -300,52 +302,54 @@ def test_execute(phase, monkeypatch, lightning_sdk_mock):
 
 
 def test_assert_dir_is_empty(monkeypatch):
-    boto3 = mock.MagicMock()
-    client_s3_mock = mock.MagicMock()
-    client_s3_mock.list_objects_v2.return_value = {"KeyCount": 1, "Contents": []}
-    boto3.client.return_value = client_s3_mock
-    resolver.boto3 = boto3
+    def mock_list_directory(*args, **kwargs):
+        return ["a.txt", "b.txt"]
+
+    def mock_empty_list_directory(*args, **kwargs):
+        return []
+
+    monkeypatch.setattr(resolver, "list_directory", mock_list_directory)
 
     with pytest.raises(RuntimeError, match="The provided output_dir"):
         resolver._assert_dir_is_empty(resolver.Dir(path="/teamspace/...", url="s3://"))
 
-    client_s3_mock.list_objects_v2.return_value = {"KeyCount": 0, "Contents": []}
-    boto3.client.return_value = client_s3_mock
-    resolver.boto3 = boto3
+    monkeypatch.setattr(resolver, "list_directory", mock_empty_list_directory)
 
     resolver._assert_dir_is_empty(resolver.Dir(path="/teamspace/...", url="s3://"))
 
 
 def test_assert_dir_has_index_file(monkeypatch):
-    boto3 = mock.MagicMock()
-    client_s3_mock = mock.MagicMock()
-    client_s3_mock.list_objects_v2.return_value = {"KeyCount": 1, "Contents": []}
-    boto3.client.return_value = client_s3_mock
-    resolver.boto3 = boto3
+    def mock_list_directory_0(*args, **kwargs):
+        return []
+
+    def mock_list_directory_1(*args, **kwargs):
+        return ["a.txt", "b.txt"]
+
+    def mock_list_directory_2(*args, **kwargs):
+        return ["index.json"]
+
+    def mock_does_file_exist_1(*args, **kwargs):
+        raise Exception({"Error": {"Code": "404", "Message": "Not Found"}}, "HeadObject")  # some exception
+
+    def mock_does_file_exist_2(*args, **kwargs):
+        return True
+
+    def mock_remove_file_or_directory(*args, **kwargs):
+        return
+
+    monkeypatch.setattr(resolver, "list_directory", mock_list_directory_0)
+    monkeypatch.setattr(resolver, "does_file_exist", mock_does_file_exist_1)
+    monkeypatch.setattr(resolver, "remove_file_or_directory", mock_remove_file_or_directory)
+
+    resolver._assert_dir_has_index_file(resolver.Dir(path="/teamspace/...", url="s3://"))
+
+    monkeypatch.setattr(resolver, "list_directory", mock_list_directory_2)
+    monkeypatch.setattr(resolver, "does_file_exist", mock_does_file_exist_2)
 
     with pytest.raises(RuntimeError, match="The provided output_dir"):
         resolver._assert_dir_has_index_file(resolver.Dir(path="/teamspace/...", url="s3://"))
 
-    client_s3_mock.list_objects_v2.return_value = {"KeyCount": 0, "Contents": []}
-    boto3.client.return_value = client_s3_mock
-    resolver.boto3 = boto3
-
-    resolver._assert_dir_has_index_file(resolver.Dir(path="/teamspace/...", url="s3://"))
-
-    client_s3_mock.list_objects_v2.return_value = {"KeyCount": 1, "Contents": []}
-
-    def head_object(*args, **kwargs):
-        import botocore
-
-        raise botocore.exceptions.ClientError({"Error": {"Code": "404", "Message": "Not Found"}}, "HeadObject")
-
-    client_s3_mock.head_object = head_object
-    boto3.client.return_value = client_s3_mock
-    resolver.boto3 = boto3
-
-    resolver._assert_dir_has_index_file(resolver.Dir(path="/teamspace/...", url="s3://"))
-
-    boto3.resource.assert_called()
+    resolver._assert_dir_has_index_file(resolver.Dir(path="/teamspace/...", url="s3://"), mode="overwrite")
 
 
 def test_resolve_dir_absolute(tmp_path, monkeypatch):
@@ -365,3 +369,10 @@ def test_resolve_dir_absolute(tmp_path, monkeypatch):
     link.symlink_to(src)
     assert link.resolve() == src
     assert resolver._resolve_dir(str(link)).path == str(src)
+
+
+def test_resolve_dir_unsupported_cloud_provider(monkeypatch, tmp_path):
+    """Test that the unsupported cloud provider is handled correctly."""
+    test_dir = "some-random-cloud-provider://some-random-bucket"
+    with pytest.raises(ValueError, match="The provided dir_path"):
+        resolver._resolve_dir(test_dir)
