@@ -27,7 +27,7 @@ from urllib import parse
 
 import torch
 
-from litdata.constants import _INDEX_FILENAME, _IS_IN_STUDIO, _SUPPORTED_CLOUD_PROVIDERS
+from litdata.constants import _INDEX_FILENAME, _IS_IN_STUDIO
 from litdata.processing.data_processor import DataChunkRecipe, DataProcessor, DataTransformRecipe
 from litdata.processing.readers import BaseReader
 from litdata.processing.utilities import (
@@ -36,8 +36,8 @@ from litdata.processing.utilities import (
     optimize_dns_context,
     read_index_file_content,
 )
+from litdata.streaming.client import S3Client
 from litdata.streaming.dataloader import StreamingDataLoader
-from litdata.streaming.downloader import copy_file_or_directory, upload_file_or_directory
 from litdata.streaming.item_loader import BaseItemLoader
 from litdata.streaming.resolver import (
     Dir,
@@ -53,7 +53,7 @@ from litdata.utilities.format import _get_tqdm_iterator_if_available
 
 def _is_remote_file(path: str) -> bool:
     obj = parse.urlparse(path)
-    return obj.scheme in _SUPPORTED_CLOUD_PROVIDERS
+    return obj.scheme in ["s3", "gcs"]
 
 
 def _get_indexed_paths(data: Any) -> Dict[int, str]:
@@ -151,15 +151,8 @@ class LambdaDataChunkRecipe(DataChunkRecipe):
         compression: Optional[str],
         encryption: Optional[Encryption] = None,
         existing_index: Optional[Dict[str, Any]] = None,
-        storage_options: Optional[Dict] = {},
     ):
-        super().__init__(
-            chunk_size=chunk_size,
-            chunk_bytes=chunk_bytes,
-            compression=compression,
-            encryption=encryption,
-            storage_options=storage_options,
-        )
+        super().__init__(chunk_size=chunk_size, chunk_bytes=chunk_bytes, compression=compression, encryption=encryption)
         self._fn = fn
         self._inputs = inputs
         self.is_generator = False
@@ -206,7 +199,6 @@ def map(
     error_when_not_empty: bool = False,
     reader: Optional[BaseReader] = None,
     batch_size: Optional[int] = None,
-    storage_options: Optional[Dict] = {},
 ) -> None:
     """Maps a callable over a collection of inputs, possibly in a distributed way.
 
@@ -228,7 +220,6 @@ def map(
         error_when_not_empty: Whether we should error if the output folder isn't empty.
         reader: The reader to use when reading the data. By default, it uses the `BaseReader`.
         batch_size: Group the inputs into batches of batch_size length.
-        storage_options: The storage options used by the cloud provider.
 
     """
     if isinstance(inputs, StreamingDataLoader) and batch_size is not None:
@@ -267,7 +258,7 @@ def map(
             )
 
         if error_when_not_empty:
-            _assert_dir_is_empty(_output_dir, storage_options=storage_options)
+            _assert_dir_is_empty(_output_dir)
 
         if not isinstance(inputs, StreamingDataLoader):
             input_dir = input_dir or _get_input_dir(inputs)
@@ -291,7 +282,6 @@ def map(
             reorder_files=reorder_files,
             weights=weights,
             reader=reader,
-            storage_options=storage_options,
         )
         with optimize_dns_context(True):
             return data_processor.run(LambdaDataTransformRecipe(fn, inputs))
@@ -325,7 +315,6 @@ def optimize(
     use_checkpoint: bool = False,
     item_loader: Optional[BaseItemLoader] = None,
     start_method: Optional[str] = None,
-    storage_options: Optional[Dict] = {},
 ) -> None:
     """This function converts a dataset into chunks, possibly in a distributed way.
 
@@ -360,7 +349,6 @@ def optimize(
                 the format in which the data is stored and optimized for loading.
         start_method: The start method used by python multiprocessing package. Default to spawn unless running
             inside an interactive shell like Ipython.
-        storage_options: The storage options used by the cloud provider.
 
     """
     if mode is not None and mode not in ["append", "overwrite"]:
@@ -415,9 +403,7 @@ def optimize(
                 "\n HINT: You can either use `/teamspace/s3_connections/...` or `/teamspace/datasets/...`."
             )
 
-        _assert_dir_has_index_file(
-            _output_dir, mode=mode, use_checkpoint=use_checkpoint, storage_options=storage_options
-        )
+        _assert_dir_has_index_file(_output_dir, mode=mode, use_checkpoint=use_checkpoint)
 
         if not isinstance(inputs, StreamingDataLoader):
             resolved_dir = _resolve_dir(input_dir or _get_input_dir(inputs))
@@ -433,9 +419,7 @@ def optimize(
         num_workers = num_workers or _get_default_num_workers()
         state_dict = {rank: 0 for rank in range(num_workers)}
 
-        existing_index_file_content = (
-            read_index_file_content(_output_dir, storage_options=storage_options) if mode == "append" else None
-        )
+        existing_index_file_content = read_index_file_content(_output_dir) if mode == "append" else None
 
         if existing_index_file_content is not None:
             for chunk in existing_index_file_content["chunks"]:
@@ -457,7 +441,6 @@ def optimize(
             use_checkpoint=use_checkpoint,
             item_loader=item_loader,
             start_method=start_method,
-            storage_options=storage_options,
         )
 
         with optimize_dns_context(True):
@@ -470,7 +453,6 @@ def optimize(
                     compression=compression,
                     encryption=encryption,
                     existing_index=existing_index_file_content,
-                    storage_options=storage_options,
                 )
             )
         return None
@@ -539,14 +521,12 @@ class CopyInfo:
     new_filename: str
 
 
-def merge_datasets(input_dirs: List[str], output_dir: str, storage_options: Optional[Dict] = {}) -> None:
-    """The merge_datasets utility enables to merge multiple existing optimized datasets into a single optimized
-    dataset.
+def merge_datasets(input_dirs: List[str], output_dir: str) -> None:
+    """Enables to merge multiple existing optimized datasets into a single optimized dataset.
 
     Args:
         input_dirs: A list of directories pointing to the existing optimized datasets.
         output_dir: The directory where the merged dataset would be stored.
-        storage_options: A dictionary of storage options to be passed to the fsspec library.
 
     """
     if len(input_dirs) == 0:
@@ -561,14 +541,12 @@ def merge_datasets(input_dirs: List[str], output_dir: str, storage_options: Opti
     if any(input_dir == resolved_output_dir for input_dir in resolved_input_dirs):
         raise ValueError("The provided output_dir was found within the input_dirs. This isn't supported.")
 
-    input_dirs_file_content = [
-        read_index_file_content(input_dir, storage_options=storage_options) for input_dir in resolved_input_dirs
-    ]
+    input_dirs_file_content = [read_index_file_content(input_dir) for input_dir in resolved_input_dirs]
 
     if any(file_content is None for file_content in input_dirs_file_content):
         raise ValueError("One of the provided input_dir doesn't have an index file.")
 
-    output_dir_file_content = read_index_file_content(resolved_output_dir, storage_options=storage_options)
+    output_dir_file_content = read_index_file_content(resolved_output_dir)
 
     if output_dir_file_content is not None:
         raise ValueError("The output_dir already contains an optimized dataset")
@@ -603,12 +581,12 @@ def merge_datasets(input_dirs: List[str], output_dir: str, storage_options: Opti
     _tqdm = _get_tqdm_iterator_if_available()
 
     for copy_info in _tqdm(copy_infos):
-        _apply_copy(copy_info, resolved_output_dir, storage_options=storage_options)
+        _apply_copy(copy_info, resolved_output_dir)
 
-    _save_index(index_json, resolved_output_dir, storage_options=storage_options)
+    _save_index(index_json, resolved_output_dir)
 
 
-def _apply_copy(copy_info: CopyInfo, output_dir: Dir, storage_options: Optional[Dict] = {}) -> None:
+def _apply_copy(copy_info: CopyInfo, output_dir: Dir) -> None:
     if output_dir.url is None and copy_info.input_dir.url is None:
         assert copy_info.input_dir.path
         assert output_dir.path
@@ -618,15 +596,20 @@ def _apply_copy(copy_info: CopyInfo, output_dir: Dir, storage_options: Optional[
         shutil.copyfile(input_filepath, output_filepath)
 
     elif output_dir.url and copy_info.input_dir.url:
-        input_obj = os.path.join(copy_info.input_dir.url, copy_info.old_filename)
-        output_obj = os.path.join(output_dir.url, copy_info.new_filename)
+        input_obj = parse.urlparse(os.path.join(copy_info.input_dir.url, copy_info.old_filename))
+        output_obj = parse.urlparse(os.path.join(output_dir.url, copy_info.new_filename))
 
-        copy_file_or_directory(input_obj, output_obj, storage_options=storage_options)
+        s3 = S3Client()
+        s3.client.copy(
+            {"Bucket": input_obj.netloc, "Key": input_obj.path.lstrip("/")},
+            output_obj.netloc,
+            output_obj.path.lstrip("/"),
+        )
     else:
         raise NotImplementedError
 
 
-def _save_index(index_json: Dict, output_dir: Dir, storage_options: Optional[Dict] = {}) -> None:
+def _save_index(index_json: Dict, output_dir: Dir) -> None:
     if output_dir.url is None:
         assert output_dir.path
         with open(os.path.join(output_dir.path, _INDEX_FILENAME), "w") as f:
@@ -637,6 +620,11 @@ def _save_index(index_json: Dict, output_dir: Dir, storage_options: Optional[Dic
 
             f.flush()
 
-            upload_file_or_directory(
-                f.name, os.path.join(output_dir.url, _INDEX_FILENAME), storage_options=storage_options
+            obj = parse.urlparse(os.path.join(output_dir.url, _INDEX_FILENAME))
+
+            s3 = S3Client()
+            s3.client.upload_file(
+                f.name,
+                obj.netloc,
+                obj.path.lstrip("/"),
             )

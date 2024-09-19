@@ -109,16 +109,20 @@ def test_upload_s3_fn(tmpdir, monkeypatch):
 
     remove_queue = mock.MagicMock()
 
+    s3_client = mock.MagicMock()
+
     called = False
 
-    def copy_file(local_filepath, *args, **kwargs):
+    def copy_file(local_filepath, *args):
         nonlocal called
         called = True
         from shutil import copyfile
 
         copyfile(local_filepath, os.path.join(remote_output_dir, os.path.basename(local_filepath)))
 
-    monkeypatch.setattr(data_processor_module, "upload_file_or_directory", copy_file)
+    s3_client.client.upload_file = copy_file
+
+    monkeypatch.setattr(data_processor_module, "S3Client", mock.MagicMock(return_value=s3_client))
 
     assert os.listdir(remote_output_dir) == []
 
@@ -213,28 +217,32 @@ def test_wait_for_disk_usage_higher_than_threshold():
 
 
 @pytest.mark.skipif(condition=sys.platform == "win32", reason="Not supported on windows")
-def test_wait_for_file_to_exist(monkeypatch):
+def test_wait_for_file_to_exist():
+    import botocore
+
+    s3 = mock.MagicMock()
+    obj = mock.MagicMock()
     raise_error = [True, True, False]
 
     def fn(*_, **__):
         value = raise_error.pop(0)
         if value:
-            raise Exception({"Error": {"Code": "404", "Message": "Not Found"}}, "HeadObject")  # some exception
+            raise botocore.exceptions.ClientError({"Error": {"Code": "404", "Message": "Not Found"}}, "HeadObject")
         return
 
-    monkeypatch.setattr(data_processor_module, "does_file_exist", fn)
+    s3.client.head_object = fn
 
-    _wait_for_file_to_exist("s3://some-dummy-bucket/some-dummy-key", sleep_time=0.01)
+    _wait_for_file_to_exist(s3, obj, sleep_time=0.01)
 
     assert len(raise_error) == 0
 
     def fn(*_, **__):
         raise ValueError("HERE")
 
-    monkeypatch.setattr(data_processor_module, "does_file_exist", fn)
+    s3.client.head_object = fn
 
     with pytest.raises(ValueError, match="HERE"):
-        _wait_for_file_to_exist("s3://some-dummy-bucket/some-dummy-key", sleep_time=0.01)
+        _wait_for_file_to_exist(s3, obj, sleep_time=0.01)
 
 
 def test_cache_dir_cleanup(tmpdir, monkeypatch):
@@ -1016,10 +1024,11 @@ def test_data_processing_map_non_absolute_path(monkeypatch, tmpdir):
 
 @pytest.mark.skipif(condition=sys.platform == "win32", reason="Not supported on windows")
 def test_map_error_when_not_empty(monkeypatch):
-    def mock_list_directory(*args, **kwargs):
-        return ["a.txt", "b.txt"]
-
-    monkeypatch.setattr(resolver, "list_directory", mock_list_directory)
+    boto3 = mock.MagicMock()
+    client_s3_mock = mock.MagicMock()
+    client_s3_mock.list_objects_v2.return_value = {"KeyCount": 1, "Contents": []}
+    boto3.client.return_value = client_s3_mock
+    monkeypatch.setattr(resolver, "boto3", boto3)
 
     with pytest.raises(RuntimeError, match="data and datasets are meant to be immutable"):
         map(
