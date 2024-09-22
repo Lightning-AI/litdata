@@ -2,7 +2,5 @@ torch
 lightning-utilities
 filelock
 numpy
-# boto3
+boto3
 requests
-fsspec
-fsspec[s3] # aws s3
