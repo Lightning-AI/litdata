@@ -20,7 +20,7 @@ from threading import Event, Thread
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 from litdata.streaming.config import ChunksConfig, Interval
-from litdata.streaming.item_loader import BaseItemLoader, PyTreeLoader
+from litdata.streaming.item_loader import BaseItemLoader, PyTreeLoader, TokensLoader
 from litdata.streaming.sampler import ChunkedIndex
 from litdata.streaming.serializers import Serializer, _get_serializers
 from litdata.utilities.encryption import Encryption
@@ -288,7 +288,6 @@ class BinaryReader:
             item = self._item_loader.load_item_from_chunk(
                 index.index, index.chunk_index, chunk_filepath, begin, chunk_bytes
             )
-
         # We need to request deletion after the latest element has been loaded.
         # Otherwise, this could trigger segmentation fault error depending on the item loader used.
         if (
@@ -304,6 +303,9 @@ class BinaryReader:
 
             # track the new chunk index as the latest one
             self._last_chunk_index = index.chunk_index
+
+        if isinstance(self._item_loader, TokensLoader):
+            self._item_loader.close(index.chunk_index)
 
         if index.is_last_index and self._prepare_thread:
             # inform the thread it is time to stop
