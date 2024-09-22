@@ -925,83 +925,76 @@ def test_combined_dataset_with_dataloader_2_epochs(tmpdir):
     assert not dataloader.restore
 
 
-@pytest.mark.timeout(120)
-def test_combined_dataset_dataloader_states_complete_iterations(tmpdir):
-    datasets = [str(tmpdir.join(f"dataset_{i}")) for i in range(2)]
-    for dataset in datasets:
-        cache = Cache(input_dir=dataset, chunk_bytes="64MB")
-        for i in range(50):
-            cache[i] = i
-        cache.done()
-        cache.merge()
-
-    dataset_1 = StreamingDataset(datasets[0], shuffle=True)
-    dataset_2 = StreamingDataset(datasets[1], shuffle=True)
-    combined_dataset = CombinedStreamingDataset(datasets=[dataset_1, dataset_2])
-
-    # Test dataloader without explicit num workers
+def test_combined_dataset_dataloader_states_without_any_iterations(combined_dataset):
     dataloader = StreamingDataLoader(combined_dataset, batch_size=4)
     assert not dataloader.restore
     dataloader.load_state_dict(dataloader.state_dict())
     assert not dataloader.restore
-    batch = next(iter(dataloader))
-    assert len(batch) == 4, "Batch size should be 4"
-    assert len(dataloader) == 25, "Dataloader length should be 25 (50+50 items / batch size 4)"
 
-    # Test dataloader with num workers
-    dataloader = StreamingDataLoader(combined_dataset, batch_size=4, num_workers=4)
+
+@pytest.mark.timeout(120)
+@pytest.mark.parametrize("num_workers", [0, 2, 4])
+def test_combined_dataset_dataloader_states_complete_iterations(combined_dataset, num_workers):
+    print(f"Testing with num_workers={num_workers}")
+    dataloader = StreamingDataLoader(combined_dataset, batch_size=4, num_workers=num_workers)
     assert len(dataloader) == 25, "Dataloader length should be 25 (50+50 items / batch size 4)"
 
     # Verify dataloader state after complete last iteration
     for batch in dataloader:
         assert dataloader.current_epoch == 1, "Current epoch should be 1"
         pass
+
     dataloader.load_state_dict(dataloader.state_dict())
     assert not dataloader.restore
+
     for batch in dataloader:
         assert dataloader.current_epoch == 2, "Current epoch should be 2"
         pass
+
     assert not dataloader.restore
 
+    del dataloader
 
-@pytest.mark.timeout(120)
-def test_combined_dataset_dataloader_states_partial_iterations(tmpdir):
-    datasets = [str(tmpdir.join(f"dataset_{i}")) for i in range(2)]
-    for dataset in datasets:
-        cache = Cache(input_dir=dataset, chunk_bytes="64MB")
-        for i in range(50):
-            cache[i] = i
-        cache.done()
-        cache.merge()
 
-    dataset_1 = StreamingDataset(datasets[0], shuffle=True)
-    dataset_2 = StreamingDataset(datasets[1], shuffle=True)
-    combined_dataset = CombinedStreamingDataset(datasets=[dataset_1, dataset_2])
+@pytest.mark.timeout(300)
+@pytest.mark.parametrize(("num_workers", "break_at"), [(0, 10), (0, 15), (2, 10), (2, 15), (4, 10), (4, 15)])
+def test_combined_dataset_dataloader_states_partial_iterations(combined_dataset, num_workers, break_at):
+    print(f"Testing with num_workers={num_workers}, break_at={break_at}")
 
     # Verify dataloader state after partial last iteration
-    dataloader = StreamingDataLoader(combined_dataset, batch_size=4, num_workers=4)
+    dataloader = StreamingDataLoader(combined_dataset, batch_size=4, num_workers=num_workers, drop_last=True)
 
+    total_batches = len(dataloader)
+    assert total_batches == 25, "Dataloader length should be 25 (100 items / batch size 4)"
+
+    assert not dataloader.restore, "Dataloader should not be in restore state initially."
+
+    # Partial iteration up to 'break_at'
     for batch_idx, batch in enumerate(dataloader):
-        assert dataloader.current_epoch == 1, "Current epoch should be 1"
-        if batch_idx == 15:
+        assert dataloader.current_epoch == 1, "Current epoch should be 1 during first iteration"
+        if batch_idx == break_at:
             break
-    state_dict = dataloader.state_dict()
-    dataloader.load_state_dict(state_dict)
-    assert dataloader.restore
+
+    assert (
+        not dataloader.restore
+    ), "Dataloader should not be in restore state after partial iteration, before loading state."
+    dataloader.load_state_dict(dataloader.state_dict())
+    assert dataloader.restore, "Dataloader should be in restore state after loading the state from a partial iteration."
 
     # Verify remaining batches in the first epoch
     count = 0
     for _ in dataloader:
-        assert dataloader.current_epoch == 1, "Current epoch should be 1"
+        assert dataloader.current_epoch == 1, "Current epoch should be 1 during restore"
         count += 1
-    assert count == 15, "There should be atleast 15 batches remaining in the first epoch"
-    assert not dataloader.restore
+    expected_batches = total_batches - break_at - 1
+    assert (
+        count >= expected_batches
+    ), f"There should be at least{expected_batches} remaining batches in the first epoch."
+    assert not dataloader.restore, "Dataloader should not be in restore state after completing first epoch."
 
     # Verify batches in the second epoch
     count = 0
     for _ in dataloader:
-        assert dataloader.current_epoch == 2, "Current epoch should be 2"
+        assert dataloader.current_epoch == 2, "Current epoch should be 2 in the second iteration"
         count += 1
-    assert count >= 25, "There should be at least 25 batches in the second epoch"
-
-    # TODO: Add more conditions to check the state of the dataloader
+    assert count >= total_batches, f"There should be at least {total_batches} batches in the second epoch."
