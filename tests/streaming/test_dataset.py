@@ -518,7 +518,7 @@ def test_dataset_for_text_tokens_with_large_num_chunks(tmpdir):
     cache = Cache(input_dir=str(tmpdir), chunk_bytes="10KB", item_loader=TokensLoader(block_size))
 
     for i in range(10000):
-        text_ids = np.array([random.randint(0, 10000) for _ in range(random.randint(100, 1000))])
+        text_ids = torch.randint(0, 10001, (torch.randint(100, 1001, (1,)).item(),)).numpy()
         cache._add_item(i, text_ids)
 
     cache.done()
