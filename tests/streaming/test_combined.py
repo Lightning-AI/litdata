@@ -962,7 +962,7 @@ def test_combined_dataset_dataloader_states_partial_iterations(combined_dataset,
     print(f"Testing with num_workers={num_workers}, break_at={break_at}")
 
     # Verify dataloader state after partial last iteration
-    dataloader = StreamingDataLoader(combined_dataset, batch_size=4, num_workers=num_workers, drop_last=True)
+    dataloader = StreamingDataLoader(combined_dataset, batch_size=4, num_workers=num_workers)
 
     total_batches = len(dataloader)
     assert total_batches == 25, "Dataloader length should be 25 (100 items / batch size 4)"
@@ -993,8 +993,8 @@ def test_combined_dataset_dataloader_states_partial_iterations(combined_dataset,
     assert not dataloader.restore, "Dataloader should not be in restore state after completing first epoch."
 
     # Verify batches in the second epoch
-    count = 0
-    for _ in dataloader:
+    samples_yielded = 0
+    for batch in dataloader:
         assert dataloader.current_epoch == 2, "Current epoch should be 2 in the second iteration"
-        count += 1
-    assert count >= total_batches, f"There should be at least {total_batches} batches in the second epoch."
+        samples_yielded += len(batch)
+    assert samples_yielded == len(combined_dataset), "All samples should be yielded in the second epoch."
