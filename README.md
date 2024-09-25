@@ -866,7 +866,7 @@ Speed to stream Imagenet 1.2M from AWS S3:
 
 | Framework | Images / sec  1st Epoch (float32)  | Images / sec   2nd Epoch (float32) | Images / sec 1st Epoch (torch16) | Images / sec 2nd Epoch (torch16) |
 |---|---|---|---|---|
-| PL Data  | **5800** | **6589**  | **6282**  | **7221**  |
+| LitData | **5800** | **6589**  | **6282**  | **7221**  |
 | Web Dataset  | 3134 | 3924 | 3343 | 4424 |
 | Mosaic ML  | 2898 | 5099 | 2809 | 5158 |
 
@@ -887,7 +887,7 @@ LitData optimizes the Imagenet dataset for fast training 3-5x faster than other 
 Time to optimize 1.2 million ImageNet images (Faster is better):
 | Framework |Train Conversion Time | Val Conversion Time | Dataset Size | # Files |
 |---|---|---|---|---|
-| PL Data  |  **10:05 min** | **00:30 min** | **143.1 GB**  | 2.339  |
+| LitData  |  **10:05 min** | **00:30 min** | **143.1 GB**  | 2.339  |
 | Web Dataset  | 32:36 min | 01:22 min | 147.8 GB | 1.144 |
 | Mosaic ML  | 49:49 min | 01:04 min | **143.1 GB** | 2.298 |
 
