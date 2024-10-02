@@ -431,6 +431,40 @@ for batch in tqdm(train_dataloader):
 </details>
 
 <details>
+  <summary> ✅ Merge datasets</summary>
+&nbsp;
+
+Merge multiple optimized datasets into one.
+
+```python
+import numpy as np
+from PIL import Image
+
+from litdata import StreamingDataset, merge_datasets, optimize
+
+
+def random_images(index):
+    return {
+        "index": index,
+        "image": Image.fromarray(np.random.randint(0, 256, (32, 32, 3), dtype=np.uint8)),
+        "class": np.random.randint(10),
+    }
+
+
+if __name__ == "__main__":
+    out_dirs = ["fast_data_1", "fast_data_2", "fast_data_3", "fast_data_4"]
+    for out_dir in out_dirs:
+        optimize(fn=random_images, inputs=list(range(250)), output_dir=out_dir, num_workers=4, chunk_bytes="64MB")
+
+    merge_datasets(input_dirs=out_dirs, output_dir="merged_data")
+
+    dataset = StreamingDataset("merged_data")
+    print(len(dataset))
+    # out: 1000
+```
+</details>
+
+<details>
   <summary> ✅ Split datasets for train, val, test</summary>
 
 &nbsp;
