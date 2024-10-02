@@ -452,13 +452,14 @@ def random_images(index):
 
 
 if __name__ == "__main__":
-    out_dirs = ["fast_data_1", "fast_data_2", "fast_data_3", "fast_data_4"]
+    out_dirs = ["fast_data_1", "fast_data_2", "fast_data_3", "fast_data_4"]  # or ["s3://my-bucket/fast_data_1", etc.]"
     for out_dir in out_dirs:
         optimize(fn=random_images, inputs=list(range(250)), output_dir=out_dir, num_workers=4, chunk_bytes="64MB")
 
-    merge_datasets(input_dirs=out_dirs, output_dir="merged_data")
+    merged_out_dir = "merged_fast_data" # or "s3://my-bucket/merged_fast_data"
+    merge_datasets(input_dirs=out_dirs, output_dir=merged_out_dir)
 
-    dataset = StreamingDataset("merged_data")
+    dataset = StreamingDataset(merged_out_dir)
     print(len(dataset))
     # out: 1000
 ```
