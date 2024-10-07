@@ -1,10 +1,15 @@
+import glob
 import os
+import random
+import shutil
 import sys
+from pathlib import Path
 from unittest import mock
 
 import cryptography
 import numpy as np
 import pytest
+import requests
 from litdata import StreamingDataset, merge_datasets, optimize, walk
 from litdata.processing.functions import _get_input_dir, _resolve_dir
 from litdata.streaming.cache import Cache
@@ -475,3 +480,53 @@ def test_optimize_with_rsa_encryption(tmpdir):
     #     encryption=rsa,
     #     mode="overwrite",
     # )
+
+
+def tokenize(filename: str):
+    with open(filename, encoding="utf-8") as file:
+        text = file.read()
+    text = text.strip().split(" ")
+    word_to_int = {word: random.randint(1, 1000) for word in set(text)}  # noqa: S311
+    tokenized = [word_to_int[word] for word in text]
+
+    yield tokenized
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="Not tested on windows")
+def test_optimize_race_condition(tmpdir):
+    # issue: https://github.com/Lightning-AI/litdata/issues/367
+    # run_commands = [
+    #     "mkdir -p tempdir/custom_texts",
+    #     "curl https://www.gutenberg.org/cache/epub/24440/pg24440.txt --output tempdir/custom_texts/book1.txt",
+    #     "curl https://www.gutenberg.org/cache/epub/26393/pg26393.txt --output tempdir/custom_texts/book2.txt",
+    # ]
+    shutil.rmtree(f"{tmpdir}/custom_texts", ignore_errors=True)
+    os.makedirs(f"{tmpdir}/custom_texts", exist_ok=True)
+
+    urls = [
+        "https://www.gutenberg.org/cache/epub/24440/pg24440.txt",
+        "https://www.gutenberg.org/cache/epub/26393/pg26393.txt",
+    ]
+
+    for i, url in enumerate(urls):
+        print(f"downloading {i+1} file")
+        with requests.get(url, stream=True, timeout=10) as r:
+            r.raise_for_status()  # Raise an exception for bad status codes
+
+            with open(f"{tmpdir}/custom_texts/book{i+1}.txt", "wb") as f:
+                for chunk in r.iter_content(chunk_size=8192):
+                    f.write(chunk)
+
+    print("=" * 100)
+
+    train_files = sorted(glob.glob(str(Path(f"{tmpdir}/custom_texts") / "*.txt")))
+    print("=" * 100)
+    print(train_files)
+    print("=" * 100)
+    optimize(
+        fn=tokenize,
+        inputs=train_files,
+        output_dir=f"{tmpdir}/temp",
+        num_workers=1,
+        chunk_bytes="50MB",
+    )
