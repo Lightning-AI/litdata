@@ -73,13 +73,13 @@ A lot of good work has already been done in project mechanics (requirements.txt,
    - Add details on how to reproduce the issue - a minimal test case is always best, colab is also great.
      Note, that the sample code shall be minimal and if needed with publicly available data.
 
-1. Try to fix it or recommend a solution. We highly recommend to use test-driven approach:
+2. Try to fix it or recommend a solution. We highly recommend to use test-driven approach:
 
    - Convert your minimal code example to a unit/integration test with assert on expected results.
    - Start by debugging the issue... You can run just this particular test in your IDE and draft a fix.
    - Verify that your test case fails on the master branch and only passes with the fix applied.
 
-1. Submit a PR!
+3. Submit a PR!
 
 _**Note**, even if you do not find the solution, sending a PR with a test covering the issue is a valid contribution, and we can help you or finish it with you :\]_
 
@@ -87,14 +87,14 @@ _**Note**, even if you do not find the solution, sending a PR with a test coveri
 
 1. Submit a GitHub issue - describe what is the motivation of such feature (adding the use case, or an example is helpful).
 
-1. Determine the feature scope with us.
+2. Determine the feature scope with us.
 
-1. Submit a PR! We recommend test driven approach to adding new features as well:
+3. Submit a PR! We recommend test driven approach to adding new features as well:
 
    - Write a test for the functionality you want to add.
    - Write the functional code until the test passes.
 
-1. Add/update the relevant tests!
+4. Add/update the relevant tests!
 
 - [This PR](https://github.com/Lightning-AI/lightning/pull/2671) is a good example for adding a new metric, and [this one for a new logger](https://github.com/Lightning-AI/lightning/pull/2721).
 
@@ -125,7 +125,7 @@ In case you are adding new dependencies, make sure that they are compatible with
 ### Coding Style
 
 1. Use f-strings for output formation (except logging when we stay with lazy `logging.info("Hello %s!", name)`).
-1. You can use [pre-commit](https://pre-commit.com/) to make sure your code style is correct.
+2. You can use [pre-commit](https://pre-commit.com/) to make sure your code style is correct.
 
 ### Documentation
 
@@ -147,27 +147,27 @@ We welcome any useful contribution! For your convenience here's a recommended wo
    - Core contributors will take a look (it might take some time - we are often overloaded with issues!) and discuss it.
    - Once an agreement was reached - start coding.
 
-1. Start your work locally.
+2. Start your work locally.
 
    - Create a branch and prepare your changes.
    - Tip: do not work on your master branch directly, it may become complicated when you need to rebase.
    - Tip: give your PR a good name! It will be useful later when you may work on multiple tasks/PRs.
 
-1. Test your code!
+3. Test your code!
 
    - It is always good practice to start coding by creating a test case, verifying it breaks with current behaviour, and passes with your new changes.
    - Make sure your new tests cover all different edge cases.
    - Make sure all exceptions raised are tested.
    - Make sure all warnings raised are tested.
 
-1. If your PR is not ready for reviews, but you want to run it on our CI, open a "Draft PR" to let us know you don't need feedback yet.
+4. If your PR is not ready for reviews, but you want to run it on our CI, open a "Draft PR" to let us know you don't need feedback yet.
 
-1. If any of the existing tests fail in your PR on our CI, refer to the following READMEs to identify what's failing and try to address it.
+5. If any of the existing tests fail in your PR on our CI, refer to the following READMEs to identify what's failing and try to address it.
 
    - [Test README](https://github.com/Lightning-AI/lightning/blob/master/tests/README.md)
    - [CI/CD README](https://github.com/Lightning-AI/lightning/blob/master/.github/workflows/README.md)
 
-1. When you feel ready for integrating your work, mark your PR "Ready for review".
+6. When you feel ready for integrating your work, mark your PR "Ready for review".
 
    - Your code should be readable and follow the project's design principles.
    - Make sure all tests are passing and any new code is tested for (coverage!).
@@ -178,7 +178,7 @@ We welcome any useful contribution! For your convenience here's a recommended wo
    Do your best but don't sweat about perfection! We do code-review to find any missed items.
    If you need help, don't hesitate to ping the core team on the PR.
 
-1. Use tags in PR name for the following cases:
+7. Use tags in PR name for the following cases:
 
    - **\[blocked by #<number>\]** if your work is dependent on other PRs.
    - **\[wip\]** when you start to re-edit your work, mark it so no one will accidentally merge it in meantime.
