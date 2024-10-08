@@ -28,3 +28,10 @@ clean:
 	rm -rf ./src/*.egg-info
 	rm -rf ./build
 	rm -rf ./dist
+
+install:
+	pip install -r requirements.txt
+	pip install -r requirements/test.txt
+	pip install -r requirements/docs.txt
+	pip install -r requirements/extras.txt
+	pip install -e .

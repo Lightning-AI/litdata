@@ -1135,10 +1135,15 @@ class DataProcessor:
                     json.dump({"progress": str(100 * current_total * num_nodes / total_num_items) + "%"}, f)
 
             # Exit early if all the workers are done.
-            # This means there were some kinda of errors.
-            # TODO: Check whether this is still required.
+            # This means either there were some kinda of errors, or optimize function was very small.
             if all(not w.is_alive() for w in self.workers):
-                raise RuntimeError("One of the worker has failed")
+                for w in self.workers:
+                    if w.exitcode != 0:
+                        try:
+                            error = self.error_queue.get(timeout=0.01)
+                            self._exit_on_error(error)
+                        except Empty:
+                            continue
 
         if _TQDM_AVAILABLE:
             pbar.close()
