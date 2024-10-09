@@ -313,7 +313,7 @@ class TokensLoader(BaseItemLoader):
         offset = (1 + chunk["chunk_size"] + 1) * 4
         mmap = np.memmap(chunk_filepath, mode="r", order="C", offset=offset)
         self._mmaps[chunk_index] = mmap
-        self._buffers[chunk_index] = memoryview(mmap)  # type: ignore
+        self._buffers[chunk_index] = memoryview(mmap)  
 
     def pre_load_chunk(self, chunk_index: int, chunk_filepath: str) -> None:
         # This is called within the prepare chunks thread, so we overlap data loading with data reading.
