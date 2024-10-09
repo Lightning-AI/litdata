@@ -360,6 +360,14 @@ class TokensLoader(BaseItemLoader):
                 del self._mmaps[chunk_index]
             os.remove(chunk_filepath)
 
+    def close(self, chunk_index: int) -> None:
+        """Release the memory-mapped file for a specific chunk index."""
+        if chunk_index in self._mmaps:
+            self._mmaps[chunk_index]._mmap.close()
+            del self._mmaps[chunk_index]
+        if chunk_index in self._buffers:
+            del self._buffers[chunk_index]
+
     @classmethod
     def encode_data(cls, data: List[bytes], _: List[int], flattened: List[Any]) -> Tuple[bytes, Optional[int]]:
         return data[0], flattened[0].shape[0]
