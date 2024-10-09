@@ -507,6 +507,28 @@ def test_dataset_for_text_tokens(tmpdir):
             break
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="windows isn't supported")
+def test_dataset_for_text_tokens_with_large_num_chunks(tmpdir):
+    import resource
+
+    resource.setrlimit(resource.RLIMIT_NOFILE, (1024, 1024))
+
+    block_size = 1024
+    cache = Cache(input_dir=str(tmpdir), chunk_bytes="10KB", item_loader=TokensLoader(block_size))
+
+    for i in range(10000):
+        text_ids = torch.randint(0, 10001, (torch.randint(100, 1001, (1,)).item(),)).numpy()
+        cache._add_item(i, text_ids)
+
+    cache.done()
+    cache.merge()
+
+    dataset = StreamingDataset(input_dir=str(tmpdir), item_loader=TokensLoader(block_size), shuffle=True)
+
+    for _ in dataset:
+        pass
+
+
 def test_dataset_with_1d_array(tmpdir):
     seed_everything(42)
 
