@@ -301,11 +301,13 @@ class BinaryReader:
             # inform the chunk has been completely consumed
             self._prepare_thread.delete([self._last_chunk_index])
 
+        if index.chunk_index != self._last_chunk_index:
+            # Close the memory-mapped file for the last chunk index
+            if isinstance(self._item_loader, TokensLoader):
+                self._item_loader.close(self._last_chunk_index)
+
             # track the new chunk index as the latest one
             self._last_chunk_index = index.chunk_index
-
-        if isinstance(self._item_loader, TokensLoader):
-            self._item_loader.close(index.chunk_index)
 
         if index.is_last_index and self._prepare_thread:
             # inform the thread it is time to stop

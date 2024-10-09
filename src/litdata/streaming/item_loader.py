@@ -363,6 +363,7 @@ class TokensLoader(BaseItemLoader):
     def close(self, chunk_index: int) -> None:
         """Release the memory-mapped file for a specific chunk index."""
         if chunk_index in self._mmaps:
+            self._mmaps[chunk_index]._mmap.close()
             del self._mmaps[chunk_index]
         if chunk_index in self._buffers:
             del self._buffers[chunk_index]
