@@ -303,7 +303,7 @@ class BinaryReader:
 
         if index.chunk_index != self._last_chunk_index:
             # Close the memory-mapped file for the last chunk index
-            if isinstance(self._item_loader, TokensLoader):
+            if isinstance(self._item_loader, TokensLoader) and self._last_chunk_index is not None:
                 self._item_loader.close(self._last_chunk_index)
 
             # track the new chunk index as the latest one
