@@ -141,11 +141,17 @@ class PyTreeLoader(BaseItemLoader):
             del self._chunk_filepaths[chunk_filepath]
 
         if chunk_filepath not in self._chunk_filepaths:
-            exists = os.path.exists(chunk_filepath) and os.stat(chunk_filepath).st_size >= chunk_bytes
+            # Get size of chunk header
+            # The number of items + the number of offsets (number of items in the chunk + 1)
+            # multiplied by the header encoding dtype (np.uint32)
+            chunk_header_bytes = (1 + self._chunks[chunk_index]["chunk_size"] + 1) * 4
+            filesize_bytes = chunk_bytes + chunk_header_bytes
+
+            exists = os.path.exists(chunk_filepath) and os.stat(chunk_filepath).st_size >= filesize_bytes
 
             while not exists:
                 sleep(0.1)
-                exists = os.path.exists(chunk_filepath) and os.stat(chunk_filepath).st_size >= chunk_bytes
+                exists = os.path.exists(chunk_filepath) and os.stat(chunk_filepath).st_size >= filesize_bytes
 
             self._chunk_filepaths[chunk_filepath] = True
 
