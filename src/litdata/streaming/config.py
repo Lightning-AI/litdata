@@ -227,7 +227,8 @@ class ChunksConfig:
         begin = self._intervals[index.chunk_index][0]
 
         filesize_bytes = chunk["chunk_bytes"]
-        if self._config.get("encryption") is None and self._compressor is None:
+
+        if self._config.get("encryption") is None:
             filesize_bytes += (1 + chunk["chunk_size"]) * 4
 
         return local_chunkpath, begin, filesize_bytes
