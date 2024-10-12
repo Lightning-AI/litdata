@@ -88,7 +88,7 @@ class BaseItemLoader(ABC):
         chunk_index: int,
         chunk_filepath: str,
         begin: int,
-        chunk_bytes: int,
+        filesize_bytes: int,
     ) -> Any:
         """Returns an item loaded from a chunk."""
 
@@ -132,7 +132,7 @@ class PyTreeLoader(BaseItemLoader):
         chunk_index: int,
         chunk_filepath: str,
         begin: int,
-        chunk_bytes: int,
+        filesize_bytes: int,
         encryption: Optional[Encryption] = None,
     ) -> bytes:
         offset = (1 + (index - begin) if index >= begin else index + 1) * 4
@@ -141,11 +141,11 @@ class PyTreeLoader(BaseItemLoader):
             del self._chunk_filepaths[chunk_filepath]
 
         if chunk_filepath not in self._chunk_filepaths:
-            exists = os.path.exists(chunk_filepath) and os.stat(chunk_filepath).st_size >= chunk_bytes
+            exists = os.path.exists(chunk_filepath) and os.stat(chunk_filepath).st_size >= filesize_bytes
 
             while not exists:
                 sleep(0.1)
-                exists = os.path.exists(chunk_filepath) and os.stat(chunk_filepath).st_size >= chunk_bytes
+                exists = os.path.exists(chunk_filepath) and os.stat(chunk_filepath).st_size >= filesize_bytes
 
             self._chunk_filepaths[chunk_filepath] = True
 
@@ -329,7 +329,7 @@ class TokensLoader(BaseItemLoader):
         chunk_index: int,
         chunk_filepath: str,
         begin: int,
-        chunk_bytes: int,
+        filesize_bytes: int,
     ) -> torch.Tensor:
         assert self._block_size
 
@@ -337,11 +337,11 @@ class TokensLoader(BaseItemLoader):
             del self._chunk_filepaths[chunk_filepath]
 
         if chunk_filepath not in self._chunk_filepaths:
-            exists = os.path.exists(chunk_filepath) and os.stat(chunk_filepath).st_size > 0
+            exists = os.path.exists(chunk_filepath) and os.stat(chunk_filepath).st_size > filesize_bytes
 
             while not exists:
                 sleep(0.1)
-                exists = os.path.exists(chunk_filepath) and os.stat(chunk_filepath).st_size > 0
+                exists = os.path.exists(chunk_filepath) and os.stat(chunk_filepath).st_size > filesize_bytes
 
             self._chunk_filepaths[chunk_filepath] = True
 

@@ -278,15 +278,15 @@ class BinaryReader:
                 self._last_chunk_index = index.chunk_index
 
         # Fetch the element
-        chunk_filepath, begin, chunk_bytes = self.config[index]
+        chunk_filepath, begin, filesize_bytes = self.config[index]
 
         if isinstance(self._item_loader, PyTreeLoader):
             item = self._item_loader.load_item_from_chunk(
-                index.index, index.chunk_index, chunk_filepath, begin, chunk_bytes, self._encryption
+                index.index, index.chunk_index, chunk_filepath, begin, filesize_bytes, self._encryption
             )
         else:
             item = self._item_loader.load_item_from_chunk(
-                index.index, index.chunk_index, chunk_filepath, begin, chunk_bytes
+                index.index, index.chunk_index, chunk_filepath, begin, filesize_bytes
             )
         # We need to request deletion after the latest element has been loaded.
         # Otherwise, this could trigger segmentation fault error depending on the item loader used.
