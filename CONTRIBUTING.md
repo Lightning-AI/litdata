@@ -96,31 +96,23 @@ _**Note**, even if you do not find the solution, sending a PR with a test coveri
 
 4. Add/update the relevant tests!
 
-- [This PR](https://github.com/Lightning-AI/lightning/pull/2671) is a good example for adding a new metric, and [this one for a new logger](https://github.com/Lightning-AI/lightning/pull/2721).
+- [This PR](https://github.com/Lightning-AI/litdata/pull/237) is a good example for `Fix uneven batches in distributed dataloading`. It writes relevant tests and fixes the code, and also has a good description of the problem and solution.
 
 ### Test cases:
 
 Want to keep Lightning healthy? Love seeing those green tests? So do we! How to we keep it that way? We write tests! We value tests contribution even more than new features.
 
-Most of the tests in PyTorch Lightning train a random `BoringModel` under various trainer conditions (ddp, amp, etc...). Want to add a new test case and not sure how? [Talk to us!](https://lightning.ai/community)
+Want to add a new test case and not sure how? [Talk to us!](https://lightning.ai/community)
 
 ______________________________________________________________________
 
 ## Guidelines
 
-### Developments scripts
-
-To build the documentation locally, simply execute the following commands from project root (only for Unix):
-
-- `make clean` cleans repo from temp/generated files
-- `make docs` builds documentation under _docs/build/html_
-- `make test` runs all project's tests with coverage
-
 ### Original code
 
 All added or edited code shall be the own original work of the particular contributor.
 If you use some third-party implementation, all such blocks/functions/modules shall be properly referred and if possible also agreed by code's author. For example - `This code is inspired from http://...`.
-In case you are adding new dependencies, make sure that they are compatible with the actual PyTorch Lightning license (i.e. dependencies should be _at least_ as permissive as the PyTorch Lightning license).
+In case you are adding new dependencies, make sure that they are compatible with the actual [LitData license](https://github.com/Lightning-AI/litdata/blob/main/LICENSE) (i.e. dependencies should be _at least_ as permissive as the LitData license).
 
 ### Coding Style
 
@@ -129,11 +121,7 @@ In case you are adding new dependencies, make sure that they are compatible with
 
 ### Documentation
 
-To learn about development of docs, check out the docs [README.md](https://github.com/Lightning-AI/lightning/blob/master/docs/README.md).
-
-### Testing
-
-To learn about tests, check out the tests [README.md](https://github.com/Lightning-AI/lightning/blob/master/tests/README.md).
+To learn about development of docs, check out the docs [README.md](https://github.com/Lightning-AI/litdata/blob/main/README.md).
 
 ### Pull Request
 
@@ -142,8 +130,7 @@ We welcome any useful contribution! For your convenience here's a recommended wo
 1. Think about what you want to do - fix a bug, repair docs, etc. If you want to implement a new feature or enhance an existing one.
 
    - Start by opening a GitHub issue to explain the feature and the motivation.
-     In the case of features, ask yourself first - Is this NECESSARY for Lightning? There are some PRs that are just
-     purely about adding engineering complexity which has no place in Lightning.
+     In the case of features, ask yourself first - Is this NECESSARY for Lightning? There are some PRs that are just purely about adding engineering complexity which has no place in Lightning.
    - Core contributors will take a look (it might take some time - we are often overloaded with issues!) and discuss it.
    - Once an agreement was reached - start coding.
 
@@ -162,10 +149,7 @@ We welcome any useful contribution! For your convenience here's a recommended wo
 
 4. If your PR is not ready for reviews, but you want to run it on our CI, open a "Draft PR" to let us know you don't need feedback yet.
 
-5. If any of the existing tests fail in your PR on our CI, refer to the following READMEs to identify what's failing and try to address it.
-
-   - [Test README](https://github.com/Lightning-AI/lightning/blob/master/tests/README.md)
-   - [CI/CD README](https://github.com/Lightning-AI/lightning/blob/master/.github/workflows/README.md)
+5. If any of the existing tests fail in your PR on our CI, identify what's failing and try to address it.
 
 6. When you feel ready for integrating your work, mark your PR "Ready for review".
 
@@ -182,6 +166,44 @@ We welcome any useful contribution! For your convenience here's a recommended wo
 
    - **\[blocked by #<number>\]** if your work is dependent on other PRs.
    - **\[wip\]** when you start to re-edit your work, mark it so no one will accidentally merge it in meantime.
+
+______________________________________________________________________
+
+### Setup LitData
+
+We use Makefile for easier setup. To setup LitData, follow these steps:
+
+1. Clone the forked-repository
+
+```bash
+git clone https://github.com/{YOUR_USERNAME}/litdata.git
+cd litdata
+```
+
+2. Optional, but recommended: Create a virtual conda environment. If you're using [Lightning Studio](https://lightning.ai/studios), skip this step.
+
+```bash
+conda create -n litdata python=3.10
+conda activate litdata
+```
+
+3. Make sure you have `make` installed
+
+```bash
+# for debian-based systems: sudo apt-get install build-essential
+# for mac: brew install make
+make --version
+```
+
+4. Run command:
+
+```bash
+make setup
+```
+
+That's it. You are ready to go! 🎉
+
+______________________________________________________________________
 
 ### Question & Answer
 
@@ -201,16 +223,16 @@ We recommend creating a PR in a separate branch other than `master`, especially 
 First, make sure you have set [upstream](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/configuring-a-remote-repository-for-a-fork) by running:
 
 ```bash
-git remote add upstream https://github.com/Lightning-AI/lightning.git
+git remote add upstream https://github.com/Lightning-AI/litdata.git
 ```
 
 You'll know its set up right if you run `git remote -v` and see something similar to this:
 
 ```bash
-origin  https://github.com/{YOUR_USERNAME}/pytorch-lightning.git (fetch)
-origin  https://github.com/{YOUR_USERNAME}/pytorch-lightning.git (push)
-upstream        https://github.com/Lightning-AI/lightning.git (fetch)
-upstream        https://github.com/Lightning-AI/lightning.git (push)
+origin  https://github.com/{YOUR_USERNAME}/litdata.git (fetch)
+origin  https://github.com/{YOUR_USERNAME}/litdata.git (push)
+upstream        https://github.com/Lightning-AI/litdata.git (fetch)
+upstream        https://github.com/Lightning-AI/litdata.git (push)
 ```
 
 Checkout your feature branch and rebase it with upstream's master before pushing up your feature branch:
@@ -219,12 +241,12 @@ Checkout your feature branch and rebase it with upstream's master before pushing
 git fetch --all --prune
 git rebase upstream/master
 # follow git instructions to resolve conflicts
-git push -f
+git push -f origin {BRANCH_NAME}  # Use -f if you've pushed this branch before
 ```
 
 #### How to add new tests?
 
-We are using [pytest](https://docs.pytest.org/en/stable/) in PyTorch Lightning.
+We are using [pytest](https://docs.pytest.org/en/stable/) in LitData.
 
 Here are tutorials:
 
@@ -236,7 +258,6 @@ Here is the process to create a new test
 - 0. Optional: Follow tutorials!
 - 1. Find a file in tests/ which matches what you want to test. If none, create one.
 - 2. Use this template to get started!
-- 3. Use **BoringModel and derivates to test out your code**.
 
 ```python
 # TEST SHOULD BE IN YOUR FILE: tests/.../test_file.py
@@ -249,18 +270,7 @@ def test_explain_what_is_being_tested(tmpdir):
     """
     Test description about text reason to be
     """
-
-    class ExtendedModel(BoringModel):
-        ...
-
-    model = ExtendedModel()
-
-    # BoringModel is a functional model. You might want to set methods to None to test your behaviour
-    # Example: model.training_step_end = None
-
-    trainer = Trainer(default_root_dir=tmpdir, ...)  # will save everything within a tmpdir generated for this test
-    trainer.fit(model)
-    trainer.test()  # [OPTIONAL]
+    cache_dir = os.path.join(tmpdir, "cache_dir")
 
     # assert the behaviour is correct.
     assert ...
@@ -317,9 +327,9 @@ NOTE: Once you edit one of these files, remember to `source` it or restart your 
 
 ```bash
 plclone (){
-    git clone https://github.com/{YOUR_USERNAME}/pytorch-lightning.git
-    cd pytorch-lightning
-    git remote add upstream https://github.com/Lightning-AI/lightning.git
+    git clone https://github.com/{YOUR_USERNAME}/litdata.git
+    cd litdata
+    git remote add upstream https://github.com/Lightning-AI/litdata.git
     # This is just here to print out info about your remote upstream/origin
     git remote -v
 }

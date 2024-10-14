@@ -1137,13 +1137,11 @@ class DataProcessor:
             # Exit early if all the workers are done.
             # This means either there were some kinda of errors, or optimize function was very small.
             if all(not w.is_alive() for w in self.workers):
-                for w in self.workers:
-                    if w.exitcode != 0:
-                        try:
-                            error = self.error_queue.get(timeout=0.01)
-                            self._exit_on_error(error)
-                        except Empty:
-                            continue
+                try:
+                    error = self.error_queue.get(timeout=0.01)
+                    self._exit_on_error(error)
+                except Empty:
+                    continue
 
         if _TQDM_AVAILABLE:
             pbar.close()
