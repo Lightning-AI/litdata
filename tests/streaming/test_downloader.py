@@ -37,7 +37,7 @@ def test_s3_downloader_with_s5cmd_no_storage_options(popen_mock, system_mock, tm
     downloader.download_file(remote_filepath, local_filepath)
 
     # Assertion: Verify subprocess.Popen was called with correct arguments and no env variables
-    popen_mock.assert_called_once_with(  # type: ignore  # noqa: S604
+    popen_mock.assert_called_once_with(  # type: ignore
         f"s5cmd cp {remote_filepath} {local_filepath}",
         shell=True,
         stdout=subprocess.PIPE,
@@ -68,7 +68,7 @@ def test_s3_downloader_with_s5cmd_with_storage_options(popen_mock, system_mock, 
     expected_env.update(storage_options)
 
     # Assertion: Verify subprocess.Popen was called with the correct arguments and environment variables
-    popen_mock.assert_called_once_with(  # type: ignore  # noqa: S604
+    popen_mock.assert_called_once_with(  # type: ignore
         f"s5cmd cp {remote_filepath} {local_filepath}",
         shell=True,
         stdout=subprocess.PIPE,
