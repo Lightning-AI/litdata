@@ -68,8 +68,9 @@ class S3Downloader(Downloader):
             local_filepath + ".lock", timeout=3 if obj.path.endswith(_INDEX_FILENAME) else 0
         ):
             if self._s5cmd_available:
-                env = os.environ.copy()
+                env = None
                 if self._storage_options:
+                    env = os.environ.copy()
                     env.update(self._storage_options)
                 proc = subprocess.Popen(
                     f"s5cmd cp {remote_filepath} {local_filepath}",
