@@ -1,4 +1,4 @@
-.PHONY: test clean docs install-pre-commit install-dependencies
+.PHONY: test clean docs install-pre-commit install-dependencies setup
 
 # to imitate SLURM set only single node
 export SLURM_LOCALID=0
