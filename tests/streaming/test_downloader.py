@@ -29,10 +29,10 @@ def test_s3_downloader_with_s5cmd_no_storage_options(popen_mock, system_mock, tm
     popen_mock.return_value = process_mock
 
     # Initialize the S3Downloader without storage options
-    downloader = S3Downloader("s3://test_bucket", str(tmpdir), [])
+    downloader = S3Downloader("s3://random_bucket", str(tmpdir), [])
 
     # Action: Call the download_file method
-    remote_filepath = "s3://test_bucket/sample_file.txt"
+    remote_filepath = "s3://random_bucket/sample_file.txt"
     local_filepath = os.path.join(tmpdir, "sample_file.txt")
     downloader.download_file(remote_filepath, local_filepath)
 
@@ -56,10 +56,10 @@ def test_s3_downloader_with_s5cmd_with_storage_options(popen_mock, system_mock, 
     storage_options = {"AWS_ACCESS_KEY_ID": "dummy_key", "AWS_SECRET_ACCESS_KEY": "dummy_secret"}
 
     # Initialize the S3Downloader with storage options
-    downloader = S3Downloader("s3://test_bucket", str(tmpdir), [], storage_options)
+    downloader = S3Downloader("s3://random_bucket", str(tmpdir), [], storage_options)
 
     # Action: Call the download_file method
-    remote_filepath = "s3://test_bucket/sample_file.txt"
+    remote_filepath = "s3://random_bucket/sample_file.txt"
     local_filepath = os.path.join(tmpdir, "sample_file.txt")
     downloader.download_file(remote_filepath, local_filepath)
 
