@@ -1,9 +1,13 @@
-.PHONY: test clean docs
+.PHONY: test clean docs install-pre-commit install-dependencies setup
 
 # to imitate SLURM set only single node
 export SLURM_LOCALID=0
 # assume you have installed need packages
 export SPHINX_MOCK_REQUIREMENTS=0
+
+setup: install-dependencies install-pre-commit
+	@echo "==================== Setup Finished ===================="
+	@echo "All set! Ready to go!"
 
 test: clean
 	pip install -q -r requirements.txt
@@ -28,3 +32,15 @@ clean:
 	rm -rf ./src/*.egg-info
 	rm -rf ./build
 	rm -rf ./dist
+
+install-dependencies:
+	pip install -r requirements.txt
+	pip install -r requirements/test.txt
+	pip install -r requirements/docs.txt
+	pip install -r requirements/extras.txt
+	pip install -e .
+
+
+install-pre-commit:
+	pip install pre-commit
+	pre-commit install
