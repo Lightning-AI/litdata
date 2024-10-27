@@ -41,7 +41,7 @@ def subsample_streaming_dataset(
     if _should_replace_path(input_dir.path):
         cache_path = _try_create_cache_dir(
             input_dir=input_dir.path if input_dir.path else input_dir.url,
-            cache_dir=cache_dir.path,
+            cache_dir=cache_dir.path if cache_dir else None,
             storage_options=storage_options,
         )
         if cache_path is not None:
