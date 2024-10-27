@@ -46,7 +46,7 @@ class StreamingDataset(IterableDataset):
     def __init__(
         self,
         input_dir: Union[str, "Dir"],
-        cache_dir: Optional[str] = None,
+        cache_dir: Optional[Union[str, "Dir"]] = None,
         item_loader: Optional[BaseItemLoader] = None,
         shuffle: bool = False,
         drop_last: Optional[bool] = None,
@@ -87,8 +87,7 @@ class StreamingDataset(IterableDataset):
             raise ValueError("subsample must be a float with value between 0 and 1.")
 
         input_dir = _resolve_dir(input_dir)
-        if cache_dir:
-            cache_dir = _resolve_dir(cache_dir)
+        cache_dir = _resolve_dir(cache_dir)
 
         self.input_dir = input_dir
         self.cache_dir = cache_dir
@@ -162,7 +161,7 @@ class StreamingDataset(IterableDataset):
         if _should_replace_path(self.input_dir.path):
             cache_path = _try_create_cache_dir(
                 input_dir=self.input_dir.path if self.input_dir.path else self.input_dir.url,
-                cache_dir=self.cache_dir.path if self.cache_dir else None,
+                cache_dir=self.cache_dir.path,
             )
             if cache_path is not None:
                 self.input_dir.path = cache_path
@@ -406,7 +405,7 @@ class StreamingDataset(IterableDataset):
             "current_epoch": self.current_epoch,
             "input_dir_path": self.input_dir.path,
             "input_dir_url": self.input_dir.url,
-            "cache_dir_path": self.cache_dir.path if self.cache_dir else None,
+            "cache_dir_path": self.cache_dir.path,
             "item_loader": self.item_loader.state_dict() if self.item_loader else None,
             "drop_last": self.drop_last,
             "seed": self.seed,
