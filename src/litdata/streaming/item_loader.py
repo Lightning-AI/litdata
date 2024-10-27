@@ -23,9 +23,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import numpy as np
 import torch
 
-from litdata.constants import (
-    _TORCH_DTYPES_MAPPING,
-)
+from litdata.constants import _NUMPY_DTYPES_MAPPING, _TORCH_DTYPES_MAPPING
 from litdata.streaming.serializers import Serializer
 from litdata.utilities._pytree import PyTree, tree_unflatten
 from litdata.utilities.encryption import Encryption, EncryptionLevel
@@ -281,7 +279,17 @@ class TokensLoader(BaseItemLoader):
         region_of_interest: Optional[List[Tuple[int, int]]] = None,
     ) -> None:
         super().setup(config, chunks, serializers, region_of_interest)
-        self._dtype = _TORCH_DTYPES_MAPPING[int(config["data_format"][0].split(":")[1])]
+
+        serializer_name, dtype_index = self._data_format[0].split(":")
+        if serializer_name not in ["no_header_numpy", "no_header_tensor"]:
+            raise ValueError("The provided data format isn't supported.")
+
+        self._serializer_name = serializer_name
+        self._dtype = (
+            _TORCH_DTYPES_MAPPING[int(dtype_index)]
+            if serializer_name == "no_header_tensor"
+            else _NUMPY_DTYPES_MAPPING[int(dtype_index)]
+        )
         if all(chunk["dim"] is None for chunk in self._chunks):
             raise ValueError("The provided chunks isn't properly setup.")
 
@@ -350,7 +358,12 @@ class TokensLoader(BaseItemLoader):
 
         buffer: bytes = self._buffers[chunk_index]
         offset = self._dtype.itemsize * (index - begin) * self._block_size
-        return torch.frombuffer(buffer, dtype=self._dtype, count=self._block_size, offset=offset)
+        if self._serializer_name == "no_header_tensor":
+            data = torch.frombuffer(buffer, dtype=self._dtype, count=self._block_size, offset=offset)
+        else:
+            data = np.frombuffer(buffer, dtype=self._dtype, count=self._block_size, offset=offset)
+            data = torch.from_numpy(data)
+        return data
 
     def delete(self, chunk_index: int, chunk_filepath: str) -> None:
         if os.path.exists(chunk_filepath):
