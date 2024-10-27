@@ -42,6 +42,26 @@ def test_try_create_cache_dir():
         assert len(makedirs_mock.mock_calls) == 2
 
 
+def test_try_create_cache_dir_with_custom_cache_dir(tmpdir):
+    cache_dir = str(tmpdir.join("cache"))
+    with mock.patch.dict(os.environ, {}, clear=True):
+        assert os.path.join(
+            cache_dir, "d41d8cd98f00b204e9800998ecf8427e", "100b8cad7cf2a56f6df78f171f97a1ec"
+        ) in _try_create_cache_dir("any", cache_dir)
+
+    with (
+        mock.patch.dict("os.environ", {"LIGHTNING_CLUSTER_ID": "abc", "LIGHTNING_CLOUD_PROJECT_ID": "123"}),
+        mock.patch("litdata.streaming.dataset.os.makedirs") as makedirs_mock,
+    ):
+        cache_dir_1 = _try_create_cache_dir("", cache_dir)
+        cache_dir_2 = _try_create_cache_dir("ssdf", cache_dir)
+        assert cache_dir_1 != cache_dir_2
+        assert cache_dir_1 == os.path.join(
+            cache_dir, "d41d8cd98f00b204e9800998ecf8427e", "d41d8cd98f00b204e9800998ecf8427e"
+        )
+        assert len(makedirs_mock.mock_calls) == 2
+
+
 def test_generate_roi():
     my_chunks = [
         {"chunk_size": 30},
