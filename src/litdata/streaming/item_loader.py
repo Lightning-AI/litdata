@@ -358,6 +358,8 @@ class TokensLoader(BaseItemLoader):
 
         buffer: bytes = self._buffers[chunk_index]
         offset = self._dtype.itemsize * (index - begin) * self._block_size
+
+        # These serilizers steps could be optimized using serializer class and passing other options as kwargs
         if self._serializer_name == "no_header_tensor":
             data = torch.frombuffer(buffer, dtype=self._dtype, count=self._block_size, offset=offset)
         else:
