@@ -362,7 +362,7 @@ class TokensLoader(BaseItemLoader):
         if self._serializer_name == "no_header_tensor":
             data = torch.frombuffer(buffer, dtype=self._dtype, count=self._block_size, offset=offset)
         else:
-            data = np.frombuffer(buffer, dtype=self._dtype, count=self._block_size, offset=offset)
+            data = np.frombuffer(buffer, dtype=self._dtype, count=self._block_size, offset=offset)  # type: ignore
         return data
 
     def delete(self, chunk_index: int, chunk_filepath: str) -> None:
