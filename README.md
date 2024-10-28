@@ -225,6 +225,15 @@ storage_options = {
 dataset = StreamingDataset('s3://my-bucket/my-data', storage_options=storage_options)
 ```
 
+
+Also, you can specify a custom cache directory when initializing your dataset. This is useful when you want to store the cache in a specific location.
+```python
+from litdata import StreamingDataset
+
+# Initialize the StreamingDataset with the custom cache directory
+dataset = StreamingDataset('s3://my-bucket/my-data', cache_dir="/path/to/cache")
+```
+
 </details>
 
 <details>
