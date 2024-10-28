@@ -225,6 +225,7 @@ storage_options = {
 dataset = StreamingDataset('s3://my-bucket/my-data', storage_options=storage_options)
 ```
 
+
 Also, you can specify a custom cache directory when initializing your dataset. This is useful when you want to store the cache in a specific location.
 ```python
 from litdata import StreamingDataset
@@ -588,8 +589,8 @@ if __name__ == "__main__":
 Using [zstd](https://github.com/facebook/zstd), you can achieve high compression ratio like 4.34x for this simple example.
 
 | Without | With |
-| ------- | ---- |
-| 2.8kb   | 646b |
+| -------- | -------- | 
+| 2.8kb | 646b |
 
 
 </details>
@@ -907,11 +908,11 @@ Data optimized and streamed with LitData achieves a 20x speed up over non optimi
 
 Speed to stream Imagenet 1.2M from AWS S3:
 
-| Framework   | Images / sec  1st Epoch (float32) | Images / sec   2nd Epoch (float32) | Images / sec 1st Epoch (torch16) | Images / sec 2nd Epoch (torch16) |
-| ----------- | --------------------------------- | ---------------------------------- | -------------------------------- | -------------------------------- |
-| LitData     | **5800**                          | **6589**                           | **6282**                         | **7221**                         |
-| Web Dataset | 3134                              | 3924                               | 3343                             | 4424                             |
-| Mosaic ML   | 2898                              | 5099                               | 2809                             | 5158                             |
+| Framework | Images / sec  1st Epoch (float32)  | Images / sec   2nd Epoch (float32) | Images / sec 1st Epoch (torch16) | Images / sec 2nd Epoch (torch16) |
+|---|---|---|---|---|
+| LitData | **5800** | **6589**  | **6282**  | **7221**  |
+| Web Dataset  | 3134 | 3924 | 3343 | 4424 |
+| Mosaic ML  | 2898 | 5099 | 2809 | 5158 |
 
 <details>
   <summary> Benchmark details</summary>
@@ -928,11 +929,11 @@ Speed to stream Imagenet 1.2M from AWS S3:
 LitData optimizes the Imagenet dataset for fast training 3-5x faster than other frameworks:
 
 Time to optimize 1.2 million ImageNet images (Faster is better):
-| Framework   | Train Conversion Time | Val Conversion Time | Dataset Size | # Files |
-| ----------- | --------------------- | ------------------- | ------------ | ------- |
-| LitData     | **10:05 min**         | **00:30 min**       | **143.1 GB** | 2.339   |
-| Web Dataset | 32:36 min             | 01:22 min           | 147.8 GB     | 1.144   |
-| Mosaic ML   | 49:49 min             | 01:04 min           | **143.1 GB** | 2.298   |
+| Framework |Train Conversion Time | Val Conversion Time | Dataset Size | # Files |
+|---|---|---|---|---|
+| LitData  |  **10:05 min** | **00:30 min** | **143.1 GB**  | 2.339  |
+| Web Dataset  | 32:36 min | 01:22 min | 147.8 GB | 1.144 |
+| Mosaic ML  | 49:49 min | 01:04 min | **143.1 GB** | 2.298 |
 
 &nbsp;
 
@@ -951,12 +952,12 @@ For example, let's say that it takes 56 hours to embed a dataset on a single A10
 this can be speed up by adding more machines in parallel
 
 | Number of machines | Hours |
-| ------------------ | ----- |
-| 1                  | 56    |
-| 2                  | 28    |
-| 4                  | 14    |
-| ...                | ...   |
-| 64                 | 0.875 |
+|-----------------|--------------|
+| 1               | 56           |
+| 2               | 28           |
+| 4               | 14           |
+| ...               | ...            |
+| 64              | 0.875        |
 
 To scale the number of machines, run the processing script on [Lightning Studios](https://lightning.ai/):
 
@@ -996,20 +997,20 @@ Below are templates for real-world applications of LitData at scale.
 
 ## Templates: Transform datasets
 
-| Studio                                                                                                                       | Data type    | Time (minutes) | Machines | Dataset                                                        |
-| ---------------------------------------------------------------------------------------------------------------------------- | ------------ | -------------- | -------- | -------------------------------------------------------------- |
-| [Download LAION-400MILLION dataset](https://lightning.ai/lightning-ai/studios/use-or-explore-laion-400million-dataset)       | Image & Text | 120            | 32       | [LAION-400M](https://laion.ai/blog/laion-400-open-dataset/)    |
-| [Tokenize 2M Swedish Wikipedia Articles](https://lightning.ai/lightning-ai/studios/tokenize-2m-swedish-wikipedia-articles)   | Text         | 7              | 4        | [Swedish Wikipedia](https://huggingface.co/datasets/wikipedia) |
-| [Embed English Wikipedia under 5 dollars](https://lightning.ai/lightning-ai/studios/embed-english-wikipedia-under-5-dollars) | Text         | 15             | 3        | [English Wikipedia](https://huggingface.co/datasets/wikipedia) |
+| Studio | Data type | Time (minutes) | Machines | Dataset |
+| ------------------------------------ | ----------------- | ----------------- | -------------- | -------------- |
+| [Download LAION-400MILLION dataset](https://lightning.ai/lightning-ai/studios/use-or-explore-laion-400million-dataset) | Image & Text | 120 | 32 |[LAION-400M](https://laion.ai/blog/laion-400-open-dataset/) |
+| [Tokenize 2M Swedish Wikipedia Articles](https://lightning.ai/lightning-ai/studios/tokenize-2m-swedish-wikipedia-articles) | Text | 7 | 4 | [Swedish Wikipedia](https://huggingface.co/datasets/wikipedia) |
+| [Embed English Wikipedia under 5 dollars](https://lightning.ai/lightning-ai/studios/embed-english-wikipedia-under-5-dollars) | Text | 15 | 3 | [English Wikipedia](https://huggingface.co/datasets/wikipedia) |
 
 ## Templates: Optimize + stream data
 
-| Studio                                                                                                                               | Data type     | Time (minutes) | Machines | Dataset                                                                                                                                     |
-| ------------------------------------------------------------------------------------------------------------------------------------ | ------------- | -------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| [Benchmark cloud data-loading libraries](https://lightning.ai/lightning-ai/studios/benchmark-cloud-data-loading-libraries)           | Image & Label | 10             | 1        | [Imagenet 1M](https://paperswithcode.com/sota/image-classification-on-imagenet?tag_filter=171)                                              |
-| [Optimize GeoSpatial data for model training](https://lightning.ai/lightning-ai/studios/convert-spatial-data-to-lightning-streaming) | Image & Mask  | 120            | 32       | [Chesapeake Roads Spatial Context](https://github.com/isaaccorley/chesapeakersc)                                                            |
-| [Optimize TinyLlama 1T dataset for training](https://lightning.ai/lightning-ai/studios/prepare-the-tinyllama-1t-token-dataset)       | Text          | 240            | 32       | [SlimPajama](https://huggingface.co/datasets/cerebras/SlimPajama-627B) & [StarCoder](https://huggingface.co/datasets/bigcode/starcoderdata) |
-| [Optimize parquet files for model training](https://lightning.ai/lightning-ai/studios/convert-parquets-to-lightning-streaming)       | Parquet Files | 12             | 16       | Randomly Generated data                                                                                                                     |
+| Studio | Data type | Time (minutes) | Machines | Dataset |
+| -------------------------------- | ----------------- | ----------------- | -------------- | -------------- |
+| [Benchmark cloud data-loading libraries](https://lightning.ai/lightning-ai/studios/benchmark-cloud-data-loading-libraries) | Image & Label | 10 | 1 | [Imagenet 1M](https://paperswithcode.com/sota/image-classification-on-imagenet?tag_filter=171) |
+| [Optimize GeoSpatial data for model training](https://lightning.ai/lightning-ai/studios/convert-spatial-data-to-lightning-streaming) | Image & Mask | 120 | 32 | [Chesapeake Roads Spatial Context](https://github.com/isaaccorley/chesapeakersc) |
+| [Optimize TinyLlama 1T dataset for training](https://lightning.ai/lightning-ai/studios/prepare-the-tinyllama-1t-token-dataset) | Text | 240 | 32 | [SlimPajama](https://huggingface.co/datasets/cerebras/SlimPajama-627B) & [StarCoder](https://huggingface.co/datasets/bigcode/starcoderdata) |
+| [Optimize parquet files for model training](https://lightning.ai/lightning-ai/studios/convert-parquets-to-lightning-streaming) | Parquet Files | 12 | 16 | Randomly Generated data |
 
 &nbsp;
 
