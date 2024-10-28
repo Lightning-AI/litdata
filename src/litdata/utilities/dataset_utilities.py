@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 
-from litdata.constants import _DEFAULT_CACHE_DIR, _INDEX_FILENAME
+from litdata.constants import _DEFAULT_CACHE_DIR, _DEFAULT_LIGHTNING_CACHE_DIR, _INDEX_FILENAME
 from litdata.streaming.downloader import get_downloader_cls
 from litdata.streaming.item_loader import BaseItemLoader, TokensLoader
 from litdata.streaming.resolver import Dir, _resolve_dir
@@ -17,6 +17,7 @@ from litdata.utilities.subsample import shuffle_lists_together, subsample_filena
 
 def subsample_streaming_dataset(
     input_dir: Dir,
+    cache_dir: Optional[Dir] = None,
     item_loader: Optional[BaseItemLoader] = None,
     subsample: float = 1.0,
     shuffle: bool = False,
@@ -39,7 +40,9 @@ def subsample_streaming_dataset(
     # Make sure input_dir contains cache path and remote url
     if _should_replace_path(input_dir.path):
         cache_path = _try_create_cache_dir(
-            input_dir=input_dir.path if input_dir.path else input_dir.url, storage_options=storage_options
+            input_dir=input_dir.path if input_dir.path else input_dir.url,
+            cache_dir=cache_dir.path if cache_dir else None,
+            storage_options=storage_options,
         )
         if cache_path is not None:
             input_dir.path = cache_path
@@ -137,7 +140,11 @@ def _clear_cache_dir_if_updated(input_dir_hash_filepath: str, updated_at_hash: s
             shutil.rmtree(input_dir_hash_filepath)
 
 
-def _try_create_cache_dir(input_dir: Optional[str], storage_options: Optional[Dict] = {}) -> Optional[str]:
+def _try_create_cache_dir(
+    input_dir: Optional[str],
+    cache_dir: Optional[str] = None,
+    storage_options: Optional[Dict] = {},
+) -> Optional[str]:
     resolved_input_dir = _resolve_dir(input_dir)
     updated_at = _read_updated_at(resolved_input_dir, storage_options)
 
@@ -147,13 +154,13 @@ def _try_create_cache_dir(input_dir: Optional[str], storage_options: Optional[Di
     dir_url_hash = hashlib.md5((resolved_input_dir.url or "").encode()).hexdigest()  # noqa: S324
 
     if "LIGHTNING_CLUSTER_ID" not in os.environ or "LIGHTNING_CLOUD_PROJECT_ID" not in os.environ:
-        input_dir_hash_filepath = os.path.join(_DEFAULT_CACHE_DIR, dir_url_hash)
+        input_dir_hash_filepath = os.path.join(cache_dir or _DEFAULT_CACHE_DIR, dir_url_hash)
         _clear_cache_dir_if_updated(input_dir_hash_filepath, updated_at)
         cache_dir = os.path.join(input_dir_hash_filepath, updated_at)
         os.makedirs(cache_dir, exist_ok=True)
         return cache_dir
 
-    input_dir_hash_filepath = os.path.join("/cache", "chunks", dir_url_hash)
+    input_dir_hash_filepath = os.path.join(cache_dir or _DEFAULT_LIGHTNING_CACHE_DIR, dir_url_hash)
     _clear_cache_dir_if_updated(input_dir_hash_filepath, updated_at)
     cache_dir = os.path.join(input_dir_hash_filepath, updated_at)
     os.makedirs(cache_dir, exist_ok=True)
