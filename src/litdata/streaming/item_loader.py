@@ -359,12 +359,10 @@ class TokensLoader(BaseItemLoader):
         buffer: bytes = self._buffers[chunk_index]
         offset = self._dtype.itemsize * (index - begin) * self._block_size
 
-        # These deserialize steps could be optimized using serializer class and passing other options as kwargs
         if self._serializer_name == "no_header_tensor":
             data = torch.frombuffer(buffer, dtype=self._dtype, count=self._block_size, offset=offset)
         else:
             data = np.frombuffer(buffer, dtype=self._dtype, count=self._block_size, offset=offset)
-            data = torch.from_numpy(data)
         return data
 
     def delete(self, chunk_index: int, chunk_filepath: str) -> None:
