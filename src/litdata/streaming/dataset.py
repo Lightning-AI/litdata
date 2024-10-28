@@ -46,6 +46,7 @@ class StreamingDataset(IterableDataset):
     def __init__(
         self,
         input_dir: Union[str, "Dir"],
+        cache_dir: Optional[Union[str, "Dir"]] = None,
         item_loader: Optional[BaseItemLoader] = None,
         shuffle: bool = False,
         drop_last: Optional[bool] = None,
@@ -61,6 +62,8 @@ class StreamingDataset(IterableDataset):
 
         Args:
             input_dir: Path to the folder where the input data is stored.
+            cache_dir: Path to the folder where the cache data is stored. If not provided, the cache will be stored
+                in the default cache directory.
             item_loader: The logic to load an item from a chunk.
             shuffle: Whether to shuffle the data.
             drop_last: If `True`, drops the last items to ensure that
@@ -84,12 +87,14 @@ class StreamingDataset(IterableDataset):
             raise ValueError("subsample must be a float with value between 0 and 1.")
 
         input_dir = _resolve_dir(input_dir)
+        cache_dir = _resolve_dir(cache_dir)
 
         self.input_dir = input_dir
+        self.cache_dir = cache_dir
         self.subsampled_files: List[str] = []
         self.region_of_interest: List[Tuple[int, int]] = []
         self.subsampled_files, self.region_of_interest = subsample_streaming_dataset(
-            self.input_dir, item_loader, subsample, shuffle, seed, storage_options
+            self.input_dir, self.cache_dir, item_loader, subsample, shuffle, seed, storage_options
         )
 
         self.item_loader = item_loader
@@ -155,7 +160,8 @@ class StreamingDataset(IterableDataset):
     def _create_cache(self, worker_env: _WorkerEnv) -> Cache:
         if _should_replace_path(self.input_dir.path):
             cache_path = _try_create_cache_dir(
-                input_dir=self.input_dir.path if self.input_dir.path else self.input_dir.url
+                input_dir=self.input_dir.path if self.input_dir.path else self.input_dir.url,
+                cache_dir=self.cache_dir.path,
             )
             if cache_path is not None:
                 self.input_dir.path = cache_path
@@ -399,6 +405,7 @@ class StreamingDataset(IterableDataset):
             "current_epoch": self.current_epoch,
             "input_dir_path": self.input_dir.path,
             "input_dir_url": self.input_dir.url,
+            "cache_dir_path": self.cache_dir.path,
             "item_loader": self.item_loader.state_dict() if self.item_loader else None,
             "drop_last": self.drop_last,
             "seed": self.seed,
@@ -438,7 +445,8 @@ class StreamingDataset(IterableDataset):
         # In this case, validate the cache folder is the same.
         if _should_replace_path(state["input_dir_path"]):
             cache_path = _try_create_cache_dir(
-                input_dir=state["input_dir_path"] if state["input_dir_path"] else state["input_dir_url"]
+                input_dir=state["input_dir_path"] if state["input_dir_path"] else state["input_dir_url"],
+                cache_dir=state.get("cache_dir_path"),
             )
             if cache_path != self.input_dir.path:
                 raise ValueError(
