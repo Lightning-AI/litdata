@@ -286,7 +286,7 @@ class TokensLoader(BaseItemLoader):
 
         self._serializer_name = serializer_name
         self._dtype = (
-            _TORCH_DTYPES_MAPPING[int(dtype_index)]
+            _TORCH_DTYPES_MAPPING[int(dtype_index)]  # type: ignore
             if serializer_name == "no_header_tensor"
             else _NUMPY_DTYPES_MAPPING[int(dtype_index)]
         )
