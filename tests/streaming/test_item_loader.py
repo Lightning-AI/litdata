@@ -2,7 +2,6 @@ from unittest.mock import MagicMock
 
 import numpy as np
 import torch
-
 from litdata.constants import _NUMPY_DTYPES_MAPPING, _TORCH_DTYPES_MAPPING
 from litdata.streaming import Cache
 from litdata.streaming.dataset import StreamingDataset
