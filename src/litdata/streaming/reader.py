@@ -336,10 +336,9 @@ class BinaryReader:
         return state
 
     def __del__(self) -> None:
-        if self._prepare_thread and not self._prepare_thread._has_exited:
+        if hasattr(self, '_prepare_thread') and self._prepare_thread and not self._prepare_thread._has_exited:
             self._prepare_thread.force_stop()
             self._prepare_thread = None
-
 
 def _get_folder_size(path: str) -> int:
     """Collect the size of each files within a folder.
