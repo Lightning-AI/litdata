@@ -583,7 +583,7 @@ def merge_datasets(input_dirs: List[str], output_dir: str, max_workers: Optional
     _tqdm = _get_tqdm_iterator_if_available()
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-        futures: List[concurrent.futures.Future] = [] = []
+        futures: List[concurrent.futures.Future] = []
         for copy_info in _tqdm(copy_infos):
             future = executor.submit(_apply_copy, copy_info, resolved_output_dir)
             futures.append(future)
