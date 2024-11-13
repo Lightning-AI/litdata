@@ -37,7 +37,7 @@ class S3Client:
             os.getenv("AWS_SHARED_CREDENTIALS_FILE") == os.getenv("AWS_CONFIG_FILE") == "/.credentials/.aws_credentials"
         )
 
-        if has_shared_credentials_file or not _IS_IN_STUDIO:
+        if has_shared_credentials_file or not _IS_IN_STUDIO or self._storage_options:
             self._client = boto3.client(
                 "s3",
                 **{
