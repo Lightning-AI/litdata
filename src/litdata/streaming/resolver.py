@@ -346,6 +346,7 @@ def _execute(
     num_nodes: int,
     machine: Optional["Machine"] = None,
     command: Optional[str] = None,
+    interruptible=False,
 ) -> None:
     """Remotely execute the current operator."""
     if not _LIGHTNING_SDK_AVAILABLE:
@@ -370,6 +371,7 @@ def _execute(
         teamspace_id=studio._teamspace.id,
         cluster_id=studio._studio.cluster_id,
         machine=machine or studio._studio_api.get_machine(studio._studio.id, studio._teamspace.id),
+        interruptible=interruptible,
     )
 
     has_printed = False
