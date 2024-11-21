@@ -346,7 +346,7 @@ def _execute(
     num_nodes: int,
     machine: Optional["Machine"] = None,
     command: Optional[str] = None,
-    interruptible=False,
+    interruptible: bool = False,
 ) -> None:
     """Remotely execute the current operator."""
     if not _LIGHTNING_SDK_AVAILABLE:
