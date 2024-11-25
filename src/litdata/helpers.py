@@ -1,9 +1,18 @@
 import functools
-from typing import Optional
-
+from typing import Optional, Any
+import warnings
 import requests
-from lightning_utilities import WarningCache
 from packaging import version as packaging_version
+
+class WarningCache(set):
+    """Cache for warnings."""
+
+    def warn(self, message: str, stacklevel: int = 5, **kwargs: Any) -> None:
+        """Trigger warning message."""
+        if message not in self:
+            self.add(message)
+            warnings.warn(message, stacklevel=stacklevel, **kwargs)
+
 
 warning_cache = WarningCache()
 
@@ -46,6 +55,5 @@ def _check_version_and_prompt_upgrade(curr_version: str) -> None:
             f"A newer version of {__package_name__} is available ({new_version}). "
             f"Please consider upgrading with `pip install -U {__package_name__}`. "
             "Not all functionalities of the platform can be guaranteed to work with the current version.",
-            UserWarning,
         )
     return
