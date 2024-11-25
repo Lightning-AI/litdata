@@ -27,7 +27,9 @@ from urllib import parse
 
 import torch
 
+from litdata import __version__
 from litdata.constants import _INDEX_FILENAME, _IS_IN_STUDIO
+from litdata.helpers import _check_version_and_prompt_upgrade
 from litdata.processing.data_processor import DataChunkRecipe, DataProcessor, DataTransformRecipe
 from litdata.processing.readers import BaseReader
 from litdata.processing.utilities import (
@@ -222,6 +224,8 @@ def map(
         batch_size: Group the inputs into batches of batch_size length.
 
     """
+    _check_version_and_prompt_upgrade(__version__)
+
     if isinstance(inputs, StreamingDataLoader) and batch_size is not None:
         raise ValueError("When providing a streaming dataloader, pass the batch_size to the dataloader directly.")
 
@@ -351,6 +355,8 @@ def optimize(
             inside an interactive shell like Ipython.
 
     """
+    _check_version_and_prompt_upgrade(__version__)
+
     if mode is not None and mode not in ["append", "overwrite"]:
         raise ValueError(f"The provided `mode` should be either `append` or `overwrite`. Found {mode}.")
 
