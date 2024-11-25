@@ -19,9 +19,11 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import numpy as np
 from torch.utils.data import IterableDataset
 
+from litdata import __version__
 from litdata.constants import (
     _INDEX_FILENAME,
 )
+from litdata.helpers import _check_version_and_prompt_upgrade
 from litdata.streaming import Cache
 from litdata.streaming.downloader import get_downloader_cls  # noqa: F401
 from litdata.streaming.item_loader import BaseItemLoader
@@ -76,6 +78,8 @@ class StreamingDataset(IterableDataset):
             max_pre_download: Maximum number of chunks that can be pre-downloaded by the StreamingDataset.
 
         """
+        _check_version_and_prompt_upgrade(__version__)
+
         super().__init__()
         if not isinstance(shuffle, bool):
             raise ValueError(f"Shuffle should be a boolean. Found {shuffle}")
