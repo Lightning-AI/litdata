@@ -1,10 +1,11 @@
 from unittest.mock import MagicMock
 
+import numpy as np
 import torch
-from litdata.constants import _TORCH_DTYPES_MAPPING
+from litdata.constants import _NUMPY_DTYPES_MAPPING, _TORCH_DTYPES_MAPPING
 from litdata.streaming import Cache
 from litdata.streaming.dataset import StreamingDataset
-from litdata.streaming.item_loader import PyTreeLoader
+from litdata.streaming.item_loader import PyTreeLoader, TokensLoader
 
 
 def test_serializer_setup():
@@ -38,3 +39,30 @@ def test_pytreeloader_with_no_header_tensor_serializer(tmpdir):
         item = dataset[i]
         assert torch.allclose(i * torch.ones(10).to(_TORCH_DTYPES_MAPPING[dtype_index_float]), item["float"])
         assert torch.allclose(i * torch.ones(10).to(_TORCH_DTYPES_MAPPING[dtype_index_long]), item["long"])
+
+
+def test_tokensloader_with_no_header_numpy_serializer(tmpdir):
+    cache = Cache(str(tmpdir), chunk_size=512, item_loader=TokensLoader())
+    assert isinstance(cache._reader._item_loader, TokensLoader)
+
+    dtype_index_int32 = 3
+    dtype = _NUMPY_DTYPES_MAPPING[dtype_index_int32]
+
+    for i in range(10):
+        data = np.random.randint(0, 100, size=(256), dtype=dtype)
+        cache._add_item(i, data)
+
+    data_format = [f"no_header_numpy:{dtype_index_int32}"]
+    assert cache._writer.get_config()["data_format"] == data_format
+    cache.done()
+    cache.merge()
+
+    dataset = StreamingDataset(
+        input_dir=str(tmpdir),
+        drop_last=True,
+        item_loader=TokensLoader(block_size=256),
+    )
+
+    for data in dataset:
+        assert data.shape == (256,)
+        assert data.dtype == dtype

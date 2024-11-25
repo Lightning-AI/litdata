@@ -527,12 +527,13 @@ class CopyInfo:
     new_filename: str
 
 
-def merge_datasets(input_dirs: List[str], output_dir: str) -> None:
+def merge_datasets(input_dirs: List[str], output_dir: str, max_workers: Optional[int] = os.cpu_count()) -> None:
     """Enables to merge multiple existing optimized datasets into a single optimized dataset.
 
     Args:
         input_dirs: A list of directories pointing to the existing optimized datasets.
         output_dir: The directory where the merged dataset would be stored.
+        max_workers: Number of workers for multithreading
 
     """
     if len(input_dirs) == 0:
@@ -543,6 +544,7 @@ def merge_datasets(input_dirs: List[str], output_dir: str) -> None:
 
     resolved_input_dirs = [_resolve_dir(input_dir) for input_dir in input_dirs]
     resolved_output_dir = _resolve_dir(output_dir)
+    max_workers = max_workers or 1
 
     if any(input_dir == resolved_output_dir for input_dir in resolved_input_dirs):
         raise ValueError("The provided output_dir was found within the input_dirs. This isn't supported.")
@@ -586,8 +588,11 @@ def merge_datasets(input_dirs: List[str], output_dir: str) -> None:
 
     _tqdm = _get_tqdm_iterator_if_available()
 
-    for copy_info in _tqdm(copy_infos):
-        _apply_copy(copy_info, resolved_output_dir)
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+        futures: List[concurrent.futures.Future] = []
+        for copy_info in _tqdm(copy_infos):
+            future = executor.submit(_apply_copy, copy_info, resolved_output_dir)
+            futures.append(future)
 
     _save_index(index_json, resolved_output_dir)
 
