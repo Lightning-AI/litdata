@@ -399,7 +399,7 @@ class TIFFSerializer(Serializer):
         with open(item, "rb") as f:
             data = f.read()
 
-        return data
+        return data, None
 
     def deserialize(self, data: bytes) -> Any:
         return tifffile.imread(io.BytesIO(data))  # This is a NumPy array
