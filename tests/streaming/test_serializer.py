@@ -16,6 +16,8 @@ import os
 import random
 import sys
 from unittest import mock
+import tempfile
+import tifffile
 
 import numpy as np
 import pytest
@@ -276,9 +278,6 @@ def test_tiff_serializer():
     # Create a synthetic multispectral image
     height, width, bands = 28, 28, 12
     np_data = np.random.randint(0, 65535, size=(height, width, bands), dtype=np.uint16)
-
-    # Write to a temporary file
-    import tempfile
 
     with tempfile.NamedTemporaryFile(suffix=".tif", delete=False) as tmp_file:
         tifffile.imwrite(tmp_file.name, np_data)

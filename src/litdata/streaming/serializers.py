@@ -405,8 +405,7 @@ class TIFFSerializer(Serializer):
         return data, metadata
 
     def deserialize(self, data: bytes) -> Any:
-        image_array = tifffile.imread(io.BytesIO(data))
-        return image_array  # This is a NumPy array
+        return tifffile.imread(io.BytesIO(data))  # This is a NumPy array
 
     def can_serialize(self, item: Any) -> bool:
         return isinstance(item, str) and os.path.isfile(item) and item.lower().endswith((".tif", ".tiff"))
