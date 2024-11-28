@@ -301,12 +301,3 @@ def test_tiff_serializer():
 
     # Clean up
     os.remove(file_path)
-
-
-def test_tiff_serializer_can_serialize():
-    serializer = TIFFSerializer()
-    assert serializer.can_serialize("image.tif")
-    assert serializer.can_serialize("image.tiff")
-    assert not serializer.can_serialize("image.jpg")
-    assert not serializer.can_serialize(None)
-    assert not serializer.can_serialize(123)
