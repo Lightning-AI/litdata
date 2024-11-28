@@ -20,6 +20,7 @@ from collections import OrderedDict
 from contextlib import suppress
 from copy import deepcopy
 from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Union
+import tifffile
 
 import numpy as np
 import torch
@@ -387,13 +388,41 @@ class FloatSerializer(NumericSerializer, Serializer):
         return isinstance(data, float)
 
 
+class TIFFSerializer(Serializer):
+    """Serializer for TIFF files using tifffile."""
+
+    def serialize(self, item: Any) -> Tuple[bytes, Optional[str]]:
+        if not isinstance(item, str) or not os.path.isfile(item):
+            raise ValueError(f"The item to serialize must be a valid file path. Received: {item}")
+
+        # Read the TIFF file as bytes
+        with open(item, "rb") as f:
+            data = f.read()
+
+        # Store metadata if needed
+        _, ext = os.path.splitext(item)
+        metadata = f"tifffile:{ext.lower()}"
+        return data, metadata
+
+    def deserialize(self, data: bytes) -> Any:
+        image_array = tifffile.imread(io.BytesIO(data))
+        return image_array  # This is a NumPy array
+
+    def can_serialize(self, item: Any) -> bool:
+        return (
+            isinstance(item, str)
+            and os.path.isfile(item)
+            and item.lower().endswith(('.tif', '.tiff'))
+        )
+
+
 _SERIALIZERS = OrderedDict(
     **{
         "str": StringSerializer(),
         "int": IntegerSerializer(),
         "float": FloatSerializer(),
         "video": VideoSerializer(),
-        "tif": FileSerializer(),
+        "tifffile": TIFFSerializer(),
         "file": FileSerializer(),
         "pil": PILSerializer(),
         "jpeg": JPEGSerializer(),
