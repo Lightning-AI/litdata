@@ -290,7 +290,6 @@ def test_tiff_serializer():
     data, _ = serializer.serialize(file_path)
     assert isinstance(data, bytes)
 
-
     # Deserialize
     deserialized_data = serializer.deserialize(data)
     assert isinstance(deserialized_data, np.ndarray)

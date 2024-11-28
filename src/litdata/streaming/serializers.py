@@ -405,7 +405,9 @@ class TIFFSerializer(Serializer):
         return tifffile.imread(io.BytesIO(data))  # This is a NumPy array
 
     def can_serialize(self, item: Any) -> bool:
-        print(f"Checking can_serialize for: {item}, exists: {os.path.isfile(item)}, suffix: {item.lower().endswith(('.tif', '.tiff'))}")
+        print(
+            f"Checking can_serialize for: {item}, exists: {os.path.isfile(item)}, suffix: {item.lower().endswith(('.tif', '.tiff'))}"
+        )
         return isinstance(item, str) and os.path.isfile(item) and item.lower().endswith((".tif", ".tiff"))
 
 
