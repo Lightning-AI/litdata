@@ -20,9 +20,9 @@ from collections import OrderedDict
 from contextlib import suppress
 from copy import deepcopy
 from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Union
-import tifffile
 
 import numpy as np
+import tifffile
 import torch
 from lightning_utilities.core.imports import RequirementCache
 
@@ -409,11 +409,7 @@ class TIFFSerializer(Serializer):
         return image_array  # This is a NumPy array
 
     def can_serialize(self, item: Any) -> bool:
-        return (
-            isinstance(item, str)
-            and os.path.isfile(item)
-            and item.lower().endswith(('.tif', '.tiff'))
-        )
+        return isinstance(item, str) and os.path.isfile(item) and item.lower().endswith((".tif", ".tiff"))
 
 
 _SERIALIZERS = OrderedDict(
