@@ -287,8 +287,9 @@ def test_tiff_serializer():
     assert serializer.can_serialize(file_path)
 
     # Serialize
-    data = serializer.serialize(file_path)
+    data, _ = serializer.serialize(file_path)
     assert isinstance(data, bytes)
+
 
     # Deserialize
     deserialized_data = serializer.deserialize(data)
