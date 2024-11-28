@@ -34,6 +34,7 @@ from litdata.streaming.serializers import (
     NumpySerializer,
     PILSerializer,
     TensorSerializer,
+    TIFFSerializer,
     VideoSerializer,
     _get_serializers,
 )
@@ -46,6 +47,7 @@ def seed_everything(random_seed):
 
 
 _PIL_AVAILABLE = RequirementCache("PIL")
+_TIFFFILE_AVAILABLE = RequirementCache("tifffile")
 
 
 def test_serializers():
@@ -55,7 +57,7 @@ def test_serializers():
         "int",
         "float",
         "video",
-        "tif",
+        "tifffile",
         "file",
         "pil",
         "jpeg",
@@ -265,3 +267,47 @@ def test_deserialize_empty_no_header_tensor():
     serializer.setup(name)
     new_t = serializer.deserialize(data)
     assert torch.equal(t, new_t)
+
+
+@pytest.mark.skipif(not _TIFFFILE_AVAILABLE, reason="Requires: ['tifffile']")
+def test_tiff_serializer():
+    serializer = TIFFSerializer()
+
+    # Create a synthetic multispectral image
+    height, width, bands = 28, 28, 12
+    np_data = np.random.randint(0, 65535, size=(height, width, bands), dtype=np.uint16)
+
+    # Write to a temporary file
+    import tempfile
+    with tempfile.NamedTemporaryFile(suffix='.tif', delete=False) as tmp_file:
+        tifffile.imwrite(tmp_file.name, np_data)
+        file_path = tmp_file.name
+
+    # Test can_serialize
+    assert serializer.can_serialize(file_path)
+
+    # Serialize
+    data, metadata = serializer.serialize(file_path)
+    assert isinstance(data, bytes)
+    assert metadata == f"tiff:{os.path.splitext(file_path)[1].lower()}"
+
+    # Deserialize
+    serializer.setup(metadata)
+    deserialized_data = serializer.deserialize(data)
+    assert isinstance(deserialized_data, np.ndarray)
+    assert deserialized_data.shape == (height, width, bands)
+    assert deserialized_data.dtype == np.uint16
+
+    # Validate data content
+    assert np.array_equal(np_data, deserialized_data)
+
+    # Clean up
+    os.remove(file_path)
+
+def test_tiff_serializer_can_serialize():
+    serializer = TIFFSerializer()
+    assert serializer.can_serialize('image.tif')
+    assert serializer.can_serialize('image.tiff')
+    assert not serializer.can_serialize('image.jpg')
+    assert not serializer.can_serialize(None)
+    assert not serializer.can_serialize(123)
