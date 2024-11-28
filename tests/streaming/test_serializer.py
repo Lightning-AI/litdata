@@ -279,7 +279,8 @@ def test_tiff_serializer():
 
     # Write to a temporary file
     import tempfile
-    with tempfile.NamedTemporaryFile(suffix='.tif', delete=False) as tmp_file:
+
+    with tempfile.NamedTemporaryFile(suffix=".tif", delete=False) as tmp_file:
         tifffile.imwrite(tmp_file.name, np_data)
         file_path = tmp_file.name
 
@@ -304,10 +305,11 @@ def test_tiff_serializer():
     # Clean up
     os.remove(file_path)
 
+
 def test_tiff_serializer_can_serialize():
     serializer = TIFFSerializer()
-    assert serializer.can_serialize('image.tif')
-    assert serializer.can_serialize('image.tiff')
-    assert not serializer.can_serialize('image.jpg')
+    assert serializer.can_serialize("image.tif")
+    assert serializer.can_serialize("image.tiff")
+    assert not serializer.can_serialize("image.jpg")
     assert not serializer.can_serialize(None)
     assert not serializer.can_serialize(123)
