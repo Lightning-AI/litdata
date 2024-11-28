@@ -15,12 +15,12 @@ import io
 import os
 import random
 import sys
-from unittest import mock
 import tempfile
-import tifffile
+from unittest import mock
 
 import numpy as np
 import pytest
+import tifffile
 import torch
 from lightning_utilities.core.imports import RequirementCache
 from litdata.streaming.serializers import (
