@@ -287,12 +287,10 @@ def test_tiff_serializer():
     assert serializer.can_serialize(file_path)
 
     # Serialize
-    data, metadata = serializer.serialize(file_path)
+    data = serializer.serialize(file_path)
     assert isinstance(data, bytes)
-    assert metadata == f"tiff:{os.path.splitext(file_path)[1].lower()}"
 
     # Deserialize
-    serializer.setup(metadata)
     deserialized_data = serializer.deserialize(data)
     assert isinstance(deserialized_data, np.ndarray)
     assert deserialized_data.shape == (height, width, bands)

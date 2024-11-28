@@ -399,10 +399,7 @@ class TIFFSerializer(Serializer):
         with open(item, "rb") as f:
             data = f.read()
 
-        # Store metadata if needed
-        _, ext = os.path.splitext(item)
-        metadata = f"tifffile:{ext.lower()}"
-        return data, metadata
+        return data
 
     def deserialize(self, data: bytes) -> Any:
         return tifffile.imread(io.BytesIO(data))  # This is a NumPy array
