@@ -202,7 +202,7 @@ class TensorSerializer(Serializer):
         return torch.reshape(tensor, shape)
 
     def can_serialize(self, item: torch.Tensor) -> bool:
-        return isinstance(item, torch.Tensor) and type(item) == torch.Tensor and len(item.shape) > 1
+        return isinstance(item, torch.Tensor) and type(item) == torch.Tensor and len(item.shape) != 1
 
 
 class NoHeaderTensorSerializer(Serializer):
