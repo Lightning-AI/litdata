@@ -256,6 +256,14 @@ def test_deserialize_empty_tensor():
     assert torch.equal(t, new_t)
 
 
+def test_deserialize_scalar_tensor():
+    serializer = TensorSerializer()
+    t = torch.tensor(0)
+    data, _ = serializer.serialize(t)
+    new_t = serializer.deserialize(data)
+    assert torch.equal(t, new_t)
+
+
 def test_deserialize_empty_no_header_tensor():
     serializer = NoHeaderTensorSerializer()
     t = torch.ones((0,)).int()
@@ -269,6 +277,15 @@ def test_deserialize_empty_no_header_tensor():
     serializer.setup(name)
     new_t = serializer.deserialize(data)
     assert torch.equal(t, new_t)
+
+
+def test_can_serialize_tensor():
+    serializer = TensorSerializer()
+    # Check that the TensorSerializer can serialize scalar valued tensors as well as higher order (>1) Tensors
+    assert serializer.can_serialize(torch.tensor(0))
+    assert serializer.can_serialize(torch.tensor([[0, 0]]))
+    # Check that it does not serialize Tensors of order 1, those are treated by the dedicated NoHeaderTensorSerializer
+    assert not serializer.can_serialize(torch.tensor([0, 0]))
 
 
 @pytest.mark.skipif(not _TIFFFILE_AVAILABLE, reason="Requires: ['tifffile']")
