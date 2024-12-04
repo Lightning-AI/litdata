@@ -400,6 +400,68 @@ for batch in tqdm(train_dataloader):
 </details>
 
 <details>
+  <summary> ✅ Filter illegal data </summary>
+&nbsp;
+
+Sometimes, you have bad data that you don't want to include in the optimized dataset. With LitData, yield only the good data sample to include. 
+
+
+```python
+from litdata import optimize, StreamingDataset
+
+def should_keep(index) -> bool:
+  # Replace with your own logic
+  return index % 2 == 0
+
+
+def fn(data):
+    if should_keep(data):
+        yield data
+
+if __name__ == "__main__":
+    optimize(
+        fn=fn,
+        inputs=list(range(1000)),
+        output_dir="only_even_index_optimized",
+        chunk_bytes="64MB",
+        num_workers=1
+    )
+
+    dataset = StreamingDataset("only_even_index_optimized")
+    data = list(dataset)
+    print(data)
+    # [0, 2, 4, 6, 8, 10, ..., 992, 994, 996, 998]
+```
+
+You can even use try/expect.  
+
+```python
+from litdata import optimize, StreamingDataset
+
+def fn(data):
+    try:
+        yield 1 / data 
+    except:
+        pass
+
+if __name__ == "__main__":
+    optimize(
+        fn=fn,
+        inputs=[0, 0, 0, 1, 2, 4, 0],
+        output_dir="only_defined_ratio_optimized",
+        chunk_bytes="64MB",
+        num_workers=1
+    )
+
+    dataset = StreamingDataset("only_defined_ratio_optimized")
+    data = list(dataset)
+    # The 0 are filtered out as they raise a division by zero 
+    print(data)
+    # [1.0, 0.5, 0.25] 
+```
+</details>
+
+<details>
   <summary> ✅ Combine datasets</summary>
 &nbsp;
 
