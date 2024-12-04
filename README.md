@@ -433,7 +433,7 @@ if __name__ == "__main__":
     # [0, 2, 4, 6, 8, 10, ..., 992, 994, 996, 998]
 ```
 
-You can even use try/expect if some data are malformed and won't load properly.  
+You can even use try/expect.  
 
 ```python
 from litdata import optimize, StreamingDataset
@@ -455,9 +455,9 @@ if __name__ == "__main__":
 
     dataset = StreamingDataset("only_defined_ratio_optimized")
     data = list(dataset)
-    # [1.0, 0.5, 0.25] 
     # The 0 are filtered out as they raise a division by zero 
     print(data)
+    # [1.0, 0.5, 0.25] 
 ```
 </details>
 
