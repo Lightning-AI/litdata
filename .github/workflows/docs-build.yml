@@ -24,7 +24,6 @@ jobs:
         with:
           name: docs-html-${{ github.sha }}
           path: docs/build/html
-          merge-multiple: true
 
       - name: Deploy 🚀
         uses: JamesIves/github-pages-deploy-action@v4.6.3
