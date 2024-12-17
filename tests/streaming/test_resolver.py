@@ -291,6 +291,7 @@ def test_execute(phase, monkeypatch, lightning_sdk_mock):
         "teamspace_id": "teamspace_id",
         "cluster_id": "cluster_id",
         "machine": "cpu",
+        "interruptible": False,
     }
 
     generated_kwargs = (

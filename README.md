@@ -225,6 +225,15 @@ storage_options = {
 dataset = StreamingDataset('s3://my-bucket/my-data', storage_options=storage_options)
 ```
 
+
+Also, you can specify a custom cache directory when initializing your dataset. This is useful when you want to store the cache in a specific location.
+```python
+from litdata import StreamingDataset
+
+# Initialize the StreamingDataset with the custom cache directory
+dataset = StreamingDataset('s3://my-bucket/my-data', cache_dir="/path/to/cache")
+```
+
 </details>
 
 <details>
@@ -391,6 +400,68 @@ for batch in tqdm(train_dataloader):
 </details>
 
 <details>
+  <summary> ✅ Filter illegal data </summary>
+&nbsp;
+
+Sometimes, you have bad data that you don't want to include in the optimized dataset. With LitData, yield only the good data sample to include. 
+
+
+```python
+from litdata import optimize, StreamingDataset
+
+def should_keep(index) -> bool:
+  # Replace with your own logic
+  return index % 2 == 0
+
+
+def fn(data):
+    if should_keep(data):
+        yield data
+
+if __name__ == "__main__":
+    optimize(
+        fn=fn,
+        inputs=list(range(1000)),
+        output_dir="only_even_index_optimized",
+        chunk_bytes="64MB",
+        num_workers=1
+    )
+
+    dataset = StreamingDataset("only_even_index_optimized")
+    data = list(dataset)
+    print(data)
+    # [0, 2, 4, 6, 8, 10, ..., 992, 994, 996, 998]
+```
+
+You can even use try/expect.  
+
+```python
+from litdata import optimize, StreamingDataset
+
+def fn(data):
+    try:
+        yield 1 / data 
+    except:
+        pass
+
+if __name__ == "__main__":
+    optimize(
+        fn=fn,
+        inputs=[0, 0, 0, 1, 2, 4, 0],
+        output_dir="only_defined_ratio_optimized",
+        chunk_bytes="64MB",
+        num_workers=1
+    )
+
+    dataset = StreamingDataset("only_defined_ratio_optimized")
+    data = list(dataset)
+    # The 0 are filtered out as they raise a division by zero 
+    print(data)
+    # [1.0, 0.5, 0.25] 
+```
+</details>
+
+<details>
   <summary> ✅ Combine datasets</summary>
 &nbsp;
 
@@ -427,6 +498,41 @@ train_dataloader = StreamingDataLoader(combined_dataset, batch_size=8, pin_memor
 # Iterate over the combined datasets
 for batch in tqdm(train_dataloader):
     pass
+```
+</details>
+
+<details>
+  <summary> ✅ Merge datasets</summary>
+&nbsp;
+
+Merge multiple optimized datasets into one.
+
+```python
+import numpy as np
+from PIL import Image
+
+from litdata import StreamingDataset, merge_datasets, optimize
+
+
+def random_images(index):
+    return {
+        "index": index,
+        "image": Image.fromarray(np.random.randint(0, 256, (32, 32, 3), dtype=np.uint8)),
+        "class": np.random.randint(10),
+    }
+
+
+if __name__ == "__main__":
+    out_dirs = ["fast_data_1", "fast_data_2", "fast_data_3", "fast_data_4"]  # or ["s3://my-bucket/fast_data_1", etc.]"
+    for out_dir in out_dirs:
+        optimize(fn=random_images, inputs=list(range(250)), output_dir=out_dir, num_workers=4, chunk_bytes="64MB")
+
+    merged_out_dir = "merged_fast_data" # or "s3://my-bucket/merged_fast_data"
+    merge_datasets(input_dirs=out_dirs, output_dir=merged_out_dir)
+
+    dataset = StreamingDataset(merged_out_dir)
+    print(len(dataset))
+    # out: 1000
 ```
 </details>
 
@@ -866,7 +972,7 @@ Speed to stream Imagenet 1.2M from AWS S3:
 
 | Framework | Images / sec  1st Epoch (float32)  | Images / sec   2nd Epoch (float32) | Images / sec 1st Epoch (torch16) | Images / sec 2nd Epoch (torch16) |
 |---|---|---|---|---|
-| PL Data  | **5800** | **6589**  | **6282**  | **7221**  |
+| LitData | **5800** | **6589**  | **6282**  | **7221**  |
 | Web Dataset  | 3134 | 3924 | 3343 | 4424 |
 | Mosaic ML  | 2898 | 5099 | 2809 | 5158 |
 
@@ -887,7 +993,7 @@ LitData optimizes the Imagenet dataset for fast training 3-5x faster than other 
 Time to optimize 1.2 million ImageNet images (Faster is better):
 | Framework |Train Conversion Time | Val Conversion Time | Dataset Size | # Files |
 |---|---|---|---|---|
-| PL Data  |  **10:05 min** | **00:30 min** | **143.1 GB**  | 2.339  |
+| LitData  |  **10:05 min** | **00:30 min** | **143.1 GB**  | 2.339  |
 | Web Dataset  | 32:36 min | 01:22 min | 147.8 GB | 1.144 |
 | Mosaic ML  | 49:49 min | 01:04 min | **143.1 GB** | 2.298 |
 

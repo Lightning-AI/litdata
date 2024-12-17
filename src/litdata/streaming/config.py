@@ -226,7 +226,12 @@ class ChunksConfig:
 
         begin = self._intervals[index.chunk_index][0]
 
-        return local_chunkpath, begin, chunk["chunk_bytes"]
+        filesize_bytes = chunk["chunk_bytes"]
+
+        if self._config and self._config.get("encryption") is None:
+            filesize_bytes += (1 + chunk["chunk_size"]) * 4
+
+        return local_chunkpath, begin, filesize_bytes
 
     def _get_chunk_index_from_filename(self, chunk_filename: str) -> int:
         """Retrieves the associated chunk_index for a given chunk filename."""

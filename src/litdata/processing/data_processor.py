@@ -456,6 +456,7 @@ class BaseWorker:
         try:
             self._setup()
             self._loop()
+            self._terminate()
         except Exception:
             traceback_format = traceback.format_exc()
             self.error_queue.put(traceback_format)
@@ -468,6 +469,19 @@ class BaseWorker:
         self._start_downloaders()
         self._start_uploaders()
         self._start_remover()
+
+    def _terminate(self) -> None:
+        """Make sure all the uploaders, downloaders and removers are terminated."""
+        for uploader in self.uploaders:
+            if uploader.is_alive():
+                uploader.join()
+
+        for downloader in self.downloaders:
+            if downloader.is_alive():
+                downloader.join()
+
+        if self.remover and self.remover.is_alive():
+            self.remover.join()
 
     def _loop(self) -> None:
         num_downloader_finished = 0
@@ -795,7 +809,7 @@ class DataChunkRecipe(DataRecipe):
 
         chunks = [file for file in os.listdir(cache_dir) if file.endswith(".bin")]
         if chunks and delete_cached_files and output_dir.path is not None:
-            raise RuntimeError(f"All the chunks should have been deleted. Found {chunks}")
+            raise RuntimeError(f"All the chunks should have been deleted. Found {chunks} in cache: {cache_dir}")
 
         merge_cache = Cache(cache_dir, chunk_bytes=1)
         node_rank = _get_node_rank()
@@ -1110,6 +1124,10 @@ class DataProcessor:
 
             current_total = new_total
             if current_total == num_items:
+                # make sure all processes are terminated
+                for w in self.workers:
+                    if w.is_alive():
+                        w.join()
                 break
 
             if _IS_IN_STUDIO and node_rank == 0 and _ENABLE_STATUS:
@@ -1117,17 +1135,16 @@ class DataProcessor:
                     json.dump({"progress": str(100 * current_total * num_nodes / total_num_items) + "%"}, f)
 
             # Exit early if all the workers are done.
-            # This means there were some kinda of errors.
+            # This means either there were some kinda of errors, or optimize function was very small.
             if all(not w.is_alive() for w in self.workers):
-                raise RuntimeError("One of the worker has failed")
+                try:
+                    error = self.error_queue.get(timeout=0.01)
+                    self._exit_on_error(error)
+                except Empty:
+                    continue
 
         if _TQDM_AVAILABLE:
             pbar.close()
-
-        # TODO: Check whether this is still required.
-        if num_nodes == 1:
-            for w in self.workers:
-                w.join()
 
         print("Workers are finished.")
         result = data_recipe._done(len(user_items), self.delete_cached_files, self.output_dir)

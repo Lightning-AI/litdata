@@ -23,9 +23,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import numpy as np
 import torch
 
-from litdata.constants import (
-    _TORCH_DTYPES_MAPPING,
-)
+from litdata.constants import _NUMPY_DTYPES_MAPPING, _TORCH_DTYPES_MAPPING
 from litdata.streaming.serializers import Serializer
 from litdata.utilities._pytree import PyTree, tree_unflatten
 from litdata.utilities.encryption import Encryption, EncryptionLevel
@@ -88,7 +86,7 @@ class BaseItemLoader(ABC):
         chunk_index: int,
         chunk_filepath: str,
         begin: int,
-        chunk_bytes: int,
+        filesize_bytes: int,
     ) -> Any:
         """Returns an item loaded from a chunk."""
 
@@ -132,7 +130,7 @@ class PyTreeLoader(BaseItemLoader):
         chunk_index: int,
         chunk_filepath: str,
         begin: int,
-        chunk_bytes: int,
+        filesize_bytes: int,
         encryption: Optional[Encryption] = None,
     ) -> bytes:
         offset = (1 + (index - begin) if index >= begin else index + 1) * 4
@@ -141,11 +139,11 @@ class PyTreeLoader(BaseItemLoader):
             del self._chunk_filepaths[chunk_filepath]
 
         if chunk_filepath not in self._chunk_filepaths:
-            exists = os.path.exists(chunk_filepath) and os.stat(chunk_filepath).st_size >= chunk_bytes
+            exists = os.path.exists(chunk_filepath) and os.stat(chunk_filepath).st_size >= filesize_bytes
 
             while not exists:
                 sleep(0.1)
-                exists = os.path.exists(chunk_filepath) and os.stat(chunk_filepath).st_size >= chunk_bytes
+                exists = os.path.exists(chunk_filepath) and os.stat(chunk_filepath).st_size >= filesize_bytes
 
             self._chunk_filepaths[chunk_filepath] = True
 
@@ -281,7 +279,17 @@ class TokensLoader(BaseItemLoader):
         region_of_interest: Optional[List[Tuple[int, int]]] = None,
     ) -> None:
         super().setup(config, chunks, serializers, region_of_interest)
-        self._dtype = _TORCH_DTYPES_MAPPING[int(config["data_format"][0].split(":")[1])]
+
+        serializer_name, dtype_index = self._data_format[0].split(":")
+        if serializer_name not in ["no_header_numpy", "no_header_tensor"]:
+            raise ValueError("The provided data format isn't supported.")
+
+        self._serializer_name = serializer_name
+        self._dtype = (
+            _TORCH_DTYPES_MAPPING[int(dtype_index)]  # type: ignore
+            if serializer_name == "no_header_tensor"
+            else _NUMPY_DTYPES_MAPPING[int(dtype_index)]
+        )
         if all(chunk["dim"] is None for chunk in self._chunks):
             raise ValueError("The provided chunks isn't properly setup.")
 
@@ -329,7 +337,7 @@ class TokensLoader(BaseItemLoader):
         chunk_index: int,
         chunk_filepath: str,
         begin: int,
-        chunk_bytes: int,
+        filesize_bytes: int,
     ) -> torch.Tensor:
         assert self._block_size
 
@@ -337,11 +345,11 @@ class TokensLoader(BaseItemLoader):
             del self._chunk_filepaths[chunk_filepath]
 
         if chunk_filepath not in self._chunk_filepaths:
-            exists = os.path.exists(chunk_filepath) and os.stat(chunk_filepath).st_size > 0
+            exists = os.path.exists(chunk_filepath) and os.stat(chunk_filepath).st_size > filesize_bytes
 
             while not exists:
                 sleep(0.1)
-                exists = os.path.exists(chunk_filepath) and os.stat(chunk_filepath).st_size > 0
+                exists = os.path.exists(chunk_filepath) and os.stat(chunk_filepath).st_size > filesize_bytes
 
             self._chunk_filepaths[chunk_filepath] = True
 
@@ -350,7 +358,12 @@ class TokensLoader(BaseItemLoader):
 
         buffer: bytes = self._buffers[chunk_index]
         offset = self._dtype.itemsize * (index - begin) * self._block_size
-        return torch.frombuffer(buffer, dtype=self._dtype, count=self._block_size, offset=offset)
+
+        if self._serializer_name == "no_header_tensor":
+            data = torch.frombuffer(buffer, dtype=self._dtype, count=self._block_size, offset=offset)
+        else:
+            data = np.frombuffer(buffer, dtype=self._dtype, count=self._block_size, offset=offset)  # type: ignore
+        return data
 
     def delete(self, chunk_index: int, chunk_filepath: str) -> None:
         if os.path.exists(chunk_filepath):
@@ -359,6 +372,14 @@ class TokensLoader(BaseItemLoader):
             if chunk_index in self._mmaps:
                 del self._mmaps[chunk_index]
             os.remove(chunk_filepath)
+
+    def close(self, chunk_index: int) -> None:
+        """Release the memory-mapped file for a specific chunk index."""
+        if chunk_index in self._mmaps:
+            self._mmaps[chunk_index]._mmap.close()
+            del self._mmaps[chunk_index]
+        if chunk_index in self._buffers:
+            del self._buffers[chunk_index]
 
     @classmethod
     def encode_data(cls, data: List[bytes], _: List[int], flattened: List[Any]) -> Tuple[bytes, Optional[int]]:

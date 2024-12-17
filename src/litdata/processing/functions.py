@@ -27,7 +27,9 @@ from urllib import parse
 
 import torch
 
+from litdata import __version__
 from litdata.constants import _INDEX_FILENAME, _IS_IN_STUDIO
+from litdata.helpers import _check_version_and_prompt_upgrade
 from litdata.processing.data_processor import DataChunkRecipe, DataProcessor, DataTransformRecipe
 from litdata.processing.readers import BaseReader
 from litdata.processing.utilities import (
@@ -222,6 +224,8 @@ def map(
         batch_size: Group the inputs into batches of batch_size length.
 
     """
+    _check_version_and_prompt_upgrade(__version__)
+
     if isinstance(inputs, StreamingDataLoader) and batch_size is not None:
         raise ValueError("When providing a streaming dataloader, pass the batch_size to the dataloader directly.")
 
@@ -351,6 +355,8 @@ def optimize(
             inside an interactive shell like Ipython.
 
     """
+    _check_version_and_prompt_upgrade(__version__)
+
     if mode is not None and mode not in ["append", "overwrite"]:
         raise ValueError(f"The provided `mode` should be either `append` or `overwrite`. Found {mode}.")
 
@@ -521,12 +527,13 @@ class CopyInfo:
     new_filename: str
 
 
-def merge_datasets(input_dirs: List[str], output_dir: str) -> None:
+def merge_datasets(input_dirs: List[str], output_dir: str, max_workers: Optional[int] = os.cpu_count()) -> None:
     """Enables to merge multiple existing optimized datasets into a single optimized dataset.
 
     Args:
         input_dirs: A list of directories pointing to the existing optimized datasets.
         output_dir: The directory where the merged dataset would be stored.
+        max_workers: Number of workers for multithreading
 
     """
     if len(input_dirs) == 0:
@@ -537,6 +544,7 @@ def merge_datasets(input_dirs: List[str], output_dir: str) -> None:
 
     resolved_input_dirs = [_resolve_dir(input_dir) for input_dir in input_dirs]
     resolved_output_dir = _resolve_dir(output_dir)
+    max_workers = max_workers or 1
 
     if any(input_dir == resolved_output_dir for input_dir in resolved_input_dirs):
         raise ValueError("The provided output_dir was found within the input_dirs. This isn't supported.")
@@ -580,8 +588,11 @@ def merge_datasets(input_dirs: List[str], output_dir: str) -> None:
 
     _tqdm = _get_tqdm_iterator_if_available()
 
-    for copy_info in _tqdm(copy_infos):
-        _apply_copy(copy_info, resolved_output_dir)
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+        futures: List[concurrent.futures.Future] = []
+        for copy_info in _tqdm(copy_infos):
+            future = executor.submit(_apply_copy, copy_info, resolved_output_dir)
+            futures.append(future)
 
     _save_index(index_json, resolved_output_dir)
 
