@@ -18,7 +18,7 @@ import os
 from copy import deepcopy
 from importlib import reload
 from itertools import cycle
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List, Literal, Optional, Union
 
 import torch
 from torch.utils.data import Dataset, IterableDataset
@@ -549,6 +549,7 @@ class StreamingDataLoader(DataLoader):
         self,
         dataset: Union[StreamingDataset, CombinedStreamingDataset],
         *args: Any,
+        batching_method: Literal["stratified", "per_stream"] = "stratified",
         batch_size: int = 1,
         num_workers: int = 0,
         profile_batches: Union[bool, int] = False,
@@ -626,10 +627,15 @@ class StreamingDataLoader(DataLoader):
                 self._num_samples_yielded_streaming += self.batch_size
                 yield batch
         else:
+            # Assume, this is a CombinedStreamingDataset.
             self.dataset._set_use_streaming_dataloader(True)
             assert self.batch_size
             # TODO: Inject a custom collate function to avoid collating the __NUM_SAMPLES_YIELDED__ key
             for batch in super().__iter__():
+                # Force selection of a new dataset on batch boundaries
+                # Note, samples may come from several datasets within a batch, depending
+                # on `CombinedStreamingDataset`'s `batching_method` value. 
+                self.dataset._set_new_dataset_index() 
                 self._latest_worker_idx = next(self._worker_idx_iter)  # type: ignore
                 if isinstance(batch, dict) and __NUM_SAMPLES_YIELDED_KEY__ in batch:
                     self._num_samples_yielded_combined[self._latest_worker_idx] = [

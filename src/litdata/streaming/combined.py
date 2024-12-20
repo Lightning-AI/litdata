@@ -13,7 +13,7 @@
 
 import random
 from copy import deepcopy
-from typing import Any, Dict, Iterator, List, Optional, Sequence
+from typing import Any, Dict, Iterator, List, Literal, Optional, Sequence
 
 from torch.utils.data import IterableDataset
 
@@ -42,6 +42,7 @@ class CombinedStreamingDataset(IterableDataset):
         seed: int = 42,
         weights: Optional[Sequence[float]] = None,
         iterate_over_all: bool = True,
+        batching_method: Literal["stratified", "per_stream"] = "stratified",
     ) -> None:
         """Enable to stream data from multiple StreamingDataset with the sampling ratio of your choice.
 
@@ -51,6 +52,9 @@ class CombinedStreamingDataset(IterableDataset):
             weights: The sampling ratio for the datasets
             iterate_over_all: When iterate_over_all is True, the combined dataset iterates over all the datasets.
                 Otherwise, it stops as soon as one raises a StopIteration.
+            batching_method: When batching_method is "stratified" (default), every sample in a batch is drawn randomly across all datasets.
+                When batching_method is "per_stream" every sample in a batch is drawn from the same dataset. After each batch, a dataset
+                is selected at random.
 
         """
         self._check_datasets(datasets)
@@ -67,6 +71,7 @@ class CombinedStreamingDataset(IterableDataset):
             )
 
         self._iterate_over_all = iterate_over_all
+        self._batching_method = batching_method
 
         if weights is None:
             # Weighted based on the dataset length
@@ -165,6 +170,7 @@ class CombinedStreamingDataset(IterableDataset):
             self._use_streaming_dataloader,
             num_samples_yielded,
             self._iterate_over_all,
+            self._batching_method
         )
         return self._iterator
 
@@ -204,6 +210,7 @@ class _CombinedDatasetIterator(Iterator):
         use_streaming_dataloader: bool,
         num_samples_yielded: Any,
         iterate_over_all: bool = False,
+        batching_method: Literal["stratified", "per_stream"] = "stratified",
     ) -> None:
         self._datasets = datasets
         self._dataset_iters = [iter(dataset) for dataset in datasets]
@@ -213,6 +220,8 @@ class _CombinedDatasetIterator(Iterator):
         self._weights = deepcopy(weights)
         self._rng = random.Random(seed)
         self._iterate_over_all = iterate_over_all
+        self._batching_method = batching_method
+        self._cur_dataset_index = -1
         self._is_done = False
 
         if num_samples_yielded is not None:
@@ -234,6 +243,7 @@ class _CombinedDatasetIterator(Iterator):
                         dataset_index = self._get_dataset_index()
                     elif len(indexes_left) == 1:
                         dataset_index = indexes_left[0]
+                        self._cur_dataset_index = dataset_index
                     return self._get_sample(dataset_index)
                 except StopIteration as e:
                     if len(indexes_left) == 1:
@@ -250,11 +260,22 @@ class _CombinedDatasetIterator(Iterator):
         return self._get_sample(self._get_dataset_index())
 
     def _get_dataset_index(self) -> int:
+        if self._batching_method == "stratified":
+            # randomly select a dataset index
+            self._set_new_dataset_index()
+        elif self._batching_method == "per_stream":
+            # randomly select a dataset index, if no previous dataset index exists
+            if self._cur_dataset_index == -1:
+                self._set_new_dataset_index()
+        return self._cur_dataset_index
+
+    def _set_new_dataset_index(self):
         # randomly select a dataset index
         indexes = [index for index in self._dataset_indexes if index is not None]
         weights = [w for w in self._weights if w is not None]
         (dataset_index,) = self._rng.choices(indexes, weights=weights, k=1)
-        return dataset_index
+        self._cur_dataset_index = dataset_index
+
 
     def _get_sample(self, dataset_index: int) -> Any:
         # get the sample
