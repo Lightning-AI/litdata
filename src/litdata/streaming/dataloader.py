@@ -634,8 +634,8 @@ class StreamingDataLoader(DataLoader):
             for batch in super().__iter__():
                 # Force selection of a new dataset on batch boundaries
                 # Note, samples may come from several datasets within a batch, depending
-                # on `CombinedStreamingDataset`'s `batching_method` value. 
-                self.dataset._set_new_dataset_index() 
+                # on `CombinedStreamingDataset`'s `batching_method` value.
+                self.dataset._set_new_dataset_index()
                 self._latest_worker_idx = next(self._worker_idx_iter)  # type: ignore
                 if isinstance(batch, dict) and __NUM_SAMPLES_YIELDED_KEY__ in batch:
                     self._num_samples_yielded_combined[self._latest_worker_idx] = [
