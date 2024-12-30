@@ -35,7 +35,6 @@ class CombinedStreamingDataset(IterableDataset):
     of the given seed. The combined dataset will raise a StopIteration as soon as any of the datasets is exhausted.
 
     """
-
     def __init__(
         self,
         datasets: List[StreamingDataset],
@@ -52,9 +51,9 @@ class CombinedStreamingDataset(IterableDataset):
             weights: The sampling ratio for the datasets
             iterate_over_all: When iterate_over_all is True, the combined dataset iterates over all the datasets.
                 Otherwise, it stops as soon as one raises a StopIteration.
-            batching_method: When batching_method is "stratified" (default), every sample in a batch is drawn randomly across all datasets.
-                When batching_method is "per_stream" every sample in a batch is drawn from the same dataset. After each batch, a dataset
-                is selected at random.
+            batching_method: When batching_method is "stratified" (default), every sample in a batch is drawn randomly
+                across all datasets. When batching_method is "per_stream" every sample in a batch is drawn from the
+                same dataset. After each batch, a dataset is selected at random.
 
         """
         self._check_datasets(datasets)
@@ -147,9 +146,12 @@ class CombinedStreamingDataset(IterableDataset):
 
     def _check_datasets(self, datasets: List[StreamingDataset]) -> None:
         if any(not isinstance(d, StreamingDataset) for d in datasets):
-            raise RuntimeError("The provided datasets should be instances of the StreamingDataset.")
+            raise RuntimeError(
+                "The provided datasets should be instances of the StreamingDataset."
+            )
 
-    def _set_use_streaming_dataloader(self, use_streaming_dataloader: bool) -> None:
+    def _set_use_streaming_dataloader(self,
+                                      use_streaming_dataloader: bool) -> None:
         # Used to prevent returning num_samples_yielded when using PyTorch DataLoader
         self._use_streaming_dataloader = use_streaming_dataloader
 
@@ -161,26 +163,25 @@ class CombinedStreamingDataset(IterableDataset):
         num_samples_yielded = None
 
         if self._num_samples_yielded is not None and worker_env.rank in self._num_samples_yielded:
-            num_samples_yielded = self._num_samples_yielded.get(worker_env.rank, 0)
+            num_samples_yielded = self._num_samples_yielded.get(
+                worker_env.rank, 0)
 
         self._iterator = _CombinedDatasetIterator(
-            self._datasets,
-            self._seed,
-            self._weights,
-            self._use_streaming_dataloader,
-            num_samples_yielded,
-            self._iterate_over_all,
-            self._batching_method
-        )
+            self._datasets, self._seed, self._weights,
+            self._use_streaming_dataloader, num_samples_yielded,
+            self._iterate_over_all, self._batching_method)
         return self._iterator
 
     def state_dict(
-        self, num_workers: int, batch_size: int, num_samples_yielded: Optional[List[int]] = None
-    ) -> Dict[str, Any]:
+            self,
+            num_workers: int,
+            batch_size: int,
+            num_samples_yielded: Optional[List[int]] = None) -> Dict[str, Any]:
         if self._iterator is None:
             if num_samples_yielded is None:
                 return {}
-            return _state_dict(self._datasets, num_samples_yielded, num_workers, batch_size)
+            return _state_dict(self._datasets, num_samples_yielded,
+                               num_workers, batch_size)
         return self._iterator.state_dict(num_workers, batch_size)
 
     def load_state_dict(self, state_dict: Dict[str, Any]) -> None:
@@ -188,11 +189,15 @@ class CombinedStreamingDataset(IterableDataset):
             return
 
         if len(state_dict["dataset"]) != len(self._datasets):
-            raise RuntimeError(f"The provided state doesn't match the current number of datasets: {self._datasets}.")
+            raise RuntimeError(
+                f"The provided state doesn't match the current number of datasets: {self._datasets}."
+            )
 
         for dataset_idx, dataset in enumerate(self._datasets):
             if str(dataset_idx) not in state_dict["dataset"]:
-                raise RuntimeError(f"The provided state doesn't contain the index {dataset_idx}.")
+                raise RuntimeError(
+                    f"The provided state doesn't contain the index {dataset_idx}."
+                )
 
             dataset.load_state_dict(state_dict["dataset"][str(dataset_idx)])
 
@@ -265,8 +270,10 @@ class _CombinedDatasetIterator(Iterator):
             self._set_new_dataset_index()
         elif self._batching_method == "per_stream":
             # randomly select a dataset index, if no previous dataset index exists
-            if self._cur_dataset_index == -1:
+            if self._cur_dataset_index == -1
                 self._set_new_dataset_index()
+        else:
+            raise ValueError(f"Invalid batching method: {self._batching_method}")
         return self._cur_dataset_index
 
     def _set_new_dataset_index(self):
