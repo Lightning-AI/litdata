@@ -167,9 +167,14 @@ class CombinedStreamingDataset(IterableDataset):
                 worker_env.rank, 0)
 
         self._iterator = _CombinedDatasetIterator(
-            self._datasets, self._seed, self._weights,
-            self._use_streaming_dataloader, num_samples_yielded,
-            self._iterate_over_all, self._batching_method)
+            self._datasets,
+            self._seed,
+            self._weights,
+            self._use_streaming_dataloader,
+            num_samples_yielded,
+            self._iterate_over_all,
+            self._batching_method,
+        )
         return self._iterator
 
     def state_dict(
@@ -282,7 +287,6 @@ class _CombinedDatasetIterator(Iterator):
         weights = [w for w in self._weights if w is not None]
         (dataset_index,) = self._rng.choices(indexes, weights=weights, k=1)
         self._cur_dataset_index = dataset_index
-
 
     def _get_sample(self, dataset_index: int) -> Any:
         # get the sample
