@@ -275,7 +275,7 @@ class _CombinedDatasetIterator(Iterator):
             self._set_new_dataset_index()
         elif self._batching_method == "per_stream":
             # randomly select a dataset index, if no previous dataset index exists
-            if self._cur_dataset_index == -1
+            if self._cur_dataset_index == -1:
                 self._set_new_dataset_index()
         else:
             raise ValueError(f"Invalid batching method: {self._batching_method}")
