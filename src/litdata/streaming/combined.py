@@ -35,6 +35,7 @@ class CombinedStreamingDataset(IterableDataset):
     of the given seed. The combined dataset will raise a StopIteration as soon as any of the datasets is exhausted.
 
     """
+
     def __init__(
         self,
         datasets: List[StreamingDataset],
@@ -146,12 +147,9 @@ class CombinedStreamingDataset(IterableDataset):
 
     def _check_datasets(self, datasets: List[StreamingDataset]) -> None:
         if any(not isinstance(d, StreamingDataset) for d in datasets):
-            raise RuntimeError(
-                "The provided datasets should be instances of the StreamingDataset."
-            )
+            raise RuntimeError("The provided datasets should be instances of the StreamingDataset.")
 
-    def _set_use_streaming_dataloader(self,
-                                      use_streaming_dataloader: bool) -> None:
+    def _set_use_streaming_dataloader(self, use_streaming_dataloader: bool) -> None:
         # Used to prevent returning num_samples_yielded when using PyTorch DataLoader
         self._use_streaming_dataloader = use_streaming_dataloader
 
@@ -163,8 +161,7 @@ class CombinedStreamingDataset(IterableDataset):
         num_samples_yielded = None
 
         if self._num_samples_yielded is not None and worker_env.rank in self._num_samples_yielded:
-            num_samples_yielded = self._num_samples_yielded.get(
-                worker_env.rank, 0)
+            num_samples_yielded = self._num_samples_yielded.get(worker_env.rank, 0)
 
         self._iterator = _CombinedDatasetIterator(
             self._datasets,
@@ -178,15 +175,12 @@ class CombinedStreamingDataset(IterableDataset):
         return self._iterator
 
     def state_dict(
-            self,
-            num_workers: int,
-            batch_size: int,
-            num_samples_yielded: Optional[List[int]] = None) -> Dict[str, Any]:
+        self, num_workers: int, batch_size: int, num_samples_yielded: Optional[List[int]] = None
+    ) -> Dict[str, Any]:
         if self._iterator is None:
             if num_samples_yielded is None:
                 return {}
-            return _state_dict(self._datasets, num_samples_yielded,
-                               num_workers, batch_size)
+            return _state_dict(self._datasets, num_samples_yielded, num_workers, batch_size)
         return self._iterator.state_dict(num_workers, batch_size)
 
     def load_state_dict(self, state_dict: Dict[str, Any]) -> None:
@@ -194,15 +188,11 @@ class CombinedStreamingDataset(IterableDataset):
             return
 
         if len(state_dict["dataset"]) != len(self._datasets):
-            raise RuntimeError(
-                f"The provided state doesn't match the current number of datasets: {self._datasets}."
-            )
+            raise RuntimeError(f"The provided state doesn't match the current number of datasets: {self._datasets}.")
 
         for dataset_idx, dataset in enumerate(self._datasets):
             if str(dataset_idx) not in state_dict["dataset"]:
-                raise RuntimeError(
-                    f"The provided state doesn't contain the index {dataset_idx}."
-                )
+                raise RuntimeError(f"The provided state doesn't contain the index {dataset_idx}.")
 
             dataset.load_state_dict(state_dict["dataset"][str(dataset_idx)])
 
