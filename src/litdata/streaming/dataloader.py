@@ -513,6 +513,10 @@ class StreamingDataLoader(DataLoader):
         collate_fn (Callable, optional): merges a list of samples to form a
             mini-batch of Tensor(s).  Used when using batched loading from a
             map-style dataset.
+        batching_method (str, optional): When batching_method is "stratified" (default),
+            batches consist of samples from all datasets. When batching_method is "per_stream",
+            batches consist of samples from one dataset, which is selected at random. Note that this
+            parameter is only applicable to CombinedStreamingDataset.
         pin_memory (bool, optional): If ``True``, the data loader will copy Tensors
             into device/CUDA pinned memory before returning them.  If your data elements
             are a custom type, or your :attr:`collate_fn` returns a batch that is a custom type,
@@ -549,7 +553,6 @@ class StreamingDataLoader(DataLoader):
         self,
         dataset: Union[StreamingDataset, CombinedStreamingDataset],
         *args: Any,
-        batching_method: Literal["stratified", "per_stream"] = "stratified",
         batch_size: int = 1,
         num_workers: int = 0,
         profile_batches: Union[bool, int] = False,
@@ -558,6 +561,7 @@ class StreamingDataLoader(DataLoader):
         shuffle: Optional[bool] = None,
         drop_last: Optional[bool] = None,
         collate_fn: Optional[Callable] = None,
+        batching_method: Literal["stratified", "per_stream"] = "stratified",
         **kwargs: Any,
     ) -> None:  # pyright: ignore
         if not isinstance(dataset, (StreamingDataset, CombinedStreamingDataset)):
@@ -574,6 +578,9 @@ class StreamingDataLoader(DataLoader):
 
         dataset.set_batch_size(batch_size)
         dataset.set_num_workers(num_workers)
+
+        if isinstance(dataset, CombinedStreamingDataset):
+            dataset.set_batching_method(batching_method)
 
         shuffle = None
 
@@ -630,19 +637,19 @@ class StreamingDataLoader(DataLoader):
             # Assume, this is a CombinedStreamingDataset.
             self.dataset._set_use_streaming_dataloader(True)
             assert self.batch_size
-            # TODO: Inject a custom collate function to avoid collating the __NUM_SAMPLES_YIELDED__ key
+
             for batch in super().__iter__():
-                # Force selection of a new dataset on batch boundaries
-                # Note, samples may come from several datasets within a batch, depending
-                # on `CombinedStreamingDataset`'s `batching_method` value.
-                self.dataset._set_new_dataset_index()
                 self._latest_worker_idx = next(self._worker_idx_iter)  # type: ignore
+
+                # Force selection of a new dataset for the next batch
+                if isinstance(self.dataset, CombinedStreamingDataset) and self.dataset.batching_method == "per_stream":
+                    self.dataset._set_new_dataset_index()
+
                 if isinstance(batch, dict) and __NUM_SAMPLES_YIELDED_KEY__ in batch:
                     self._num_samples_yielded_combined[self._latest_worker_idx] = [
                         sample[-1].item() if self.batch_size > 1 else sample.item()
                         for sample in batch[__NUM_SAMPLES_YIELDED_KEY__]
                     ]
-
                     yield batch[__SAMPLES_KEY__]
                 else:
                     yield batch
