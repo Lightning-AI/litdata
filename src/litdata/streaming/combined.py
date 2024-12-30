@@ -125,12 +125,11 @@ class CombinedStreamingDataset(IterableDataset):
         for dataset in self._datasets:
             dataset.set_batch_size(batch_size)
 
-
     def set_batching_method(self, batching_method: Literal["stratified", "per_stream"]) -> None:
         """Set the current batching method to the datasets.
-            When batching_method is "stratified" (default), batches consist of samples from all datasets.
-            When batching_method is "per_stream" batches consist of samples from one dataset,
-            which is selected at random.
+        When batching_method is "stratified" (default), batches consist of samples from all datasets.
+        When batching_method is "per_stream" batches consist of samples from one dataset,
+        which is selected at random.
         """
         self.batching_method = batching_method
 
