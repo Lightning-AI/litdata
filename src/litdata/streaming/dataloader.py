@@ -193,6 +193,24 @@ class WorkerLoop:
         create_fetcher = _DatasetKind.create_fetcher
         fetcher = None
 
+        # Create a wrapper around the original index_queue to intercept commands
+        # This allows us to intercept the "SET_NEW_DATASET_INDEX" command and call
+        # the _set_new_dataset_index method on the iterator, if we're using a
+        # CombinedStreamingDataset with per_stream batching.
+        original_get = index_queue.get
+        def wrapped_get(*args, **kwargs):
+            item = original_get(*args, **kwargs)
+            if isinstance(item, tuple) and item[0] == "SET_NEW_DATASET_INDEX":
+                print(f"Worker {worker_id} received SET_NEW_DATASET_INDEX command")
+                if hasattr(dataset, '_iterator') and dataset._iterator is not None:
+                    print(f"Worker {worker_id} is picking a new dataset index ...")
+                    dataset._iterator._set_new_dataset_index()
+                # Get the next item since we handled this command
+                return original_get(*args, **kwargs)
+            return item
+        index_queue.get = wrapped_get
+
+
         def create_fetcher_fn(*args: Any, **kwargs: Any) -> "_BaseDatasetFetcher":
             nonlocal fetcher
             fetcher = create_fetcher(*args, **kwargs)
@@ -452,10 +470,24 @@ class _StreamingMultiProcessingDataLoaderIter(_MultiProcessingDataLoaderIter):
 
         if self._loader._profile_batches and distributed_env.global_rank == 0 and _VIZ_TRACKER_AVAILABLE:
             from torch.utils.data._utils import worker
-
             worker._worker_loop = _ProfileWorkerLoop(self._loader._profile_batches, self._loader._profile_dir)
 
         super().__init__(loader)
+
+    def _next_data(self):
+        # Get data as normal
+        data = super()._next_data()
+        
+        # If we're using per_stream batching, send command to switch datasets on batch boundaries
+        if (isinstance(self._loader.dataset, CombinedStreamingDataset) 
+            and self._loader.dataset.batching_method == "per_stream"
+            and self._rcvd_idx % self._loader.batch_size == 0):
+            print(f"Batch {self._rcvd_idx // self._loader.batch_size}: Sending SET_NEW_DATASET_INDEX command to worker")
+            self._index_queues[self._loader._latest_worker_idx].put(
+                ("SET_NEW_DATASET_INDEX", None)
+            )
+        
+        return data
 
     def _try_put_index(self) -> None:
         # Used to restart on the right DataLoader worker
@@ -605,6 +637,7 @@ class StreamingDataLoader(DataLoader):
         self._worker_idx_iter: Optional[Any] = None
         self._latest_worker_idx = 0
         self.restore = False
+
         super().__init__(
             dataset,
             *args,
@@ -639,12 +672,8 @@ class StreamingDataLoader(DataLoader):
             assert self.batch_size
 
             for batch in super().__iter__():
+                print("Fetched a batch ...")
                 self._latest_worker_idx = next(self._worker_idx_iter)  # type: ignore
-
-                # Force selection of a new dataset for the next batch
-                if isinstance(self.dataset, CombinedStreamingDataset) and self.dataset.batching_method == "per_stream":
-                    self.dataset._set_new_dataset_index()
-
                 if isinstance(batch, dict) and __NUM_SAMPLES_YIELDED_KEY__ in batch:
                     self._num_samples_yielded_combined[self._latest_worker_idx] = [
                         sample[-1].item() if self.batch_size > 1 else sample.item()

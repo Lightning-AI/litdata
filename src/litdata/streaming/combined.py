@@ -175,6 +175,7 @@ class CombinedStreamingDataset(IterableDataset):
             self.batching_method,
             self._iterate_over_all,
         )
+        print(f"Creating new iterator: {id(self._iterator)}")
         return self._iterator
 
     def state_dict(
@@ -202,11 +203,6 @@ class CombinedStreamingDataset(IterableDataset):
         # Used to iterate over the sampler to avoid sampling the same samples
         if self._use_streaming_dataloader:
             self._num_samples_yielded = state_dict["num_samples_yielded"]
-
-    def _set_new_dataset_index(self) -> None:
-        """Select a new dataset index randomly based on weights."""
-        if self._iterator is not None:
-            self._iterator._set_new_dataset_index()
 
 
 class _CombinedDatasetIterator(Iterator):
