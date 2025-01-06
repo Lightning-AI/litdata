@@ -21,7 +21,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 
-from litdata.constants import _INDEX_FILENAME
+from litdata.constants import _INDEX_FILENAME, _POLARS_AVAILABLE
 from litdata.processing.utilities import get_worker_rank
 from litdata.streaming.compression import _COMPRESSORS, Compressor
 from litdata.streaming.item_loader import BaseItemLoader, PyTreeLoader
@@ -530,3 +530,9 @@ class BinaryWriter:
             json.dump(checkPoint, f)
 
         return checkpoint_filepath
+
+
+def write_parquet_index(pq_directory: str):
+    if not _POLARS_AVAILABLE:
+        raise ModuleNotFoundError("Please, run: `pip install polars`")
+    ...
