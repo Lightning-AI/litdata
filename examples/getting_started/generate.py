@@ -1,6 +1,7 @@
 import numpy as np
-from litdata import optimize
 from PIL import Image
+
+from litdata import optimize
 
 
 # Store random images into the data chunks

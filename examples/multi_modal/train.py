@@ -31,8 +31,8 @@ def lightning_training(model_dir: str, hyperparameters: dict) -> object:
     os.makedirs("lightning_logs", exist_ok=True)
     data_module = MixedDataModule(hyperparameters=hyperparameters)
     number_classes = hyperparameters["num_classes"]
-    logger.info("Limit batches %s" % hyperparameters["limit_batches"])
-    logger.debug("num_classes %s" % number_classes)
+    logger.info("Limit batches {}".format(hyperparameters["limit_batches"]))
+    logger.debug(f"num_classes {number_classes}")
 
     model = LitModel(
         hyperparameters=hyperparameters,
@@ -51,12 +51,12 @@ def lightning_training(model_dir: str, hyperparameters: dict) -> object:
         # fast_dev_run=True,
     )
     trainer.fit(model, data_module)
-    logger.debug("trainer model %s" % trainer.model)
+    logger.debug(f"trainer model {trainer.model}")
     trainer.save_checkpoint("trained_model", weights_only=True)
 
     if hyperparameters["val_mode"] == "on":
         logger.info("Validate Model")
-        logger.debug("trainer_test model %s" % trainer.model)
+        logger.debug(f"trainer_test model {trainer.model}")
         trainer.validate(
             model,
             data_module,
