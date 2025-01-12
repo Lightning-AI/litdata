@@ -321,7 +321,7 @@ class TokensLoader(BaseItemLoader):
         offset = (1 + chunk["chunk_size"] + 1) * 4
         mmap = np.memmap(chunk_filepath, mode="r", order="C", offset=offset)
         self._mmaps[chunk_index] = mmap
-        self._buffers[chunk_index] = memoryview(mmap)
+        self._buffers[chunk_index] = memoryview(mmap)  # type: ignore
 
     def pre_load_chunk(self, chunk_index: int, chunk_filepath: str) -> None:
         # This is called within the prepare chunks thread, so we overlap data loading with data reading.
@@ -391,10 +391,11 @@ class ParquetLoader(BaseItemLoader):
         if not _POLARS_AVAILABLE:
             raise ModuleNotFoundError("Please, run: `pip install polars`")
         self._chunk_filepaths: Dict[str, bool] = {}
+        self._polars: Any = None
 
     def _get_polars(self) -> Any:
         """Lazy load and store the `polars` module."""
-        if hasattr(self, "_polars") is False or self._polars is None:
+        if self._polars is None:
             import polars as pl
 
             self._polars = pl
