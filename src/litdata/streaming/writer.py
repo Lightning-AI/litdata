@@ -24,7 +24,7 @@ import numpy as np
 from litdata.constants import _INDEX_FILENAME, _POLARS_AVAILABLE
 from litdata.processing.utilities import get_worker_rank
 from litdata.streaming.compression import _COMPRESSORS, Compressor
-from litdata.streaming.item_loader import BaseItemLoader, PyTreeLoader
+from litdata.streaming.item_loader import BaseItemLoader, ParquetLoader, PyTreeLoader
 from litdata.streaming.serializers import Serializer, _get_serializers
 from litdata.utilities._pytree import PyTree, tree_flatten, treespec_dumps
 from litdata.utilities.encryption import Encryption, EncryptionLevel
@@ -546,19 +546,17 @@ def write_parquet_index(pq_directory: str, cache_dir: Optional[str] = None):
         "data_format": [],
         "data_spec": None,
         "encryption": None,
-        "item_loader": "ParquetReader",
+        "item_loader": ParquetLoader.__name__,
     }
     # iterate the directory and for all files ending in `.parquet` index them
     for file_name in os.listdir(pq_directory):
         if file_name.endswith(".parquet"):
             file_path = os.path.join(pq_directory, file_name)
-            print(f"{file_name=}")
             file_size = os.path.getsize(file_path)
             pq_polars = pl.scan_parquet(file_path)
-            chunk_dtypes = pq_polars.dtypes
+            chunk_dtypes = pq_polars.collect_schema().dtypes()
             chunk_dtypes = [str(dt) for dt in chunk_dtypes]
             chunk_size = pq_polars.select(pl.count()).collect().item()
-            print(f"{chunk_size=}")
 
             if len(config["data_format"]) != 0 and config["data_format"] != chunk_dtypes:
                 raise Exception(
@@ -579,5 +577,6 @@ def write_parquet_index(pq_directory: str, cache_dir: Optional[str] = None):
     # write to index.json file
     with open(os.path.join(cache_dir, _INDEX_FILENAME), "w") as f:
         data = {"chunks": pq_chunks_info, "config": config, "updated_at": str(time())}
-        print(f"{data=}")
         json.dump(data, f, sort_keys=True)
+
+    print(f"Index file written to: {os.path.join(cache_dir, _INDEX_FILENAME)}")
