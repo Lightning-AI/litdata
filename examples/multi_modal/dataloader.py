@@ -8,12 +8,12 @@ import joblib
 import lightning as pl
 import numpy as np
 from lightning import seed_everything
-from litdata import StreamingDataLoader, StreamingDataset
 from torch.utils.data import DataLoader
 from torchvision import transforms
 from transformers import BertTokenizerFast
 
 from examples.multi_modal.config import HYPERPARAMETERS
+from litdata import StreamingDataLoader, StreamingDataset
 
 pil_transform = transforms.Compose([transforms.PILToTensor()])
 

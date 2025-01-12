@@ -88,14 +88,11 @@ def _match_studio(target_id: Optional[str], target_name: Optional[str], cloudspa
     if target_id is not None and cloudspace.id == target_id:
         return True
 
-    if (
+    return bool(
         cloudspace.display_name is not None
         and target_name is not None
         and cloudspace.display_name.lower() == target_name.lower()
-    ):
-        return True
-
-    return False
+    )
 
 
 def _resolve_studio(dir_path: str, target_name: Optional[str], target_id: Optional[str]) -> Dir:

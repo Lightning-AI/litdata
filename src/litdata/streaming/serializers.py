@@ -202,7 +202,7 @@ class TensorSerializer(Serializer):
         return torch.reshape(tensor, shape)
 
     def can_serialize(self, item: torch.Tensor) -> bool:
-        return isinstance(item, torch.Tensor) and type(item) == torch.Tensor and len(item.shape) != 1
+        return isinstance(item, torch.Tensor) and len(item.shape) != 1
 
 
 class NoHeaderTensorSerializer(Serializer):
@@ -225,7 +225,7 @@ class NoHeaderTensorSerializer(Serializer):
         return torch.frombuffer(data, dtype=self._dtype) if len(data) > 0 else torch.empty((0,), dtype=self._dtype)
 
     def can_serialize(self, item: torch.Tensor) -> bool:
-        return isinstance(item, torch.Tensor) and type(item) == torch.Tensor and len(item.shape) == 1
+        return isinstance(item, torch.Tensor) and len(item.shape) == 1
 
 
 class NumpySerializer(Serializer):
@@ -261,7 +261,7 @@ class NumpySerializer(Serializer):
         return np.reshape(tensor, shape)
 
     def can_serialize(self, item: np.ndarray) -> bool:
-        return isinstance(item, np.ndarray) and type(item) == np.ndarray and len(item.shape) > 1
+        return isinstance(item, np.ndarray) and len(item.shape) > 1
 
 
 class NoHeaderNumpySerializer(Serializer):
@@ -284,7 +284,7 @@ class NoHeaderNumpySerializer(Serializer):
         return np.frombuffer(data, dtype=self._dtype)
 
     def can_serialize(self, item: np.ndarray) -> bool:
-        return isinstance(item, np.ndarray) and type(item) == np.ndarray and len(item.shape) == 1
+        return isinstance(item, np.ndarray) and len(item.shape) == 1
 
 
 class PickleSerializer(Serializer):

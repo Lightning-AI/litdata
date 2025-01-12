@@ -378,8 +378,7 @@ def optimize(
 
     if not _IS_IN_STUDIO and (machine is not None or num_nodes is not None):
         raise ValueError(
-            "Only https://lightning.ai/ supports multiple nodes or selecting a machine."
-            "Create an account to try it out."
+            "Only https://lightning.ai/ supports multiple nodes or selecting a machine.Create an account to try it out."
         )
 
     if not _IS_IN_STUDIO:
@@ -590,9 +589,12 @@ def merge_datasets(input_dirs: List[str], output_dir: str, max_workers: Optional
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures: List[concurrent.futures.Future] = []
-        for copy_info in _tqdm(copy_infos):
+        for copy_info in copy_infos:
             future = executor.submit(_apply_copy, copy_info, resolved_output_dir)
             futures.append(future)
+
+        for future in _tqdm(concurrent.futures.as_completed(futures), total=len(futures)):
+            future.result()
 
     _save_index(index_json, resolved_output_dir)
 

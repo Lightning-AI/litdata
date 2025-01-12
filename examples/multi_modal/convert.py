@@ -2,9 +2,10 @@ import io
 import logging
 import os
 
-from litdata import optimize
 from PIL import Image
 from pyarrow.parquet import ParquetFile
+
+from litdata import optimize
 
 logger = logging.getLogger(__name__)
 
