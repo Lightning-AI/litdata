@@ -307,5 +307,5 @@ def test_parquet_index_write(tmpdir):
         assert len(data["chunks"]) == 5
         for cnk in data["chunks"]:
             assert cnk["chunk_size"] == 5
-        assert data["config"]["item_loader"] == "ParquetReader"
+        assert data["config"]["item_loader"] == "ParquetLoader"
         assert data["config"]["data_format"] == ["String", "Date", "Float64", "Float64"]
