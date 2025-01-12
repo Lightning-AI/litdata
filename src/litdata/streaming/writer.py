@@ -532,14 +532,14 @@ class BinaryWriter:
         return checkpoint_filepath
 
 
-def write_parquet_index(pq_directory: str, cache_dir: Optional[str] = None):
+def write_parquet_index(pq_directory: str, cache_dir: Optional[str] = None) -> None:
     if not _POLARS_AVAILABLE:
         raise ModuleNotFoundError("Please, run: `pip install polars`")
 
     import polars as pl
 
     pq_chunks_info = []
-    config = {
+    config: Dict[str, Any] = {
         "compression": None,
         "chunk_size": None,
         "chunk_bytes": None,
