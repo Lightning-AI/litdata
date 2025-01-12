@@ -22,6 +22,26 @@ logger = logging.Logger(__name__)
 
 @dataclass
 class ChunkedIndex:
+    """Represents an index within a chunked dataset.
+
+    Attributes:
+        index (int): The global index of the data point across all chunks.
+        chunk_index (int): The index of the chunk where the data point resides.
+        chunk_indexes (Optional[List[int]]): A list specifying the range of indexes
+            allowed to read for this data point, in the form
+            [start, can_read_from, can_read_till, end]. Defaults to None.
+        is_last_index (bool): Indicates whether this is the last index in the dataset.
+            Defaults to False.
+
+    Suppose there are 3 chunk files:
+    - chunk-0.bin: Contains data points with global indexes 0-4.
+    - chunk-1.bin: Contains data points with global indexes 5-9.
+    - chunk-2.bin: Contains data points with global indexes 10-14.
+
+        A `ChunkedIndex` instance for the 6th data point (global index 5) would look like:
+            ChunkedIndex(index=5, chunk_index=1, chunk_indexes=[4,4,8,8], is_last_index=False)
+    """
+
     index: int
     chunk_index: int
     chunk_indexes: Optional[List[int]] = None
