@@ -183,6 +183,75 @@ def test_associate_chunks_and_intervals_to_workers():
         [[0, 14, 27, 27], [0, 0, 50, 50], [0, 0, 1, 1]],
     ]
 
+    chunk_intervals = [
+        Interval(0, 0, 6, 6),
+        Interval(0, 0, 6, 6),
+        Interval(0, 0, 6, 6),
+        Interval(0, 0, 6, 6),
+    ]
+
+    workers_chunks, workers_intervals = _associate_chunks_and_intervals_to_workers(
+        _DistributedEnv(1, 0, 1), range(0, 4), chunk_intervals, False, 8, 6
+    )
+
+    assert workers_intervals == [[[0, 0, 6, 6]], [[0, 0, 6, 6]], [[0, 0, 6, 6]], [[0, 0, 6, 6]], [], [], [], []]
+    assert workers_chunks == [[0], [1], [2], [3], [], [], [], []]
+
+    workers_chunks, workers_intervals = _associate_chunks_and_intervals_to_workers(
+        _DistributedEnv(2, 0, 1), range(0, 4), chunk_intervals, False, 8, 6
+    )
+
+    assert workers_chunks == [[0], [1], [], [], [], [], [], [], [2], [3], [], [], [], [], [], []]
+    assert workers_intervals == [
+        [[0, 0, 6, 6]],
+        [[0, 0, 6, 6]],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [[0, 0, 6, 6]],
+        [[0, 0, 6, 6]],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+    ]
+
+    chunk_intervals = [
+        Interval(0, 0, 6, 6),
+        Interval(0, 0, 7, 7),
+        Interval(0, 0, 6, 6),
+        Interval(0, 0, 7, 8),
+    ]
+
+    workers_chunks, workers_intervals = _associate_chunks_and_intervals_to_workers(
+        _DistributedEnv(2, 0, 1), range(0, 4), chunk_intervals, False, 8, 6
+    )
+
+    assert workers_chunks == [[0], [1], [1, 2], [], [], [], [], [], [2, 3], [3], [], [], [], [], [], []]
+    assert workers_intervals == [
+        [[0, 0, 6, 6]],
+        [[0, 0, 6, 7]],
+        [[0, 6, 7, 7], [0, 0, 5, 6]],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [[0, 5, 6, 6], [0, 0, 5, 8]],
+        [[0, 5, 7, 8]],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+    ]
+
 
 def test_get_shared_chunks():
     assert _get_shared_chunks([]) == {}

@@ -1140,6 +1140,29 @@ def test_load_torch_audio(tmpdir, compression):
     assert tensor[1] == 16000
 
 
+def fn(index):
+    return index
+
+
+def test_optimize_small_size(tmpdir):
+    seed_everything(42)
+
+    optimize(
+        fn=fn,
+        inputs=list(range(24)),
+        output_dir=str(tmpdir),
+        num_workers=1,
+        chunk_size=6,
+    )
+
+    dataset = StreamingDataset(input_dir=str(tmpdir))
+    dataloader = StreamingDataLoader(dataset, batch_size=6, num_workers=8, drop_last=False)
+    batches = []
+    for b in dataloader:
+        batches.append(b)
+    breakpoint()
+
+
 def create_synthetic_audio_file(filepath) -> dict:
     import torchaudio
 
