@@ -90,7 +90,7 @@ class PrepareChunksThread(Thread):
                 locak_chunk_path = chunk_filepath + ".lock"
                 if os.path.exists(locak_chunk_path):
                     os.remove(locak_chunk_path)
-            except:
+            except FileNotFoundError:
                 pass
 
     def stop(self) -> None:
