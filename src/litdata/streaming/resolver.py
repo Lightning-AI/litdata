@@ -182,6 +182,7 @@ def _resolve_s3_folders(dir_path: str) -> Dir:
 
     return Dir(path=dir_path, url=data_connection[0].s3_folder.source)
 
+
 def _resolve_datasets(dir_path: str) -> Dir:
     from lightning_sdk.lightning_cloud.rest_client import LightningClient
 

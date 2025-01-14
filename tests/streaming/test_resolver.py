@@ -144,7 +144,9 @@ def test_src_resolver_s3_folders(monkeypatch, lightning_cloud_mock):
 
     client_mock = mock.MagicMock()
     client_mock.data_connection_service_list_data_connections.return_value = V1ListDataConnectionsResponse(
-        data_connections=[V1DataConnection(name="debug_folder", s3_folder=V1S3FolderDataConnection(source="s3://imagenet-bucket"))],
+        data_connections=[
+            V1DataConnection(name="debug_folder", s3_folder=V1S3FolderDataConnection(source="s3://imagenet-bucket"))
+        ],
     )
 
     client_cls_mock = mock.MagicMock()
