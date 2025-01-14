@@ -155,7 +155,7 @@ def test_src_resolver_s3_folders(monkeypatch, lightning_cloud_mock):
 
     expected = "s3://imagenet-bucket"
     assert resolver._resolve_dir("/teamspace/s3_folders/debug_folder").url == expected
-
+    assert resolver._resolve_dir("/teamspace/s3_folders/debug_folder/a/b/c").url == expected + "/a/b/c"
     auth.clear()
 
 
