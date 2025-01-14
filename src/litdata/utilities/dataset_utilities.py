@@ -47,6 +47,8 @@ def subsample_streaming_dataset(
         if cache_path is not None:
             input_dir.path = cache_path
 
+    print(input_dir)
+
     assert input_dir.path is not None
 
     cache_index_filepath = os.path.join(input_dir.path, _INDEX_FILENAME)
@@ -102,6 +104,8 @@ def _should_replace_path(path: Optional[str]) -> bool:
         path.startswith("/teamspace/datasets/")
         or path.startswith("/teamspace/s3_connections/")
         or path.startswith("/teamspace/s3_folders/")
+        or path.startswith("/teamspace/gcs_folders/")
+        or path.startswith("/teamspace/gcs_connections/")
     )
 
 

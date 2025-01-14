@@ -86,9 +86,12 @@ class PrepareChunksThread(Thread):
             chunk_filepath, _, _ = self._config[ChunkedIndex(index=-1, chunk_index=chunk_index)]
             self._item_loader.delete(chunk_index, chunk_filepath)
 
-            locak_chunk_path = chunk_filepath + ".lock"
-            if os.path.exists(locak_chunk_path):
-                os.remove(locak_chunk_path)
+            try:
+                locak_chunk_path = chunk_filepath + ".lock"
+                if os.path.exists(locak_chunk_path):
+                    os.remove(locak_chunk_path)
+            except:
+                pass
 
     def stop(self) -> None:
         """Receive the list of the chunk indices to download for the current epoch."""
