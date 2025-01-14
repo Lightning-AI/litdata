@@ -5,3 +5,4 @@ numpy
 boto3
 requests
 tifffile
+lightning_sdk>=0.1.46
