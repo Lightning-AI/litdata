@@ -98,7 +98,7 @@ def _should_replace_path(path: Optional[str]) -> bool:
     if path is None or path == "":
         return True
 
-    return path.startswith("/teamspace/datasets/") or path.startswith("/teamspace/s3_connections/")
+    return path.startswith("/teamspace/datasets/") or path.startswith("/teamspace/s3_connections/") or path.startswith("/teamspace/s3_folders/")
 
 
 def _read_updated_at(input_dir: Optional[Dir], storage_options: Optional[Dict] = {}) -> str:

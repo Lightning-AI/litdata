@@ -194,7 +194,7 @@ def _remove_target(input_dir: Dir, cache_dir: str, queue_in: Queue) -> None:
                 if os.path.exists(path):
                     os.remove(path)
 
-            elif os.path.exists(path) and "s3_connections" not in path:
+            elif "_connections" not in path and "_folders" not in path and os.path.exists(path):
                 os.remove(path)
 
 
