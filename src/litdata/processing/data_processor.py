@@ -194,8 +194,20 @@ def _remove_target(input_dir: Dir, cache_dir: str, queue_in: Queue) -> None:
                 if os.path.exists(path):
                     os.remove(path)
 
-            elif os.path.exists(path) and "s3_connections" not in path:
+            elif keep_path(path) and os.path.exists(path):
                 os.remove(path)
+
+
+def keep_path(path: str) -> bool:
+    paths = [
+        "efs_connections",
+        "efs_folders",
+        "gcs_connections",
+        "s3_connections",
+        "s3_folders",
+        "snowflake_connections",
+    ]
+    return all(p not in path for p in paths)
 
 
 def _upload_fn(upload_queue: Queue, remove_queue: Queue, cache_dir: str, output_dir: Dir) -> None:
