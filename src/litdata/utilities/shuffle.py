@@ -85,13 +85,16 @@ def _associate_chunks_and_intervals_to_workers(
             index += 1
 
         if rank == distributed_env.world_size - 1:
+            # Find how batches were associated
             num_assigned_items = batch_size * (sum(num_items_per_workers) + sum(tmp_arr))
 
-            tmp_arr = [x * batch_size for x in tmp_arr]
-            num_items_per_workers = [x * batch_size for x in num_items_per_workers]
+            # Multiply with the batch_size to get the number of items
+            if batch_size > 1:
+                tmp_arr = [x * batch_size for x in tmp_arr]
+                num_items_per_workers = [x * batch_size for x in num_items_per_workers]
 
+            # If there are items left to assign, let's give it the last worker
             left_items = num_items - num_assigned_items
-
             if not drop_last and left_items > 0:
                 tmp_arr[index % num_workers] += left_items
 
