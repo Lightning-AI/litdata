@@ -74,7 +74,7 @@ def _associate_chunks_and_intervals_to_workers(
     max_batches = num_items // batch_size
     global_num_workers = distributed_env.world_size * num_workers
 
-    num_items_per_workers = []
+    num_items_per_workers: Any = []
 
     for rank in range(distributed_env.world_size):
         tmp_arr = [0 for _ in range(num_workers)]
