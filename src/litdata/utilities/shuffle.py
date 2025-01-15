@@ -74,7 +74,7 @@ def _associate_chunks_and_intervals_to_workers(
     max_batches = num_items // batch_size
     global_num_workers = distributed_env.world_size * num_workers
 
-    num_batches_per_workers = []
+    num_items_per_workers = []
 
     for rank in range(distributed_env.world_size):
         tmp_arr = [0 for _ in range(num_workers)]
@@ -84,15 +84,20 @@ def _associate_chunks_and_intervals_to_workers(
             tmp_arr[index % num_workers] += 1
             index += 1
 
-        if not drop_last:
-            tmp_arr[index % num_workers] += (num_items - max_batches * batch_size) // distributed_env.world_size
+        if rank == distributed_env.world_size - 1:
+            num_assigned_items = batch_size * (sum(num_items_per_workers) + sum(tmp_arr))
 
-            if rank == distributed_env.world_size - 1:
-                tmp_arr[index % num_workers] += num_items - max_batches * batch_size - distributed_env.world_size
+            tmp_arr = [x * batch_size for x in tmp_arr]
+            num_items_per_workers = [x * batch_size for x in num_items_per_workers]
 
-        num_batches_per_workers.extend(tmp_arr)
+            left_items = num_items - num_assigned_items
 
-    num_items_per_workers = [x * batch_size for x in num_batches_per_workers]
+            if not drop_last and left_items > 0:
+                tmp_arr[index % num_workers] += left_items
+
+            num_items_per_workers.extend(tmp_arr)
+        else:
+            num_items_per_workers.extend(tmp_arr)
 
     chunks_per_workers: List[List[int]] = [[] for _ in range(global_num_workers)]
     intervals_per_workers: List[List[List[int]]] = [[] for _ in range(global_num_workers)]

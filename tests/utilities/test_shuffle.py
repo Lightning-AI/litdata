@@ -221,6 +221,12 @@ def test_associate_chunks_and_intervals_to_workers():
         [],
     ]
 
+    workers_chunks, workers_intervals = _associate_chunks_and_intervals_to_workers(
+        _DistributedEnv(1, 0, 1), range(0, 4), chunk_intervals, False, 2, 8
+    )
+    assert workers_chunks == [[0, 1, 2], [2, 3]]
+    assert workers_intervals == [[[0, 0, 6, 6], [0, 0, 6, 6], [0, 0, 4, 6]], [[0, 4, 6, 6], [0, 0, 6, 6]]]
+
     chunk_intervals = [
         Interval(0, 0, 6, 6),
         Interval(0, 0, 7, 7),
@@ -232,18 +238,44 @@ def test_associate_chunks_and_intervals_to_workers():
         _DistributedEnv(2, 0, 1), range(0, 4), chunk_intervals, False, 8, 6
     )
 
-    assert workers_chunks == [[0], [1], [1, 2], [], [], [], [], [], [2, 3], [3], [], [], [], [], [], []]
+    assert sum([y[2] - y[1] for x in workers_intervals for y in x]) == 26
+    assert workers_chunks == [[0], [1], [], [], [], [], [], [], [1, 2], [2, 3], [3], [], [], [], [], []]
     assert workers_intervals == [
         [[0, 0, 6, 6]],
         [[0, 0, 6, 7]],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
         [[0, 6, 7, 7], [0, 0, 5, 6]],
-        [],
-        [],
-        [],
-        [],
-        [],
         [[0, 5, 6, 6], [0, 0, 5, 8]],
         [[0, 5, 7, 8]],
+        [],
+        [],
+        [],
+        [],
+        [],
+    ]
+
+    workers_chunks, workers_intervals = _associate_chunks_and_intervals_to_workers(
+        _DistributedEnv(2, 0, 1), range(0, 4), chunk_intervals, True, 8, 6
+    )
+
+    assert sum([y[2] - y[1] for x in workers_intervals for y in x]) == 24
+    assert workers_chunks == [[0], [1], [], [], [], [], [], [], [1, 2], [2, 3], [], [], [], [], [], []]
+    assert workers_intervals == [
+        [[0, 0, 6, 6]],
+        [[0, 0, 6, 7]],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [[0, 6, 7, 7], [0, 0, 5, 6]],
+        [[0, 5, 6, 6], [0, 0, 5, 8]],
         [],
         [],
         [],
