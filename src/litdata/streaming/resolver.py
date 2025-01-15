@@ -180,7 +180,7 @@ def _resolve_s3_folders(dir_path: str) -> Dir:
     if not data_connection:
         raise ValueError(f"We didn't find any matching data connection with the provided name `{target_name}`.")
 
-    return Dir(path=dir_path, url=data_connection[0].s3_folder.source)
+    return Dir(path=dir_path, url=os.path.join(data_connection[0].s3_folder.source, *dir_path.split("/")[4:]))
 
 
 def _resolve_datasets(dir_path: str) -> Dir:
