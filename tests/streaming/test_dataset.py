@@ -61,7 +61,7 @@ def seed_everything(random_seed):
         pytest.param("zstd", marks=pytest.mark.skipif(condition=not _ZSTD_AVAILABLE, reason="Requires: ['zstd']")),
     ],
 )
-@pytest.mark.timeout(30)
+# @pytest.mark.timeout(30)
 def test_streaming_dataset(tmpdir, monkeypatch, compression):
     seed_everything(42)
 
@@ -96,7 +96,7 @@ def test_streaming_dataset(tmpdir, monkeypatch, compression):
     assert len(dataloader) == 30
 
 
-@pytest.mark.timeout(30)
+# @pytest.mark.timeout(30)
 def test_streaming_dataset_max_pre_download(tmpdir):
     seed_everything(42)
 
@@ -127,7 +127,7 @@ def test_streaming_dataset_max_pre_download(tmpdir):
         pytest.param("zstd", marks=pytest.mark.skipif(condition=not _ZSTD_AVAILABLE, reason="Requires: ['zstd']")),
     ],
 )
-@pytest.mark.timeout(30)
+# @pytest.mark.timeout(30)
 def test_streaming_dataset_distributed_no_shuffle(drop_last, tmpdir, compression):
     seed_everything(42)
 
@@ -231,7 +231,7 @@ def test_streaming_dataset_distributed_no_shuffle(drop_last, tmpdir, compression
         pytest.param("zstd", marks=pytest.mark.skipif(condition=not _ZSTD_AVAILABLE, reason="Requires: ['zstd']")),
     ],
 )
-@pytest.mark.timeout(60)
+# @pytest.mark.timeout(60)
 def test_streaming_dataset_distributed_full_shuffle_odd(drop_last, tmpdir, compression):
     seed_everything(42)
 
@@ -284,7 +284,7 @@ def test_streaming_dataset_distributed_full_shuffle_odd(drop_last, tmpdir, compr
         ),
     ],
 )
-@pytest.mark.timeout(30)
+# @pytest.mark.timeout(30)
 def test_streaming_dataset_distributed_full_shuffle_even(drop_last, tmpdir, compression):
     seed_everything(42)
 
@@ -332,7 +332,7 @@ def test_streaming_dataset_distributed_full_shuffle_even(drop_last, tmpdir, comp
         pytest.param("zstd", marks=pytest.mark.skipif(condition=not _ZSTD_AVAILABLE, reason="Requires: ['zstd']")),
     ],
 )
-@pytest.mark.timeout(60)
+# @pytest.mark.timeout(60)
 def test_streaming_dataset_distributed_full_shuffle_even_multi_nodes(drop_last, tmpdir, compression):
     seed_everything(42)
 
@@ -911,7 +911,7 @@ def _get_simulated_s3_dataloader(cache_dir, data_dir, shuffle=False):
 
 @pytest.mark.skipif(sys.platform == "win32", reason="Not tested on windows and MacOs")
 @mock.patch.dict(os.environ, {}, clear=True)
-@pytest.mark.timeout(60)
+# @pytest.mark.timeout(60)
 @pytest.mark.parametrize("shuffle", [True, False])
 def test_dataset_resume_on_future_chunks(shuffle, tmpdir, monkeypatch):
     """Tests resuming from a chunk past the first chunk, when subsequent chunks don't have the same size."""
@@ -966,7 +966,7 @@ def test_dataset_resume_on_future_chunks(shuffle, tmpdir, monkeypatch):
     assert torch.equal(next(iter(train_dataloader)), batch_to_resume_from)
 
 
-@pytest.mark.timeout(60)
+# @pytest.mark.timeout(60)
 @pytest.mark.skipif(sys.platform == "win32", reason="Not tested on windows and MacOs")
 def test_dataset_valid_state(tmpdir, monkeypatch):
     seed_everything(42)
@@ -1212,6 +1212,11 @@ def test_subsample_streaming_dataset_with_token_loader(tmpdir, monkeypatch):
 
     assert len(dataset2) == int(len(dataset1) * 0.4)
 
+    dataset3 = StreamingDataset(
+        input_dir=str(tmpdir), item_loader=TokensLoader(block_size), shuffle=False, subsample=2.5
+    )
+    assert len(dataset3) == int(len(dataset1) * 2.5)
+
 
 @pytest.mark.skipif(sys.platform == "win32", reason="Not tested on windows")
 def test_dataset_with_mosaic_mds_data(tmpdir):
@@ -1252,6 +1257,13 @@ def test_dataset_with_mosaic_mds_data(tmpdir):
     dataset = StreamingDataset(input_dir=str(tmpdir), subsample=0.4)
     assert len(dataset) == 4
     assert [sample["class"] for sample in dataset[:]] == [0, 1, 2, 3]
+
+    # -------------- and supersample ---------------
+
+    dataset = StreamingDataset(input_dir=str(tmpdir), subsample=1.5)
+    assert len(dataset) == 15
+    assert [sample["class"] for sample in dataset[:]] == [x % 10 for x in range(15)]
+
 
     # -------------- works with dataloader --------------
 

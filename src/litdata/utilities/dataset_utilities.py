@@ -80,17 +80,34 @@ def subsample_streaming_dataset(
 
         return subsampled_files, roi
 
-    # shuffle lists together
+    final_files: List[str] = []
+    final_roi: List[Tuple[int, int]] = []
+
+    random_seed_sampler = None
     if shuffle:
         random_seed_sampler = np.random.RandomState([seed])
-        # checking if subsample is 1, as if user wants complete data, then let shuffler and sampler do the work
-        original_chunks, roi = shuffle_lists_together(original_chunks, roi, random_seed_sampler)
 
-    num_items_to_subsample = int(sum([roi[1] - roi[0] for roi in roi]) * subsample)
+    while subsample >= 1.0:
+        # accumulate shuffled copies of the base into the final
+        if random_seed_sampler is not None:
+            original_chunks, roi = shuffle_lists_together(original_chunks, roi, random_seed_sampler)
+        subsampled_files = [chnk["filename"] for chnk in original_chunks]
+        final_files.extend(subsampled_files)
+        final_roi.extend(roi)
+        subsample -= 1.0
 
-    subsampled_files, roi, _, _ = subsample_filenames_and_roi(original_chunks, roi, num_items_to_subsample)
+    if subsample > 0:
+        # shuffle lists together
+        if random_seed_sampler is not None:
+            original_chunks, roi = shuffle_lists_together(original_chunks, roi, random_seed_sampler)
 
-    return subsampled_files, roi
+        num_items_to_subsample = int(sum([roi[1] - roi[0] for roi in roi]) * subsample)
+
+        subsampled_files, roi, _, _ = subsample_filenames_and_roi(original_chunks, roi, num_items_to_subsample)
+        final_files.extend(subsampled_files)
+        final_roi.extend(roi)
+
+    return final_files, final_roi
 
 
 def _should_replace_path(path: Optional[str]) -> bool:
