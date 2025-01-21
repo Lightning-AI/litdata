@@ -1264,7 +1264,6 @@ def test_dataset_with_mosaic_mds_data(tmpdir):
     assert len(dataset) == 15
     assert [sample["class"] for sample in dataset[:]] == [x % 10 for x in range(15)]
 
-
     # -------------- works with dataloader --------------
 
     dataset = StreamingDataset(input_dir=str(tmpdir))
