@@ -315,7 +315,7 @@ def test_execute(phase, monkeypatch, lightning_sdk_mock):
         "num_instances": 2,
         "studio_id": "studio_id",
         "teamspace_id": "teamspace_id",
-        "cluster_id": "cluster_id",
+        "cloud_account": "cluster_id",
         "machine": "cpu",
         "interruptible": False,
     }

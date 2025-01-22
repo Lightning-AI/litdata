@@ -201,6 +201,7 @@ def map(
     error_when_not_empty: bool = False,
     reader: Optional[BaseReader] = None,
     batch_size: Optional[int] = None,
+    start_method: Optional[str] = None,
 ) -> None:
     """Maps a callable over a collection of inputs, possibly in a distributed way.
 
@@ -222,7 +223,8 @@ def map(
         error_when_not_empty: Whether we should error if the output folder isn't empty.
         reader: The reader to use when reading the data. By default, it uses the `BaseReader`.
         batch_size: Group the inputs into batches of batch_size length.
-
+        start_method: The start method used by python multiprocessing package. Default to spawn unless running
+            inside an interactive shell like Ipython.
     """
     _check_version_and_prompt_upgrade(__version__)
 
@@ -286,6 +288,7 @@ def map(
             reorder_files=reorder_files,
             weights=weights,
             reader=reader,
+            start_method=start_method,
         )
         with optimize_dns_context(True):
             return data_processor.run(LambdaDataTransformRecipe(fn, inputs))
