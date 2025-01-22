@@ -391,7 +391,7 @@ def _execute(
         num_instances=num_nodes,
         studio_id=studio._studio.id,
         teamspace_id=studio._teamspace.id,
-        cluster_id=studio._studio.cluster_id,
+        cloud_account=studio._studio.cluster_id,
         machine=machine or studio._studio_api.get_machine(studio._studio.id, studio._teamspace.id),
         interruptible=interruptible,
     )
