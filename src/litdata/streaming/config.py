@@ -12,6 +12,7 @@
 # limitations under the License.
 
 import os
+from collections import defaultdict
 from typing import Any, Dict, List, Optional, Tuple
 
 from litdata.constants import _INDEX_FILENAME
@@ -289,16 +290,16 @@ def load_subsampled_chunks(subsampled_files: List[str], original_chunks: List[Di
 
     assert len(_subsampled_chunks) == len(subsampled_files)
 
-    filename_dict = {}
+    filename_dict = defaultdict(list)
 
     # Populate the dictionary with filenames and their indices
     for index, filename in enumerate(subsampled_files):
-        filename_dict[filename] = index
+        filename_dict[filename].append(index)
 
     for curr_chunk in original_chunks:
         if curr_chunk["filename"] in filename_dict:
-            idx = filename_dict[curr_chunk["filename"]]
-            _subsampled_chunks[idx] = curr_chunk
+            for idx in filename_dict[curr_chunk["filename"]]:
+                _subsampled_chunks[idx] = curr_chunk
 
     # if any idx of _subsampled_chunks is None, means,
     # some elements in subsampled_files were not actually part of chunks
