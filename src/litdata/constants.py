@@ -38,6 +38,9 @@ _TQDM_AVAILABLE = RequirementCache("tqdm")
 _LIGHTNING_SDK_AVAILABLE = RequirementCache("lightning_sdk")
 _DEBUG = bool(int(os.getenv("DEBUG", "1")))
 
+_MAX_WAIT_TIME = int(os.getenv("MAX_WAIT_TIME", "120"))
+_FORCE_DOWNLOAD_TIME = int(os.getenv("FORCE_DOWNLOAD_TIME", "30"))
+
 # DON'T CHANGE ORDER
 _TORCH_DTYPES_MAPPING = {
     0: torch.float32,

@@ -1236,6 +1236,7 @@ def test_dataset_with_mosaic_mds_data(tmpdir):
                 "class": i,
             }
             out.write(sample)
+
     dataset = StreamingDataset(input_dir=str(tmpdir))
     assert len(dataset) == 10
     for i in range(10):

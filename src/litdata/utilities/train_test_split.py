@@ -46,7 +46,7 @@ def train_test_split(
 
     # we need subsampled chunk filenames, original chunk file, and subsampled_roi
 
-    dummy_streaming_dataset = deepcopy(streaming_dataset)
+    dummy_streaming_dataset = deepcopy_dataset(streaming_dataset)
     dummy_subsampled_chunk_filename = dummy_streaming_dataset.subsampled_files
     dummy_subsampled_roi = dummy_streaming_dataset.region_of_interest
     subsampled_chunks: List[Dict[str, Any]] = []
@@ -65,7 +65,7 @@ def train_test_split(
     else:
         raise ValueError("Couldn't load original chunk file.")
 
-    new_datasets = [deepcopy(streaming_dataset) for _ in splits]
+    new_datasets = [deepcopy_dataset(streaming_dataset) for _ in splits]
 
     dataset_length = sum([my_roi[1] - my_roi[0] for my_roi in dummy_subsampled_roi])
 
@@ -94,3 +94,14 @@ def train_test_split(
         dummy_subsampled_roi = left_roi
 
     return new_datasets
+
+
+def deepcopy_dataset(dataset):
+    original_prepare_thread = dataset.cache._reader._prepare_thread
+    original_force_download_queue = dataset.cache._reader._item_loader._force_download_queue
+    dataset.cache._reader._prepare_thread = None
+    dataset.cache._reader._item_loader._force_download_queue = None
+    copied_dataset = deepcopy(dataset)
+    dataset.cache._reader._prepare_thread = original_prepare_thread
+    dataset.cache._reader._item_loader._force_download_queue = original_force_download_queue
+    return copied_dataset

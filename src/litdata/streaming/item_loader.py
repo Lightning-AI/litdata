@@ -24,15 +24,12 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import numpy as np
 import torch
 
-from litdata.constants import _NUMPY_DTYPES_MAPPING, _TORCH_DTYPES_MAPPING
+from litdata.constants import _FORCE_DOWNLOAD_TIME, _MAX_WAIT_TIME, _NUMPY_DTYPES_MAPPING, _TORCH_DTYPES_MAPPING
 from litdata.streaming.serializers import Serializer
 from litdata.utilities._pytree import PyTree, tree_unflatten
 from litdata.utilities.encryption import Encryption, EncryptionLevel
 
 Interval = namedtuple("Interval", ["chunk_start", "roi_start_idx", "roi_end_idx", "chunk_end"])
-
-MAX_WAIT_TIME = 2 * 60  # 2 minutes maximum wait time
-FORCE_DOWNLOAD_TIME = 60  # 1 minute maximum wait time
 
 
 class BaseItemLoader(ABC):
@@ -113,6 +110,7 @@ class PyTreeLoader(BaseItemLoader):
     """The Pytree Loader is the default loader of the Cache object."""
 
     def __init__(self) -> None:
+        super().__init__()
         self._chunk_filepaths: Dict[str, bool] = {}
         self._decrypted_chunks: Dict[int, bytes] = {}
 
@@ -158,11 +156,11 @@ class PyTreeLoader(BaseItemLoader):
                 sleep(0.1)
                 exists = os.path.exists(chunk_filepath) and os.stat(chunk_filepath).st_size >= filesize_bytes
 
-                if not requested_force_download and (time() - start_time) > FORCE_DOWNLOAD_TIME:
+                if not requested_force_download and (time() - start_time) > _FORCE_DOWNLOAD_TIME:
                     self.force_download(chunk_index)
                     requested_force_download = True
 
-                if (time() - start_time) > MAX_WAIT_TIME:
+                if (time() - start_time) > _MAX_WAIT_TIME:
                     raise FileNotFoundError(f"The {chunk_filepath} hasn't been found.")
 
             self._chunk_filepaths[chunk_filepath] = True
@@ -374,11 +372,11 @@ class TokensLoader(BaseItemLoader):
                 sleep(0.1)
                 exists = os.path.exists(chunk_filepath) and os.stat(chunk_filepath).st_size >= filesize_bytes
 
-                if not requested_force_download and (time() - start_time) > FORCE_DOWNLOAD_TIME:
+                if not requested_force_download and (time() - start_time) > _FORCE_DOWNLOAD_TIME:
                     self.force_download(chunk_index)
                     requested_force_download = True
 
-                if (time() - start_time) > MAX_WAIT_TIME:
+                if (time() - start_time) > _MAX_WAIT_TIME:
                     raise FileNotFoundError(f"The {chunk_filepath} hasn't been found.")
 
             self._chunk_filepaths[chunk_filepath] = True
