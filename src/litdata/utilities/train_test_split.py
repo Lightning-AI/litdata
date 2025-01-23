@@ -96,7 +96,7 @@ def train_test_split(
     return new_datasets
 
 
-def deepcopy_dataset(dataset):
+def deepcopy_dataset(dataset: Any) -> Any:
     original_prepare_thread = dataset.cache._reader._prepare_thread
     original_force_download_queue = dataset.cache._reader._item_loader._force_download_queue
     dataset.cache._reader._prepare_thread = None

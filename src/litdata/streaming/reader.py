@@ -141,7 +141,7 @@ class PrepareChunksThread(Thread):
         chunk_filepath, _, _ = self._config[ChunkedIndex(index=-1, chunk_index=chunk_index)]
         self._item_loader.pre_load_chunk(chunk_index, chunk_filepath)
 
-    def _force_download(self):
+    def _force_download(self) -> None:
         chunk_index = _get_from_queue(self._force_download_queue)
         if chunk_index is not None:
             if _DEBUG:
@@ -305,7 +305,7 @@ class BinaryReader:
                     self._rank,
                 )
                 # Attach the force download queue
-                self._item_loader._force_download_queue = self._prepare_thread._force_download_queue
+                self._item_loader._force_download_queue = self._prepare_thread._force_download_queue  # type: ignore
                 self._prepare_thread.start()
                 if index.chunk_indexes:
                     self._prepare_thread.download(index.chunk_indexes)
