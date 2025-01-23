@@ -17,7 +17,8 @@ from abc import ABC, abstractmethod
 from collections import namedtuple
 from copy import deepcopy
 from io import BytesIO, FileIO
-from time import sleep
+from multiprocessing import Queue
+from time import sleep, time
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
@@ -30,6 +31,9 @@ from litdata.utilities.encryption import Encryption, EncryptionLevel
 
 Interval = namedtuple("Interval", ["chunk_start", "roi_start_idx", "roi_end_idx", "chunk_end"])
 
+MAX_WAIT_TIME = 2 * 60  # 2 minutes maximum wait time
+FORCE_DOWNLOAD_TIME = 60  # 1 minute maximum wait time
+
 
 class BaseItemLoader(ABC):
     """The base item loader is responsible to decide how the items within a chunk are loaded."""
@@ -40,6 +44,7 @@ class BaseItemLoader(ABC):
         chunks: List,
         serializers: Dict[str, Serializer],
         region_of_interest: Optional[List[Tuple[int, int]]] = None,
+        force_download: Optional[Queue] = None,
     ) -> None:
         self._config = config
         self._chunks = chunks
@@ -47,12 +52,17 @@ class BaseItemLoader(ABC):
         self._data_format = self._config["data_format"]
         self._shift_idx = len(self._data_format) * 4
         self.region_of_interest = region_of_interest
+        self._force_download = force_download
 
         # setup the serializers on restart
         for data_format in self._data_format:
             serializer = deepcopy(self._serializers[self._data_format_to_key(data_format)])
             serializer.setup(data_format)
             self._serializers[data_format] = serializer
+
+    def force_download(self, chunk_index: int) -> None:
+        if self._force_download:
+            self._force_download.put(chunk_index)
 
     @functools.lru_cache(maxsize=128)
     def _data_format_to_key(self, data_format: str) -> str:
@@ -141,9 +151,19 @@ class PyTreeLoader(BaseItemLoader):
         if chunk_filepath not in self._chunk_filepaths:
             exists = os.path.exists(chunk_filepath) and os.stat(chunk_filepath).st_size >= filesize_bytes
 
+            start_time = time()
+            requested_force_download = False
+
             while not exists:
                 sleep(0.1)
                 exists = os.path.exists(chunk_filepath) and os.stat(chunk_filepath).st_size >= filesize_bytes
+
+                if not requested_force_download and (time() - start_time) > FORCE_DOWNLOAD_TIME:
+                    self.force_download(chunk_index)
+                    requested_force_download = True
+
+                if (time() - start_time) > MAX_WAIT_TIME:
+                    raise FileNotFoundError(f"The {chunk_filepath} hasn't been found.")
 
             self._chunk_filepaths[chunk_filepath] = True
 
@@ -347,9 +367,19 @@ class TokensLoader(BaseItemLoader):
         if chunk_filepath not in self._chunk_filepaths:
             exists = os.path.exists(chunk_filepath) and os.stat(chunk_filepath).st_size > filesize_bytes
 
+            start_time = time()
+            requested_force_download = False
+
             while not exists:
                 sleep(0.1)
-                exists = os.path.exists(chunk_filepath) and os.stat(chunk_filepath).st_size > filesize_bytes
+                exists = os.path.exists(chunk_filepath) and os.stat(chunk_filepath).st_size >= filesize_bytes
+
+                if not requested_force_download and (time() - start_time) > FORCE_DOWNLOAD_TIME:
+                    self.force_download(chunk_index)
+                    requested_force_download = True
+
+                if (time() - start_time) > MAX_WAIT_TIME:
+                    raise FileNotFoundError(f"The {chunk_filepath} hasn't been found.")
 
             self._chunk_filepaths[chunk_filepath] = True
 
