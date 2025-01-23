@@ -68,7 +68,7 @@ class PrepareChunksThread(Thread):
         self._force_stop_event = Event()
 
         # TODO: Find a real fix to this problem
-        self._force_download: Queue = Queue()
+        self._force_download_queue: Queue = Queue()
 
         self._rank = rank
 
@@ -142,7 +142,7 @@ class PrepareChunksThread(Thread):
         self._item_loader.pre_load_chunk(chunk_index, chunk_filepath)
 
     def _force_download(self):
-        chunk_index = _get_from_queue(self._force_download)
+        chunk_index = _get_from_queue(self._force_download_queue)
         if chunk_index is not None:
             if _DEBUG:
                 chunk_filepath, _, _ = self._config[ChunkedIndex(index=-1, chunk_index=chunk_index)]
@@ -304,6 +304,8 @@ class BinaryReader:
                     self._max_pre_download,
                     self._rank,
                 )
+                # Attach the force download queue
+                self._item_loader._force_download_queue = self._prepare_thread._force_download_queue
                 self._prepare_thread.start()
                 if index.chunk_indexes:
                     self._prepare_thread.download(index.chunk_indexes)

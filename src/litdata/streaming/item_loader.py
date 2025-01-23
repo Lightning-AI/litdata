@@ -44,7 +44,7 @@ class BaseItemLoader(ABC):
         chunks: List,
         serializers: Dict[str, Serializer],
         region_of_interest: Optional[List[Tuple[int, int]]] = None,
-        force_download: Optional[Queue] = None,
+        force_download_queue: Optional[Queue] = None,
     ) -> None:
         self._config = config
         self._chunks = chunks
@@ -52,7 +52,7 @@ class BaseItemLoader(ABC):
         self._data_format = self._config["data_format"]
         self._shift_idx = len(self._data_format) * 4
         self.region_of_interest = region_of_interest
-        self._force_download = force_download
+        self._force_download_queue = force_download_queue
 
         # setup the serializers on restart
         for data_format in self._data_format:
@@ -61,8 +61,8 @@ class BaseItemLoader(ABC):
             self._serializers[data_format] = serializer
 
     def force_download(self, chunk_index: int) -> None:
-        if self._force_download:
-            self._force_download.put(chunk_index)
+        if self._force_download_queue:
+            self._force_download_queue.put(chunk_index)
 
     @functools.lru_cache(maxsize=128)
     def _data_format_to_key(self, data_format: str) -> str:
