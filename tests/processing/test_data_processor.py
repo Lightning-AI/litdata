@@ -17,7 +17,7 @@ from litdata.processing import functions
 from litdata.processing.data_processor import (
     DataChunkRecipe,
     DataProcessor,
-    DataTransformRecipe,
+    MapRecipe,
     _download_data_target,
     _get_item_filesizes,
     _is_path,
@@ -29,7 +29,7 @@ from litdata.processing.data_processor import (
     _wait_for_disk_usage_higher_than_threshold,
     _wait_for_file_to_exist,
 )
-from litdata.processing.functions import LambdaDataTransformRecipe, map, optimize
+from litdata.processing.functions import LambdaMapRecipe, map, optimize
 from litdata.streaming import StreamingDataLoader, StreamingDataset, resolver
 from litdata.streaming.cache import Cache, Dir
 
@@ -581,7 +581,7 @@ def test_data_processsor_nlp(tmpdir, monkeypatch):
     data_processor_more_wokers.run(TextTokenizeRecipe(chunk_size=1024 * 11))
 
 
-class ImageResizeRecipe(DataTransformRecipe):
+class ImageResizeRecipe(MapRecipe):
     def prepare_structure(self, input_dir: str):
         filepaths = [os.path.join(input_dir, filename) for filename in os.listdir(input_dir)]
         return [filepath for filepath in filepaths if os.path.isfile(filepath)]
@@ -836,7 +836,7 @@ def test_lambda_transform_recipe(monkeypatch):
         assert device == "cuda:2"
         called = True
 
-    data_recipe = LambdaDataTransformRecipe(fn, range(1))
+    data_recipe = LambdaMapRecipe(fn, range(1))
 
     data_recipe.prepare_item(1, "", False)
     assert called
@@ -857,7 +857,7 @@ def test_lambda_transform_recipe_class(monkeypatch):
             assert device == "cuda:2"
             called = True
 
-    data_recipe = LambdaDataTransformRecipe(Transform(), range(1))
+    data_recipe = LambdaMapRecipe(Transform(), range(1))
     data_recipe.prepare_item(1, "", False)
     assert called
 

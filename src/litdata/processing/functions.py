@@ -30,7 +30,7 @@ import torch
 from litdata import __version__
 from litdata.constants import _INDEX_FILENAME, _IS_IN_STUDIO
 from litdata.helpers import _check_version_and_prompt_upgrade
-from litdata.processing.data_processor import DataChunkRecipe, DataProcessor, DataTransformRecipe
+from litdata.processing.data_processor import DataChunkRecipe, DataProcessor, MapRecipe
 from litdata.processing.readers import BaseReader
 from litdata.processing.utilities import (
     _get_work_dir,
@@ -100,7 +100,7 @@ def _get_default_num_workers() -> int:
     return os.cpu_count() or 1
 
 
-class LambdaDataTransformRecipe(DataTransformRecipe):
+class LambdaMapRecipe(MapRecipe):
     def __init__(self, fn: Callable[[str, Any], None], inputs: Union[Sequence[Any], StreamingDataLoader]):
         super().__init__()
         self._fn = fn
@@ -291,7 +291,7 @@ def map(
             start_method=start_method,
         )
         with optimize_dns_context(True):
-            return data_processor.run(LambdaDataTransformRecipe(fn, inputs))
+            return data_processor.run(LambdaMapRecipe(fn, inputs))
     return _execute(
         f"litdata-map-{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}",
         num_nodes,
