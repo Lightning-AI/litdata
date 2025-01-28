@@ -29,7 +29,11 @@ class ParquetDir(ABC):
 
 
 class LocalParquetDir(ParquetDir):
-    def __init__(self, dir_path, cache_path=None, storage_options={}):
+    def __init__(
+        dir_path: Optional[Union[str, Dir]],
+        cache_path: Optional[str] = None,
+        storage_options: Optional[Dict] = {},
+    ):
         super().__init__(dir_path, cache_path, storage_options)
 
     def __iter__(self) -> Generator[Tuple[str, str], None, None]:
