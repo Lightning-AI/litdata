@@ -4,7 +4,7 @@ import json
 import os
 from abc import ABC, abstractmethod
 from time import time
-from typing import Any, Dict, Generator, List, Optional, Tuple, Union
+from typing import Any, Dict, Generator, List, Optional, Tuple, Type, Union
 
 from litdata.constants import _INDEX_FILENAME
 from litdata.streaming.resolver import Dir, _resolve_dir
@@ -51,6 +51,7 @@ class LocalParquetDir(ParquetDir):
         # write to index.json file
         if self.cache_path is None:
             self.cache_path = self.dir.path
+        assert self.cache_path is not None
         with open(os.path.join(self.cache_path, _INDEX_FILENAME), "w") as f:
             data = {"chunks": chunks_info, "config": config, "updated_at": str(time())}
             json.dump(data, f, sort_keys=True)
@@ -113,7 +114,7 @@ class S3ParquetDir(ParquetDir):
         print(f"Index file written to: {s3_index_path}")
 
 
-_PARQUET_DIR = {
+_PARQUET_DIR: Dict[str, Type[ParquetDir]] = {
     "s3://": S3ParquetDir,
     "local:": LocalParquetDir,
     "": LocalParquetDir,
