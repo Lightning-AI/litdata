@@ -25,7 +25,7 @@ from lightning_utilities.core.imports import RequirementCache
 from litdata.streaming.compression import _ZSTD_AVAILABLE
 from litdata.streaming.reader import BinaryReader
 from litdata.streaming.sampler import ChunkedIndex
-from litdata.streaming.writer import BinaryWriter, write_parquet_index
+from litdata.streaming.writer import BinaryWriter, index_parquet_dataset
 from litdata.utilities.format import _FORMAT_TO_RATIO
 
 
@@ -298,7 +298,7 @@ def test_parquet_index_write(tmpdir):
     index_file_path = os.path.join(tmpdir, "data", "index.json")
     assert not os.path.exists(index_file_path)
     # call the write_parquet_index fn
-    write_parquet_index(os.path.join(tmpdir, "data"))
+    index_parquet_dataset(os.path.join(tmpdir, "data"))
     assert os.path.exists(index_file_path)
 
     # Read JSON file into a dictionary
