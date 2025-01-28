@@ -19,6 +19,9 @@ def test_should_replace_path():
     assert not _should_replace_path(".../s3__connections/...")
     assert _should_replace_path("/teamspace/datasets/...")
     assert _should_replace_path("/teamspace/s3_connections/...")
+    assert _should_replace_path("/teamspace/s3_folders/...")
+    assert _should_replace_path("/teamspace/gcs_folders/...")
+    assert _should_replace_path("/teamspace/gcs_connections/...")
     assert not _should_replace_path("something_else")
 
 

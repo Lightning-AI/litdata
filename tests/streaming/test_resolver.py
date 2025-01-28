@@ -14,6 +14,7 @@ from lightning_sdk.lightning_cloud.openapi import (
     V1ListCloudSpacesResponse,
     V1ListClustersResponse,
     V1ListDataConnectionsResponse,
+    V1S3FolderDataConnection,
 )
 
 from litdata.streaming import resolver
@@ -131,6 +132,30 @@ def test_src_resolver_studios(monkeypatch, lightning_cloud_mock):
     with pytest.raises(ValueError, match="other_studio`"):
         resolver._resolve_dir("/teamspace/studios/other_studio")
 
+    auth.clear()
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="windows isn't supported")
+def test_src_resolver_s3_folders(monkeypatch, lightning_cloud_mock):
+    auth = login.Auth()
+    auth.save(user_id="7c8455e3-7c5f-4697-8a6d-105971d6b9bd", api_key="e63fae57-2b50-498b-bc46-d6204cbf330e")
+
+    monkeypatch.setenv("LIGHTNING_CLOUD_PROJECT_ID", "project_id")
+
+    client_mock = mock.MagicMock()
+    client_mock.data_connection_service_list_data_connections.return_value = V1ListDataConnectionsResponse(
+        data_connections=[
+            V1DataConnection(name="debug_folder", s3_folder=V1S3FolderDataConnection(source="s3://imagenet-bucket"))
+        ],
+    )
+
+    client_cls_mock = mock.MagicMock()
+    client_cls_mock.return_value = client_mock
+    lightning_cloud_mock.rest_client.LightningClient = client_cls_mock
+
+    expected = "s3://imagenet-bucket"
+    assert resolver._resolve_dir("/teamspace/s3_folders/debug_folder").url == expected
+    assert resolver._resolve_dir("/teamspace/s3_folders/debug_folder/a/b/c").url == expected + "/a/b/c"
     auth.clear()
 
 
@@ -290,7 +315,7 @@ def test_execute(phase, monkeypatch, lightning_sdk_mock):
         "num_instances": 2,
         "studio_id": "studio_id",
         "teamspace_id": "teamspace_id",
-        "cluster_id": "cluster_id",
+        "cloud_account": "cluster_id",
         "machine": "cpu",
         "interruptible": False,
     }

@@ -584,6 +584,24 @@ print(len(dataset)) # display the length of your data
 </details>
 
 <details>
+  <summary> ✅ Upsample from your source datasets </summary>
+
+&nbsp;
+Use to control the size of one iteration of a StreamingDataset using repeats. Contains `floor(N)` possibly shuffled copies of the source data, then a subsampling of the remainder.
+
+
+```python
+from litdata import StreamingDataset
+
+dataset = StreamingDataset("s3://my-bucket/my-data", subsample=2.5, shuffle=True)
+
+print(len(dataset)) # display the length of your data
+# out: 250000
+```
+
+</details>
+
+<details>
   <summary> ✅ Easily modify optimized cloud datasets</summary>
 &nbsp;
 
