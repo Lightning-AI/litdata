@@ -18,7 +18,7 @@ from litdata.streaming.combined import CombinedStreamingDataset
 from litdata.streaming.dataloader import StreamingDataLoader
 from litdata.streaming.dataset import StreamingDataset
 from litdata.streaming.item_loader import TokensLoader
-from litdata.streaming.writer import write_parquet_index
+from litdata.streaming.writer import index_parquet_dataset
 from litdata.utilities.breakpoint import breakpoint
 from litdata.utilities.train_test_split import train_test_split
 
@@ -32,7 +32,7 @@ __all__ = [
     "walk",
     "train_test_split",
     "merge_datasets",
-    "write_parquet_index",
+    "index_parquet_dataset",
     "breakpoint",
 ]
 if RequirementCache("lightning_sdk"):
