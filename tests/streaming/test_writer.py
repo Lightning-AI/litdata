@@ -11,7 +11,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import datetime as dt
 import json
 import os
 import random
@@ -23,6 +22,8 @@ import torch
 from lightning_utilities.core.imports import RequirementCache
 
 from litdata.streaming.compression import _ZSTD_AVAILABLE
+from litdata.streaming.dataset import StreamingDataset
+from litdata.streaming.item_loader import ParquetLoader
 from litdata.streaming.reader import BinaryReader
 from litdata.streaming.sampler import ChunkedIndex
 from litdata.streaming.writer import BinaryWriter, index_parquet_dataset
@@ -281,13 +282,6 @@ def test_parquet_index_write(tmpdir):
         df = pl.DataFrame(
             {
                 "name": ["Tom", "Jerry", "Micky", "Oggy", "Doraemon"],
-                "birthdate": [
-                    dt.date(1997, 1, 10),
-                    dt.date(1985, 2, 15),
-                    dt.date(1983, 3, 22),
-                    dt.date(1981, 4, 30),
-                    dt.date(1984, 12, 3),
-                ],
                 "weight": [57.9, 72.5, 53.6, 83.1, 69.4],  # (kg)
                 "height": [1.56, 1.77, 1.65, 1.75, 1.63],  # (m)
             }
@@ -308,4 +302,8 @@ def test_parquet_index_write(tmpdir):
         for cnk in data["chunks"]:
             assert cnk["chunk_size"] == 5
         assert data["config"]["item_loader"] == "ParquetLoader"
-        assert data["config"]["data_format"] == ["String", "Date", "Float64", "Float64"]
+        assert data["config"]["data_format"] == ["String", "Float64", "Float64"]
+
+    ds = StreamingDataset(os.path.join(tmpdir, "data"), item_loader=ParquetLoader())
+
+    assert len(ds) == 25  # 5 datasets for 5 loops

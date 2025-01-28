@@ -30,6 +30,7 @@ class ParquetDir(ABC):
 
 class LocalParquetDir(ParquetDir):
     def __init__(
+        self,
         dir_path: Optional[Union[str, Dir]],
         cache_path: Optional[str] = None,
         storage_options: Optional[Dict] = {},
