@@ -643,6 +643,37 @@ The `overwrite` mode will delete the existing data and start from fresh.
 </details>
 
 <details>
+  <summary> ✅ Index parquet datasets</summary>
+&nbsp;
+
+If your dataset is already in Parquet format, you can index it directly and use it with StreamingDataset & DataLoader.
+
+Assumption:
+Your dataset directory contains one or more Parquet files.
+
+```python
+import litdata as ld
+
+pq_data_uri = "gs://deep-litdata-parquet/my-parquet-data"
+
+ld.index_parquet_dataset(pq_data_uri)
+```
+
+When using a Streaming Dataset, ensure you use `ParquetLoader`:
+
+```python
+import litdata as ld
+from litdata.streaming.item_loader import ParquetLoader
+
+ds = ld.StreamingDataset('gs://deep-litdata-parquet/my-parquet-data', item_loader = ParquetLoader())
+
+for _ds in ds:
+    print(f"{_ds=}")
+```
+
+</details>
+
+<details>
   <summary> ✅ Use compression</summary>
 &nbsp;
 
