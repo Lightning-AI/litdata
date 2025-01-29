@@ -41,7 +41,6 @@ class LocalParquetDir(ParquetDir):
     def __iter__(self) -> Generator[Tuple[str, str], None, None]:
         assert self.dir.path is not None
         assert self.dir.path != "", "Dir path can't be empty"
-        assert self.dir.url is None, f"Dir url isn't empty. Got: {self.dir.url}"
 
         for file_name in os.listdir(self.dir.path):
             if file_name.endswith(".parquet"):
