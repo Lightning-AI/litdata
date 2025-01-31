@@ -497,7 +497,7 @@ class ParquetLoader(BaseItemLoader):
 
         return self.cached_parquet(chunk_filepath).row(index - begin)
 
-    @functools.cache
+    @functools.lru_cache
     def cached_parquet(self, chunk_filepath):
         return self._get_polars().scan_parquet(chunk_filepath).collect()
 
