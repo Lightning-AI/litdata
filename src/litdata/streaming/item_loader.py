@@ -495,7 +495,11 @@ class ParquetLoader(BaseItemLoader):
 
             self._chunk_filepaths[chunk_filepath] = True
 
-        return self._get_polars().scan_parquet(chunk_filepath).collect().row(index - begin)
+        return self.cached_parquet(chunk_filepath).row(index - begin)
+
+    @functools.cache
+    def cached_parquet(self, chunk_filepath):
+        return self._get_polars().scan_parquet(chunk_filepath).collect()
 
     def delete(self, chunk_index: int, chunk_filepath: str) -> None:
         """Delete a chunk from the local filesystem."""
