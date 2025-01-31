@@ -8,7 +8,6 @@ from typing import Any, Dict, Generator, List, Optional, Tuple, Type, Union
 
 from litdata.constants import _INDEX_FILENAME
 from litdata.streaming.resolver import Dir, _resolve_dir
-from litdata.utilities.dataset_utilities import _try_create_cache_dir
 
 
 class ParquetDir(ABC):
@@ -68,7 +67,8 @@ class CloudParquetDir(ParquetDir):
     ):
         super().__init__(dir_path, cache_path, storage_options)
         if self.cache_path is None:
-            self.cache_path = _try_create_cache_dir(self.dir.path)
+            self.cache_path = os.path.join(os.path.expanduser("~"), ".cache", ".litdata-cache-index-pq")
+            os.makedirs(self.cache_path, exist_ok=True)  # Ensure the directory exists
 
         import fsspec
 
@@ -79,7 +79,7 @@ class CloudParquetDir(ParquetDir):
         for provider in _CLOUD_PROVIDER:
             if self.dir.url.startswith(provider):
                 # Initialize the cloud filesystem
-                self.fs = fsspec.filesystem(provider, storage_options=self.storage_options)
+                self.fs = fsspec.filesystem(provider, *self.storage_options)
                 print(f"using provider: {provider}")
                 break
 
