@@ -495,7 +495,7 @@ class ParquetLoader(BaseItemLoader):
 
         return self.get_df(chunk_filepath).row(index - begin)
 
-    def get_df(self, chunk_filepath):
+    def get_df(self, chunk_filepath: str) -> Any:
         if chunk_filepath not in self._df:
             self._df[chunk_filepath] = self._get_polars().scan_parquet(chunk_filepath).collect()
         return self._df[chunk_filepath]
