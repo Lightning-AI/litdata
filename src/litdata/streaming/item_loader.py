@@ -504,7 +504,7 @@ class ParquetLoader(BaseItemLoader):
         """Delete a chunk from the local filesystem."""
         if os.path.exists(chunk_filepath):
             os.remove(chunk_filepath)
-        del self.df
+        del self._df
 
     def encode_data(self, data: List[bytes], sizes: List[int], flattened: List[Any]) -> Any:
         pass
