@@ -448,6 +448,7 @@ class ParquetLoader(BaseItemLoader):
         self._data_format = self._config["data_format"]
         self._shift_idx = len(self._data_format) * 4
         self.region_of_interest = region_of_interest
+        self._df: Dict[str, Any] = {}
 
     def state_dict(self) -> Dict:
         return {}
@@ -488,23 +489,22 @@ class ParquetLoader(BaseItemLoader):
 
             while not exists:
                 sleep(0.1)
-                # file_exist = os.path.exists(chunk_filepath)
-                # file_size = os.stat(chunk_filepath).st_size
-                # print(f"still in exist fn: {file_exist=}; {file_size=}; {filesize_bytes=}")
                 exists = os.path.exists(chunk_filepath) and os.stat(chunk_filepath).st_size >= filesize_bytes
 
             self._chunk_filepaths[chunk_filepath] = True
 
-        return self.cached_parquet(chunk_filepath).row(index - begin)
+        return self.get_df(chunk_filepath).row(index - begin)
 
-    @functools.lru_cache
-    def cached_parquet(self, chunk_filepath):
-        return self._get_polars().scan_parquet(chunk_filepath).collect()
+    def get_df(self, chunk_filepath):
+        if chunk_filepath not in self._df:
+            self._df[chunk_filepath] = self._get_polars().scan_parquet(chunk_filepath).collect()
+        return self._df[chunk_filepath]
 
     def delete(self, chunk_index: int, chunk_filepath: str) -> None:
         """Delete a chunk from the local filesystem."""
         if os.path.exists(chunk_filepath):
             os.remove(chunk_filepath)
+        del self._parquet_data
 
     def encode_data(self, data: List[bytes], sizes: List[int], flattened: List[Any]) -> Any:
         pass
