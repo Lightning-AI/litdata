@@ -425,15 +425,6 @@ class ParquetLoader(BaseItemLoader):
         if not _POLARS_AVAILABLE:
             raise ModuleNotFoundError("Please, run: `pip install polars`")
         self._chunk_filepaths: Dict[str, bool] = {}
-        self._polars: Any = None
-
-    def _get_polars(self) -> Any:
-        """Lazy load and store the `polars` module."""
-        if self._polars is None:
-            import polars as pl
-
-            self._polars = pl
-        return self._polars
 
     def setup(
         self,
@@ -496,8 +487,10 @@ class ParquetLoader(BaseItemLoader):
         return self.get_df(chunk_filepath).row(index - begin)
 
     def get_df(self, chunk_filepath: str) -> Any:
+        import polars as pl
+
         if chunk_filepath not in self._df:
-            self._df[chunk_filepath] = self._get_polars().scan_parquet(chunk_filepath).collect()
+            self._df[chunk_filepath] = pl.scan_parquet(chunk_filepath).collect()
         return self._df[chunk_filepath]
 
     def delete(self, chunk_index: int, chunk_filepath: str) -> None:
