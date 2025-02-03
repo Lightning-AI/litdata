@@ -24,7 +24,13 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import numpy as np
 import torch
 
-from litdata.constants import _FORCE_DOWNLOAD_TIME, _MAX_WAIT_TIME, _NUMPY_DTYPES_MAPPING, _TORCH_DTYPES_MAPPING
+from litdata.constants import (
+    _FORCE_DOWNLOAD_TIME,
+    _MAX_WAIT_TIME,
+    _NUMPY_DTYPES_MAPPING,
+    _POLARS_AVAILABLE,
+    _TORCH_DTYPES_MAPPING,
+)
 from litdata.streaming.serializers import Serializer
 from litdata.utilities._pytree import PyTree, tree_unflatten
 from litdata.utilities.encryption import Encryption, EncryptionLevel
@@ -412,3 +418,84 @@ class TokensLoader(BaseItemLoader):
     @classmethod
     def encode_data(cls, data: List[bytes], _: List[int], flattened: List[Any]) -> Tuple[bytes, Optional[int]]:
         return data[0], flattened[0].shape[0]
+
+
+class ParquetLoader(BaseItemLoader):
+    def __init__(self) -> None:
+        if not _POLARS_AVAILABLE:
+            raise ModuleNotFoundError("Please, run: `pip install polars`")
+        self._chunk_filepaths: Dict[str, bool] = {}
+
+    def setup(
+        self,
+        config: Dict,
+        chunks: List,
+        serializers: Dict[str, Serializer],
+        region_of_interest: Optional[List[Tuple[int, int]]] = None,
+    ) -> None:
+        self._config = config
+        self._chunks = chunks
+        self._serializers = {**serializers}
+        self._data_format = self._config["data_format"]
+        self._shift_idx = len(self._data_format) * 4
+        self.region_of_interest = region_of_interest
+        self._df: Dict[str, Any] = {}
+
+    def generate_intervals(self) -> List[Interval]:
+        intervals = []
+        begin = 0
+        end = 0
+        for idx, curr_chunk in enumerate(self._chunks):
+            end += curr_chunk["chunk_size"]
+            start_idx, end_idx = begin, end
+            if self.region_of_interest is not None:
+                start_idx = begin + self.region_of_interest[idx][0]
+                end_idx = begin + self.region_of_interest[idx][1]
+
+            intervals.append(Interval(begin, start_idx, end_idx, end))
+            begin += curr_chunk["chunk_size"]
+        return intervals
+
+    def pre_load_chunk(self, chunk_index: int, chunk_filepath: str) -> None:
+        """Logic to load the chunk in background to gain some time."""
+        pass
+
+    def load_item_from_chunk(
+        self,
+        index: int,
+        chunk_index: int,
+        chunk_filepath: str,
+        begin: int,
+        filesize_bytes: int,
+    ) -> Any:
+        """Returns an item loaded from a chunk."""
+        if chunk_filepath in self._chunk_filepaths and not os.path.isfile(chunk_filepath):
+            del self._chunk_filepaths[chunk_filepath]
+
+        if chunk_filepath not in self._chunk_filepaths:
+            exists = os.path.exists(chunk_filepath) and os.stat(chunk_filepath).st_size >= filesize_bytes
+
+            while not exists:
+                sleep(0.1)
+                exists = os.path.exists(chunk_filepath) and os.stat(chunk_filepath).st_size >= filesize_bytes
+
+            self._chunk_filepaths[chunk_filepath] = True
+
+        return self.get_df(chunk_filepath).row(index - begin)
+
+    def get_df(self, chunk_filepath: str) -> Any:
+        import polars as pl
+
+        if chunk_filepath not in self._df:
+            self._df[chunk_filepath] = pl.scan_parquet(chunk_filepath).collect()
+        return self._df[chunk_filepath]
+
+    def delete(self, chunk_index: int, chunk_filepath: str) -> None:
+        """Delete a chunk from the local filesystem."""
+        if os.path.exists(chunk_filepath):
+            os.remove(chunk_filepath)
+        if chunk_filepath in self._df:
+            del self._df[chunk_filepath]
+
+    def encode_data(self, data: List[bytes], sizes: List[int], flattened: List[Any]) -> Any:
+        pass

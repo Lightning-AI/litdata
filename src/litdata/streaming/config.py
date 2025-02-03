@@ -70,7 +70,8 @@ class ChunksConfig:
         else:
             self._chunks = load_subsampled_chunks(subsampled_files, _original_chunks)
 
-        self._config["data_spec"] = treespec_loads(self._config["data_spec"])
+        if self._config["data_spec"] is not None:
+            self._config["data_spec"] = treespec_loads(self._config["data_spec"])
 
         assert self._chunks is not None
         self._item_loader.setup(self._config, self._chunks, serializers, region_of_interest)
@@ -229,7 +230,7 @@ class ChunksConfig:
 
         filesize_bytes = chunk["chunk_bytes"]
 
-        if self._config and self._config.get("encryption") is None:
+        if self._config and self._config.get("encryption") is None and (not local_chunkpath.endswith(".parquet")):
             filesize_bytes += (1 + chunk["chunk_size"]) * 4
 
         return local_chunkpath, begin, filesize_bytes
