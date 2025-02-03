@@ -441,9 +441,6 @@ class ParquetLoader(BaseItemLoader):
         self.region_of_interest = region_of_interest
         self._df: Dict[str, Any] = {}
 
-    def state_dict(self) -> Dict:
-        return {}
-
     def generate_intervals(self) -> List[Interval]:
         intervals = []
         begin = 0
