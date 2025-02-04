@@ -37,9 +37,10 @@ class Downloader(ABC):
 
     def download_chunk_from_index(self, chunk_index: int) -> None:
         chunk_filename = self._chunks[chunk_index]["filename"]
+        chunk_download_url = self._chunks[chunk_index].get("download_url", None)
         local_chunkpath = os.path.join(self._cache_dir, chunk_filename)
         remote_chunkpath = os.path.join(self._remote_dir, chunk_filename)
-        self.download_file(remote_chunkpath, local_chunkpath)
+        self.download_file(chunk_download_url or remote_chunkpath, local_chunkpath)
 
     def download_file(self, remote_chunkpath: str, local_chunkpath: str) -> None:
         pass
@@ -179,6 +180,16 @@ class LocalDownloader(Downloader):
             with contextlib.suppress(Exception):
                 os.remove(local_filepath + ".lock")
 
+class HFDownloader(Downloader):
+    def download_file(self, remote_filepath: str, local_filepath: str) -> None:
+        with suppress(Timeout), FileLock(
+            local_filepath + ".lock", timeout=0
+        ):
+            try:
+                cmd = f"wget -q {remote_filepath} -O {local_filepath}"
+                subprocess.Popen(cmd, shell=True).wait()
+            except Exception as e:
+                print(e)
 
 class LocalDownloaderWithCache(LocalDownloader):
     def download_file(self, remote_filepath: str, local_filepath: str) -> None:
@@ -190,6 +201,7 @@ _DOWNLOADERS = {
     "s3://": S3Downloader,
     "gs://": GCPDownloader,
     "azure://": AzureDownloader,
+    "hf://": HFDownloader,
     "local:": LocalDownloaderWithCache,
     "": LocalDownloader,
 }

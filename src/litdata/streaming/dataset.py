@@ -59,6 +59,7 @@ class StreamingDataset(IterableDataset):
         encryption: Optional[Encryption] = None,
         storage_options: Optional[Dict] = {},
         max_pre_download: int = 2,
+        index_path: Optional[str] = None,
     ) -> None:
         """The streaming dataset can be used once your data have been optimised using the DatasetOptimiser class.
 
@@ -79,6 +80,9 @@ class StreamingDataset(IterableDataset):
             encryption: The encryption object to use for decrypting the data.
             storage_options: Additional connection options for accessing storage services.
             max_pre_download: Maximum number of chunks that can be pre-downloaded by the StreamingDataset.
+            index_path: Path to `index.json` for the Parquet dataset.
+                If `index_path` is a directory, the function will look for `index.json` within it.
+                If `index_path` is a full file path, it will use that directly.
 
         """
         _check_version_and_prompt_upgrade(__version__)
@@ -98,7 +102,7 @@ class StreamingDataset(IterableDataset):
         self.subsampled_files: List[str] = []
         self.region_of_interest: List[Tuple[int, int]] = []
         self.subsampled_files, self.region_of_interest = subsample_streaming_dataset(
-            self.input_dir, self.cache_dir, item_loader, subsample, shuffle, seed, storage_options
+            self.input_dir, self.cache_dir, item_loader, subsample, shuffle, seed, storage_options, index_path
         )
 
         self.item_loader = item_loader

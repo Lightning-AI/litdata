@@ -23,6 +23,7 @@ def subsample_streaming_dataset(
     shuffle: bool = False,
     seed: int = 42,
     storage_options: Optional[Dict] = {},
+    index_path: Optional[str] = None,
 ) -> Tuple[List[str], List[Tuple[int, int]]]:
     """Subsample streaming dataset.
 
@@ -43,6 +44,7 @@ def subsample_streaming_dataset(
             input_dir=input_dir.path if input_dir.path else input_dir.url,
             cache_dir=cache_dir.path if cache_dir else None,
             storage_options=storage_options,
+            index_path=index_path,
         )
         if cache_path is not None:
             input_dir.path = cache_path
@@ -54,8 +56,11 @@ def subsample_streaming_dataset(
     # Check if `index.json` file exists in cache path
     if not os.path.exists(cache_index_filepath) and isinstance(input_dir.url, str):
         assert input_dir.url is not None
-        downloader = get_downloader_cls(input_dir.url, input_dir.path, [], storage_options)
-        downloader.download_file(os.path.join(input_dir.url, _INDEX_FILENAME), cache_index_filepath)
+        if index_path is not None:
+            copy_index_to_cache_index_filepath(index_path, cache_index_filepath)
+        else:
+            downloader = get_downloader_cls(input_dir.url, input_dir.path, [], storage_options)
+            downloader.download_file(os.path.join(input_dir.url, _INDEX_FILENAME), cache_index_filepath)
 
     if not os.path.exists(input_dir.path):
         raise FileNotFoundError(f"The provided dataset path `{input_dir.path}` does not exist.")
@@ -124,7 +129,11 @@ def _should_replace_path(path: Optional[str]) -> bool:
     )
 
 
-def _read_updated_at(input_dir: Optional[Dir], storage_options: Optional[Dict] = {}) -> str:
+def _read_updated_at(
+    input_dir: Optional[Dir],
+    storage_options: Optional[Dict] = {},
+    index_path: Optional[str] = None,
+) -> str:
     """Read last updated timestamp from index.json file."""
     last_updation_timestamp = "0"
     index_json_content = None
@@ -138,9 +147,11 @@ def _read_updated_at(input_dir: Optional[Dir], storage_options: Optional[Dict] =
         # download index.json file and read last_updation_timestamp
         with tempfile.TemporaryDirectory() as tmp_directory:
             temp_index_filepath = os.path.join(tmp_directory, _INDEX_FILENAME)
-            downloader = get_downloader_cls(input_dir.url, tmp_directory, [], storage_options)
-            downloader.download_file(os.path.join(input_dir.url, _INDEX_FILENAME), temp_index_filepath)
-
+            if index_path is not None:
+                copy_index_to_cache_index_filepath(index_path, temp_index_filepath)
+            else:
+                downloader = get_downloader_cls(input_dir.url, tmp_directory, [], storage_options)
+                downloader.download_file(os.path.join(input_dir.url, _INDEX_FILENAME), temp_index_filepath)
             index_json_content = load_index_file(tmp_directory)
 
     if index_json_content is not None and "updated_at" in index_json_content:
@@ -167,9 +178,10 @@ def _try_create_cache_dir(
     input_dir: Optional[str],
     cache_dir: Optional[str] = None,
     storage_options: Optional[Dict] = {},
+    index_path: Optional[str] = None,
 ) -> Optional[str]:
     resolved_input_dir = _resolve_dir(input_dir)
-    updated_at = _read_updated_at(resolved_input_dir, storage_options)
+    updated_at = _read_updated_at(resolved_input_dir, storage_options, index_path)
 
     if updated_at == "0" and input_dir is not None:
         updated_at = hashlib.md5(input_dir.encode()).hexdigest()  # noqa: S324
@@ -278,3 +290,14 @@ def adapt_mds_shards_to_chunks(data: Dict[str, Any]) -> Dict[str, Any]:
         "encryption": None,
     }
     return data
+
+def copy_index_to_cache_index_filepath(index_path: str, cache_index_filepath: str)->None:
+    """Copy Index file from index_path to cache_index_filepath."""
+    # If index_path is a directory, append "index.json"
+    if os.path.isdir(index_path):
+        index_path = os.path.join(index_path, "index.json")
+    # Check if the file exists before copying
+    if not os.path.isfile(index_path):
+        raise FileNotFoundError(f"Index file not found: {index_path}")
+    # Copy the file to cache_index_filepath
+    shutil.copy(index_path, cache_index_filepath)

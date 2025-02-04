@@ -256,7 +256,7 @@ class ChunksConfig:
     ) -> Optional["ChunksConfig"]:
         cache_index_filepath = os.path.join(cache_dir, _INDEX_FILENAME)
 
-        if isinstance(remote_dir, str):
+        if isinstance(remote_dir, str) and (not os.path.exists(cache_index_filepath)):
             downloader = get_downloader_cls(remote_dir, cache_dir, [], storage_options)
             downloader.download_file(os.path.join(remote_dir, _INDEX_FILENAME), cache_index_filepath)
 

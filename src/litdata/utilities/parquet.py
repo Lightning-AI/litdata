@@ -23,7 +23,7 @@ class ParquetDir(ABC):
         self.storage_options = storage_options
 
     @abstractmethod
-    def __iter__(self) -> Generator[Tuple[str, str], None, None]: ...
+    def __iter__(self) -> Generator[Tuple[str, str, str], None, None]: ...
 
     @abstractmethod
     def write_index(self, chunks_info: List[Dict[str, Any]], config: Dict[str, Any]) -> None: ...
@@ -38,14 +38,14 @@ class LocalParquetDir(ParquetDir):
     ):
         super().__init__(dir_path, cache_path, storage_options)
 
-    def __iter__(self) -> Generator[Tuple[str, str], None, None]:
+    def __iter__(self) -> Generator[Tuple[str, str, str], None, None]:
         assert self.dir.path is not None
         assert self.dir.path != "", "Dir path can't be empty"
 
         for file_name in os.listdir(self.dir.path):
             if file_name.endswith(".parquet"):
                 file_path = os.path.join(self.dir.path, file_name)
-                yield file_name, file_path
+                yield file_name, file_path, None
 
     def write_index(self, chunks_info: List[Dict[str, Any]], config: Dict[str, Any]) -> None:
         # write to index.json file
@@ -89,7 +89,7 @@ class CloudParquetDir(ParquetDir):
                 print(f"using provider: {provider}")
                 break
 
-    def __iter__(self) -> Generator[Tuple[str, str], None, None]:
+    def __iter__(self) -> Generator[Tuple[str, str, str], None, None]:
         assert self.dir.url is not None
         assert self.cache_path is not None
 
@@ -107,7 +107,7 @@ class CloudParquetDir(ParquetDir):
                 with self.fs.open(file_info["name"], "rb") as cloud_file, open(local_path, "wb") as local_file:
                     local_file.write(cloud_file.read())
 
-                yield file_name, local_path
+                yield file_name, local_path, None
 
     def write_index(self, chunks_info: List[Dict[str, Any]], config: Dict[str, Any]) -> None:
         assert self.cache_path is not None
@@ -147,7 +147,7 @@ class HFParquetDir(ParquetDir):
         assert self.dir.url is not None
         assert self.dir.url.startswith("hf")
 
-    def __iter__(self) -> Generator[Tuple[str, str], None, None]:
+    def __iter__(self) -> Generator[Tuple[str, str, str], None, None]:
         assert self.dir.url is not None
         assert self.cache_path is not None
 
@@ -167,8 +167,9 @@ class HFParquetDir(ParquetDir):
             if file_name.endswith(".parquet"):
                 local_path = os.path.join(self.cache_path, file_name)
                 try:
-                    Popen(f"wget -q {file_url} -O {local_path}", shell=True).wait()
-                    yield file_name, local_path
+                    cmd = f"wget -q {file_url} -O {local_path}"
+                    Popen(cmd, shell=True).wait()
+                    yield file_name, local_path, file_url
                     if os.path.exists(local_path):
                         os.remove(local_path)
                 except Exception as e:
