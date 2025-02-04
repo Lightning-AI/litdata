@@ -33,9 +33,12 @@ __all__ = [
     "train_test_split",
     "merge_datasets",
     "index_parquet_dataset",
+    "index_hf_dataset",
     "breakpoint",
 ]
 if RequirementCache("lightning_sdk"):
     from lightning_sdk import Machine  # noqa: F401
 
     __all__ + ["Machine"]
+
+index_hf_dataset = index_parquet_dataset  # renaming for better readability

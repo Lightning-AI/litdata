@@ -23,7 +23,7 @@ class ParquetDir(ABC):
         self.storage_options = storage_options
 
     @abstractmethod
-    def __iter__(self) -> Generator[Tuple[str, str, str], None, None]: ...
+    def __iter__(self) -> Generator[Tuple[str, str, Optional[str]], None, None]: ...
 
     @abstractmethod
     def write_index(self, chunks_info: List[Dict[str, Any]], config: Dict[str, Any]) -> None: ...
@@ -38,7 +38,7 @@ class LocalParquetDir(ParquetDir):
     ):
         super().__init__(dir_path, cache_path, storage_options)
 
-    def __iter__(self) -> Generator[Tuple[str, str, str], None, None]:
+    def __iter__(self) -> Generator[Tuple[str, str, Optional[str]], None, None]:
         assert self.dir.path is not None
         assert self.dir.path != "", "Dir path can't be empty"
 
@@ -89,7 +89,7 @@ class CloudParquetDir(ParquetDir):
                 print(f"using provider: {provider}")
                 break
 
-    def __iter__(self) -> Generator[Tuple[str, str, str], None, None]:
+    def __iter__(self) -> Generator[Tuple[str, str, Optional[str]], None, None]:
         assert self.dir.url is not None
         assert self.cache_path is not None
 
@@ -147,7 +147,7 @@ class HFParquetDir(ParquetDir):
         assert self.dir.url is not None
         assert self.dir.url.startswith("hf")
 
-    def __iter__(self) -> Generator[Tuple[str, str, str], None, None]:
+    def __iter__(self) -> Generator[Tuple[str, str, Optional[str]], None, None]:
         assert self.dir.url is not None
         assert self.cache_path is not None
 
