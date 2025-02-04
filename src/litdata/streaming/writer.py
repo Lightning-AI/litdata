@@ -555,6 +555,7 @@ def index_parquet_dataset(
     pq_dir_class = get_parquet_indexer_cls(pq_dir_url, cache_dir, storage_options)
     # iterate the directory and for all files ending in `.parquet` index them
     for file_name, file_path in pq_dir_class:
+        print(f"indexing: {file_name=} & {file_path=}")
         file_size = os.path.getsize(file_path)
         pq_polars = pl.scan_parquet(file_path)
         chunk_dtypes = pq_polars.collect_schema().dtypes()

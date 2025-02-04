@@ -3,10 +3,11 @@
 import json
 import os
 from abc import ABC, abstractmethod
+from subprocess import Popen
 from time import time
 from typing import Any, Dict, Generator, List, Optional, Tuple, Type, Union
 
-from litdata.constants import _INDEX_FILENAME
+from litdata.constants import _DATATROVE_AVAILABLE, _FSSPEC_AVAILABLE, _INDEX_FILENAME
 from litdata.streaming.resolver import Dir, _resolve_dir
 
 
@@ -65,6 +66,12 @@ class CloudParquetDir(ParquetDir):
         cache_path: Optional[str] = None,
         storage_options: Optional[Dict] = None,
     ):
+        if not _FSSPEC_AVAILABLE:
+            raise ModuleNotFoundError(
+                "Support for Indexing cloud parquet files depends on `fsspec`.",
+                "Please, run: `pip install fsspec`"
+            )
+
         super().__init__(dir_path, cache_path, storage_options)
         if self.cache_path is None:
             self.cache_path = os.path.join(os.path.expanduser("~"), ".cache", ".litdata-cache-index-pq")
@@ -120,10 +127,73 @@ class CloudParquetDir(ParquetDir):
 
         print(f"Index file written to: {cloud_index_path}")
 
+class HFParquetDir(ParquetDir):
+    def __init__(
+        self,
+        dir_path: Optional[Union[str, Dir]],
+        cache_path: Optional[str] = None,
+        storage_options: Optional[Dict] = None,
+    ):
+        if not _DATATROVE_AVAILABLE:
+            raise ModuleNotFoundError(
+                "Support for Indexing HF depends on `datatrove.io`.",
+                "Please, run: `pip install 'datatrove[io]>0.3.0'`"
+            )
+
+        super().__init__(dir_path, cache_path, storage_options)
+        if self.cache_path is None:
+            self.cache_path = os.path.join(os.path.expanduser("~"), ".cache", ".litdata-cache-index-pq")
+            os.makedirs(self.cache_path, exist_ok=True)  # Ensure the directory exists
+
+        assert self.dir.url is not None
+        assert self.dir.url.startswith("hf")
+
+    def __iter__(self) -> Generator[Tuple[str, str], None, None]:
+        assert self.dir.url is not None
+        assert self.cache_path is not None
+
+        # List all files and directories in the top-level of the specified directory
+        from datatrove.io import get_datafolder
+
+        data_folder = get_datafolder(self.dir.url)
+        filepaths = data_folder.get_shard(rank=0, world_size=1, recursive=True) # get all files
+        pq_files_data: List[Tuple[str, str]] = []
+
+        for fp in filepaths:
+            with data_folder.open(fp, "rb") as f:
+                pq_files_data.append([fp, str(f.url())])
+
+        # Iterate through the items and check for Parquet files
+        for file_name, file_url in pq_files_data:
+            if file_name.endswith(".parquet"):
+                local_path = os.path.join(self.cache_path, file_name)
+                try:
+                    Popen(f"wget -q {file_url} -O {local_path}", shell=True).wait()
+                    yield file_name, local_path
+                    if os.path.exists(local_path):
+                        os.remove(local_path)
+                except Exception as e:
+                    print(e)
+                    pass
+
+    def write_index(self, chunks_info: List[Dict[str, Any]], config: Dict[str, Any]) -> None:
+        assert self.cache_path is not None
+        assert self.dir.url is not None
+
+        index_file_path = os.path.join(self.cache_path, _INDEX_FILENAME)
+        cloud_index_path = os.path.join(self.dir.url, _INDEX_FILENAME)
+        # write to index.json file
+        with open(index_file_path, "w") as f:
+            data = {"chunks": chunks_info, "config": config, "updated_at": str(time())}
+            json.dump(data, f, sort_keys=True)
+
+        print(f"Index file written to: {cloud_index_path}")
+
 
 _PARQUET_DIR: Dict[str, Type[ParquetDir]] = {
     "s3://": CloudParquetDir,
     "gs://": CloudParquetDir,
+    "hf://": HFParquetDir,
     "local:": LocalParquetDir,
     "": LocalParquetDir,
 }
