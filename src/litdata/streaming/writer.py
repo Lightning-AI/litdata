@@ -534,7 +534,10 @@ class BinaryWriter:
 
 
 def index_parquet_dataset(
-    pq_dir_url: str, cache_dir: Optional[str] = None, storage_options: Optional[Dict] = {}
+    pq_dir_url: str,
+    cache_dir: Optional[str] = None,
+    storage_options: Optional[Dict] = {},
+    delete: bool = True,
 ) -> None:
     if not _POLARS_AVAILABLE:
         raise ModuleNotFoundError("Please, run: `pip install polars`")
@@ -552,7 +555,7 @@ def index_parquet_dataset(
         "item_loader": ParquetLoader.__name__,
     }
 
-    pq_dir_class = get_parquet_indexer_cls(pq_dir_url, cache_dir, storage_options)
+    pq_dir_class = get_parquet_indexer_cls(pq_dir_url, cache_dir, storage_options, delete)
     # iterate the directory and for all files ending in `.parquet` index them
     for file_name, file_path, download_url in pq_dir_class:
         file_size = os.path.getsize(file_path)
