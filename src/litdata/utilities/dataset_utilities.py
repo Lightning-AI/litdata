@@ -291,7 +291,8 @@ def adapt_mds_shards_to_chunks(data: Dict[str, Any]) -> Dict[str, Any]:
     }
     return data
 
-def copy_index_to_cache_index_filepath(index_path: str, cache_index_filepath: str)->None:
+
+def copy_index_to_cache_index_filepath(index_path: str, cache_index_filepath: str) -> None:
     """Copy Index file from index_path to cache_index_filepath."""
     # If index_path is a directory, append "index.json"
     if os.path.isdir(index_path):
