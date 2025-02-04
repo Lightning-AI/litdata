@@ -68,8 +68,7 @@ class CloudParquetDir(ParquetDir):
     ):
         if not _FSSPEC_AVAILABLE:
             raise ModuleNotFoundError(
-                "Support for Indexing cloud parquet files depends on `fsspec`.",
-                "Please, run: `pip install fsspec`"
+                "Support for Indexing cloud parquet files depends on `fsspec`.", "Please, run: `pip install fsspec`"
             )
 
         super().__init__(dir_path, cache_path, storage_options)
@@ -127,6 +126,7 @@ class CloudParquetDir(ParquetDir):
 
         print(f"Index file written to: {cloud_index_path}")
 
+
 class HFParquetDir(ParquetDir):
     def __init__(
         self,
@@ -136,8 +136,7 @@ class HFParquetDir(ParquetDir):
     ):
         if not _DATATROVE_AVAILABLE:
             raise ModuleNotFoundError(
-                "Support for Indexing HF depends on `datatrove.io`.",
-                "Please, run: `pip install 'datatrove[io]>0.3.0'`"
+                "Support for Indexing HF depends on `datatrove.io`.", "Please, run: `pip install 'datatrove[io]>0.3.0'`"
             )
 
         super().__init__(dir_path, cache_path, storage_options)
@@ -156,7 +155,7 @@ class HFParquetDir(ParquetDir):
         from datatrove.io import get_datafolder
 
         data_folder = get_datafolder(self.dir.url)
-        filepaths = data_folder.get_shard(rank=0, world_size=1, recursive=True) # get all files
+        filepaths = data_folder.get_shard(rank=0, world_size=1, recursive=True)  # get all files
         pq_files_data: List[Tuple[str, str]] = []
 
         for fp in filepaths:
