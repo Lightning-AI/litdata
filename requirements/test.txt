@@ -10,3 +10,4 @@ pandas
 lightning
 zstd
 numpy < 2.0
+tqdm
