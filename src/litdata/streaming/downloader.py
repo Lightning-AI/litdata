@@ -23,6 +23,7 @@ from urllib import parse
 from filelock import FileLock, Timeout
 
 from litdata.constants import _AZURE_STORAGE_AVAILABLE, _GOOGLE_STORAGE_AVAILABLE, _INDEX_FILENAME
+from litdata.helpers import get_hf_pq_file_download_cmd
 from litdata.streaming.client import S3Client
 
 
@@ -185,7 +186,7 @@ class HFDownloader(Downloader):
     def download_file(self, remote_filepath: str, local_filepath: str) -> None:
         with suppress(Timeout), FileLock(local_filepath + ".lock", timeout=0):
             try:
-                cmd = f"wget -q {remote_filepath} -O {local_filepath}"
+                cmd = get_hf_pq_file_download_cmd(remote_filepath, local_filepath)
                 subprocess.Popen(cmd, shell=True).wait()
             except Exception as e:
                 print(e)

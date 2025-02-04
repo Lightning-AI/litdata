@@ -1,4 +1,5 @@
 import functools
+import os
 import warnings
 from typing import Any, Optional
 
@@ -59,3 +60,10 @@ def _check_version_and_prompt_upgrade(curr_version: str) -> None:
             "Not all functionalities of the platform can be guaranteed to work with the current version.",
         )
     return
+
+
+def get_hf_pq_file_download_cmd(file_url: str, local_path: str, hf_token: Optional[str] = None):
+    """Generate a wget command to download a file from Hugging Face with optional authentication."""
+    hf_token = hf_token or os.getenv("HF_TOKEN")  # Use env variable if not provided
+    headers = f"Authorization: Bearer {hf_token}" if hf_token else ""
+    return f'wget -q --header="{headers}" "{file_url}" -O "{local_path}"'

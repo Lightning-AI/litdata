@@ -14,6 +14,7 @@ from litdata.constants import (
     _INDEX_FILENAME,
     _TQDM_AVAILABLE,
 )
+from litdata.helpers import get_hf_pq_file_download_cmd
 from litdata.streaming.resolver import Dir, _resolve_dir
 
 if _TQDM_AVAILABLE:
@@ -32,12 +33,12 @@ class ParquetDir(ABC):
         dir_path: Optional[Union[str, Dir]],
         cache_path: Optional[str] = None,
         storage_options: Optional[Dict] = {},
-        delete: bool = True,
+        remove_after_indexing: bool = True,
     ):
         self.dir = _resolve_dir(dir_path)
         self.cache_path = cache_path
         self.storage_options = storage_options
-        self.delete = delete
+        self.remove_after_indexing = remove_after_indexing
 
     @abstractmethod
     def __iter__(self) -> Generator[Tuple[str, str, Optional[str]], None, None]: ...
@@ -52,9 +53,9 @@ class LocalParquetDir(ParquetDir):
         dir_path: Optional[Union[str, Dir]],
         cache_path: Optional[str] = None,
         storage_options: Optional[Dict] = {},
-        delete: bool = True,
+        remove_after_indexing: bool = True,
     ):
-        super().__init__(dir_path, cache_path, storage_options, delete)
+        super().__init__(dir_path, cache_path, storage_options, remove_after_indexing)
 
     def __iter__(self) -> Generator[Tuple[str, str, Optional[str]], None, None]:
         assert self.dir.path is not None
@@ -83,14 +84,14 @@ class CloudParquetDir(ParquetDir):
         dir_path: Optional[Union[str, Dir]],
         cache_path: Optional[str] = None,
         storage_options: Optional[Dict] = None,
-        delete: bool = True,
+        remove_after_indexing: bool = True,
     ):
         if not _FSSPEC_AVAILABLE:
             raise ModuleNotFoundError(
                 "Support for Indexing cloud parquet files depends on `fsspec`.", "Please, run: `pip install fsspec`"
             )
 
-        super().__init__(dir_path, cache_path, storage_options, delete)
+        super().__init__(dir_path, cache_path, storage_options, remove_after_indexing)
 
         assert self.dir.url is not None
 
@@ -128,7 +129,7 @@ class CloudParquetDir(ParquetDir):
                     local_file.write(cloud_file.read())
 
                 yield file_name, local_path, None
-                if os.path.exists(local_path) and self.delete:
+                if os.path.exists(local_path) and self.remove_after_indexing:
                     os.remove(local_path)
 
     def write_index(self, chunks_info: List[Dict[str, Any]], config: Dict[str, Any]) -> None:
@@ -155,14 +156,14 @@ class HFParquetDir(ParquetDir):
         dir_path: Optional[Union[str, Dir]],
         cache_path: Optional[str] = None,
         storage_options: Optional[Dict] = None,
-        delete: bool = True,
+        remove_after_indexing: bool = True,
     ):
         if not _DATATROVE_AVAILABLE:
             raise ModuleNotFoundError(
                 "Support for Indexing HF depends on `datatrove.io`.", "Please, run: `pip install 'datatrove[io]>0.3.0'`"
             )
 
-        super().__init__(dir_path, cache_path, storage_options, delete)
+        super().__init__(dir_path, cache_path, storage_options, remove_after_indexing)
 
         assert self.dir.url is not None
         assert self.dir.url.startswith("hf")
@@ -190,15 +191,14 @@ class HFParquetDir(ParquetDir):
         for file_name, file_url in tqdm(pq_files_data):
             if file_name.endswith(".parquet"):
                 local_path = os.path.join(self.cache_path, file_name)
-                try:
-                    cmd = f"wget -q {file_url} -O {local_path}"
-                    Popen(cmd, shell=True).wait()
-                    yield file_name, local_path, file_url
-                    if os.path.exists(local_path) and self.delete:
-                        os.remove(local_path)
-                except Exception as e:
-                    print(e)
-                    pass
+                cmd = get_hf_pq_file_download_cmd(file_url, local_path)
+                Popen(cmd, shell=True).wait()
+                # Check if the file exists and is not empty
+                if (not os.path.exists(local_path)) or os.path.getsize(local_path) <= 0:
+                    raise ValueError("Failed to download file from {file_url}. Please check URL.")
+                yield file_name, local_path, file_url
+                if os.path.exists(local_path) and self.remove_after_indexing:
+                    os.remove(local_path)
 
     def write_index(self, chunks_info: List[Dict[str, Any]], config: Dict[str, Any]) -> None:
         assert self.cache_path is not None
@@ -227,11 +227,11 @@ def get_parquet_indexer_cls(
     dir_path: str,
     cache_path: Optional[str] = None,
     storage_options: Optional[Dict] = {},
-    delete: bool = True,
+    remove_after_indexing: bool = True,
 ) -> ParquetDir:
     for k, cls in _PARQUET_DIR.items():
         if str(dir_path).startswith(k):
-            return cls(dir_path, cache_path, storage_options, delete)
+            return cls(dir_path, cache_path, storage_options, remove_after_indexing)
     raise ValueError(f"The provided `dir_path` {dir_path} doesn't have a ParquetDir class associated.")
 
 

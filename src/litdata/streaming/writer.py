@@ -537,8 +537,23 @@ def index_parquet_dataset(
     pq_dir_url: str,
     cache_dir: Optional[str] = None,
     storage_options: Optional[Dict] = {},
-    delete: bool = True,
+    remove_after_indexing: bool = True,
 ) -> None:
+    """Index a Parquet dataset from a specified directory URL.
+
+    This function scans all `.parquet` files in the specified directory URL, extracts metadata
+    such as file size, chunk size, and data types, and indexes them. Optionally, the files
+    can be removed after indexing.
+
+    Args:
+        pq_dir_url (str): URL of the directory containing the Parquet files.
+        cache_dir (Optional[str]): Local cache directory for storing temporary files.
+        storage_options (Optional[Dict]): Additional storage options for accessing the Parquet files.
+        remove_after_indexing (bool): Whether to remove files after indexing (default is True).
+
+    Raises:
+        ModuleNotFoundError: If the required `polars` module is not installed.
+    """
     if not _POLARS_AVAILABLE:
         raise ModuleNotFoundError("Please, run: `pip install polars`")
 
@@ -555,7 +570,7 @@ def index_parquet_dataset(
         "item_loader": ParquetLoader.__name__,
     }
 
-    pq_dir_class = get_parquet_indexer_cls(pq_dir_url, cache_dir, storage_options, delete)
+    pq_dir_class = get_parquet_indexer_cls(pq_dir_url, cache_dir, storage_options, remove_after_indexing)
     # iterate the directory and for all files ending in `.parquet` index them
     for file_name, file_path, download_url in pq_dir_class:
         file_size = os.path.getsize(file_path)

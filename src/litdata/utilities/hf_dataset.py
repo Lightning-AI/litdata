@@ -7,7 +7,7 @@ from litdata.streaming.writer import index_parquet_dataset
 from litdata.utilities.parquet import default_cache_dir
 
 
-def prepare_hf_dataset(hf_url: str) -> str:
+def index_hf_dataset(hf_url: str) -> str:
     if not hf_url.startswith("hf://"):
         raise ValueError(f"Invalid Hugging Face dataset URL: {hf_url}. Expected URL to start with 'hf://'.")
 
@@ -20,7 +20,7 @@ def prepare_hf_dataset(hf_url: str) -> str:
         print(f"Found HF index.json file in {cache_index_path}.")
     else:
         print("Indexing HF dataset...")
-        index_parquet_dataset(hf_url, delete=False)
+        index_parquet_dataset(hf_url, cache_dir, remove_after_indexing=False)
 
     print("=" * 50)
 
