@@ -7,4 +7,3 @@ lightning-sdk==0.1.46 # Must be pinned to ensure compatibility
 google-cloud-storage
 polars
 fsspec
-tqdm

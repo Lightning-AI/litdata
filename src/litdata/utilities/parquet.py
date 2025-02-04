@@ -6,12 +6,24 @@ import os
 from abc import ABC, abstractmethod
 from subprocess import Popen
 from time import time
-from typing import Any, Dict, Generator, List, Optional, Tuple, Type, Union
+from typing import Any, Dict, Generator, Iterable, List, Optional, Tuple, Type, TypeVar, Union
 
-from tqdm import tqdm
-
-from litdata.constants import _DATATROVE_AVAILABLE, _FSSPEC_AVAILABLE, _INDEX_FILENAME
+from litdata.constants import (
+    _DATATROVE_AVAILABLE,
+    _FSSPEC_AVAILABLE,
+    _INDEX_FILENAME,
+    _TQDM_AVAILABLE,
+)
 from litdata.streaming.resolver import Dir, _resolve_dir
+
+if _TQDM_AVAILABLE:
+    from tqdm import tqdm
+else:
+    # hacky way for now to ignore tqdm import
+    T = TypeVar("T")
+
+    def tqdm(iterable: Iterable[T]) -> Iterable[T]:
+        return iterable
 
 
 class ParquetDir(ABC):
