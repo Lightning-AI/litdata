@@ -176,7 +176,7 @@ class HFParquetDir(ParquetDir):
         from huggingface_hub import HfFileSystem
 
         self.fs = HfFileSystem()
-        self.files = self.fs.ls("hf://datasets/deependu/my-first-ds", detail=False)
+        self.files = self.fs.ls(self.dir.url, detail=False)
 
     def __iter__(self) -> Generator[Tuple[str, str], None, None]:
         assert self.dir.url is not None
