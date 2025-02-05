@@ -42,10 +42,9 @@ class Downloader(ABC):
 
     def download_chunk_from_index(self, chunk_index: int) -> None:
         chunk_filename = self._chunks[chunk_index]["filename"]
-        chunk_download_url = self._chunks[chunk_index].get("download_url", None)
         local_chunkpath = os.path.join(self._cache_dir, chunk_filename)
         remote_chunkpath = os.path.join(self._remote_dir, chunk_filename)
-        self.download_file(chunk_download_url or remote_chunkpath, local_chunkpath)
+        self.download_file(remote_chunkpath, local_chunkpath)
 
     def download_file(self, remote_chunkpath: str, local_chunkpath: str) -> None:
         pass
