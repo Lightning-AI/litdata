@@ -215,13 +215,12 @@ class HFParquetDir(ParquetDir):
         assert self.dir.url is not None
 
         index_file_path = os.path.join(self.cache_path, _INDEX_FILENAME)
-        cloud_index_path = os.path.join(self.dir.url, _INDEX_FILENAME)
         # write to index.json file
         with open(index_file_path, "w") as f:
             data = {"chunks": chunks_info, "config": config, "updated_at": str(time())}
             json.dump(data, f, sort_keys=True)
 
-        print(f"Index file written to: {cloud_index_path}")
+        print(f"Index file written to: {index_file_path}")
 
 
 _PARQUET_DIR: Dict[str, Type[ParquetDir]] = {
