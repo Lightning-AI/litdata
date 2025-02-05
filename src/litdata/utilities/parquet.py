@@ -37,7 +37,7 @@ class ParquetDir(ABC):
         self.cache_path = cache_path
         self.storage_options = storage_options
         self.remove_after_indexing = remove_after_indexing
-        self.files = []
+        self.files: List[Any] = []
 
     @abstractmethod
     def __iter__(self) -> Generator[Tuple[str, str], None, None]: ...
