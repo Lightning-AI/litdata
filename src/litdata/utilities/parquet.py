@@ -61,7 +61,7 @@ class ParquetDir(ABC):
         t_worker = threading.Thread(
             target=self.worker,
             name="worker_thread",
-            args=(self.process_queue,),
+            args=(),
         )
         t_worker.start()
 
@@ -74,19 +74,19 @@ class ParquetDir(ABC):
                 self.delete_queue.put_nowait(file_path)
 
         if is_delete_thread_running:
-            self.delete_queue.put_nowait((None, None))  # so that it doesn't hand indefinitely
+            self.delete_queue.put_nowait((None, None))  # so that it doesn't hang indefinitely
             t.join()
 
         t_worker.join()  # should've completed by now. But, just to be on safe side.
 
     @abstractmethod
-    def task(self, _file: Any, q: Queue) -> None: ...
+    def task(self, _file: Any) -> None: ...
 
-    def worker(self, q: Queue) -> None:
+    def worker(self) -> None:
         with ThreadPoolExecutor(max_workers=self.num_workers) as executor:
             for _file in self.files:
-                executor.submit(self.task, _file, q)
-        q.put_nowait((None, None))
+                executor.submit(self.task, _file)
+        self.process_queue.put_nowait((None, None))
 
     @abstractmethod
     def write_index(self, chunks_info: List[Dict[str, Any]], config: Dict[str, Any]) -> None: ...
@@ -107,7 +107,7 @@ class LocalParquetDir(ParquetDir):
             if _f.endswith(".parquet"):
                 self.files.append(_f)
 
-    def task(self, _file: str, q: Queue) -> None:
+    def task(self, _file: str) -> None:
         assert isinstance(_file, str)
 
         if _file.endswith(".parquet"):
@@ -115,7 +115,7 @@ class LocalParquetDir(ParquetDir):
             assert self.dir.path != "", "Dir path can't be empty"
 
             file_path = os.path.join(self.dir.path, _file)
-            q.put_nowait((_file, file_path))
+            self.process_queue.put_nowait((_file, file_path))
 
     def write_index(self, chunks_info: List[Dict[str, Any]], config: Dict[str, Any]) -> None:
         # write to index.json file
@@ -167,7 +167,7 @@ class CloudParquetDir(ParquetDir):
             if _f["type"] == "file" and _f["name"].endswith(".parquet"):
                 self.files.append(_f)
 
-    def task(self, _file: Any, q: Queue) -> None:
+    def task(self, _file: Any) -> None:
         if _file["type"] == "file" and _file["name"].endswith(".parquet"):
             file_name = os.path.basename(_file["name"])
             assert self.cache_path is not None
@@ -182,7 +182,7 @@ class CloudParquetDir(ParquetDir):
                 local_file.write(cloud_file.read())
 
             os.rename(temp_path, local_path)  # Atomic move after successful write
-            q.put_nowait((file_name, local_path))
+            self.process_queue.put_nowait((file_name, local_path))
 
     def write_index(self, chunks_info: List[Dict[str, Any]], config: Dict[str, Any]) -> None:
         assert self.cache_path is not None
@@ -234,7 +234,7 @@ class HFParquetDir(ParquetDir):
             if _f.endswith(".parquet"):
                 self.files.append(_f)
 
-    def task(self, _file: str, q: Queue) -> None:
+    def task(self, _file: str) -> None:
         assert isinstance(_file, str)
         assert self.cache_path is not None
 
@@ -252,7 +252,7 @@ class HFParquetDir(ParquetDir):
                     raise ValueError(f"Expected parquet data in bytes format. But found str. {_file}")
                 local_file.write(data)
             os.rename(temp_path, local_path)  # Atomic move after successful write
-            q.put_nowait((_file, local_path))
+            self.process_queue.put_nowait((_file, local_path))
 
     def write_index(self, chunks_info: List[Dict[str, Any]], config: Dict[str, Any]) -> None:
         assert self.cache_path is not None
