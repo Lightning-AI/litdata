@@ -38,7 +38,7 @@ _AZURE_STORAGE_AVAILABLE = RequirementCache("azure.storage.blob")
 _TQDM_AVAILABLE = RequirementCache("tqdm")
 _LIGHTNING_SDK_AVAILABLE = RequirementCache("lightning_sdk")
 _POLARS_AVAILABLE = RequirementCache("polars")
-_DATATROVE_AVAILABLE = RequirementCache("datatrove>0.3.0")
+_HF_HUB_AVAILABLE = RequirementCache("huggingface_hub")
 _DEBUG = bool(int(os.getenv("DEBUG", "1")))
 
 _MAX_WAIT_TIME = int(os.getenv("MAX_WAIT_TIME", "120"))

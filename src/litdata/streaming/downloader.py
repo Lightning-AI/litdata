@@ -22,8 +22,12 @@ from urllib import parse
 
 from filelock import FileLock, Timeout
 
-from litdata.constants import _AZURE_STORAGE_AVAILABLE, _GOOGLE_STORAGE_AVAILABLE, _INDEX_FILENAME
-from litdata.helpers import get_hf_pq_file_download_cmd
+from litdata.constants import (
+    _AZURE_STORAGE_AVAILABLE,
+    _GOOGLE_STORAGE_AVAILABLE,
+    _HF_HUB_AVAILABLE,
+    _INDEX_FILENAME,
+)
 from litdata.streaming.client import S3Client
 
 
@@ -183,13 +187,39 @@ class LocalDownloader(Downloader):
 
 
 class HFDownloader(Downloader):
+    def __init__(
+        self, remote_dir: str, cache_dir: str, chunks: List[Dict[str, Any]], storage_options: Optional[Dict] = {}
+    ):
+        if not _HF_HUB_AVAILABLE:
+            raise ModuleNotFoundError(
+                "Support for Downloading HF dataset depends on `huggingface_hub`.",
+                "Please, run: `pip install huggingface_hub",
+            )
+
+        super().__init__(remote_dir, cache_dir, chunks, storage_options)
+        from huggingface_hub import HfFileSystem
+
+        self.fs = HfFileSystem()
+
     def download_file(self, remote_filepath: str, local_filepath: str) -> None:
         with suppress(Timeout), FileLock(local_filepath + ".lock", timeout=0):
+            temp_path = local_filepath + ".tmp"  # Avoid partial writes
             try:
-                cmd = get_hf_pq_file_download_cmd(remote_filepath, local_filepath)
-                subprocess.Popen(cmd, shell=True).wait()
+                with self.fs.open(remote_filepath, "rb") as cloud_file, open(temp_path, "wb") as local_file:
+                    data = cloud_file.read()
+                    if isinstance(data, str):
+                        raise ValueError(f"Expected parquet data in bytes format. But found str. {remote_filepath}")
+                    local_file.write(data)
+
+                os.rename(temp_path, local_filepath)  # Atomic move after successful write
+
             except Exception as e:
-                print(e)
+                print(f"Error processing {remote_filepath}: {e}")
+
+            finally:
+                # Ensure cleanup of temp file if an error occurs
+                if os.path.exists(temp_path):
+                    os.remove(temp_path)
 
 
 class LocalDownloaderWithCache(LocalDownloader):

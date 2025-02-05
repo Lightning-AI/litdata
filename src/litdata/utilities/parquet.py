@@ -4,17 +4,15 @@ import hashlib
 import json
 import os
 from abc import ABC, abstractmethod
-from subprocess import Popen
 from time import time
 from typing import Any, Dict, Generator, Iterable, List, Optional, Tuple, Type, TypeVar, Union
 
 from litdata.constants import (
-    _DATATROVE_AVAILABLE,
     _FSSPEC_AVAILABLE,
+    _HF_HUB_AVAILABLE,
     _INDEX_FILENAME,
     _TQDM_AVAILABLE,
 )
-from litdata.helpers import get_hf_pq_file_download_cmd
 from litdata.streaming.resolver import Dir, _resolve_dir
 
 if _TQDM_AVAILABLE:
@@ -39,9 +37,10 @@ class ParquetDir(ABC):
         self.cache_path = cache_path
         self.storage_options = storage_options
         self.remove_after_indexing = remove_after_indexing
+        self.files = []
 
     @abstractmethod
-    def __iter__(self) -> Generator[Tuple[str, str, Optional[str]], None, None]: ...
+    def __iter__(self) -> Generator[Tuple[str, str], None, None]: ...
 
     @abstractmethod
     def write_index(self, chunks_info: List[Dict[str, Any]], config: Dict[str, Any]) -> None: ...
@@ -56,15 +55,16 @@ class LocalParquetDir(ParquetDir):
         remove_after_indexing: bool = True,
     ):
         super().__init__(dir_path, cache_path, storage_options, remove_after_indexing)
+        self.files = os.listdir(self.dir.path)
 
-    def __iter__(self) -> Generator[Tuple[str, str, Optional[str]], None, None]:
+    def __iter__(self) -> Generator[Tuple[str, str], None, None]:
         assert self.dir.path is not None
         assert self.dir.path != "", "Dir path can't be empty"
 
-        for file_name in tqdm(os.listdir(self.dir.path)):
+        for file_name in tqdm(self.files):
             if file_name.endswith(".parquet"):
                 file_path = os.path.join(self.dir.path, file_name)
-                yield file_name, file_path, None
+                yield file_name, file_path
 
     def write_index(self, chunks_info: List[Dict[str, Any]], config: Dict[str, Any]) -> None:
         # write to index.json file
@@ -110,15 +110,15 @@ class CloudParquetDir(ParquetDir):
                 print(f"using provider: {provider}")
                 break
 
-    def __iter__(self) -> Generator[Tuple[str, str, Optional[str]], None, None]:
+        # List all files and directories in the top-level of the specified directory
+        self.files = self.fs.ls(self.dir.url, detail=True)
+
+    def __iter__(self) -> Generator[Tuple[str, str], None, None]:
         assert self.dir.url is not None
         assert self.cache_path is not None
 
-        # List all files and directories in the top-level of the specified directory
-        files = self.fs.ls(self.dir.url, detail=True)
-
         # Iterate through the items and check for Parquet files
-        for file_info in tqdm(files):
+        for file_info in tqdm(self.files):
             if file_info["type"] == "file" and file_info["name"].endswith(".parquet"):
                 file_name = os.path.basename(file_info["name"])
                 assert self.cache_path is not None
@@ -128,7 +128,7 @@ class CloudParquetDir(ParquetDir):
                 with self.fs.open(file_info["name"], "rb") as cloud_file, open(local_path, "wb") as local_file:
                     local_file.write(cloud_file.read())
 
-                yield file_name, local_path, None
+                yield file_name, local_path
                 if os.path.exists(local_path) and self.remove_after_indexing:
                     os.remove(local_path)
 
@@ -158,9 +158,9 @@ class HFParquetDir(ParquetDir):
         storage_options: Optional[Dict] = None,
         remove_after_indexing: bool = True,
     ):
-        if not _DATATROVE_AVAILABLE:
+        if not _HF_HUB_AVAILABLE:
             raise ModuleNotFoundError(
-                "Support for Indexing HF depends on `datatrove.io`.", "Please, run: `pip install 'datatrove[io]>0.3.0'`"
+                "Support for Indexing HF depends on `huggingface_hub`.", "Please, run: `pip install huggingface_hub"
             )
 
         super().__init__(dir_path, cache_path, storage_options, remove_after_indexing)
@@ -172,31 +172,41 @@ class HFParquetDir(ParquetDir):
             self.cache_path = default_cache_dir(self.dir.url)
             os.makedirs(self.cache_path, exist_ok=True)  # Ensure the directory exists
 
-    def __iter__(self) -> Generator[Tuple[str, str, Optional[str]], None, None]:
+        # List all files and directories in the top-level of the specified directory
+        from huggingface_hub import HfFileSystem
+
+        self.fs = HfFileSystem()
+        self.files = self.fs.ls("hf://datasets/deependu/my-first-ds", detail=False)
+
+    def __iter__(self) -> Generator[Tuple[str, str], None, None]:
         assert self.dir.url is not None
         assert self.cache_path is not None
 
-        # List all files and directories in the top-level of the specified directory
-        from datatrove.io import get_datafolder
-
-        data_folder = get_datafolder(self.dir.url)
-        filepaths = data_folder.get_shard(rank=0, world_size=1, recursive=True)  # get all files
-        pq_files_data = []
-
-        for fp in filepaths:
-            with data_folder.open(fp, "rb") as f:
-                pq_files_data.append([fp, str(f.url())])
-
         # Iterate through the items and check for Parquet files
-        for file_name, file_url in tqdm(pq_files_data):
+        for file_name in tqdm(self.files):
+            assert isinstance(file_name, str)
             if file_name.endswith(".parquet"):
                 local_path = os.path.join(self.cache_path, file_name)
-                cmd = get_hf_pq_file_download_cmd(file_url, local_path)
-                Popen(cmd, shell=True).wait()
-                # Check if the file exists and is not empty
-                if (not os.path.exists(local_path)) or os.path.getsize(local_path) <= 0:
-                    raise ValueError("Failed to download file from {file_url}. Please check URL.")
-                yield file_name, local_path, file_url
+                os.makedirs(os.path.dirname(local_path), exist_ok=True)
+                temp_path = local_path + ".tmp"  # Avoid partial writes
+
+                try:
+                    with self.fs.open(file_name, "rb") as cloud_file, open(temp_path, "wb") as local_file:
+                        data = cloud_file.read()
+                        if isinstance(data, str):
+                            raise ValueError(f"Expected parquet data in bytes format. But found str. {file_name}")
+                        local_file.write(data)
+                    os.rename(temp_path, local_path)  # Atomic move after successful write
+                    yield file_name, local_path
+
+                except Exception as e:
+                    print(f"Error processing: {e}")
+
+                finally:
+                    # Ensure cleanup of temp file if an error occurs
+                    if os.path.exists(temp_path):
+                        os.remove(temp_path)
+
                 if os.path.exists(local_path) and self.remove_after_indexing:
                     os.remove(local_path)
 
