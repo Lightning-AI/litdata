@@ -21,7 +21,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 
-from litdata.constants import _INDEX_FILENAME, _POLARS_AVAILABLE
+from litdata.constants import _INDEX_FILENAME, _POLARS_AVAILABLE, _TQDM_AVAILABLE
 from litdata.processing.utilities import get_worker_rank
 from litdata.streaming.compression import _COMPRESSORS, Compressor
 from litdata.streaming.item_loader import BaseItemLoader, ParquetLoader, PyTreeLoader
@@ -538,6 +538,7 @@ def index_parquet_dataset(
     cache_dir: Optional[str] = None,
     storage_options: Optional[Dict] = {},
     remove_after_indexing: bool = True,
+    num_workers: int = 4,
 ) -> None:
     """Index a Parquet dataset from a specified directory URL.
 
@@ -550,6 +551,7 @@ def index_parquet_dataset(
         cache_dir (Optional[str]): Local cache directory for storing temporary files.
         storage_options (Optional[Dict]): Additional storage options for accessing the Parquet files.
         remove_after_indexing (bool): Whether to remove files after indexing (default is True).
+        num_workers (int): Number of workers to download files and index them.
 
     Raises:
         ModuleNotFoundError: If the required `polars` module is not installed.
@@ -570,7 +572,20 @@ def index_parquet_dataset(
         "item_loader": ParquetLoader.__name__,
     }
 
-    pq_dir_class = get_parquet_indexer_cls(pq_dir_url, cache_dir, storage_options, remove_after_indexing)
+    pq_dir_class = get_parquet_indexer_cls(pq_dir_url, cache_dir, storage_options, remove_after_indexing, num_workers)
+    if _TQDM_AVAILABLE:
+        from tqdm.auto import tqdm as _tqdm
+
+        pbar = _tqdm(
+            desc="Progress",
+            total=len(pq_dir_class.files),
+            smoothing=0,
+            position=-1,
+            mininterval=1,
+            leave=True,
+            dynamic_ncols=True,
+            unit="step",
+        )
     # iterate the directory and for all files ending in `.parquet` index them
     for file_name, file_path in pq_dir_class:
         file_size = os.path.getsize(file_path)
@@ -592,5 +607,8 @@ def index_parquet_dataset(
             "dim": None,
         }
         pq_chunks_info.append(chunk_info)
+        if _TQDM_AVAILABLE:
+            pbar.update(1)
 
+    print(flush=True)  # to prevent truncated printing when using concurrent threads/processes
     pq_dir_class.write_index(pq_chunks_info, config)
