@@ -18,7 +18,7 @@ from litdata.constants import (
 from litdata.streaming.resolver import Dir, _resolve_dir
 
 
-def delete_thread(rmq: Queue):
+def delete_thread(rmq: Queue) -> None:
     while True:
         file_path = rmq.get()
         if file_path is None:  # Sentinel value to exit
@@ -41,8 +41,8 @@ class ParquetDir(ABC):
         self.storage_options = storage_options
         self.remove_after_indexing = remove_after_indexing
         self.files: List[Any] = []
-        self.process_queue = Queue()
-        self.delete_queue = Queue()
+        self.process_queue: Queue = Queue()
+        self.delete_queue: Queue = Queue()
         self.num_workers = num_workers
 
     def __iter__(self) -> Generator[Tuple[str, str], None, None]:
@@ -82,7 +82,7 @@ class ParquetDir(ABC):
     @abstractmethod
     def task(self, _file: Any, q: Queue) -> None: ...
 
-    def worker(self, q: Queue):
+    def worker(self, q: Queue) -> None:
         with ThreadPoolExecutor(max_workers=self.num_workers) as executor:
             for _file in self.files:
                 executor.submit(self.task, _file, q)
@@ -107,7 +107,7 @@ class LocalParquetDir(ParquetDir):
             if _f.endswith(".parquet"):
                 self.files.append(_f)
 
-    def task(self, _file: str, q: Queue):
+    def task(self, _file: str, q: Queue) -> None:
         assert isinstance(_file, str)
 
         if _file.endswith(".parquet"):
@@ -167,7 +167,7 @@ class CloudParquetDir(ParquetDir):
             if _f["type"] == "file" and _f["name"].endswith(".parquet"):
                 self.files.append(_f)
 
-    def task(self, _file: Any, q: Queue):
+    def task(self, _file: Any, q: Queue) -> None:
         if _file["type"] == "file" and _file["name"].endswith(".parquet"):
             file_name = os.path.basename(_file["name"])
             assert self.cache_path is not None
@@ -234,7 +234,7 @@ class HFParquetDir(ParquetDir):
             if _f.endswith(".parquet"):
                 self.files.append(_f)
 
-    def task(self, _file: str, q: Queue):
+    def task(self, _file: str, q: Queue) -> None:
         assert isinstance(_file, str)
         assert self.cache_path is not None
 
