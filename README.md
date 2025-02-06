@@ -1132,3 +1132,18 @@ LitData is a community project accepting contributions -  Let's make the world's
 
 💬 [Get help on Discord](https://discord.com/invite/XncpTy7DSt)    
 📋 [License: Apache 2.0](https://github.com/Lightning-AI/litdata/blob/main/LICENSE)
+
+
+# Governance
+
+
+### Maintainers
+
+* Thomas Chaton (tchaton)
+* Luca Antiga (lantiga)
+* Justus Schock (justusschock)
+* Bhimraj Yadav (bhimrazy)
+* Deependu (deependujha)
+
+### Emeritus Maintainers
+* Adrian Wälchli (awaelchli)
