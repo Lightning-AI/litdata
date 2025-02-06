@@ -423,7 +423,10 @@ class TokensLoader(BaseItemLoader):
 class ParquetLoader(BaseItemLoader):
     def __init__(self) -> None:
         if not _POLARS_AVAILABLE:
-            raise ModuleNotFoundError("Please, run: `pip install polars`")
+            raise ModuleNotFoundError(
+                "You are using the Parquet item loader, which depends on `Polars > 1.0.0`.",
+                "Please, run: `pip install polars>1.0.0`",
+            )
         self._chunk_filepaths: Dict[str, bool] = {}
 
     def setup(
@@ -458,7 +461,10 @@ class ParquetLoader(BaseItemLoader):
 
     def pre_load_chunk(self, chunk_index: int, chunk_filepath: str) -> None:
         """Logic to load the chunk in background to gain some time."""
-        pass
+        import polars as pl
+
+        if chunk_filepath not in self._df:
+            self._df[chunk_filepath] = pl.scan_parquet(chunk_filepath).collect()
 
     def load_item_from_chunk(
         self,

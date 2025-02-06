@@ -15,6 +15,7 @@ import json
 import os
 import random
 import sys
+from collections import OrderedDict
 
 import numpy as np
 import pytest
@@ -278,14 +279,16 @@ def test_parquet_index_write(tmpdir):
 
     os.mkdir(os.path.join(tmpdir, "data"))
 
+    pq_data = OrderedDict(
+        {
+            "name": ["Tom", "Jerry", "Micky", "Oggy", "Doraemon"],
+            "weight": [57.9, 72.5, 53.6, 83.1, 69.4],  # (kg)
+            "height": [1.56, 1.77, 1.65, 1.75, 1.63],  # (m)
+        }
+    )
+
     for i in range(5):
-        df = pl.DataFrame(
-            {
-                "name": ["Tom", "Jerry", "Micky", "Oggy", "Doraemon"],
-                "weight": [57.9, 72.5, 53.6, 83.1, 69.4],  # (kg)
-                "height": [1.56, 1.77, 1.65, 1.75, 1.63],  # (m)
-            }
-        )
+        df = pl.DataFrame(pq_data)
         file_path = os.path.join(tmpdir, "data", f"tmp-{i}.parquet")
         df.write_parquet(file_path)
 
@@ -307,3 +310,10 @@ def test_parquet_index_write(tmpdir):
     ds = StreamingDataset(os.path.join(tmpdir, "data"), item_loader=ParquetLoader())
 
     assert len(ds) == 25  # 5 datasets for 5 loops
+
+    for i, _ds in enumerate(ds):
+        idx = i % 5
+        assert len(_ds) == 3
+        assert _ds[0] == pq_data["name"][idx]
+        assert _ds[1] == pq_data["weight"][idx]
+        assert _ds[2] == pq_data["height"][idx]
