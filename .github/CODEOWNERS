@@ -8,4 +8,4 @@
 /.github/       @borda
 *.yml           @borda
 
-/src             @tchaton
+/src            @tchaton @lantiga @justusschock
