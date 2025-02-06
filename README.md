@@ -1135,6 +1135,8 @@ LitData is a community project accepting contributions -  Let's make the world's
 
 ----
 
+# Governance
+
 ## Maintainers
 
 * Thomas Chaton ([tchaton](https://github.com/tchaton))
@@ -1142,6 +1144,8 @@ LitData is a community project accepting contributions -  Let's make the world's
 * Justus Schock ([justusschock](https://github.com/justusschock))
 * Bhimraj Yadav ([bhimrazy](https://github.com/bhimrazy))
 * Deependu ([deependujha](https://github.com/deependujha))
+* Jirka Borda ([Borda](https://github.com/Borda))
+
 
 ## Emeritus Maintainers
 * Adrian Wälchli ([awaelchli](https://github.com/awaelchli))
