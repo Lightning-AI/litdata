@@ -154,6 +154,9 @@ exclude_lines = [
 
 
 [tool.pytest.ini_options]
+testpaths = [
+    "tests",
+]
 norecursedirs = [
     ".git",
     ".github",
