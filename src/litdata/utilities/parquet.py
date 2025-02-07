@@ -3,11 +3,12 @@
 import hashlib
 import json
 import os
+import sys
 import threading
 from abc import ABC, abstractmethod
 from concurrent.futures import ThreadPoolExecutor
 from queue import Queue
-from time import time
+from time import sleep, time
 from typing import Any, Dict, Generator, List, Optional, Tuple, Union
 from urllib import parse
 
@@ -26,6 +27,9 @@ def delete_thread(rmq: Queue) -> None:
             break
         if os.path.exists(file_path):
             os.remove(file_path)
+
+    # before exiting, just sleep for some time, to complete any pending deletions
+    sleep(0.5)
 
 
 class ParquetDir(ABC):
@@ -180,7 +184,8 @@ class CloudParquetDir(ParquetDir):
 
             # Download the file
             with self.fs.open(_file["name"], "rb") as cloud_file, open(temp_path, "wb") as local_file:
-                local_file.write(cloud_file.read())
+                for chunk in iter(lambda: cloud_file.read(4096), b""):  # Read in 4KB chunks
+                    local_file.write(chunk)
 
             os.rename(temp_path, local_path)  # Atomic move after successful write
             self.process_queue.put_nowait((file_name, local_path))
@@ -202,6 +207,8 @@ class CloudParquetDir(ParquetDir):
                 cloud_file.write(chunk)
 
         print(f"Index file written to: {cloud_index_path}")
+        if os.path.exists(index_file_path):
+            os.remove(index_file_path)
 
 
 class HFParquetDir(ParquetDir):
@@ -249,10 +256,8 @@ class HFParquetDir(ParquetDir):
                 os.remove(temp_path)
 
             with self.fs.open(_file, "rb") as cloud_file, open(temp_path, "wb") as local_file:
-                data = cloud_file.read()
-                if isinstance(data, str):
-                    raise ValueError(f"Expected parquet data in bytes format. But found str. {_file}")
-                local_file.write(data)
+                for chunk in iter(lambda: cloud_file.read(4096), b""):  # Read in 4KB chunks
+                    local_file.write(chunk)
             os.rename(temp_path, local_path)  # Atomic move after successful write
             self.process_queue.put_nowait((_file, local_path))
 
@@ -286,6 +291,9 @@ def get_parquet_indexer_cls(
         return CloudParquetDir(*args)
     if obj.scheme == "hf":
         return HFParquetDir(*args)
+
+    if sys.platform == "win32":
+        return LocalParquetDir(*args)
 
     raise ValueError(
         f"The provided `dir_path` {dir_path} doesn't have a ParquetDir class associated.",

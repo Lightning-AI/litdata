@@ -1,4 +1,5 @@
 import os
+import shutil
 import sys
 import threading
 from collections import OrderedDict
@@ -59,18 +60,6 @@ def fsspec_mock(monkeypatch):
     fsspec = ModuleType("fsspec")
     monkeypatch.setitem(sys.modules, "fsspec", fsspec)
     return fsspec
-
-
-@pytest.fixture
-def huggingface_hub_mock(monkeypatch):
-    huggingface_hub = ModuleType("huggingface_hub")
-    hf_file_system = ModuleType("hf_file_system")
-
-    monkeypatch.setitem(sys.modules, "huggingface_hub", huggingface_hub)
-    monkeypatch.setitem(sys.modules, "huggingface_hub.HfFileSystem", hf_file_system)
-
-    huggingface_hub.HfFileSystem = hf_file_system
-    return huggingface_hub
 
 
 @pytest.fixture
@@ -154,3 +143,66 @@ def write_pq_data(pq_data, tmp_path):
         df = pl.DataFrame(pq_data)
         file_path = os.path.join(tmp_path, "pq-dataset", f"tmp-{i}.parquet")
         df.write_parquet(file_path)
+
+
+@pytest.fixture
+def clean_pq_index_cache():
+    """Ensures the PQ index cache is cleared before and after the test."""
+    cache_path = os.path.join(os.path.expanduser("~"), ".cache", "litdata-cache-index-pq")
+
+    # Cleanup before the test
+    if os.path.exists(cache_path):
+        shutil.rmtree(cache_path)
+
+    yield
+
+    if os.path.exists(cache_path):
+        shutil.rmtree(cache_path)
+
+
+@pytest.fixture
+def huggingface_hub_mock(monkeypatch, write_pq_data, tmp_path):
+    huggingface_hub = ModuleType("huggingface_hub")
+    hf_file_system = ModuleType("hf_file_system")
+
+    monkeypatch.setitem(sys.modules, "huggingface_hub", huggingface_hub)
+    monkeypatch.setitem(sys.modules, "huggingface_hub.HfFileSystem", hf_file_system)
+
+    huggingface_hub.HfFileSystem = hf_file_system
+
+    def mock_open(filename, mode="rb"):
+        filename = filename.split("/")[-1]
+        file_path = os.path.join(tmp_path, "pq-dataset", filename)
+        assert os.path.exists(file_path), "file hf is trying to access, doesn't exist."
+        return open(file_path, mode)
+
+    hf_fs_mock = Mock()
+    hf_fs_mock.ls = Mock(side_effect=lambda *args, **kwargs: os.listdir(os.path.join(tmp_path, "pq-dataset")))
+    hf_fs_mock.open = Mock(side_effect=mock_open)
+    huggingface_hub.HfFileSystem = Mock(return_value=hf_fs_mock)
+
+    return huggingface_hub
+
+
+@pytest.fixture
+def fsspec_pq_mock(monkeypatch, write_pq_data, tmp_path, fsspec_mock):
+    def mock_open(filename, mode="rb"):
+        filename = filename.split("/")[-1]
+        print(f"{filename=}")
+        file_path = os.path.join(tmp_path, "pq-dataset", filename)
+        if mode.startswith("r"):
+            assert os.path.exists(file_path), "file cloud is trying to access, doesn't exist."
+        return open(file_path, mode)
+
+    def mock_fsspec_ls(*args, **kwargs):
+        file_list = []
+        for file_name in os.listdir(os.path.join(tmp_path, "pq-dataset")):
+            file_list.append({"type": "file", "name": file_name})
+        return file_list
+
+    fs_mock = Mock()
+    fs_mock.ls = Mock(side_effect=mock_fsspec_ls)
+    fs_mock.open = Mock(side_effect=mock_open)
+    fsspec_mock.filesystem = Mock(return_value=fs_mock)
+
+    return fsspec_mock
