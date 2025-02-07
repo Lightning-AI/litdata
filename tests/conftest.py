@@ -1,5 +1,7 @@
+import os
 import sys
 import threading
+from collections import OrderedDict
 from types import ModuleType
 from unittest.mock import Mock
 
@@ -50,6 +52,25 @@ def google_mock(monkeypatch):
     google.cloud = google_cloud
     google.cloud.storage = google_cloud_storage
     return google
+
+
+@pytest.fixture
+def fsspec_mock(monkeypatch):
+    fsspec = ModuleType("fsspec")
+    monkeypatch.setitem(sys.modules, "fsspec", fsspec)
+    return fsspec
+
+
+@pytest.fixture
+def huggingface_hub_mock(monkeypatch):
+    huggingface_hub = ModuleType("huggingface_hub")
+    hf_file_system = ModuleType("hf_file_system")
+
+    monkeypatch.setitem(sys.modules, "huggingface_hub", huggingface_hub)
+    monkeypatch.setitem(sys.modules, "huggingface_hub.HfFileSystem", hf_file_system)
+
+    huggingface_hub.HfFileSystem = hf_file_system
+    return huggingface_hub
 
 
 @pytest.fixture
@@ -109,3 +130,27 @@ def _thread_police():
             thread.join(timeout=20)
         else:
             raise AssertionError(f"Test left zombie thread: {thread}")
+
+
+# ==== fixtures for parquet ====
+@pytest.fixture
+def pq_data():
+    return OrderedDict(
+        {
+            "name": ["Tom", "Jerry", "Micky", "Oggy", "Doraemon"],
+            "weight": [57.9, 72.5, 53.6, 83.1, 69.4],  # (kg)
+            "height": [1.56, 1.77, 1.65, 1.75, 1.63],  # (m)
+        }
+    )
+
+
+@pytest.fixture
+def write_pq_data(pq_data, tmp_path):
+    import polars as pl
+
+    os.mkdir(os.path.join(tmp_path, "pq-dataset"))
+
+    for i in range(5):
+        df = pl.DataFrame(pq_data)
+        file_path = os.path.join(tmp_path, "pq-dataset", f"tmp-{i}.parquet")
+        df.write_parquet(file_path)

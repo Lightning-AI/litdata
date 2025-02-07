@@ -8,7 +8,8 @@ from abc import ABC, abstractmethod
 from concurrent.futures import ThreadPoolExecutor
 from queue import Queue
 from time import time
-from typing import Any, Dict, Generator, List, Optional, Tuple, Type, Union
+from typing import Any, Dict, Generator, List, Optional, Tuple, Union
+from urllib import parse
 
 from litdata.constants import (
     _FSSPEC_AVAILABLE,
@@ -197,7 +198,8 @@ class CloudParquetDir(ParquetDir):
 
         # upload file to cloud
         with open(index_file_path, "rb") as local_file, self.fs.open(cloud_index_path, "wb") as cloud_file:
-            cloud_file.write(local_file.read())
+            for chunk in iter(lambda: local_file.read(4096), b""):  # Read in 4KB chunks
+                cloud_file.write(chunk)
 
         print(f"Index file written to: {cloud_index_path}")
 
@@ -267,15 +269,6 @@ class HFParquetDir(ParquetDir):
         print(f"Index file written to: {index_file_path}")
 
 
-_PARQUET_DIR: Dict[str, Type[ParquetDir]] = {
-    "s3://": CloudParquetDir,
-    "gs://": CloudParquetDir,
-    "hf://": HFParquetDir,
-    "local:": LocalParquetDir,
-    "": LocalParquetDir,
-}
-
-
 def get_parquet_indexer_cls(
     dir_path: str,
     cache_path: Optional[str] = None,
@@ -283,10 +276,21 @@ def get_parquet_indexer_cls(
     remove_after_indexing: bool = True,
     num_workers: int = 4,
 ) -> ParquetDir:
-    for k, cls in _PARQUET_DIR.items():
-        if str(dir_path).startswith(k):
-            return cls(dir_path, cache_path, storage_options, remove_after_indexing, num_workers)
-    raise ValueError(f"The provided `dir_path` {dir_path} doesn't have a ParquetDir class associated.")
+    args = (dir_path, cache_path, storage_options, remove_after_indexing, num_workers)
+
+    obj = parse.urlparse(dir_path)
+
+    if obj.scheme in ("local", ""):
+        return LocalParquetDir(*args)
+    if obj.scheme in ("gs", "s3"):
+        return CloudParquetDir(*args)
+    if obj.scheme == "hf":
+        return HFParquetDir(*args)
+
+    raise ValueError(
+        f"The provided `dir_path` {dir_path} doesn't have a ParquetDir class associated.",
+        f"Found scheme => {obj.scheme}",
+    )
 
 
 def default_cache_dir(url: str) -> str:
