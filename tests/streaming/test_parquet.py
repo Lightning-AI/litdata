@@ -3,6 +3,7 @@ import json
 import os
 import sys
 import threading
+import time
 from contextlib import nullcontext
 from queue import Queue
 from types import ModuleType
@@ -63,6 +64,7 @@ def test_parquet_index_write(
     assert os.path.exists(index_file_path)
 
     if remove_after_indexing and pq_dir_url.startswith(("gs://", "s3://", "hf://")):
+        time.sleep(1)  # Small delay to ensure deletion completes
         if pq_dir_url.startswith("hf://"):
             assert len(os.listdir(cache_dir)) == 1
         else:
