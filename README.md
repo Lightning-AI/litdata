@@ -241,7 +241,7 @@ dataset = StreamingDataset('s3://my-bucket/my-data', cache_dir="/path/to/cache")
 
 &nbsp;
 
-The most basic and straight-forward usage is to directly pass the Hugging Face dataset URI to `StreamingDataset`.
+To use your favorite  Hugging Face dataset with LitData, simply pass its URL to `StreamingDataset`.
 
 ```python
 import litdata as ld
