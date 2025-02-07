@@ -540,7 +540,7 @@ def index_parquet_dataset(
     remove_after_indexing: bool = True,
     num_workers: int = 4,
 ) -> None:
-    """Index a Parquet dataset from a specified directory URL.
+    """Index a Parquet dataset from a specified URL.
 
     This function scans all `.parquet` files in the specified directory URL, extracts metadata
     such as file size, chunk size, and data types, and indexes them. Optionally, the files

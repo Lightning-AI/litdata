@@ -53,9 +53,9 @@ class ParquetDir(ABC):
     def __iter__(self) -> Generator[Tuple[str, str], None, None]:
         # start worker in a separate thread, and then read values from `process_queue`, and yield
 
-        is_delete_thread_running = self.dir.url is not None and self.remove_after_indexing
+        self.is_delete_thread_running = self.dir.url is not None and self.remove_after_indexing
 
-        if is_delete_thread_running:
+        if self.is_delete_thread_running:
             t = threading.Thread(
                 target=delete_thread,
                 name="delete_thread",
@@ -75,10 +75,10 @@ class ParquetDir(ABC):
             if file_name is None and file_path is None:  # Sentinel value to exit
                 break
             yield file_name, file_path
-            if is_delete_thread_running:
+            if self.is_delete_thread_running:
                 self.delete_queue.put_nowait(file_path)
 
-        if is_delete_thread_running:
+        if self.is_delete_thread_running:
             self.delete_queue.put_nowait((None, None))  # so that it doesn't hang indefinitely
             t.join()
 
@@ -194,6 +194,12 @@ class CloudParquetDir(ParquetDir):
         assert self.cache_path is not None
         assert self.dir.url is not None
 
+        # clear any `.lock` or `.tmp` chunk file if left
+        if self.is_delete_thread_running:
+            for file in os.listdir(self.cache_path):
+                if file != _INDEX_FILENAME:
+                    os.remove(file)
+
         index_file_path = os.path.join(self.cache_path, _INDEX_FILENAME)
         cloud_index_path = os.path.join(self.dir.url, _INDEX_FILENAME)
         # write to index.json file
@@ -264,6 +270,12 @@ class HFParquetDir(ParquetDir):
     def write_index(self, chunks_info: List[Dict[str, Any]], config: Dict[str, Any]) -> None:
         assert self.cache_path is not None
         assert self.dir.url is not None
+
+        # clear any `.lock` or `.tmp` chunk file if left
+        if self.is_delete_thread_running:
+            for file in os.listdir(self.cache_path):
+                if file != _INDEX_FILENAME:
+                    os.remove(file)
 
         index_file_path = os.path.join(self.cache_path, _INDEX_FILENAME)
         # write to index.json file
