@@ -270,7 +270,7 @@ hf_uri = "hf://datasets/deependu/my-first-ds"
 ld.index_hf_dataset(hf_uri)
 ```
 
-- Indexing the Hugging Face dataset before streaming will be faster, as it avoids the need for real-time indexing during streaming.
+- Indexing the Hugging Face dataset ahead of time will make streaming faster, as it avoids the need for real-time indexing during streaming.
 
 - To use `HF gated dataset`, ensure the `HF_TOKEN` environment variable is set.
 
