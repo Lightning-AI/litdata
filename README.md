@@ -274,8 +274,7 @@ ld.index_hf_dataset(hf_uri)
 
 - To use `HF gated dataset`, ensure the `HF_TOKEN` environment variable is set.
 
-> [!CAUTION]  
-> LitData streaming is only supported for `Hugging Face` **Parquet** datasets.
+**Note**: LitData streaming is only supported for `Hugging Face` **Parquet** datasets.
 
 &nbsp;
 
