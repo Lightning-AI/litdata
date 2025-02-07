@@ -237,7 +237,7 @@ dataset = StreamingDataset('s3://my-bucket/my-data', cache_dir="/path/to/cache")
 </details>
 
 <details>
-  <summary> ✅ Streams Hugging Face 🤗 datasets</summary>
+  <summary> ✅ Stream Hugging Face 🤗 datasets</summary>
 
 &nbsp;
 
@@ -273,6 +273,39 @@ ld.index_hf_dataset(hf_uri)
 - Indexing the Hugging Face dataset before streaming will be faster, as it avoids the need for real-time indexing during streaming.
 
 - To use `HF gated dataset`, ensure the `HF_TOKEN` environment variable is set.
+
+> [!CAUTION]  
+> LitData streaming is only supported for `Hugging Face` **Parquet** datasets.
+
+&nbsp;
+
+### Full Workflow for Hugging Face Datasets
+
+For full control over the cache path and other configurations, follow these steps:
+
+1. Index the Hugging Face dataset first:
+
+```python
+import litdata as ld
+
+hf_uri = "hf://datasets/open-thoughts/OpenThoughts-114k/data"
+
+ld.index_parquet_dataset(hf_uri, "hf-cache")
+```
+
+1. Pass the indexed dataset to StreamingDataset with the cached directory and ParquetLoader as the item loader:
+
+```python
+import litdata as ld
+from litdata.streaming.item_loader import ParquetLoader
+
+hf_uri = "hf://datasets/open-thoughts/OpenThoughts-114k/data"
+
+ds = ld.StreamingDataset(hf_uri, item_loader=ParquetLoader(), index_path="hf-cache")
+
+for _ds in ds:
+    print(f"{_ds=}")
+```
 
 </details>
 
@@ -712,36 +745,6 @@ import litdata as ld
 from litdata.streaming.item_loader import ParquetLoader
 
 ds = ld.StreamingDataset('gs://deep-litdata-parquet/my-parquet-data', item_loader = ParquetLoader())
-
-for _ds in ds:
-    print(f"{_ds=}")
-```
-
-&nbsp;
-
-### Full Workflow for Hugging Face Datasets
-
-For full control over the cache path and other configurations, follow these steps:
-
-1. Index the Hugging Face dataset first:
-
-```python
-import litdata as ld
-
-hf_uri = "hf://datasets/open-thoughts/OpenThoughts-114k/data"
-
-ld.index_parquet_dataset(hf_uri, "hf-cache")
-```
-
-1. Pass the indexed dataset to StreamingDataset with the cached directory and ParquetLoader as the item loader:
-
-```python
-import litdata as ld
-from litdata.streaming.item_loader import ParquetLoader
-
-hf_uri = "hf://datasets/open-thoughts/OpenThoughts-114k/data"
-
-ds = ld.StreamingDataset(hf_uri, item_loader=ParquetLoader(), index_path="hf-cache")
 
 for _ds in ds:
     print(f"{_ds=}")

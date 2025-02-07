@@ -7,6 +7,7 @@ import sys
 import threading
 from abc import ABC, abstractmethod
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import suppress
 from queue import Queue
 from time import sleep, time
 from typing import Any, Dict, Generator, List, Optional, Tuple, Union
@@ -198,7 +199,8 @@ class CloudParquetDir(ParquetDir):
         if self.is_delete_thread_running:
             for file in os.listdir(self.cache_path):
                 if file != _INDEX_FILENAME:
-                    os.remove(file)
+                    with suppress(FileNotFoundError):
+                        os.remove(file)
 
         index_file_path = os.path.join(self.cache_path, _INDEX_FILENAME)
         cloud_index_path = os.path.join(self.dir.url, _INDEX_FILENAME)
@@ -275,7 +277,8 @@ class HFParquetDir(ParquetDir):
         if self.is_delete_thread_running:
             for file in os.listdir(self.cache_path):
                 if file != _INDEX_FILENAME:
-                    os.remove(file)
+                    with suppress(FileNotFoundError):
+                        os.remove(file)
 
         index_file_path = os.path.join(self.cache_path, _INDEX_FILENAME)
         # write to index.json file
