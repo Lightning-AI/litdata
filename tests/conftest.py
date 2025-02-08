@@ -5,6 +5,7 @@ from unittest.mock import Mock
 
 import pytest
 import torch.distributed
+
 from litdata import CombinedStreamingDataset, StreamingDataset
 from litdata.streaming.cache import Cache
 from litdata.streaming.reader import PrepareChunksThread
@@ -112,7 +113,7 @@ def _thread_police():
             raise AssertionError(f"Test left zombie thread: {thread}")
 
 
-@pytest.fixture()
+@pytest.fixture
 def combined_dataset(tmpdir_factory):
     tmpdir = tmpdir_factory.mktemp("data")
     datasets = [str(tmpdir.join(f"dataset_{i}")) for i in range(2)]
