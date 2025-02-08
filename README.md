@@ -246,9 +246,7 @@ To use your favorite  Hugging Face dataset with LitData, simply pass its URL to 
 <details>
   <summary>How to get HF dataset URI?</summary>
 
-- To get the HF dataset URI, `HF: use dataset -> polars -> HF_URI without filename`.
-- For `hf://datasets/open-thoughts/OpenThoughts-114k/data/train-*.parquet`: remove `train-*.parquet`.
-- Use **`hf://datasets/open-thoughts/OpenThoughts-114k/data`**.
+https://github.com/user-attachments/assets/3ba9e2ef-bf6b-41fc-a578-e4b4113a0e72
 
 </details>
 
