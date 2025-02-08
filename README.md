@@ -262,7 +262,7 @@ This ensures that the next time you stream the dataset, the indexing step is ski
 
 ### Indexing the HF dataset (Optional)
 
-If the Hugging Face dataset hasn't been indexed yet, you can index it first using the `index_hf_dataset` method, and then stream it using the code below.
+If the Hugging Face dataset hasn't been indexed yet, you can index it first using the `index_hf_dataset` method, and then stream it using the code above.
 
 ```python
 import litdata as ld
