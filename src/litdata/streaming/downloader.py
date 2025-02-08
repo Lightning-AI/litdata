@@ -221,7 +221,7 @@ class HFDownloader(Downloader):
 
 
 class LocalDownloaderWithCache(LocalDownloader):
-    def download_file(self, remote_filepath: str, local_filepath: str) -> None:
+    def download_file(self, remote_filepath: str, local_filepath: str, remote_chunk_filename: str = "") -> None:
         remote_filepath = remote_filepath.replace("local:", "")
         super().download_file(remote_filepath, local_filepath)
 
