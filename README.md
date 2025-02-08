@@ -314,7 +314,7 @@ hf_uri = "hf://datasets/open-thoughts/OpenThoughts-114k/data"
 ds = ld.StreamingDataset(hf_uri, item_loader=ParquetLoader(), index_path="hf-index-dir")
 
 for _ds in ds:
-    print(f"{_ds[1]=}; {_ds[2]}")
+    print(f"{_ds[0]=}; {_ds[1]}\n")
 ```
 
 &nbsp;
