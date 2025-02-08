@@ -255,12 +255,12 @@ To use your favorite  Hugging Face dataset with LitData, simply pass its URL to 
 ```python
 import litdata as ld
 
-hf_uri = "hf://datasets/deependu/my-first-ds"
+hf_uri = "hf://datasets/leonardPKU/clevr_cogen_a_train/data"
 
 ds = ld.StreamingDataset(hf_uri)
 
 for _ds in ds:
-    print(f"{_ds=}")
+    print(f"{_ds[1]=}; {_ds[2]}")
 ```
 
 You don’t need to worry about indexing the dataset or any other setup. **LitData** will **handle all the necessary steps automatically** and `cache` the `index.json` file, so you won't have to index it again.
@@ -276,7 +276,7 @@ If the Hugging Face dataset hasn't been indexed yet, you can index it first usin
 ```python
 import litdata as ld
 
-hf_uri = "hf://datasets/deependu/my-first-ds"
+hf_uri = "hf://datasets/leonardPKU/clevr_cogen_a_train/data"
 
 ld.index_hf_dataset(hf_uri)
 ```
@@ -314,7 +314,7 @@ hf_uri = "hf://datasets/open-thoughts/OpenThoughts-114k/data"
 ds = ld.StreamingDataset(hf_uri, item_loader=ParquetLoader(), index_path="hf-index-dir")
 
 for _ds in ds:
-    print(f"{_ds=}")
+    print(f"{_ds[1]=}; {_ds[2]}")
 ```
 
 &nbsp;
