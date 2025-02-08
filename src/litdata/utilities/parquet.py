@@ -26,7 +26,7 @@ def delete_thread(rmq: Queue) -> None:
         file_path = rmq.get()
         if file_path is None:  # Sentinel value to exit
             break
-        if os.path.exists(file_path):
+        with suppress(FileNotFoundError):
             os.remove(file_path)
 
     # before exiting, just sleep for some time, to complete any pending deletions

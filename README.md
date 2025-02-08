@@ -260,7 +260,7 @@ hf_uri = "hf://datasets/leonardPKU/clevr_cogen_a_train/data"
 ds = ld.StreamingDataset(hf_uri)
 
 for _ds in ds:
-    print(f"{_ds[1]=}; {_ds[2]}")
+    print(f"{_ds[1]}; {_ds[2]}")
 ```
 
 You don’t need to worry about indexing the dataset or any other setup. **LitData** will **handle all the necessary steps automatically** and `cache` the `index.json` file, so you won't have to index it again.
@@ -314,7 +314,7 @@ hf_uri = "hf://datasets/open-thoughts/OpenThoughts-114k/data"
 ds = ld.StreamingDataset(hf_uri, item_loader=ParquetLoader(), index_path="hf-index-dir")
 
 for _ds in ds:
-    print(f"{_ds[0]=}; {_ds[1]}\n")
+    print(f"{_ds[0]}; {_ds[1]}\n")
 ```
 
 &nbsp;
