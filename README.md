@@ -274,13 +274,13 @@ ld.index_hf_dataset(hf_uri)
 
 - To use `HF gated dataset`, ensure the `HF_TOKEN` environment variable is set.
 
-**Note**: LitData streaming is only supported for `Hugging Face` **Parquet** datasets.
+**Note**: For HuggingFace datasets, `indexing` & `streaming` is supported only for datasets in **`Parquet format`**.
 
 &nbsp;
 
 ### Full Workflow for Hugging Face Datasets
 
-For full control over the cache path and other configurations, follow these steps:
+For full control over the cache path(`where index.json file will be stored`) and other configurations, follow these steps:
 
 1. Index the Hugging Face dataset first:
 
@@ -289,10 +289,10 @@ import litdata as ld
 
 hf_uri = "hf://datasets/open-thoughts/OpenThoughts-114k/data"
 
-ld.index_parquet_dataset(hf_uri, "hf-cache")
+ld.index_parquet_dataset(hf_uri, "hf-index-dir")
 ```
 
-1. Pass the indexed dataset to StreamingDataset with the cached directory and ParquetLoader as the item loader:
+2. To stream HF datasets now, pass the `HF dataset URI`, the path where the `index.json` file is stored, and `ParquetLoader` as the `item_loader` to the **`StreamingDataset`**:
 
 ```python
 import litdata as ld
@@ -300,11 +300,23 @@ from litdata.streaming.item_loader import ParquetLoader
 
 hf_uri = "hf://datasets/open-thoughts/OpenThoughts-114k/data"
 
-ds = ld.StreamingDataset(hf_uri, item_loader=ParquetLoader(), index_path="hf-cache")
+ds = ld.StreamingDataset(hf_uri, item_loader=ParquetLoader(), index_path="hf-index-dir")
 
 for _ds in ds:
     print(f"{_ds=}")
 ```
+
+&nbsp;
+
+### LitData `Optimize` v/s `Parquet`
+
+Below is the benchmark for the `Imagenet dataset (155 GB)`, demonstrating that **`optimizing the dataset using LitData is faster and results in smaller output size compared to raw Parquet files`**.
+
+| **Operation**                    | **Size (GB)** | **Time (seconds)** | **Throughput (images/sec)** |
+|-----------------------------------|---------------|---------------------|-----------------------------|
+| LitData Optimize Dataset          | 45            | 283.17             | 4000-4700                  |
+| Parquet Optimize Dataset          | 51            | 465.96             | 3600-3900                  |
+| Index Parquet Dataset (overhead)  | N/A           | 6                  | N/A                         |
 
 </details>
 
