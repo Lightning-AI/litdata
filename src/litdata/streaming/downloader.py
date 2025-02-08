@@ -205,10 +205,8 @@ class HFDownloader(Downloader):
             temp_path = local_filepath + ".tmp"  # Avoid partial writes
             try:
                 with self.fs.open(remote_filepath, "rb") as cloud_file, open(temp_path, "wb") as local_file:
-                    data = cloud_file.read()
-                    if isinstance(data, str):
-                        raise ValueError(f"Expected parquet data in bytes format. But found str. {remote_filepath}")
-                    local_file.write(data)
+                    for chunk in iter(lambda: cloud_file.read(4096), b""):  # Stream in 4KB chunks local_file.
+                        local_file.write(chunk)
 
                 os.rename(temp_path, local_filepath)  # Atomic move after successful write
 

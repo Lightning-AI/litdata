@@ -243,6 +243,15 @@ dataset = StreamingDataset('s3://my-bucket/my-data', cache_dir="/path/to/cache")
 
 To use your favorite  Hugging Face dataset with LitData, simply pass its URL to `StreamingDataset`.
 
+<details>
+  <summary>How to get HF dataset URI?</summary>
+
+- To get the HF dataset URI, `HF: use dataset -> polars -> HF_URI without filename`.
+- For `hf://datasets/open-thoughts/OpenThoughts-114k/data/train-*.parquet`: remove `train-*.parquet`.
+- Use **`hf://datasets/open-thoughts/OpenThoughts-114k/data`**.
+
+</details>
+
 ```python
 import litdata as ld
 
