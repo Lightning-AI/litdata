@@ -254,7 +254,9 @@ for _ds in ds:
     print(f"{_ds=}")
 ```
 
-You don’t need to worry about indexing the dataset or any other setup. **LitData** will **handle all the necessary steps automatically** and `cache` the data for you.
+You don’t need to worry about indexing the dataset or any other setup. **LitData** will **handle all the necessary steps automatically** and `cache` the `index.json` file, so you won't have to index it again.
+
+This ensures that the next time you stream the dataset, the indexing step is skipped..
 
 &nbsp;
 
