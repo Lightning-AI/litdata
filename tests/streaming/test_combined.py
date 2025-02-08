@@ -323,7 +323,7 @@ def test_combined_dataset_with_dataloader_and_one_worker(batch_size):
             "0": {"num_samples_yielded": 9, "num_workers": 1, "batch_size": batch_size},
             "1": {"num_samples_yielded": 3, "num_workers": 1, "batch_size": batch_size},
         },
-        "current_epoch": 0,
+        "current_epoch": 1,
         "latest_worker_idx": 0,
         "num_samples_yielded": {0: [9, 3]},
     }
@@ -422,7 +422,7 @@ def test_combined_dataset_with_dataloader_2_epochs(tmpdir):
                     "region_of_interest": ANY,
                 },
             },
-            "current_epoch": 0,
+            "current_epoch": 1,
             "latest_worker_idx": 0,
             "num_samples_yielded": {0: [2, 0]},
         },
@@ -461,7 +461,7 @@ def test_combined_dataset_with_dataloader_2_epochs(tmpdir):
                     "region_of_interest": ANY,
                 },
             },
-            "current_epoch": 0,
+            "current_epoch": 1,
             "latest_worker_idx": 1,
             "num_samples_yielded": {0: [2, 0], 1: [2, 0]},
         },
@@ -500,7 +500,7 @@ def test_combined_dataset_with_dataloader_2_epochs(tmpdir):
                     "region_of_interest": ANY,
                 },
             },
-            "current_epoch": 0,
+            "current_epoch": 1,
             "latest_worker_idx": 2,
             "num_samples_yielded": {0: [2, 0], 1: [2, 0], 2: [2, 0]},
         },
@@ -539,7 +539,7 @@ def test_combined_dataset_with_dataloader_2_epochs(tmpdir):
                     "region_of_interest": ANY,
                 },
             },
-            "current_epoch": 0,
+            "current_epoch": 1,
             "latest_worker_idx": 0,
             "num_samples_yielded": {0: [3, 1], 1: [2, 0], 2: [2, 0]},
         },
@@ -578,7 +578,7 @@ def test_combined_dataset_with_dataloader_2_epochs(tmpdir):
                     "region_of_interest": ANY,
                 },
             },
-            "current_epoch": 0,
+            "current_epoch": 1,
             "latest_worker_idx": 1,
             "num_samples_yielded": {0: [3, 1], 1: [3, 1], 2: [2, 0]},
         },
@@ -617,7 +617,7 @@ def test_combined_dataset_with_dataloader_2_epochs(tmpdir):
                     "region_of_interest": ANY,
                 },
             },
-            "current_epoch": 0,
+            "current_epoch": 1,
             "latest_worker_idx": 2,
             "num_samples_yielded": {0: [3, 1], 1: [3, 1], 2: [3, 1]},
         },
@@ -656,7 +656,7 @@ def test_combined_dataset_with_dataloader_2_epochs(tmpdir):
                     "region_of_interest": ANY,
                 },
             },
-            "current_epoch": 0,
+            "current_epoch": 1,
             "latest_worker_idx": 0,
             "num_samples_yielded": {0: [4, 1], 1: [3, 1], 2: [3, 1]},
         },
@@ -698,7 +698,7 @@ def test_combined_dataset_with_dataloader_2_epochs(tmpdir):
                     "region_of_interest": ANY,
                 },
             },
-            "current_epoch": 1,
+            "current_epoch": 2,
             "latest_worker_idx": 0,
             "num_samples_yielded": {0: [2, 0]},
         },
@@ -737,7 +737,7 @@ def test_combined_dataset_with_dataloader_2_epochs(tmpdir):
                     "region_of_interest": ANY,
                 },
             },
-            "current_epoch": 1,
+            "current_epoch": 2,
             "latest_worker_idx": 1,
             "num_samples_yielded": {0: [2, 0], 1: [2, 0]},
         },
@@ -776,7 +776,7 @@ def test_combined_dataset_with_dataloader_2_epochs(tmpdir):
                     "region_of_interest": ANY,
                 },
             },
-            "current_epoch": 1,
+            "current_epoch": 2,
             "latest_worker_idx": 2,
             "num_samples_yielded": {0: [2, 0], 1: [2, 0], 2: [2, 0]},
         },
@@ -815,7 +815,7 @@ def test_combined_dataset_with_dataloader_2_epochs(tmpdir):
                     "region_of_interest": ANY,
                 },
             },
-            "current_epoch": 1,
+            "current_epoch": 2,
             "latest_worker_idx": 0,
             "num_samples_yielded": {0: [3, 1], 1: [2, 0], 2: [2, 0]},
         },
@@ -854,7 +854,7 @@ def test_combined_dataset_with_dataloader_2_epochs(tmpdir):
                     "region_of_interest": ANY,
                 },
             },
-            "current_epoch": 1,
+            "current_epoch": 2,
             "latest_worker_idx": 1,
             "num_samples_yielded": {0: [3, 1], 1: [3, 1], 2: [2, 0]},
         },
@@ -893,7 +893,7 @@ def test_combined_dataset_with_dataloader_2_epochs(tmpdir):
                     "region_of_interest": ANY,
                 },
             },
-            "current_epoch": 1,
+            "current_epoch": 2,
             "latest_worker_idx": 2,
             "num_samples_yielded": {0: [3, 1], 1: [3, 1], 2: [3, 1]},
         },
@@ -932,7 +932,7 @@ def test_combined_dataset_with_dataloader_2_epochs(tmpdir):
                     "region_of_interest": ANY,
                 },
             },
-            "current_epoch": 1,
+            "current_epoch": 2,
             "latest_worker_idx": 0,
             "num_samples_yielded": {0: [4, 1], 1: [3, 1], 2: [3, 1]},
         },
@@ -949,6 +949,81 @@ def test_combined_dataset_with_dataloader_2_epochs(tmpdir):
         states_23.append(dataloader.state_dict())
 
     assert sum(not torch.equal(b1, b2) for b1, b2 in zip(batches_2[2:], batches_23)) == 0
-    assert states_23[0]["current_epoch"] == 1
+    assert states_23[0]["current_epoch"] == 2
 
     assert not dataloader.restore
+
+
+def test_combined_dataset_dataloader_states_without_any_iterations(combined_dataset):
+    dataloader = StreamingDataLoader(combined_dataset, batch_size=4)
+    assert not dataloader.restore
+    dataloader.load_state_dict(dataloader.state_dict())
+    assert not dataloader.restore
+
+
+@pytest.mark.timeout(120)
+@pytest.mark.parametrize("num_workers", [0, 2, 4])
+def test_combined_dataset_dataloader_states_complete_iterations(combined_dataset, num_workers):
+    print(f"Testing with num_workers={num_workers}")
+    dataloader = StreamingDataLoader(combined_dataset, batch_size=4, num_workers=num_workers)
+    assert len(dataloader) == 25, "Dataloader length should be 25 (50+50 items / batch size 4)"
+
+    # Verify dataloader state after complete last iteration
+    for batch in dataloader:
+        assert dataloader.current_epoch == 1, "Current epoch should be 1"
+        pass
+
+    dataloader.load_state_dict(dataloader.state_dict())
+    assert not dataloader.restore
+
+    for batch in dataloader:
+        assert dataloader.current_epoch == 2, "Current epoch should be 2"
+        pass
+
+    assert not dataloader.restore
+
+    del dataloader
+
+
+@pytest.mark.timeout(300)
+@pytest.mark.parametrize(("num_workers", "break_at"), [(0, 10), (0, 15), (2, 10), (2, 15), (4, 10), (4, 15)])
+def test_combined_dataset_dataloader_states_partial_iterations(combined_dataset, num_workers, break_at):
+    print(f"Testing with num_workers={num_workers}, break_at={break_at}")
+
+    # Verify dataloader state after partial last iteration
+    dataloader = StreamingDataLoader(combined_dataset, batch_size=4, num_workers=num_workers)
+
+    total_batches = len(dataloader)
+    assert total_batches == 25, "Dataloader length should be 25 (100 items / batch size 4)"
+
+    assert not dataloader.restore, "Dataloader should not be in restore state initially."
+
+    # Partial iteration up to 'break_at'
+    for batch_idx, batch in enumerate(dataloader):
+        assert dataloader.current_epoch == 1, "Current epoch should be 1 during first iteration"
+        if batch_idx == break_at:
+            break
+
+    assert (
+        not dataloader.restore
+    ), "Dataloader should not be in restore state after partial iteration, before loading state."
+    dataloader.load_state_dict(dataloader.state_dict())
+    assert dataloader.restore, "Dataloader should be in restore state after loading the state from a partial iteration."
+
+    # Verify remaining batches in the first epoch
+    count = 0
+    for _ in dataloader:
+        assert dataloader.current_epoch == 1, "Current epoch should be 1 during restore"
+        count += 1
+    expected_batches = total_batches - break_at - 1
+    assert (
+        count >= expected_batches
+    ), f"There should be at least{expected_batches} remaining batches in the first epoch."
+    assert not dataloader.restore, "Dataloader should not be in restore state after completing first epoch."
+
+    # Verify batches in the second epoch
+    samples_yielded = 0
+    for batch in dataloader:
+        assert dataloader.current_epoch == 2, "Current epoch should be 2 in the second iteration"
+        samples_yielded += len(batch)
+    assert samples_yielded == len(combined_dataset), "All samples should be yielded in the second epoch."
