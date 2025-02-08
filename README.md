@@ -260,7 +260,7 @@ You don’t need to worry about indexing the dataset or any other setup. **LitDa
 
 ### Indexing the HF dataset (Optional)
 
-If the Hugging Face dataset hasn't been indexed yet, you can index it first using the `index_hf_dataset` method, and then stream it using the code above.
+If the Hugging Face dataset hasn't been indexed yet, you can index it first using the `index_hf_dataset` method, and then stream it using the code below.
 
 ```python
 import litdata as ld

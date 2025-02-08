@@ -549,6 +549,7 @@ def index_parquet_dataset(
     Args:
         pq_dir_url (str): URL of the directory containing the Parquet files.
         cache_dir (Optional[str]): Local cache directory for storing temporary files.
+            For HF dataset, index.json file will be stored here.
         storage_options (Optional[Dict]): Additional storage options for accessing the Parquet files.
         remove_after_indexing (bool): Whether to remove files after indexing (default is True).
         num_workers (int): Number of workers to download files and index them.
