@@ -22,13 +22,14 @@ import torch
 from lightning.pytorch.demos.boring_classes import RandomDataset
 from lightning_utilities.core.imports import RequirementCache
 from lightning_utilities.test.warning import no_warning_call
+from torch.utils.data import Dataset
+
 from litdata.streaming import Cache
 from litdata.streaming.dataloader import CacheDataLoader
 from litdata.streaming.dataset import StreamingDataset
 from litdata.streaming.item_loader import TokensLoader
 from litdata.streaming.serializers import Serializer
 from litdata.utilities.env import _DistributedEnv
-from torch.utils.data import Dataset
 
 
 def seed_everything(random_seed):

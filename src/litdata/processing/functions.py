@@ -30,7 +30,7 @@ import torch
 from litdata import __version__
 from litdata.constants import _INDEX_FILENAME, _IS_IN_STUDIO
 from litdata.helpers import _check_version_and_prompt_upgrade
-from litdata.processing.data_processor import DataChunkRecipe, DataProcessor, DataTransformRecipe
+from litdata.processing.data_processor import DataChunkRecipe, DataProcessor, MapRecipe
 from litdata.processing.readers import BaseReader
 from litdata.processing.utilities import (
     _get_work_dir,
@@ -100,7 +100,7 @@ def _get_default_num_workers() -> int:
     return os.cpu_count() or 1
 
 
-class LambdaDataTransformRecipe(DataTransformRecipe):
+class LambdaMapRecipe(MapRecipe):
     def __init__(self, fn: Callable[[str, Any], None], inputs: Union[Sequence[Any], StreamingDataLoader]):
         super().__init__()
         self._fn = fn
@@ -201,6 +201,7 @@ def map(
     error_when_not_empty: bool = False,
     reader: Optional[BaseReader] = None,
     batch_size: Optional[int] = None,
+    start_method: Optional[str] = None,
 ) -> None:
     """Maps a callable over a collection of inputs, possibly in a distributed way.
 
@@ -222,7 +223,8 @@ def map(
         error_when_not_empty: Whether we should error if the output folder isn't empty.
         reader: The reader to use when reading the data. By default, it uses the `BaseReader`.
         batch_size: Group the inputs into batches of batch_size length.
-
+        start_method: The start method used by python multiprocessing package. Default to spawn unless running
+            inside an interactive shell like Ipython.
     """
     _check_version_and_prompt_upgrade(__version__)
 
@@ -286,9 +288,10 @@ def map(
             reorder_files=reorder_files,
             weights=weights,
             reader=reader,
+            start_method=start_method,
         )
         with optimize_dns_context(True):
-            return data_processor.run(LambdaDataTransformRecipe(fn, inputs))
+            return data_processor.run(LambdaMapRecipe(fn, inputs))
     return _execute(
         f"litdata-map-{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}",
         num_nodes,
@@ -378,8 +381,7 @@ def optimize(
 
     if not _IS_IN_STUDIO and (machine is not None or num_nodes is not None):
         raise ValueError(
-            "Only https://lightning.ai/ supports multiple nodes or selecting a machine."
-            "Create an account to try it out."
+            "Only https://lightning.ai/ supports multiple nodes or selecting a machine.Create an account to try it out."
         )
 
     if not _IS_IN_STUDIO:
@@ -590,9 +592,12 @@ def merge_datasets(input_dirs: List[str], output_dir: str, max_workers: Optional
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures: List[concurrent.futures.Future] = []
-        for copy_info in _tqdm(copy_infos):
+        for copy_info in copy_infos:
             future = executor.submit(_apply_copy, copy_info, resolved_output_dir)
             futures.append(future)
+
+        for future in _tqdm(concurrent.futures.as_completed(futures), total=len(futures)):
+            future.result()
 
     _save_index(index_json, resolved_output_dir)
 

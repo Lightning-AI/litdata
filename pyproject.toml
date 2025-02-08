@@ -116,6 +116,8 @@ files = [
 # This section is for folders with "-" as they are not valid python modules
 exclude = [
     "src/litdata/utilities/_pytree.py",
+    "src/litdata/streaming/item_loader.py",
+    "src/litdata/utilities/breakpoint.py",
 ]
 install_types = "True"
 non_interactive = "True"
@@ -152,6 +154,9 @@ exclude_lines = [
 
 
 [tool.pytest.ini_options]
+testpaths = [
+    "tests",
+]
 norecursedirs = [
     ".git",
     ".github",

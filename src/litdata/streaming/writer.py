@@ -21,15 +21,16 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 
-from litdata.constants import _INDEX_FILENAME
+from litdata.constants import _INDEX_FILENAME, _POLARS_AVAILABLE
 from litdata.processing.utilities import get_worker_rank
 from litdata.streaming.compression import _COMPRESSORS, Compressor
-from litdata.streaming.item_loader import BaseItemLoader, PyTreeLoader
+from litdata.streaming.item_loader import BaseItemLoader, ParquetLoader, PyTreeLoader
 from litdata.streaming.serializers import Serializer, _get_serializers
 from litdata.utilities._pytree import PyTree, tree_flatten, treespec_dumps
 from litdata.utilities.encryption import Encryption, EncryptionLevel
 from litdata.utilities.env import _DistributedEnv, _WorkerEnv
 from litdata.utilities.format import _convert_bytes_to_int, _human_readable_bytes
+from litdata.utilities.parquet import get_parquet_indexer_cls
 
 
 @dataclass
@@ -530,3 +531,48 @@ class BinaryWriter:
             json.dump(checkPoint, f)
 
         return checkpoint_filepath
+
+
+def index_parquet_dataset(
+    pq_dir_url: str, cache_dir: Optional[str] = None, storage_options: Optional[Dict] = {}
+) -> None:
+    if not _POLARS_AVAILABLE:
+        raise ModuleNotFoundError("Please, run: `pip install polars`")
+
+    import polars as pl
+
+    pq_chunks_info = []
+    config: Dict[str, Any] = {
+        "compression": None,
+        "chunk_size": None,
+        "chunk_bytes": None,
+        "data_format": [],
+        "data_spec": None,
+        "encryption": None,
+        "item_loader": ParquetLoader.__name__,
+    }
+
+    pq_dir_class = get_parquet_indexer_cls(pq_dir_url, cache_dir, storage_options)
+    # iterate the directory and for all files ending in `.parquet` index them
+    for file_name, file_path in pq_dir_class:
+        file_size = os.path.getsize(file_path)
+        pq_polars = pl.scan_parquet(file_path)
+        chunk_dtypes = pq_polars.collect_schema().dtypes()
+        chunk_dtypes = [str(dt) for dt in chunk_dtypes]
+        chunk_size = pq_polars.select(pl.count()).collect().item()
+
+        if len(config["data_format"]) != 0 and config["data_format"] != chunk_dtypes:
+            raise Exception(
+                "The config isn't consistent between chunks. This shouldn't have happened."
+                f"Found {config}; {chunk_dtypes}."
+            )
+        config["data_format"] = chunk_dtypes
+        chunk_info = {
+            "chunk_bytes": file_size,
+            "chunk_size": chunk_size,
+            "filename": file_name,
+            "dim": None,
+        }
+        pq_chunks_info.append(chunk_info)
+
+    pq_dir_class.write_index(pq_chunks_info, config)

@@ -222,7 +222,7 @@ class _CombinedDatasetIterator(Iterator):
         self._num_samples_yielded = num_samples_yielded or [0 for _ in range(len(datasets))]
         self._original_weights = deepcopy(weights)
         self._weights = deepcopy(weights)
-        self._rng = random.Random(seed)
+        self._rng = random.Random(seed)  # noqa: S311
         self._iterate_over_all = iterate_over_all
         self._batching_method = batching_method
         self._cur_dataset_index = -1
