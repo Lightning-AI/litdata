@@ -80,7 +80,7 @@ class ParquetDir(ABC):
                 self.delete_queue.put_nowait(file_path)
 
         if self.is_delete_thread_running:
-            self.delete_queue.put_nowait((None, None))  # so that it doesn't hang indefinitely
+            self.delete_queue.put_nowait(None)  # so that it doesn't hang indefinitely
             t.join()
 
         t_worker.join()  # should've completed by now. But, just to be on safe side.

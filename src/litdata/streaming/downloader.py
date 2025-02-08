@@ -44,9 +44,9 @@ class Downloader(ABC):
         chunk_filename = self._chunks[chunk_index]["filename"]
         local_chunkpath = os.path.join(self._cache_dir, chunk_filename)
         remote_chunkpath = os.path.join(self._remote_dir, chunk_filename)
-        self.download_file(remote_chunkpath, local_chunkpath)
+        self.download_file(remote_chunkpath, local_chunkpath, chunk_filename)
 
-    def download_file(self, remote_chunkpath: str, local_chunkpath: str) -> None:
+    def download_file(self, remote_chunkpath: str, local_chunkpath: str, remote_chunk_filename: str = "") -> None:
         pass
 
 
@@ -60,7 +60,7 @@ class S3Downloader(Downloader):
         if not self._s5cmd_available:
             self._client = S3Client(storage_options=self._storage_options)
 
-    def download_file(self, remote_filepath: str, local_filepath: str) -> None:
+    def download_file(self, remote_filepath: str, local_filepath: str, remote_chunk_filename: str = "") -> None:
         obj = parse.urlparse(remote_filepath)
 
         if obj.scheme != "s3":
@@ -109,7 +109,7 @@ class GCPDownloader(Downloader):
 
         super().__init__(remote_dir, cache_dir, chunks, storage_options)
 
-    def download_file(self, remote_filepath: str, local_filepath: str) -> None:
+    def download_file(self, remote_filepath: str, local_filepath: str, remote_chunk_filename: str = "") -> None:
         from google.cloud import storage
 
         obj = parse.urlparse(remote_filepath)
@@ -144,7 +144,7 @@ class AzureDownloader(Downloader):
 
         super().__init__(remote_dir, cache_dir, chunks, storage_options)
 
-    def download_file(self, remote_filepath: str, local_filepath: str) -> None:
+    def download_file(self, remote_filepath: str, local_filepath: str, remote_chunk_filename: str = "") -> None:
         from azure.storage.blob import BlobServiceClient
 
         obj = parse.urlparse(remote_filepath)
@@ -168,7 +168,7 @@ class AzureDownloader(Downloader):
 
 
 class LocalDownloader(Downloader):
-    def download_file(self, remote_filepath: str, local_filepath: str) -> None:
+    def download_file(self, remote_filepath: str, local_filepath: str, remote_chunk_filename: str = "") -> None:
         if not os.path.exists(remote_filepath):
             raise FileNotFoundError(f"The provided remote_path doesn't exist: {remote_filepath}")
 
@@ -200,18 +200,19 @@ class HFDownloader(Downloader):
 
         self.fs = HfFileSystem()
 
-    def download_file(self, remote_filepath: str, local_filepath: str) -> None:
+    def download_file(self, remote_filepath: str, local_filepath: str, remote_chunk_filename: str = "") -> None:
+        # for HF dataset downloading, we don't need remote_filepath, but remote_chunk_filename
         with suppress(Timeout), FileLock(local_filepath + ".lock", timeout=0):
             temp_path = local_filepath + ".tmp"  # Avoid partial writes
             try:
-                with self.fs.open(remote_filepath, "rb") as cloud_file, open(temp_path, "wb") as local_file:
+                with self.fs.open(remote_chunk_filename, "rb") as cloud_file, open(temp_path, "wb") as local_file:
                     for chunk in iter(lambda: cloud_file.read(4096), b""):  # Stream in 4KB chunks local_file.
                         local_file.write(chunk)
 
                 os.rename(temp_path, local_filepath)  # Atomic move after successful write
 
             except Exception as e:
-                print(f"Error processing {remote_filepath}: {e}")
+                print(f"Error processing {remote_chunk_filename}: {e}")
 
             finally:
                 # Ensure cleanup of temp file if an error occurs
