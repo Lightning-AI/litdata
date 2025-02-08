@@ -254,7 +254,7 @@ for _ds in ds:
     print(f"{_ds=}")
 ```
 
-You don’t need to worry about indexing the dataset or any other setup. **LitData** will **handle all the necessary processes automatically** and `cache` the data for you.
+You don’t need to worry about indexing the dataset or any other setup. **LitData** will **handle all the necessary steps automatically** and `cache` the data for you.
 
 &nbsp;
 
