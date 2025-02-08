@@ -1,10 +1,11 @@
 from unittest.mock import MagicMock
 
 import numpy as np
+import pytest
 import torch
 
 from litdata.constants import _NUMPY_DTYPES_MAPPING, _TORCH_DTYPES_MAPPING
-from litdata.streaming import Cache
+from litdata.streaming import Cache, item_loader
 from litdata.streaming.dataset import StreamingDataset
 from litdata.streaming.item_loader import PyTreeLoader, TokensLoader
 
@@ -67,3 +68,24 @@ def test_tokensloader_with_no_header_numpy_serializer(tmpdir):
     for data in dataset:
         assert data.shape == (256,)
         assert data.dtype == dtype
+
+
+class TestPyTreeLoader(PyTreeLoader):
+    def force_download(self, chunk_index):
+        assert chunk_index == 0
+        super().force_download(chunk_index)
+        raise Exception("worked")
+
+
+def test_force_download(monkeypatch, tmpdir):
+    monkeypatch.setattr(item_loader, "_FORCE_DOWNLOAD_TIME", 1)
+    monkeypatch.setattr(item_loader, "_FORCE_DOWNLOAD_TIME", 1)
+    loader = TestPyTreeLoader()
+
+    config_mock = MagicMock()
+    config_mock.__getitem__.return_value = ["fake:12"]
+    serializer_mock = MagicMock()
+    loader.setup(config_mock, [], {"fake": serializer_mock})
+
+    with pytest.raises(Exception, match="worked"):
+        loader.load_item_from_chunk(0, 0, "chunk_filepath", 0, 1)

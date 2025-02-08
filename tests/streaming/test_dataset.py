@@ -1212,6 +1212,11 @@ def test_subsample_streaming_dataset_with_token_loader(tmpdir, monkeypatch):
 
     assert len(dataset2) == int(len(dataset1) * 0.4)
 
+    dataset3 = StreamingDataset(
+        input_dir=str(tmpdir), item_loader=TokensLoader(block_size), shuffle=False, subsample=2.5
+    )
+    assert len(dataset3) == int(len(dataset1) * 2.5)
+
 
 @pytest.mark.skipif(sys.platform == "win32", reason="Not tested on windows")
 def test_dataset_with_mosaic_mds_data(tmpdir):
@@ -1231,6 +1236,7 @@ def test_dataset_with_mosaic_mds_data(tmpdir):
                 "class": i,
             }
             out.write(sample)
+
     dataset = StreamingDataset(input_dir=str(tmpdir))
     assert len(dataset) == 10
     for i in range(10):
@@ -1252,6 +1258,12 @@ def test_dataset_with_mosaic_mds_data(tmpdir):
     dataset = StreamingDataset(input_dir=str(tmpdir), subsample=0.4)
     assert len(dataset) == 4
     assert [sample["class"] for sample in dataset[:]] == [0, 1, 2, 3]
+
+    # -------------- and supersample ---------------
+
+    dataset = StreamingDataset(input_dir=str(tmpdir), subsample=1.5)
+    assert len(dataset) == 15
+    assert [sample["class"] for sample in dataset[:]] == [x % 10 for x in range(15)]
 
     # -------------- works with dataloader --------------
 
