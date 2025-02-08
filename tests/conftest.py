@@ -11,14 +11,14 @@ from litdata.streaming.reader import PrepareChunksThread
 
 
 @pytest.fixture(autouse=True)
-def teardown_process_group():  # noqa: PT004
+def teardown_process_group():
     """Ensures distributed process group gets closed before the next test runs."""
     yield
     if torch.distributed.is_available() and torch.distributed.is_initialized():
         torch.distributed.destroy_process_group()
 
 
-@pytest.fixture()
+@pytest.fixture
 def mosaic_mds_index_data():
     return {
         "shards": [
@@ -40,7 +40,7 @@ def mosaic_mds_index_data():
     }
 
 
-@pytest.fixture()
+@pytest.fixture
 def google_mock(monkeypatch):
     google = ModuleType("google")
     monkeypatch.setitem(sys.modules, "google", google)
@@ -53,7 +53,7 @@ def google_mock(monkeypatch):
     return google
 
 
-@pytest.fixture()
+@pytest.fixture
 def azure_mock(monkeypatch):
     azure = ModuleType("azure")
     monkeypatch.setitem(sys.modules, "azure", azure)
@@ -66,7 +66,7 @@ def azure_mock(monkeypatch):
     return azure
 
 
-@pytest.fixture()
+@pytest.fixture
 def lightning_cloud_mock(monkeypatch):
     lightning_cloud = ModuleType("lightning_sdk.lightning_cloud")
     monkeypatch.setitem(sys.modules, "lightning_sdk.lightning_cloud", lightning_cloud)
@@ -77,7 +77,7 @@ def lightning_cloud_mock(monkeypatch):
     return lightning_cloud
 
 
-@pytest.fixture()
+@pytest.fixture
 def lightning_sdk_mock(monkeypatch):
     lightning_sdk = ModuleType("lightning_sdk")
     monkeypatch.setitem(sys.modules, "lightning_sdk", lightning_sdk)

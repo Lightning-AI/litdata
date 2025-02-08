@@ -3,16 +3,19 @@ from time import sleep, time
 from unittest import mock
 
 import pytest
+
 from litdata.streaming import client
 
 
 def test_s3_client_with_storage_options(monkeypatch):
-    boto3 = mock.MagicMock()
+    boto3_session = mock.MagicMock()
+    boto3 = mock.MagicMock(Session=boto3_session)
     monkeypatch.setattr(client, "boto3", boto3)
 
     botocore = mock.MagicMock()
     monkeypatch.setattr(client, "botocore", botocore)
 
+    # Create S3Client with storage options
     storage_options = {
         "region_name": "us-west-2",
         "endpoint_url": "https://custom.endpoint",
@@ -22,24 +25,27 @@ def test_s3_client_with_storage_options(monkeypatch):
 
     assert s3_client.client
 
-    boto3.client.assert_called_with(
+    boto3_session().client.assert_called_with(
         "s3",
         region_name="us-west-2",
         endpoint_url="https://custom.endpoint",
         config=botocore.config.Config(retries={"max_attempts": 100}),
     )
 
+    # Create S3Client without storage options
     s3_client = client.S3Client()
-
     assert s3_client.client
 
-    boto3.client.assert_called_with(
-        "s3", config=botocore.config.Config(retries={"max_attempts": 1000, "mode": "adaptive"})
+    # Verify that boto3.Session().client was called with the default parameters
+    boto3_session().client.assert_called_with(
+        "s3",
+        config=botocore.config.Config(retries={"max_attempts": 1000, "mode": "adaptive"}),
     )
 
 
 def test_s3_client_without_cloud_space_id(monkeypatch):
-    boto3 = mock.MagicMock()
+    boto3_session = mock.MagicMock()
+    boto3 = mock.MagicMock(Session=boto3_session)
     monkeypatch.setattr(client, "boto3", boto3)
 
     botocore = mock.MagicMock()
@@ -58,13 +64,14 @@ def test_s3_client_without_cloud_space_id(monkeypatch):
     assert s3.client
     assert s3.client
 
-    boto3.client.assert_called_once()
+    boto3_session().client.assert_called_once()
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="not supported on windows")
 @pytest.mark.parametrize("use_shared_credentials", [False, True, None])
 def test_s3_client_with_cloud_space_id(use_shared_credentials, monkeypatch):
-    boto3 = mock.MagicMock()
+    boto3_session = mock.MagicMock()
+    boto3 = mock.MagicMock(Session=boto3_session)
     monkeypatch.setattr(client, "boto3", boto3)
 
     botocore = mock.MagicMock()
@@ -84,14 +91,14 @@ def test_s3_client_with_cloud_space_id(use_shared_credentials, monkeypatch):
     s3 = client.S3Client(1)
     assert s3.client
     assert s3.client
-    boto3.client.assert_called_once()
+    boto3_session().client.assert_called_once()
     sleep(1 - (time() - s3._last_time))
     assert s3.client
     assert s3.client
-    assert len(boto3.client._mock_mock_calls) == 6
+    assert len(boto3_session().client._mock_mock_calls) == 6
     sleep(1 - (time() - s3._last_time))
     assert s3.client
     assert s3.client
-    assert len(boto3.client._mock_mock_calls) == 9
+    assert len(boto3_session().client._mock_mock_calls) == 9
 
     assert instance_metadata_provider._mock_call_count == 0 if use_shared_credentials else 3

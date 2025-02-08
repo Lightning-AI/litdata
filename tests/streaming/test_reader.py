@@ -3,6 +3,7 @@ import shutil
 from time import sleep
 
 import numpy as np
+
 from litdata.streaming import reader
 from litdata.streaming.cache import Cache
 from litdata.streaming.config import ChunkedIndex
@@ -10,7 +11,6 @@ from litdata.streaming.item_loader import PyTreeLoader
 from litdata.streaming.reader import _END_TOKEN, PrepareChunksThread, _get_folder_size
 from litdata.streaming.resolver import Dir
 from litdata.utilities.env import _DistributedEnv
-
 from tests.streaming.utils import filter_lock_files
 
 

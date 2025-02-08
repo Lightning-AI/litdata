@@ -19,6 +19,7 @@ from queue import Empty, Queue
 from threading import Event, Thread
 from typing import Any, Dict, List, Optional, Tuple, Union
 
+from litdata.constants import _DEBUG
 from litdata.streaming.config import ChunksConfig, Interval
 from litdata.streaming.item_loader import BaseItemLoader, PyTreeLoader, TokensLoader
 from litdata.streaming.sampler import ChunkedIndex
@@ -50,6 +51,7 @@ class PrepareChunksThread(Thread):
         distributed_env: _DistributedEnv,
         max_cache_size: Optional[int] = None,
         max_pre_download: int = 2,
+        rank: Optional[int] = None,
     ) -> None:
         super().__init__(daemon=True)
         self._config = config
@@ -64,6 +66,11 @@ class PrepareChunksThread(Thread):
         self._to_download_queue: Queue = Queue()
         self._to_delete_queue: Queue = Queue()
         self._force_stop_event = Event()
+
+        # TODO: Find a real fix to this problem
+        self._force_download_queue: Queue = Queue()
+
+        self._rank = rank
 
         # Check whether a dataset slice fits on the node
         num_bytes_per_nodes = self._config.num_bytes // self._distributed_env.num_nodes
@@ -84,11 +91,18 @@ class PrepareChunksThread(Thread):
         """Inform the item loader of the chunk to delete."""
         if self._config.can_delete(chunk_index):
             chunk_filepath, _, _ = self._config[ChunkedIndex(index=-1, chunk_index=chunk_index)]
+
             self._item_loader.delete(chunk_index, chunk_filepath)
 
-            locak_chunk_path = chunk_filepath + ".lock"
-            if os.path.exists(locak_chunk_path):
-                os.remove(locak_chunk_path)
+            if _DEBUG:
+                print(f"Deleted {chunk_filepath} by {self._rank}")
+
+            try:
+                locak_chunk_path = chunk_filepath + ".lock"
+                if os.path.exists(locak_chunk_path):
+                    os.remove(locak_chunk_path)
+            except FileNotFoundError:
+                pass
 
     def stop(self) -> None:
         """Receive the list of the chunk indices to download for the current epoch."""
@@ -127,11 +141,31 @@ class PrepareChunksThread(Thread):
         chunk_filepath, _, _ = self._config[ChunkedIndex(index=-1, chunk_index=chunk_index)]
         self._item_loader.pre_load_chunk(chunk_index, chunk_filepath)
 
+    def _force_download(self) -> None:
+        chunk_index = _get_from_queue(self._force_download_queue)
+        if chunk_index is not None:
+            if _DEBUG:
+                chunk_filepath, _, _ = self._config[ChunkedIndex(index=-1, chunk_index=chunk_index)]
+                print(f"Requested force download for {chunk_filepath} by {self._rank}")
+
+            self._config.download_chunk_from_index(chunk_index)
+
+            # Preload item if possible to gain some time but only
+            # if this is one of the pre-downloaded chunk
+            if self._pre_download_counter > 0:
+                self._pre_load_chunk(chunk_index)
+
+            # Avoid downloading too many chunks in advance at the risk of over using the disk space
+            self._pre_download_counter += 1
+
     def run(self) -> None:
         while True:
             if self._force_stop_event.is_set():
                 self._has_exited = True
                 return
+
+            self._force_download()
+
             if self._pre_download_counter < self._max_pre_download:
                 chunk_index = _get_from_queue(self._to_download_queue)
                 if chunk_index == _END_TOKEN:
@@ -263,8 +297,15 @@ class BinaryReader:
             # Create and start the prepare chunks thread
             if self._prepare_thread is None and self._config:
                 self._prepare_thread = PrepareChunksThread(
-                    self._config, self._item_loader, self._distributed_env, self._max_cache_size, self._max_pre_download
+                    self._config,
+                    self._item_loader,
+                    self._distributed_env,
+                    self._max_cache_size,
+                    self._max_pre_download,
+                    self._rank,
                 )
+                # Attach the force download queue
+                self._item_loader._force_download_queue = self._prepare_thread._force_download_queue  # type: ignore
                 self._prepare_thread.start()
                 if index.chunk_indexes:
                     self._prepare_thread.download(index.chunk_indexes)

@@ -64,9 +64,7 @@ def _equal_item(d1: Any, d2: Any) -> bool:
     equality = d1 == d2
     if isinstance(equality, torch.Tensor):
         return bool(equality.all().item())
-    if equality is True:
-        return True
-    return False
+    return equality is True
 
 
 class CacheDataset(Dataset):

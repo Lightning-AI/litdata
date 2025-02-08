@@ -194,8 +194,20 @@ def _remove_target(input_dir: Dir, cache_dir: str, queue_in: Queue) -> None:
                 if os.path.exists(path):
                     os.remove(path)
 
-            elif os.path.exists(path) and "s3_connections" not in path:
+            elif keep_path(path) and os.path.exists(path):
                 os.remove(path)
+
+
+def keep_path(path: str) -> bool:
+    paths = [
+        "efs_connections",
+        "efs_folders",
+        "gcs_connections",
+        "s3_connections",
+        "s3_folders",
+        "snowflake_connections",
+    ]
+    return all(p not in path for p in paths)
 
 
 def _upload_fn(upload_queue: Queue, remove_queue: Queue, cache_dir: str, output_dir: Dir) -> None:
@@ -546,7 +558,7 @@ class BaseWorker:
         self.cache_data_dir = _get_cache_data_dir()
         self.cache_chunks_dir = _get_cache_dir()
 
-        if isinstance(self.data_recipe, DataTransformRecipe):
+        if isinstance(self.data_recipe, MapRecipe):
             return
 
         self.cache = Cache(
@@ -725,7 +737,7 @@ class BaseWorker:
         item_data = self.data_recipe.prepare_item(item, str(output_dir), len(self.items) - 1 == index)
         if item_data is not None:
             raise ValueError(
-                "When using a `DataTransformRecipe`, the `prepare_item` shouldn't return anything."
+                "When using a `MapRecipe`, the `prepare_item` shouldn't return anything."
                 " Simply store your files under the output_dir."
             )
         filepaths = []
@@ -890,7 +902,7 @@ class DataChunkRecipe(DataRecipe):
             self._upload_index(output_dir, cache_dir, 1, None)
 
 
-class DataTransformRecipe(DataRecipe):
+class MapRecipe(DataRecipe):
     @abstractmethod
     def prepare_structure(self, input_dir: Optional[str]) -> List[T]:
         """Return the structure of your data.

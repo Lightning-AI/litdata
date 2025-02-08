@@ -75,6 +75,9 @@ def _resolve_dir(dir_path: Optional[Union[str, Dir]]) -> Dir:
     if dir_path_absolute.startswith("/teamspace/s3_connections") and len(dir_path_absolute.split("/")) > 3:
         return _resolve_s3_connections(dir_path_absolute)
 
+    if dir_path_absolute.startswith("/teamspace/s3_folders") and len(dir_path_absolute.split("/")) > 3:
+        return _resolve_s3_folders(dir_path_absolute)
+
     if dir_path_absolute.startswith("/teamspace/datasets") and len(dir_path_absolute.split("/")) > 3:
         return _resolve_datasets(dir_path_absolute)
 
@@ -88,14 +91,11 @@ def _match_studio(target_id: Optional[str], target_name: Optional[str], cloudspa
     if target_id is not None and cloudspace.id == target_id:
         return True
 
-    if (
+    return bool(
         cloudspace.display_name is not None
         and target_name is not None
         and cloudspace.display_name.lower() == target_name.lower()
-    ):
-        return True
-
-    return False
+    )
 
 
 def _resolve_studio(dir_path: str, target_name: Optional[str], target_id: Optional[str]) -> Dir:
@@ -159,6 +159,28 @@ def _resolve_s3_connections(dir_path: str) -> Dir:
         raise ValueError(f"We didn't find any matching data connection with the provided name `{target_name}`.")
 
     return Dir(path=dir_path, url=os.path.join(data_connection[0].aws.source, *dir_path.split("/")[4:]))
+
+
+def _resolve_s3_folders(dir_path: str) -> Dir:
+    from lightning_sdk.lightning_cloud.rest_client import LightningClient
+
+    client = LightningClient(max_tries=2)
+
+    # Get the ids from env variables
+    project_id = os.getenv("LIGHTNING_CLOUD_PROJECT_ID", None)
+    if project_id is None:
+        raise RuntimeError("The `LIGHTNING_CLOUD_PROJECT_ID` couldn't be found from the environment variables.")
+
+    target_name = dir_path.split("/")[3]
+
+    data_connections = client.data_connection_service_list_data_connections(project_id).data_connections
+
+    data_connection = [dc for dc in data_connections if dc.name == target_name]
+
+    if not data_connection:
+        raise ValueError(f"We didn't find any matching data connection with the provided name `{target_name}`.")
+
+    return Dir(path=dir_path, url=os.path.join(data_connection[0].s3_folder.source, *dir_path.split("/")[4:]))
 
 
 def _resolve_datasets(dir_path: str) -> Dir:
@@ -369,7 +391,7 @@ def _execute(
         num_instances=num_nodes,
         studio_id=studio._studio.id,
         teamspace_id=studio._teamspace.id,
-        cluster_id=studio._studio.cluster_id,
+        cloud_account=studio._studio.cluster_id,
         machine=machine or studio._studio_api.get_machine(studio._studio.id, studio._teamspace.id),
         interruptible=interruptible,
     )

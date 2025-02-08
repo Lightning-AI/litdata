@@ -2,10 +2,11 @@ import os
 
 import pytest
 import torch
+from torch import tensor
+
 from litdata.constants import _VIZ_TRACKER_AVAILABLE
 from litdata.streaming import Cache, CombinedStreamingDataset, StreamingDataLoader, StreamingDataset
 from litdata.streaming import dataloader as streaming_dataloader_module
-from torch import tensor
 
 
 class TestStatefulDataset:
