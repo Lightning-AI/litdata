@@ -547,7 +547,12 @@ class CopyInfo:
     new_filename: str
 
 
-def merge_datasets(input_dirs: List[str], output_dir: str, max_workers: Optional[int] = os.cpu_count(), storage_options: Optional[Dict] = {}) -> None:
+def merge_datasets(
+    input_dirs: List[str],
+    output_dir: str,
+    max_workers: Optional[int] = os.cpu_count(),
+    storage_options: Optional[Dict] = {},
+) -> None:
     """Enables to merge multiple existing optimized datasets into a single optimized dataset.
 
     Args:

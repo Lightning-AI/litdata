@@ -68,6 +68,7 @@ class LocalDownloader(Downloader):
         except Timeout:
             pass
 
+
 class LocalDownloaderWithCache(LocalDownloader):
     def download_file(self, remote_filepath: str, local_filepath: str, remote_chunk_filename: str = "") -> None:
         remote_filepath = remote_filepath.replace("local:", "")
