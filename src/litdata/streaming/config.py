@@ -257,8 +257,16 @@ class ChunksConfig:
         cache_index_filepath = os.path.join(cache_dir, _INDEX_FILENAME)
 
         if isinstance(remote_dir, str):
-            downloader = get_downloader_cls(remote_dir, cache_dir, [], storage_options)
-            downloader.download_file(os.path.join(remote_dir, _INDEX_FILENAME), cache_index_filepath)
+            # for remote_dir, we try downloading `index.json` file.
+            # If the files are stored on HF, they don't have an index file, so we can skip downloading it.
+            if remote_dir.startswith("hf://"):
+                if not os.path.exists(cache_index_filepath):
+                    raise RuntimeError(
+                        f"This should not have happened. No index.json file found in cache: {cache_index_filepath}"
+                    )
+            else:
+                downloader = get_downloader_cls(remote_dir, cache_dir, [], storage_options)
+                downloader.download_file(os.path.join(remote_dir, _INDEX_FILENAME), cache_index_filepath)
 
         if not os.path.exists(cache_index_filepath):
             return None

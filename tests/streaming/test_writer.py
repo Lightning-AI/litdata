@@ -15,7 +15,6 @@ import json
 import os
 import random
 import sys
-from collections import OrderedDict
 
 import numpy as np
 import pytest
@@ -23,11 +22,9 @@ import torch
 from lightning_utilities.core.imports import RequirementCache
 
 from litdata.streaming.compression import _ZSTD_AVAILABLE
-from litdata.streaming.dataset import StreamingDataset
-from litdata.streaming.item_loader import ParquetLoader
 from litdata.streaming.reader import BinaryReader
 from litdata.streaming.sampler import ChunkedIndex
-from litdata.streaming.writer import BinaryWriter, index_parquet_dataset
+from litdata.streaming.writer import BinaryWriter
 from litdata.utilities.format import _FORMAT_TO_RATIO
 
 
@@ -272,48 +269,3 @@ def test_writer_save_checkpoint(tmpdir):
     for file in os.listdir(os.path.join(cache_dir, ".checkpoints")):
         assert file.__contains__("checkpoint-0")
         assert file.endswith(".json")
-
-
-def test_parquet_index_write(tmpdir):
-    import polars as pl
-
-    os.mkdir(os.path.join(tmpdir, "data"))
-
-    pq_data = OrderedDict(
-        {
-            "name": ["Tom", "Jerry", "Micky", "Oggy", "Doraemon"],
-            "weight": [57.9, 72.5, 53.6, 83.1, 69.4],  # (kg)
-            "height": [1.56, 1.77, 1.65, 1.75, 1.63],  # (m)
-        }
-    )
-
-    for i in range(5):
-        df = pl.DataFrame(pq_data)
-        file_path = os.path.join(tmpdir, "data", f"tmp-{i}.parquet")
-        df.write_parquet(file_path)
-
-    index_file_path = os.path.join(tmpdir, "data", "index.json")
-    assert not os.path.exists(index_file_path)
-    # call the write_parquet_index fn
-    index_parquet_dataset(os.path.join(tmpdir, "data"))
-    assert os.path.exists(index_file_path)
-
-    # Read JSON file into a dictionary
-    with open(index_file_path) as f:
-        data = json.load(f)
-        assert len(data["chunks"]) == 5
-        for cnk in data["chunks"]:
-            assert cnk["chunk_size"] == 5
-        assert data["config"]["item_loader"] == "ParquetLoader"
-        assert data["config"]["data_format"] == ["String", "Float64", "Float64"]
-
-    ds = StreamingDataset(os.path.join(tmpdir, "data"), item_loader=ParquetLoader())
-
-    assert len(ds) == 25  # 5 datasets for 5 loops
-
-    for i, _ds in enumerate(ds):
-        idx = i % 5
-        assert len(_ds) == 3
-        assert _ds[0] == pq_data["name"][idx]
-        assert _ds[1] == pq_data["weight"][idx]
-        assert _ds[2] == pq_data["height"][idx]
