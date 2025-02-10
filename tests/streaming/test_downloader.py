@@ -2,10 +2,7 @@
 import os
 from unittest.mock import MagicMock
 
-from litdata.streaming.downloader import (
-    LocalDownloaderWithCache,
-    shutil,
-)
+from litdata.streaming.downloader import LocalDownloaderWithCache, shutil
 
 
 def test_download_with_cache(tmpdir, monkeypatch):
