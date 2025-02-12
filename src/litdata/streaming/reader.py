@@ -14,10 +14,12 @@
 import contextlib
 import os
 import warnings
+from contextlib import suppress
 from logging import Logger
 from queue import Empty, Queue
 from threading import Event, Thread
 from typing import Any, Dict, List, Optional, Tuple, Union
+from filelock import FileLock, Timeout
 
 from litdata.constants import _DEBUG
 from litdata.streaming.config import ChunksConfig, Interval
@@ -87,22 +89,52 @@ class PrepareChunksThread(Thread):
         for chunk_index in chunk_indexes:
             self._to_delete_queue.put(chunk_index)
 
+    def _decrement_local_lock(self, chunkpath: str) -> int:
+        """Remove a count from the local lock, return the remaining count"""
+        countpath = chunkpath + ".cnt"
+        with suppress(Timeout), FileLock(
+            countpath + ".lock", timeout=3
+        ):
+            if not os.path.exists(countpath):
+                return 0
+            else:
+                with open(countpath, "r") as count_f:
+                    try:
+                        curr_count = int(count_f.read().strip())
+                    except Exception:
+                        curr_count = 1
+            curr_count -= 1 
+            if curr_count <= 0:
+                os.remove(countpath)
+            else:
+                with open(countpath, "w+") as count_f:
+                    count_f.write(str(curr_count))
+            return curr_count
+        return 0
+
     def _apply_delete(self, chunk_index: int) -> None:
         """Inform the item loader of the chunk to delete."""
         if self._config.can_delete(chunk_index):
             chunk_filepath, _, _ = self._config[ChunkedIndex(index=-1, chunk_index=chunk_index)]
+
+            remaining_locks = self._decrement_local_lock(chunk_filepath)
+            if remaining_locks > 0: # Can't delete this, something has it
+                if _DEBUG:
+                    print(f"Skip delete {chunk_filepath} by {self._rank}, current lock count: {remaining_locks}")
+                return 
 
             self._item_loader.delete(chunk_index, chunk_filepath)
 
             if _DEBUG:
                 print(f"Deleted {chunk_filepath} by {self._rank}")
 
-            try:
-                locak_chunk_path = chunk_filepath + ".lock"
-                if os.path.exists(locak_chunk_path):
-                    os.remove(locak_chunk_path)
-            except FileNotFoundError:
-                pass
+            for lock_extension in [".lock", ".cnt.lock"]:
+                try:
+                    locak_chunk_path = chunk_filepath + lock_extension
+                    if os.path.exists(locak_chunk_path):
+                        os.remove(locak_chunk_path)
+                except FileNotFoundError:
+                    pass
 
     def stop(self) -> None:
         """Receive the list of the chunk indices to download for the current epoch."""
