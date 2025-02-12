@@ -42,11 +42,9 @@ class Downloader(ABC):
 
     def _increment_local_lock(self, chunkpath: str) -> None:
         countpath = chunkpath + ".cnt"
-        with suppress(Timeout), FileLock(
-            countpath + ".lock", timeout=3
-        ):
+        with suppress(Timeout), FileLock(countpath + ".lock", timeout=3):
             try:
-                with open(countpath, "r") as count_f:
+                with open(countpath) as count_f:
                     curr_count = int(count_f.read().strip())
             except Exception:
                 curr_count = 0

@@ -19,6 +19,7 @@ from logging import Logger
 from queue import Empty, Queue
 from threading import Event, Thread
 from typing import Any, Dict, List, Optional, Tuple, Union
+
 from filelock import FileLock, Timeout
 
 from litdata.constants import _DEBUG
@@ -92,18 +93,15 @@ class PrepareChunksThread(Thread):
     def _decrement_local_lock(self, chunkpath: str) -> int:
         """Remove a count from the local lock, return the remaining count"""
         countpath = chunkpath + ".cnt"
-        with suppress(Timeout), FileLock(
-            countpath + ".lock", timeout=3
-        ):
+        with suppress(Timeout), FileLock(countpath + ".lock", timeout=3):
             if not os.path.exists(countpath):
                 return 0
-            else:
-                with open(countpath, "r") as count_f:
-                    try:
-                        curr_count = int(count_f.read().strip())
-                    except Exception:
-                        curr_count = 1
-            curr_count -= 1 
+            with open(countpath) as count_f:
+                try:
+                    curr_count = int(count_f.read().strip())
+                except Exception:
+                    curr_count = 1
+            curr_count -= 1
             if curr_count <= 0:
                 os.remove(countpath)
             else:
@@ -118,10 +116,10 @@ class PrepareChunksThread(Thread):
             chunk_filepath, _, _ = self._config[ChunkedIndex(index=-1, chunk_index=chunk_index)]
 
             remaining_locks = self._decrement_local_lock(chunk_filepath)
-            if remaining_locks > 0: # Can't delete this, something has it
+            if remaining_locks > 0:  # Can't delete this, something has it
                 if _DEBUG:
                     print(f"Skip delete {chunk_filepath} by {self._rank}, current lock count: {remaining_locks}")
-                return 
+                return
 
             self._item_loader.delete(chunk_index, chunk_filepath)
 
