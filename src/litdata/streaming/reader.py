@@ -89,9 +89,21 @@ class PrepareChunksThread(Thread):
         for chunk_index in chunk_indexes:
             self._to_delete_queue.put(chunk_index)
 
-    def _decrement_local_lock(self, chunkpath: str) -> int:
-        """Remove a count from the local lock, return the remaining count"""
+    def _remaining_locks(self, chunkpath: str) -> int:
         countpath = chunkpath + ".cnt"
+        if not os.path.exists(countpath):
+            return 0
+        else:
+            with open(countpath, "r") as count_f:
+                try:
+                    return int(count_f.read().strip())
+                except Exception:
+                    return 1
+
+    def _decrement_local_lock(self, chunk_index: str) -> int:
+        """Remove a count from the local lock, return the remaining count"""
+        chunk_filepath, _, _ = self._config[ChunkedIndex(index=-1, chunk_index=chunk_index)]
+        countpath = chunk_filepath + ".cnt"
         with suppress(Timeout), FileLock(
             countpath + ".lock", timeout=3
         ):
@@ -117,8 +129,7 @@ class PrepareChunksThread(Thread):
         if self._config.can_delete(chunk_index):
             chunk_filepath, _, _ = self._config[ChunkedIndex(index=-1, chunk_index=chunk_index)]
 
-            remaining_locks = self._decrement_local_lock(chunk_filepath)
-            if remaining_locks > 0: # Can't delete this, something has it
+            if self._remaining_locks(chunk_filepath) > 0: # Can't delete this, something has it
                 if _DEBUG:
                     print(f"Skip delete {chunk_filepath} by {self._rank}, current lock count: {remaining_locks}")
                 return 

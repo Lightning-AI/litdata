@@ -120,6 +120,10 @@ class ChunksConfig:
 
         if os.path.exists(local_chunkpath):
             self.try_decompress(local_chunkpath)
+            if self._downloader is not None:
+                # We don't want to redownload the base, but we should mark
+                # it as having been requested by something
+                self._downloader._increment_local_lock(local_chunkpath)
             return
 
         if self._downloader is None:
