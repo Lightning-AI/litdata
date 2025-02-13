@@ -501,12 +501,13 @@ def test_optimize_race_condition(tmpdir):
     #     "curl https://www.gutenberg.org/cache/epub/24440/pg24440.txt --output tempdir/custom_texts/book1.txt",
     #     "curl https://www.gutenberg.org/cache/epub/26393/pg26393.txt --output tempdir/custom_texts/book2.txt",
     # ]
+    # The files were moved to S3
     shutil.rmtree(f"{tmpdir}/custom_texts", ignore_errors=True)
     os.makedirs(f"{tmpdir}/custom_texts", exist_ok=True)
 
     urls = [
-        "https://www.gutenberg.org/cache/epub/24440/pg24440.txt",
-        "https://www.gutenberg.org/cache/epub/26393/pg26393.txt",
+        "https://pl-flash-data.s3.us-east-1.amazonaws.com/pg24440.txt",
+        "https://pl-flash-data.s3.us-east-1.amazonaws.com/pg26393.txt",
     ]
 
     for i, url in enumerate(urls):
@@ -518,12 +519,7 @@ def test_optimize_race_condition(tmpdir):
                 for chunk in r.iter_content(chunk_size=8192):
                     f.write(chunk)
 
-    print("=" * 100)
-
     train_files = sorted(glob.glob(str(Path(f"{tmpdir}/custom_texts") / "*.txt")))
-    print("=" * 100)
-    print(train_files)
-    print("=" * 100)
     optimize(
         fn=tokenize,
         inputs=train_files,
