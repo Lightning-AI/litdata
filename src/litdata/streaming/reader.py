@@ -100,7 +100,7 @@ class PrepareChunksThread(Thread):
             except Exception:
                 return 1
 
-    def _decrement_local_lock(self, chunk_index: str) -> int:
+    def _decrement_local_lock(self, chunk_index: int) -> int:
         """Remove a count from the local lock, return the remaining count."""
         chunk_filepath, _, _ = self._config[ChunkedIndex(index=-1, chunk_index=chunk_index)]
 
@@ -385,8 +385,7 @@ class BinaryReader:
             assert self._last_chunk_index is not None
 
             # inform the chunk has been completely consumed
-            if self.config._downloader:
-                self._prepare_thread._decrement_local_lock(self._last_chunk_index)
+            self._prepare_thread._decrement_local_lock(self._last_chunk_index)
             self._prepare_thread.delete([self._last_chunk_index])
 
         if index.chunk_index != self._last_chunk_index:
