@@ -115,8 +115,11 @@ class PrepareChunksThread(Thread):
                     curr_count = 1
             curr_count -= 1
             if curr_count <= 0:
-                os.remove(countpath)
-                os.remove(countpath + ".lock")
+                with contextlib.suppress(FileNotFoundError, PermissionError):
+                    os.remove(countpath)
+
+                with contextlib.suppress(FileNotFoundError, PermissionError):
+                    os.remove(countpath + ".lock")
             else:
                 with open(countpath, "w+") as count_f:
                     count_f.write(str(curr_count))
