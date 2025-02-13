@@ -129,7 +129,8 @@ class PrepareChunksThread(Thread):
         if self._config.can_delete(chunk_index):
             chunk_filepath, _, _ = self._config[ChunkedIndex(index=-1, chunk_index=chunk_index)]
 
-            if self._remaining_locks(chunk_filepath) > 0: # Can't delete this, something has it
+            remaining_locks = self._remaining_locks(chunk_filepath)
+            if remaining_locks > 0: # Can't delete this, something has it
                 if _DEBUG:
                     print(f"Skip delete {chunk_filepath} by {self._rank}, current lock count: {remaining_locks}")
                 return
