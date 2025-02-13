@@ -123,11 +123,14 @@ class ChunksConfig:
             if self._downloader is not None:
                 # We don't want to redownload the base, but we should mark
                 # it as having been requested by something
-                self._downloader._increment_local_lock(local_chunkpath)
+                self._downloader._increment_local_lock(local_chunkpath.replace(f".{self._compressor_name}"))
+                pass
             return
 
         if self._downloader is None:
             return
+
+        self._downloader._increment_local_lock(local_chunkpath.replace(f".{self._compressor_name}", ""))
 
         self._downloader.download_chunk_from_index(chunk_index)
 

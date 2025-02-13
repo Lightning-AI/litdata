@@ -9,6 +9,7 @@ from unittest.mock import Mock
 import pytest
 import torch.distributed
 
+from litdata.constants import _POLARS_AVAILABLE
 from litdata.streaming.reader import PrepareChunksThread
 
 
@@ -135,14 +136,15 @@ def pq_data():
 
 @pytest.fixture
 def write_pq_data(pq_data, tmp_path):
-    import polars as pl
+    if _POLARS_AVAILABLE:
+        import polars as pl
 
-    os.mkdir(os.path.join(tmp_path, "pq-dataset"))
+        os.mkdir(os.path.join(tmp_path, "pq-dataset"))
 
-    for i in range(5):
-        df = pl.DataFrame(pq_data)
-        file_path = os.path.join(tmp_path, "pq-dataset", f"tmp-{i}.parquet")
-        df.write_parquet(file_path)
+        for i in range(5):
+            df = pl.DataFrame(pq_data)
+            file_path = os.path.join(tmp_path, "pq-dataset", f"tmp-{i}.parquet")
+            df.write_parquet(file_path)
 
 
 @pytest.fixture

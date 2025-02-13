@@ -57,8 +57,6 @@ class Downloader(ABC):
         local_chunkpath = os.path.join(self._cache_dir, chunk_filename)
         remote_chunkpath = os.path.join(self._remote_dir, chunk_filename)
 
-        # First mark this chunk path as in-use
-        self._increment_local_lock(local_chunkpath)
         self.download_file(remote_chunkpath, local_chunkpath, chunk_filename)
 
     def download_file(self, remote_chunkpath: str, local_chunkpath: str, remote_chunk_filename: str = "") -> None:
