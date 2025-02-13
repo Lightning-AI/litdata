@@ -52,6 +52,13 @@ class Downloader(ABC):
             with open(countpath, "w+") as count_f:
                 count_f.write(str(curr_count))
 
+            # Delete the lock file
+            try:
+                if os.path.exists(countpath + ".lock"):
+                    os.remove(countpath)
+            except FileNotFoundError:
+                pass
+
     def download_chunk_from_index(self, chunk_index: int) -> None:
         chunk_filename = self._chunks[chunk_index]["filename"]
         local_chunkpath = os.path.join(self._cache_dir, chunk_filename)
