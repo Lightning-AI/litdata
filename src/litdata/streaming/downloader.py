@@ -40,10 +40,23 @@ class Downloader(ABC):
         self._chunks = chunks
         self._storage_options = storage_options or {}
 
+    def _increment_local_lock(self, chunkpath: str) -> None:
+        countpath = chunkpath + ".cnt"
+        with suppress(Timeout), FileLock(countpath + ".lock", timeout=3):
+            try:
+                with open(countpath) as count_f:
+                    curr_count = int(count_f.read().strip())
+            except Exception:
+                curr_count = 0
+            curr_count += 1
+            with open(countpath, "w+") as count_f:
+                count_f.write(str(curr_count))
+
     def download_chunk_from_index(self, chunk_index: int) -> None:
         chunk_filename = self._chunks[chunk_index]["filename"]
         local_chunkpath = os.path.join(self._cache_dir, chunk_filename)
         remote_chunkpath = os.path.join(self._remote_dir, chunk_filename)
+
         self.download_file(remote_chunkpath, local_chunkpath, chunk_filename)
 
     def download_file(self, remote_chunkpath: str, local_chunkpath: str, remote_chunk_filename: str = "") -> None:
