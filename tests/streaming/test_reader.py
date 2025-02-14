@@ -2,8 +2,6 @@ import os
 import shutil
 from time import sleep
 
-import numpy as np
-
 from litdata.streaming import reader
 from litdata.streaming.cache import Cache
 from litdata.streaming.config import ChunkedIndex
@@ -84,8 +82,6 @@ def test_reader_chunk_removal_compressed(tmpdir):
         assert cache[index] == i
 
     assert len(filter_lock_files(os.listdir(cache_dir))) in [2, 3]
-
-
 
 
 def test_prepare_chunks_thread_eviction(tmpdir, monkeypatch):
