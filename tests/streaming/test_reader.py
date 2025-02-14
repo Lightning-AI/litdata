@@ -8,7 +8,7 @@ from litdata.streaming import reader
 from litdata.streaming.cache import Cache
 from litdata.streaming.config import ChunkedIndex
 from litdata.streaming.item_loader import PyTreeLoader
-from litdata.streaming.reader import _END_TOKEN, PrepareChunksThread, _get_folder_size
+from litdata.streaming.reader import _END_TOKEN, PrepareChunksThread
 from litdata.streaming.resolver import Dir
 from litdata.utilities.env import _DistributedEnv
 from tests.streaming.utils import filter_lock_files, get_lock_files
@@ -86,13 +86,6 @@ def test_reader_chunk_removal_compressed(tmpdir):
     assert len(filter_lock_files(os.listdir(cache_dir))) in [2, 3]
 
 
-def test_get_folder_size(tmpdir):
-    array = np.zeros((10, 10))
-
-    np.save(os.path.join(tmpdir, "array_1.npy"), array)
-    np.save(os.path.join(tmpdir, "array_2.npy"), array)
-
-    assert _get_folder_size(tmpdir) == 928 * 2
 
 
 def test_prepare_chunks_thread_eviction(tmpdir, monkeypatch):
