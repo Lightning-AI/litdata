@@ -179,6 +179,7 @@ class StreamingDataset(IterableDataset):
             cache_path = _try_create_cache_dir(
                 input_dir=self.input_dir.path if self.input_dir.path else self.input_dir.url,
                 cache_dir=self.cache_dir.path,
+                storage_options=self.storage_options,
             )
             if cache_path is not None:
                 self.input_dir.path = cache_path
@@ -464,6 +465,7 @@ class StreamingDataset(IterableDataset):
             cache_path = _try_create_cache_dir(
                 input_dir=state["input_dir_path"] if state["input_dir_path"] else state["input_dir_url"],
                 cache_dir=state.get("cache_dir_path"),
+                storage_options=self.storage_options,
             )
             if cache_path != self.input_dir.path:
                 raise ValueError(
