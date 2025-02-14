@@ -442,9 +442,7 @@ def optimize(
         state_dict = {rank: 0 for rank in range(num_workers)}
 
         existing_index_file_content = (
-            read_index_file_content(_output_dir, storage_options=storage_options)
-            if mode == "append"
-            else None
+            read_index_file_content(_output_dir, storage_options=storage_options) if mode == "append" else None
         )
 
         if existing_index_file_content is not None:
