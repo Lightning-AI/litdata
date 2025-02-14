@@ -442,11 +442,10 @@ def _get_folder_size(path: str, config: ChunksConfig) -> int:
 
     """
     size = 0
-    for dirpath, _, filenames in os.walk(path):
-        for filename in filenames:
-            if filename in config.filename_to_size_map:
-                with contextlib.suppress(FileNotFoundError):
-                    size += config.filename_to_size_map[filename]
+    for filename in os.listdir(path):
+        if filename in config.filename_to_size_map:
+            with contextlib.suppress(FileNotFoundError):
+                size += config.filename_to_size_map[filename]
     return size
 
 
