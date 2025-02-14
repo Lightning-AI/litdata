@@ -439,10 +439,13 @@ def _get_folder_size(path: str) -> int:
 
     """
     size = 0
+    _SUPPORTED_EXTENSIONS = (".bin", ".json", ".parquet", ".npy")
+
     for dirpath, _, filenames in os.walk(str(path)):
         for filename in filenames:
-            with contextlib.suppress(FileNotFoundError):
-                size += os.stat(os.path.join(dirpath, filename)).st_size
+            if filename.endswith(_SUPPORTED_EXTENSIONS):
+                with contextlib.suppress(FileNotFoundError):
+                    size += os.stat(os.path.join(dirpath, filename)).st_size
     return size
 
 
