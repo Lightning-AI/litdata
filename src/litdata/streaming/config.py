@@ -98,6 +98,9 @@ class ChunksConfig:
 
         self._skip_chunk_indexes_deletion: Optional[List[int]] = None
         self.zero_based_roi: Optional[List[Tuple[int, int]]] = None
+        self.filename_to_size_map: Dict[str, int] = {}
+        for cnk in _original_chunks:
+            self.filename_to_size_map[cnk["filename"]] = cnk["chunk_bytes"]
 
     def can_delete(self, chunk_index: int) -> bool:
         if self._skip_chunk_indexes_deletion is None:
