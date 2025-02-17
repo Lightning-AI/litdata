@@ -366,7 +366,7 @@ def _resolve_time_template(path: str) -> str:
 def _execute(
     name: str,
     num_nodes: int,
-    machine: Optional["Machine"] = None,
+    machine: Optional[Union["Machine", str]] = None,
     command: Optional[str] = None,
     interruptible: bool = False,
 ) -> None:
