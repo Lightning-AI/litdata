@@ -182,6 +182,9 @@ class PrepareChunksThread(Thread):
     def _can_delete_chunk(self) -> bool:
         if self._delete_chunks_when_processed:
             return self._pre_download_counter >= self._max_pre_download - 1
+        print(
+            f"Current cache size: {_get_folder_size(self._parent_cache_dir, self._config)}; and max cache size: {self._max_cache_size}"
+        )
         return (
             self._max_cache_size is not None
             and _get_folder_size(self._parent_cache_dir, self._config) >= self._max_cache_size
@@ -442,10 +445,12 @@ def _get_folder_size(path: str, config: ChunksConfig) -> int:
 
     """
     size = 0
-    for filename in os.listdir(path):
+    for filename in os.listdir(os.path.join(path, "cache_dir")):
         if filename in config.filename_to_size_map:
             with contextlib.suppress(FileNotFoundError):
-                size += config.filename_to_size_map[filename]
+                # size += config.filename_to_size_map[filename]
+                print(f"File: {filename}")
+                size += os.path.getsize(os.path.join(path, "cache_dir", filename))
     return size
 
 
