@@ -154,12 +154,12 @@ def clean_pq_index_cache():
 
     # Cleanup before the test
     if os.path.exists(cache_path):
-        shutil.rmtree(cache_path)
+        shutil.rmtree(cache_path, ignore_errors=True)
 
     yield
 
     if os.path.exists(cache_path):
-        shutil.rmtree(cache_path)
+        shutil.rmtree(cache_path, ignore_errors=True)
 
 
 @pytest.fixture
