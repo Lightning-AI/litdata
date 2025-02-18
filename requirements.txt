@@ -2,6 +2,7 @@ torch
 lightning-utilities
 filelock
 numpy
-boto3
 requests
 tifffile
+fsspec
+fsspec[s3] # aws s3
