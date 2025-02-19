@@ -22,7 +22,7 @@ from datetime import datetime
 from functools import partial
 from pathlib import Path
 from types import FunctionType
-from typing import Any, Callable, Dict, List, Literal, Optional, Sequence, Tuple, Union
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Literal, Optional, Sequence, Tuple, Union
 from urllib import parse
 
 import torch
@@ -51,6 +51,9 @@ from litdata.streaming.resolver import (
 from litdata.utilities._pytree import tree_flatten
 from litdata.utilities.encryption import Encryption
 from litdata.utilities.format import _get_tqdm_iterator_if_available
+
+if TYPE_CHECKING:
+    from lightning_sdk import Machine
 
 
 def _is_remote_file(path: str) -> bool:
@@ -194,7 +197,7 @@ def map(
     num_workers: Optional[int] = None,
     fast_dev_run: Union[bool, int] = False,
     num_nodes: Optional[int] = None,
-    machine: Optional[str] = None,
+    machine: Optional[Union["Machine", str]] = None,
     num_downloaders: Optional[int] = None,
     num_uploaders: Optional[int] = None,
     reorder_files: bool = True,
@@ -312,7 +315,7 @@ def optimize(
     num_workers: Optional[int] = None,
     fast_dev_run: bool = False,
     num_nodes: Optional[int] = None,
-    machine: Optional[str] = None,
+    machine: Optional[Union["Machine", str]] = None,
     num_downloaders: Optional[int] = None,
     num_uploaders: Optional[int] = None,
     reorder_files: bool = True,
