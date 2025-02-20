@@ -313,6 +313,11 @@ def test_map_items_to_workers_weighted(monkeypatch):
     workers_user_items = _map_items_to_workers_weighted(4, list(range(32)))
     assert workers_user_items == [[12, 28], [13, 29], [30, 14], [15, 31]]
 
+    monkeypatch.setenv("DATA_OPTIMIZER_NUM_NODES", "1")
+    monkeypatch.setenv("DATA_OPTIMIZER_NODE_RANK", "0")
+    workers_user_items = _map_items_to_workers_weighted(2, list(range(5)), weights=[1, 2, 3, 4, 5])
+    assert workers_user_items == [[4, 0, 1], [3, 2]]
+
 
 def test_map_items_to_workers_sequentially(monkeypatch):
     workers_user_items = _map_items_to_workers_sequentially(1, list(range(5)))

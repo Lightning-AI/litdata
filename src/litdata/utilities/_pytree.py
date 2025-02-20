@@ -101,7 +101,7 @@ NO_SERIALIZED_TYPE_NAME_FOUND = "NO_SERIALIZED_TYPE_NAME_FOUND"
 
 
 class KeyEntry(Protocol):
-    """A class is considered a KeyEntry (via duck typing) if it defines:
+    """An object is considered a KeyEntry (via Protocol) if it defines:
         - `__hash__() -> int`: Must return an integer hash.
         - `__eq__(other: object) -> bool`: Must support equality comparison.
         - `__str__() -> str`: Must return a string representation.
@@ -232,7 +232,7 @@ def register_pytree_node(
             from_dumpable_context=from_dumpable_context,
         )
 
-
+#! TODO: This is not used anywhere. Remove it.
 def _register_namedtuple(
     cls: Type[Any],
     *,
@@ -259,7 +259,7 @@ def _register_namedtuple(
         flatten_with_keys_fn=_namedtuple_flatten_with_keys,
     )
 
-
+#! TODO: Deprecated. Should we remove it?
 def _register_pytree_node(
     cls: Type[Any],
     flatten_fn: FlattenFunc,
@@ -799,6 +799,8 @@ class LeafSpec(TreeSpec):
 
     def __post_init__(self) -> None:
         self.num_nodes = 1
+        # for a leaf node, we are counting the number of leaves as 1.
+        # We're doing this for consistency in `TreeSpec->unflatten` fn.
         self.num_leaves = 1
         self.num_children = 0
 
@@ -1409,13 +1411,14 @@ def treespec_pprint(treespec: TreeSpec) -> str:
     )
     return repr(dummy_tree)
 
-
+#! TODO: Remove this.
 # TODO(angelayi): remove this function after OSS/internal stabilize
 def pytree_to_str(treespec: TreeSpec) -> str:
     warnings.warn("pytree_to_str is deprecated. Please use treespec_dumps")
     return treespec_dumps(treespec)
 
 
+#! TODO: Remove this.
 # TODO(angelayi): remove this function after OSS/internal stabilize
 def str_to_pytree(json: str) -> TreeSpec:
     warnings.warn("str_to_pytree is deprecated. Please use treespec_loads")
@@ -1548,11 +1551,13 @@ def tree_map_with_path(
     return treespec.unflatten(func(*xs) for xs in zip(*all_keypath_leaves))
 
 
+#! TODO: Not used anywhere. Remove it.
 def keystr(kp: KeyPath) -> str:
     """Given a key path, return a pretty-printed representation."""
     return "".join([str(k) for k in kp])
 
 
+#! TODO: Not used anywhere. Remove it.
 def key_get(obj: Any, kp: KeyPath) -> Any:
     """Given an object and a key path, return the value at the key path."""
     for k in kp:

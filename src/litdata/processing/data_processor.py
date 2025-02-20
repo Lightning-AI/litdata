@@ -92,10 +92,12 @@ def _get_cache_data_dir(name: Optional[str] = None) -> str:
     """Returns the cache data directory used by the DataProcessor workers to download the files."""
     cache_dir = os.getenv("DATA_OPTIMIZER_DATA_CACHE_FOLDER", f"{_get_default_cache()}/data")
     if name is None:
+        #! TODO: Remove `join`. Why use join when only one path is provided?
         return os.path.join(cache_dir)
     return os.path.join(cache_dir, name.lstrip("/"))
 
 
+#! TODO: Move the checking logic to separate file/Class `StorageClient`.
 def _wait_for_file_to_exist(s3: S3Client, obj: parse.ParseResult, sleep_time: int = 2) -> Any:
     """This function check."""
     while True:
@@ -109,6 +111,7 @@ def _wait_for_file_to_exist(s3: S3Client, obj: parse.ParseResult, sleep_time: in
 
 
 def _wait_for_disk_usage_higher_than_threshold(input_dir: str, threshold_in_gb: int = 25, sleep_time: int = 3) -> None:
+    """Wait until the specified directory has more free disk space than the threshold."""
     usage = shutil.disk_usage(input_dir)
 
     while (usage.free / 1000 / 1000 / 1000) <= threshold_in_gb:
@@ -118,6 +121,11 @@ def _wait_for_disk_usage_higher_than_threshold(input_dir: str, threshold_in_gb: 
     return
 
 
+#
+# `_download_data_target` function accepts two queues:
+# 1. `queue_in`: A queue that receives the (index, paths) from where the data is to be downloaded.
+# 2. `queue_out`: A queue that sends the index after the files have been downloaded and ready to be used.
+#
 def _download_data_target(input_dir: Dir, cache_dir: str, queue_in: Queue, queue_out: Queue) -> None:
     """Download data from a remote directory to a cache directory to optimise reading."""
     s3 = S3Client()
@@ -175,6 +183,9 @@ def _download_data_target(input_dir: Dir, cache_dir: str, queue_in: Queue, queue
         queue_out.put(index)
 
 
+#
+# `_remove_target` function accepts a queue that receives the paths to delete files from the cache directory.
+#
 def _remove_target(input_dir: Dir, cache_dir: str, queue_in: Queue) -> None:
     """Delete files from the cache directory to minimise disk space."""
     while True:
@@ -210,6 +221,12 @@ def keep_path(path: str) -> bool:
     return all(p not in path for p in paths)
 
 
+#
+# `_upload_fn` accepts two queues:
+# 1. `upload_queue`: A queue that receives the local file paths ready to be uploaded.
+# 2. `remove_queue`: After uploading, the file is sent to the remove queue,
+#                    so it can be deleted from the cache directory.
+#
 def _upload_fn(upload_queue: Queue, remove_queue: Queue, cache_dir: str, output_dir: Dir) -> None:
     """Upload optimised chunks from a local to remote dataset directory."""
     obj = parse.urlparse(output_dir.url if output_dir.url else output_dir.path)
@@ -280,6 +297,11 @@ def _upload_fn(upload_queue: Queue, remove_queue: Queue, cache_dir: str, output_
 
 
 def _map_items_to_workers_sequentially(num_workers: int, user_items: List[Any]) -> List[List[Any]]:
+    """Map the items to the workers sequentially.
+
+    >>> workers_user_items = _map_items_to_workers_sequentially(2, list(range(5)))
+    >>> assert workers_user_items == [[0, 1], [2, 3, 4]]
+    """
     num_nodes = _get_num_nodes()
     world_size = num_nodes * num_workers
     num_items_per_worker = len(user_items) // world_size
@@ -318,7 +340,11 @@ def _map_items_to_workers_weighted(
     weights: Optional[List[int]] = None,
     file_size: bool = True,
 ) -> List[List[Any]]:
-    # Associate the items to the workers based on number of nodes and node rank.
+    """Map the items to the workers based on the weights.
+
+    >>> workers_user_items = _map_items_to_workers_weighted(2, list(range(5)), weights=[1, 2, 3, 4, 5])
+    >>> assert workers_user_items == [[1, 4, 0], [3, 2]]
+    """
     weights = [1] * len(user_items) if weights is None else weights
     num_nodes = _get_num_nodes()
     node_rank = _get_node_rank()
@@ -340,6 +366,7 @@ def _map_items_to_workers_weighted(
 
 
 def _get_num_bytes(item: Any, base_path: str) -> int:
+    """For the given item (PyTree), flatten it and return the total size in bytes of all file paths."""
     flattened_item, _ = tree_flatten(item)
 
     num_bytes = 0
@@ -799,7 +826,7 @@ class DataChunkRecipe(DataRecipe):
             raise ValueError("Either one of the `chunk_size` or the `chunk_bytes` need to be provided.")
 
         self.chunk_size = chunk_size
-        self.chunk_bytes = 1 << 26 if chunk_size is None and chunk_bytes is None else chunk_bytes
+        self.chunk_bytes = 1 << 26 if chunk_size is None and chunk_bytes is None else chunk_bytes  # 1<<26 = 64 MB
         self.compression = compression
         self.encryption = encryption
 
@@ -1059,6 +1086,7 @@ class DataProcessor:
 
         if self.use_checkpoint:
             if hasattr(data_recipe, "is_generator") and data_recipe.is_generator:
+                #! TODO: Add checkpointing feature support for generators.
                 # Checkpoint feature is not supported for generators for now.
                 raise ValueError("Checkpoint feature is not supported for generators, yet.")
             # get the last checkpoint details
