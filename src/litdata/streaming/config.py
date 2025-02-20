@@ -237,8 +237,9 @@ class ChunksConfig:
 
         filesize_bytes = chunk["chunk_bytes"]
 
-        if self._config and self._config.get("encryption") is None and (not local_chunkpath.endswith(".parquet")):
-            filesize_bytes += (1 + chunk["chunk_size"]) * 4
+        # TODO: Check why filesize_bytes is calculated this way.
+        # if self._config and self._config.get("encryption") is None and (not local_chunkpath.endswith(".parquet")):
+        #     filesize_bytes += (1 + chunk["chunk_size"]) * 4
 
         return local_chunkpath, begin, filesize_bytes
 
