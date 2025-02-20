@@ -446,7 +446,6 @@ def _get_folder_size(path: str, config: ChunksConfig) -> int:
         if filename in config.filename_to_size_map:
             with contextlib.suppress(FileNotFoundError):
                 size += config.filename_to_size_map[filename]
-                print(f"File: {filename}; size: {config.filename_to_size_map[filename]}")
     return size
 
 
