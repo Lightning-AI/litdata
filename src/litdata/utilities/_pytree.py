@@ -26,6 +26,8 @@ import threading
 import types
 import warnings
 from collections import OrderedDict, defaultdict, deque, namedtuple
+#! TODO: Callable and many more types have been deprecated and moved to `collections.abc`.
+#!       We need to update the code to use the new types.
 from typing import (
     Any,
     Callable,
@@ -99,6 +101,12 @@ NO_SERIALIZED_TYPE_NAME_FOUND = "NO_SERIALIZED_TYPE_NAME_FOUND"
 
 
 class KeyEntry(Protocol):
+    """A class is considered a KeyEntry (via duck typing) if it defines:
+        - `__hash__() -> int`: Must return an integer hash.
+        - `__eq__(other: object) -> bool`: Must support equality comparison.
+        - `__str__() -> str`: Must return a string representation.
+        - `get(parent: Any) -> Any`: Must retrieve a value based on the given parent.
+    """
     def __hash__(self) -> int: ...
 
     def __eq__(self, other: object) -> bool: ...
@@ -108,6 +116,7 @@ class KeyEntry(Protocol):
     def get(self, parent: Any) -> Any: ...
 
 
+# define the types for the variables
 Context = Any
 PyTree = Any
 FlattenFunc = Callable[[PyTree], Tuple[List[Any], Context]]
@@ -208,6 +217,7 @@ def register_pytree_node(
         flatten_with_keys_fn=flatten_with_keys_fn,
     )
 
+    #! TODO: We can remove this as no _cxx_pytree exists.
     try:
         from . import _cxx_pytree as cxx
     except ImportError:

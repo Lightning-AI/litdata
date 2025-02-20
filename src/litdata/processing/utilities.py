@@ -28,6 +28,7 @@ from litdata.constants import _INDEX_FILENAME, _IS_IN_STUDIO
 from litdata.streaming.cache import Dir
 
 
+#! TODO: Not sure what this function is used for.
 def _create_dataset(
     input_dir: Optional[str],
     storage_dir: str,
@@ -42,7 +43,13 @@ def _create_dataset(
     name: Optional[str] = None,
     version: Optional[int] = None,
 ) -> None:
-    """Create a dataset with metadata information about its source and destination."""
+    """Create a dataset with metadata information about its source and destination using the Lightning SDK.
+
+    This function will be called only when:
+        - you're on last node (num_nodes == node_rank + 1)
+        - `output_dir.url` and `output_dir.path` are defined
+        - You're using Lightning Studio
+    """
     project_id = os.getenv("LIGHTNING_CLOUD_PROJECT_ID", None)
     cluster_id = os.getenv("LIGHTNING_CLUSTER_ID", None)
     user_id = os.getenv("LIGHTNING_USER_ID", None)
@@ -94,6 +101,7 @@ def get_worker_rank() -> Optional[str]:
     return os.getenv("DATA_OPTIMIZER_GLOBAL_RANK")
 
 
+#! TODO: Do we still need this? It is not used anywhere.
 def catch(func: Callable) -> Callable:
     def _wrapper(*args: Any, **kwargs: Any) -> Tuple[Any, Optional[Exception]]:
         try:
@@ -124,8 +132,13 @@ def make_request(
         return io.BytesIO(r.read())
 
 
+#! TODO: Why `enable` parameter is needed? If you're using this context, you will always enable it (True).
 @contextmanager
 def optimize_dns_context(enable: bool) -> Any:
+    """Optimize the DNS resolution for the Lightning Studio machine.
+
+    This speeds up the DNS resolution for the current machine as it reduces the number of DNS requests.
+    """
     optimize_dns(enable)
     try:
         yield
@@ -153,6 +166,13 @@ def optimize_dns(enable: bool) -> None:
 
 
 def _optimize_dns(enable: bool) -> None:
+    """Optimize the DNS resolution for the Lightning Studio machine.
+
+    When enable=True: Switches to using localhost (127.0.0.1) as the DNS server, which typically means using a
+        `local DNS cache`.
+    When enable=False: It switches back to using systemd-resolved (127.0.0.53), which is the default DNS resolver
+        in many modern Linux distro.
+    """
     with open("/etc/resolv.conf") as f:
         lines = f.readlines()
 
@@ -183,6 +203,7 @@ def _get_work_dir() -> str:
     return f"s3://{bucket_name}/projects/{project_id}/lightningapps/{app_id}/artifacts/{work_id}/content/"
 
 
+#! TODO: Move this to a separate file/class (StorageClient) and add support for other storage providers
 def read_index_file_content(output_dir: Dir) -> Optional[Dict[str, Any]]:
     """Read the index file content."""
     if not isinstance(output_dir, Dir):
@@ -258,6 +279,7 @@ def remove_uuid_from_filename(filepath: str) -> str:
     return filepath[:-38] + ".json"
 
 
+#! TODO: Move this to a separate file/class (StorageClient)
 def download_directory_from_S3(bucket_name: str, remote_directory_name: str, local_directory_name: str) -> str:
     s3_resource = boto3.resource("s3")
     bucket = s3_resource.Bucket(bucket_name)
