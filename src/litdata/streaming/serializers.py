@@ -386,6 +386,42 @@ class FloatSerializer(NumericSerializer, Serializer):
 
     def can_serialize(self, data: float) -> bool:
         return isinstance(data, float)
+    
+class BooleanSerializer(Serializer):
+    """The BooleanSerializer serializes and deserializes boolean values to and from bytes."""
+
+    def serialize(self, item: bool) -> Tuple[bytes, Optional[str]]:
+        """Serialize a boolean value to bytes.
+        
+        Args:
+            item: Boolean value to serialize
+            
+        Returns:
+            Tuple containing the serialized bytes and None for the format string
+        """
+        return np.bool_(item).tobytes(), None
+
+    def deserialize(self, data: bytes) -> bool:
+        """Deserialize bytes back into a boolean value.
+        
+        Args:
+            data: Bytes to deserialize
+            
+        Returns:
+            The deserialized boolean value
+        """
+        return bool(np.frombuffer(data, dtype=np.bool_)[0])
+
+    def can_serialize(self, item: Any) -> bool:
+        """Check if the item can be serialized by this serializer.
+        
+        Args:
+            item: Item to check
+            
+        Returns:
+            True if the item is a boolean, False otherwise
+        """
+        return isinstance(item, bool)
 
 
 class TIFFSerializer(Serializer):
@@ -413,6 +449,7 @@ _SERIALIZERS = OrderedDict(
         "str": StringSerializer(),
         "int": IntegerSerializer(),
         "float": FloatSerializer(),
+        "bool": BooleanSerializer(),
         "video": VideoSerializer(),
         "tifffile": TIFFSerializer(),
         "file": FileSerializer(),
