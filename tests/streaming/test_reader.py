@@ -16,6 +16,7 @@ def test_reader_chunk_removal(tmpdir):
     cache_dir = os.path.join(tmpdir, "cache_dir")
     remote_dir = os.path.join(tmpdir, "remote_dir")
     os.makedirs(cache_dir, exist_ok=True)
+    # we don't care about the max cache size here (so very large number)
     cache = Cache(input_dir=Dir(path=cache_dir, url=remote_dir), chunk_size=2, max_cache_size=28020)
 
     for i in range(25):
@@ -35,12 +36,18 @@ def test_reader_chunk_removal(tmpdir):
     assert len(filter_lock_files(os.listdir(cache_dir))) == 14
     assert len(get_lock_files(os.listdir(cache_dir))) == 0
 
-    cache = Cache(input_dir=Dir(path=cache_dir, url=remote_dir), chunk_size=2, max_cache_size=2800)
+    # Let's test if cache actually respects the max cache size
+    # each chunk is 40 bytes if it has 2 items
+    # a chunk with only 1 item is 24 bytes (values determined by checking actual chunk sizes)
+    cache = Cache(input_dir=Dir(path=cache_dir, url=remote_dir), chunk_size=2, max_cache_size=90)
 
     shutil.rmtree(cache_dir)
     os.makedirs(cache_dir, exist_ok=True)
 
     for i in range(25):
+        # we expect at max 3 files to be present (2 chunks and 1 index file)
+        # why 2 chunks? Bcoz max cache size is 90 bytes and each chunk is 40 bytes or 24 bytes (1 item)
+        # So any additional chunk will go over the max cache size
         assert len(filter_lock_files(os.listdir(cache_dir))) <= 3
         index = ChunkedIndex(*cache._get_chunk_index_from_index(i), is_last_index=i == 24)
         assert cache[index] == i
@@ -52,6 +59,7 @@ def test_reader_chunk_removal_compressed(tmpdir):
     cache_dir = os.path.join(tmpdir, "cache_dir")
     remote_dir = os.path.join(tmpdir, "remote_dir")
     os.makedirs(cache_dir, exist_ok=True)
+    # we don't care about the max cache size here (so very large number)
     cache = Cache(input_dir=Dir(path=cache_dir, url=remote_dir), chunk_size=2, max_cache_size=28020, compression="zstd")
 
     for i in range(25):
@@ -70,13 +78,18 @@ def test_reader_chunk_removal_compressed(tmpdir):
 
     assert len(filter_lock_files(os.listdir(cache_dir))) == 14
     assert len(get_lock_files(os.listdir(cache_dir))) == 0
-
-    cache = Cache(input_dir=Dir(path=cache_dir, url=remote_dir), chunk_size=2, max_cache_size=2800, compression="zstd")
+    # Let's test if cache actually respects the max cache size
+    # each chunk is 40 bytes if it has 2 items
+    # a chunk with only 1 item is 24 bytes (values determined by checking actual chunk sizes)
+    cache = Cache(input_dir=Dir(path=cache_dir, url=remote_dir), chunk_size=2, max_cache_size=90, compression="zstd")
 
     shutil.rmtree(cache_dir)
     os.makedirs(cache_dir, exist_ok=True)
 
     for i in range(25):
+        # we expect at max 3 files to be present (2 chunks and 1 index file)
+        # why 2 chunks? Bcoz max cache size is 90 bytes and each chunk is 40 bytes or 24 bytes (1 item)
+        # So any additional chunk will go over the max cache size
         assert len(filter_lock_files(os.listdir(cache_dir))) <= 3
         index = ChunkedIndex(*cache._get_chunk_index_from_index(i), is_last_index=i == 24)
         assert cache[index] == i
