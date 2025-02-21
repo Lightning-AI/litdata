@@ -447,9 +447,9 @@ class TIFFSerializer(Serializer):
 _SERIALIZERS = OrderedDict(
     **{
         "str": StringSerializer(),
+        "bool": BooleanSerializer(),
         "int": IntegerSerializer(),
         "float": FloatSerializer(),
-        "bool": BooleanSerializer(),
         "video": VideoSerializer(),
         "tifffile": TIFFSerializer(),
         "file": FileSerializer(),
