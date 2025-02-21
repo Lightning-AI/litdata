@@ -182,7 +182,10 @@ class PrepareChunksThread(Thread):
     def _can_delete_chunk(self) -> bool:
         if self._delete_chunks_when_processed:
             return self._pre_download_counter >= self._max_pre_download - 1
-        return self._max_cache_size is not None and _get_folder_size(self._parent_cache_dir) >= self._max_cache_size
+        return (
+            self._max_cache_size is not None
+            and _get_folder_size(self._config._cache_dir, self._config) >= self._max_cache_size
+        )
 
     def _pre_load_chunk(self, chunk_index: int) -> None:
         chunk_filepath, _, _ = self._config[ChunkedIndex(index=-1, chunk_index=chunk_index)]
@@ -432,17 +435,19 @@ class BinaryReader:
             self._prepare_thread = None
 
 
-def _get_folder_size(path: str) -> int:
+def _get_folder_size(path: str, config: ChunksConfig) -> int:
     """Collect the size of each files within a folder.
 
     This method is robust to file deletion races
 
     """
     size = 0
-    for dirpath, _, filenames in os.walk(str(path)):
-        for filename in filenames:
+    for filename in os.listdir(path):
+        if filename in config.filename_to_size_map:
             with contextlib.suppress(FileNotFoundError):
-                size += os.stat(os.path.join(dirpath, filename)).st_size
+                size += config.filename_to_size_map[filename]
+        elif not filename.endswith((".cnt", ".lock")):
+            logger.warning(f"File {filename} is not a valid chunk file. It will be ignored.")
     return size
 
 
