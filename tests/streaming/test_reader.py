@@ -2,6 +2,9 @@ import os
 import shutil
 from time import sleep
 
+import pytest
+
+from litdata.constants import _ZSTD_AVAILABLE
 from litdata.streaming import reader
 from litdata.streaming.cache import Cache
 from litdata.streaming.config import ChunkedIndex
@@ -12,12 +15,21 @@ from litdata.utilities.env import _DistributedEnv
 from tests.streaming.utils import filter_lock_files, get_lock_files
 
 
-def test_reader_chunk_removal(tmpdir):
+@pytest.mark.parametrize(
+    "compression",
+    [
+        pytest.param(None),
+        pytest.param("zstd", marks=pytest.mark.skipif(condition=not _ZSTD_AVAILABLE, reason="Requires: ['zstd']")),
+    ],
+)
+def test_reader_chunk_removal(tmpdir, compression):
     cache_dir = os.path.join(tmpdir, "cache_dir")
     remote_dir = os.path.join(tmpdir, "remote_dir")
     os.makedirs(cache_dir, exist_ok=True)
     # we don't care about the max cache size here (so very large number)
-    cache = Cache(input_dir=Dir(path=cache_dir, url=remote_dir), chunk_size=2, max_cache_size=28020)
+    cache = Cache(
+        input_dir=Dir(path=cache_dir, url=remote_dir), chunk_size=2, max_cache_size=28020, compression=compression
+    )
 
     for i in range(25):
         cache[i] = i
@@ -39,7 +51,9 @@ def test_reader_chunk_removal(tmpdir):
     # Let's test if cache actually respects the max cache size
     # each chunk is 40 bytes if it has 2 items
     # a chunk with only 1 item is 24 bytes (values determined by checking actual chunk sizes)
-    cache = Cache(input_dir=Dir(path=cache_dir, url=remote_dir), chunk_size=2, max_cache_size=90)
+    cache = Cache(
+        input_dir=Dir(path=cache_dir, url=remote_dir), chunk_size=2, max_cache_size=90, compression=compression
+    )
 
     shutil.rmtree(cache_dir)
     os.makedirs(cache_dir, exist_ok=True)

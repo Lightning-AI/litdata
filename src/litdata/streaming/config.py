@@ -100,7 +100,9 @@ class ChunksConfig:
         self.zero_based_roi: Optional[List[Tuple[int, int]]] = None
         self.filename_to_size_map: Dict[str, int] = {}
         for cnk in _original_chunks:
-            self.filename_to_size_map[cnk["filename"]] = cnk["chunk_bytes"]
+            # since files downloaded while reading will be decompressed, we need to store the size of the original file
+            filename_without_compression = cnk["filename"].replace(f".{self._compressor_name}", "")
+            self.filename_to_size_map[filename_without_compression] = cnk["chunk_bytes"]
 
     def can_delete(self, chunk_index: int) -> bool:
         if self._skip_chunk_indexes_deletion is None:
