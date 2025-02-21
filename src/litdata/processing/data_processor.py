@@ -434,18 +434,23 @@ class FakeQueue:
             return None
 
 
-#
-# `BaseWorker` is the one who is responsible for processing the user provided `fn` with the provided `inputs`.
-#       Be it for `map`, or `optimize` recipes.
-#
-#       `map` uses `LambdaMapRecipe`; `optimize` uses `LambdaDataChunkRecipe`.
-#
-#       - Get data from `ready_to_process_queue` (uses `data_recipe.prepare_structure`),
-#       - if reader is provided, read the data from the reader and then pass it to the `data_recipe.prepare_item`
-#       - and process it with `handle_data_chunk_recipe` or `handle_data_transform_recipe`
-#       - then, upload and remove the data depending on the recipe type.
-#
 class BaseWorker:
+    """BaseWorker handles data processing using either map or optimize recipes.
+
+    The worker follows this processing pipeline:
+    1. Receives input data from ready_to_process_queue (structured via data_recipe.prepare_structure)
+    2. If a reader is configured, reads and prepares data using data_recipe.prepare_item
+    3. Processes data through either:
+       - handle_data_chunk_recipe for optimization tasks (LambdaDataChunkRecipe)
+       - handle_data_transform_recipe for mapping tasks (LambdaMapRecipe)
+    4. Manages data lifecycle:
+       - Uploads processed results
+       - Optionally cleans up source data
+
+    This class serves as the core processing unit in distributed data processing pipelines,
+    supporting both data transformation and optimization workflows.
+    """
+
     def __init__(
         self,
         worker_index: int,
