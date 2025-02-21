@@ -184,7 +184,7 @@ class PrepareChunksThread(Thread):
             return self._pre_download_counter >= self._max_pre_download - 1
         return (
             self._max_cache_size is not None
-            and _get_folder_size(self._parent_cache_dir, self._config) >= self._max_cache_size
+            and _get_folder_size(self._config._cache_dir, self._config) >= self._max_cache_size
         )
 
     def _pre_load_chunk(self, chunk_index: int) -> None:
