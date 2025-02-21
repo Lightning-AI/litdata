@@ -15,6 +15,43 @@ collection support for PyTorch APIs.
 
 This pytree implementation is not very performant due to Python overhead
 To improve the performance we can move parts of the implementation to C++.
+
+
+---
+
+## PyTree `tree_flatten` and `tree_unflatten`
+
+- leaves are the final values in the data structure (e.g. `int`, `float`, `str`, `bool`, pil, tensor, etc.)
+- serializers will be applied to the leaves (final values) and convert them into bytes
+- context is used to reconstruct the data structure
+
+### `tree_flatten`
+
+- takes  a data structure and returns a flat list of leaves and a context
+- e.g.:
+    - `dict`: `{'a': 1, 'b': 2}` -> [1, 2], ['a', 'b'] (leaves, context)
+    - `list`: `[1, 2, 3]` -> [1, 2, 3], [] (leaves, context)
+    - `tuple`: `(1, 2, 3)` -> [1, 2, 3], [] (leaves, context)
+    - `int`: `1` -> [1], [] (leaves, context)
+    - `float`: `1.0` -> [1.0], [] (leaves, context)
+    - `str`: `'hello'` -> ['hello'], [] (leaves, context)
+    - `bool`: `True` -> [True], [] (leaves, context)
+
+
+
+### `tree_unflatten`
+
+- takes a flat list of leaves and a context and returns the original data structure
+- e.g.:
+    - [1, 2], ['a', 'b'] -> `dict`: `{'a': 1, 'b': 2}`
+    - [1, 2, 3], [] -> `list`: `[1, 2, 3]`
+    - [1, 2, 3], [] -> `tuple`: `(1, 2, 3)`
+    - [1], [] -> `int`: `1`
+    - [1.0], [] -> `float`: `1.0`
+    - ['hello'], [] -> `str`: `'hello'`
+    - [True], [] -> `bool`: `True`
+
+
 """
 
 import dataclasses

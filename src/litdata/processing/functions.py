@@ -104,6 +104,8 @@ def _get_default_num_workers() -> int:
 
 
 class LambdaMapRecipe(MapRecipe):
+    """Recipe for `map`."""
+
     def __init__(self, fn: Callable[[str, Any], None], inputs: Union[Sequence[Any], StreamingDataLoader]):
         super().__init__()
         self._fn = fn
@@ -147,6 +149,8 @@ class LambdaMapRecipe(MapRecipe):
 
 
 class LambdaDataChunkRecipe(DataChunkRecipe):
+    """Recipe for `optimize`."""
+
     def __init__(
         self,
         fn: Callable[[Any], None],
@@ -302,6 +306,18 @@ def map(
     )
 
 
+#
+# Optimize (using LambdaDataChunkRecipe) => DataProcess => DataWorkerProcess (BaseWorker)
+#                   ---> got the output of a single input for optimize fn
+#
+# Pytree flattens the output (convert nested structure like, dict, list, tuple, etc. into a single list of values)
+#   and pytree returns the flattened structure and the data_spec (structure of the data)
+#
+#   Writer serializes (converts into bytes) flattened data
+#   When either condition is met: total bytes exceed `chunk_bytes` or total items exceed `chunk_size`,
+#        then write a `chunk_{idx}.bin` file to the cache.
+#   data_spec is saved in the index file.
+#
 def optimize(
     fn: Callable[[Any], Any],
     inputs: Union[Sequence[Any], StreamingDataLoader],

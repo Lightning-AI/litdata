@@ -434,6 +434,17 @@ class FakeQueue:
             return None
 
 
+#
+# `BaseWorker` is the one who is responsible for processing the user provided `fn` with the provided `inputs`.
+#       Be it for `map`, or `optimize` recipes.
+#
+#       `map` uses `LambdaMapRecipe`; `optimize` uses `LambdaDataChunkRecipe`.
+#
+#       - Get data from `ready_to_process_queue` (uses `data_recipe.prepare_structure`),
+#       - if reader is provided, read the data from the reader and then pass it to the `data_recipe.prepare_item`
+#       - and process it with `handle_data_chunk_recipe` or `handle_data_transform_recipe`
+#       - then, upload and remove the data depending on the recipe type.
+#
 class BaseWorker:
     def __init__(
         self,
@@ -523,6 +534,12 @@ class BaseWorker:
             self.remover.join()
 
     def _loop(self) -> None:
+        """The main loop of the worker.
+
+        It will get the item index from the `ready_to_process_queue`,
+        and send it to the `handle_data_chunk_recipe` or `handle_data_transform_recipe` depending on the recipe type.
+        finally, it will upload and remove the data depending on the recipe type.
+        """
         num_downloader_finished = 0
 
         while True:
@@ -726,6 +743,9 @@ class BaseWorker:
             self.to_upload_queues.append(to_upload_queue)
 
     def _handle_data_chunk_recipe(self, index: int) -> None:
+        """Used by `optimize fn` to run the user provided fn on each item of the input data,
+        and save (write) the output in the cache.
+        """
         try:
             current_item = self.items[index] if self.reader is None else self.reader.read(self.items[index])
             item_data_or_generator = self.data_recipe.prepare_item(current_item)
@@ -746,6 +766,10 @@ class BaseWorker:
             raise RuntimeError(f"Failed processing {self.items[index]=}; {index=}") from e
 
     def _handle_data_chunk_recipe_end(self) -> None:
+        """Called when the `optimize fn` is done.
+
+        It will save the cache to disk, and upload the chunks to the output directory.
+        """
         chunks_filepaths = self.cache.done()
 
         if chunks_filepaths and len(self.to_upload_queues):
@@ -758,6 +782,10 @@ class BaseWorker:
             self._try_upload(checkpoint_filepath)
 
     def _handle_data_transform_recipe(self, index: int) -> None:
+        """Used by map fn to run the user provided fn on each item of the input data.
+
+        It should not return anything and write directly to the output directory.
+        """
         # Don't use a context manager to avoid deleting files that are being uploaded.
         output_dir = tempfile.mkdtemp()
         item = self.items[index] if self.reader is None else self.reader.read(self.items[index])
@@ -798,12 +826,28 @@ T = TypeVar("T")
 
 
 class DataRecipe:
+    """Base class for all data recipes.
+
+    It is responsible for preparing the `structure of the data (inputs)`
+    and the `item (what is returned by the user fn)`.
+    """
+
     @abstractmethod
     def prepare_structure(self, input_dir: Optional[str]) -> List[T]:
+        """Prepare the structure of the data.
+
+        This is the structure of the data that will be used by the worker. (inputs)
+        """
         pass
 
     @abstractmethod
     def prepare_item(self, *args: Any, **kwargs: Any) -> Any:
+        """Prepare the item.
+
+        This is the item that will be returned by the user `fn(input)`.
+        For `optimize fn`, it will be saved in the cache.
+        For `map fn`, it should return none, and should write directly to the output directory.
+        """
         pass
 
     def __init__(self) -> None:
