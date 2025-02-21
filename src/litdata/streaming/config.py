@@ -100,7 +100,7 @@ class ChunksConfig:
         self.zero_based_roi: Optional[List[Tuple[int, int]]] = None
         self.filename_to_size_map: Dict[str, int] = {}
         for cnk in _original_chunks:
-            # since files downloaded while reading will be decompressed, we need to store the size of the original file
+            # since files downloaded while reading will be decompressed, we need to store the name without compression
             filename_without_compression = cnk["filename"].replace(f".{self._compressor_name}", "")
             self.filename_to_size_map[filename_without_compression] = cnk["chunk_bytes"]
 
