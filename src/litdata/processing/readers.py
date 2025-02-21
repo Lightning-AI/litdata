@@ -24,28 +24,27 @@ from litdata.utilities.format import _get_tqdm_iterator_if_available
 _PYARROW_AVAILABLE = RequirementCache("pyarrow")
 
 
-#
-# The `BaseReader` interface defines how to read and preprocess data
-# from various sources (files, directories, databases, etc.)
-# for use with the `map` and `optimize` operations.
-#
-# Key concepts:
-# - Reader.read(item): Processes a single item and returns data in a format expected by the mapping function (fn)
-# - Reader.remap_items(items, num_workers): Optimizes data distribution by potentially resharding items
-#   (e.g., splitting large items or batching small ones) based on the processing requirements
-#
-# Implementation examples:
-# - ParquetReader: Handles Parquet file reading with configurable chunk sizes
-# - StreamingDataLoaderReader: Wraps a StreamingDataLoader for iterative data access
-#
-# Have a look at `tests/processing/test_readers.py::test_parquet_reader`.
-#   - fn `map_parquet` expects a dataframe object.
-#   - inputs are parquet files.
-#
-# => `ParquetReader` will read the parquet files (passed as `inputs`) and return a dataframe object
-# (which is passed to `map_parquet`).
-#
 class BaseReader(ABC):
+    """The `BaseReader` interface defines how to read and preprocess data
+    from various sources (files, directories, databases, etc.)
+    for use with the `map` and `optimize` operations.
+
+    Key concepts:
+    - Reader.read(item): Processes a single item and returns data in a format expected by the mapping function (fn)
+    - Reader.remap_items(items, num_workers): Optimizes data distribution by potentially resharding items
+      (e.g., splitting large items or batching small ones) based on the processing requirements
+
+    Implementation examples:
+    - ParquetReader: Handles Parquet file reading with configurable chunk sizes
+    - StreamingDataLoaderReader: Wraps a StreamingDataLoader for iterative data access
+
+    Have a look at `tests/processing/test_readers.py::test_parquet_reader`.
+    - fn `map_parquet` expects a dataframe object.
+    - inputs are parquet files.
+    - => `ParquetReader` will read the parquet files (passed as `inputs`) and return a dataframe object
+      (which is passed to `map_parquet`).
+    """
+
     def get_num_nodes(self) -> int:
         return int(os.getenv("DATA_OPTIMIZER_NUM_NODES", 1))
 
