@@ -58,6 +58,7 @@ def test_serializers():
     keys = list(_SERIALIZERS.keys())
     assert keys == [
         "str",
+        "bool",
         "int",
         "float",
         "video",
