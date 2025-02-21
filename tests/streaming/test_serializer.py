@@ -30,6 +30,7 @@ from litdata.streaming.serializers import (
     _SERIALIZERS,
     _TORCH_DTYPES_MAPPING,
     _TORCH_VISION_AVAILABLE,
+    BooleanSerializer,
     IntegerSerializer,
     JPEGSerializer,
     NoHeaderNumpySerializer,
@@ -40,7 +41,6 @@ from litdata.streaming.serializers import (
     TIFFSerializer,
     VideoSerializer,
     _get_serializers,
-    BooleanSerializer,
 )
 
 
