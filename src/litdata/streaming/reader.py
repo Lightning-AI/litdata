@@ -237,6 +237,11 @@ class PrepareChunksThread(Thread):
                 self._maybe_delete_chunks()
 
 
+# The BinaryReader operates as the inverse of the data optimization process:
+# 1. Loads raw bytes from chunks based on specific indices
+# 2. Uses deserializers to convert bytes back into Python objects
+# 3. Reconstructs the original data structure with the data_spec from index.json and using `tree_unflatten function`
+# 4. Supports features like compression, encryption, and distributed reading
 class BinaryReader:
     def __init__(
         self,

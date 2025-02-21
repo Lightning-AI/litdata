@@ -104,6 +104,8 @@ def _get_default_num_workers() -> int:
 
 
 class LambdaMapRecipe(MapRecipe):
+    """Recipe for `map`."""
+
     def __init__(self, fn: Callable[[str, Any], None], inputs: Union[Sequence[Any], StreamingDataLoader]):
         super().__init__()
         self._fn = fn
@@ -147,6 +149,8 @@ class LambdaMapRecipe(MapRecipe):
 
 
 class LambdaDataChunkRecipe(DataChunkRecipe):
+    """Recipe for `optimize`."""
+
     def __init__(
         self,
         fn: Callable[[Any], None],
@@ -302,6 +306,24 @@ def map(
     )
 
 
+#
+# `Optimize` Pipeline:
+#
+# 1. optimize() function uses LambdaDataChunkRecipe to process inputs
+# 2. LambdaDataChunkRecipe is passed to DataProcess
+# 3. DataProcess spawns DataWorkerProcess (BaseWorker) instances
+# 4. Each worker:
+#    a. Processes a single input through the optimize fn
+#    b. Flattens the output using pytree:
+#       - Converts nested structures (dict, list, tuple) into flat list
+#       - Generates data_spec to preserve structure for later reconstruction
+#    c. Uses Writer to serialize (bytes) the flattened data
+#    d. Writes chunk files when either limit is reached:
+#       - Total bytes > chunk_bytes
+#       - Total items > chunk_size
+#    e. Creates chunk_{idx}.bin files in cache
+#    f. Saves data_spec in index.json for data structure preservation
+#
 def optimize(
     fn: Callable[[Any], Any],
     inputs: Union[Sequence[Any], StreamingDataLoader],
