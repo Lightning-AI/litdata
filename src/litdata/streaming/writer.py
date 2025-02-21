@@ -160,7 +160,6 @@ class BinaryWriter:
         """Serialize a dictionary into its binary format."""
         # Flatten the items provided by the users
         flattened, data_spec = tree_flatten(items)
-        print(f"writer serialize {items=}; {flattened=}; {data_spec=}")
 
         # Collect the sizes and associated bytes for each item
         sizes: List[int] = []
