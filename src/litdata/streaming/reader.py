@@ -442,7 +442,7 @@ def _get_folder_size(path: str, config: ChunksConfig) -> int:
 
     """
     size = 0
-    for filename in os.listdir(os.path.join(path, "cache_dir")):
+    for filename in os.listdir(path):
         if filename in config.filename_to_size_map:
             with contextlib.suppress(FileNotFoundError):
                 size += config.filename_to_size_map[filename]
