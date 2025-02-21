@@ -441,19 +441,24 @@ class BinaryReader:
 
 
 def _get_folder_size(path: str, config: ChunksConfig) -> int:
-    """Collect the size of each files within a folder.
-
-    This method is robust to file deletion races
-
+    """Collect the size of each files within a folder and its subdirectories.
+    
+    This method is robust to file deletion races and handles nested directory structures
+    commonly found in HuggingFace datasets.
     """
     size = 0
-    for filename in os.listdir(path):
-        if filename in config.filename_to_size_map:
-            with contextlib.suppress(FileNotFoundError):
-                size += config.filename_to_size_map[filename]
-        elif not filename.endswith((".cnt", ".lock", ".json", ".zstd.bin")):
-            # ignore .cnt, .lock, .json and .zstd files for warning
-            logger.warning(f"File {filename} is not a valid chunk file. It will be ignored.")
+    
+    # Walk through directory and subdirectories
+    for root, _, files in os.walk(path):
+        for filename in files:
+            full_path = os.path.relpath(os.path.join(root, filename), path)
+            if full_path in config.filename_to_size_map:
+                with contextlib.suppress(FileNotFoundError):
+                    size += config.filename_to_size_map[full_path]
+            elif not filename.endswith((".cnt", ".lock", ".json", ".zstd.bin")):
+                # ignore .cnt, .lock, .json and .zstd files for warning
+                logger.warning(f"File {full_path} is not a valid chunk file. It will be ignored.")
+    
     return size
 
 
