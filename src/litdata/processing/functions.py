@@ -307,16 +307,22 @@ def map(
 
 
 #
-# Optimize (using LambdaDataChunkRecipe) => DataProcess => DataWorkerProcess (BaseWorker)
-#                   ---> got the output of a single input for optimize fn
+# `Optimize` Pipeline:
 #
-# Pytree flattens the output (convert nested structure like, dict, list, tuple, etc. into a single list of values)
-#   and pytree returns the flattened structure and the data_spec (structure of the data)
-#
-#   Writer serializes (converts into bytes) flattened data
-#   When either condition is met: total bytes exceed `chunk_bytes` or total items exceed `chunk_size`,
-#        then write a `chunk_{idx}.bin` file to the cache.
-#   data_spec is saved in the index file.
+# 1. optimize() function uses LambdaDataChunkRecipe to process inputs
+# 2. LambdaDataChunkRecipe is passed to DataProcess
+# 3. DataProcess spawns DataWorkerProcess (BaseWorker) instances
+# 4. Each worker:
+#    a. Processes a single input through the optimize fn
+#    b. Flattens the output using pytree:
+#       - Converts nested structures (dict, list, tuple) into flat list
+#       - Generates data_spec to preserve structure for later reconstruction
+#    c. Uses Writer to serialize (bytes) the flattened data
+#    d. Writes chunk files when either limit is reached:
+#       - Total bytes > chunk_bytes
+#       - Total items > chunk_size
+#    e. Creates chunk_{idx}.bin files in cache
+#    f. Saves data_spec in index.json for data structure preservation
 #
 def optimize(
     fn: Callable[[Any], Any],
