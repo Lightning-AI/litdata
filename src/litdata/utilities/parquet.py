@@ -264,8 +264,7 @@ class HFParquetDir(ParquetDir):
                     from tqdm.auto import tqdm as _tqdm
 
                     file_size = self.fs.info(_file)["size"]
-                    desc = f"Downloading {file_name}"
-                    pbar = _tqdm(desc=desc, total=file_size, unit="B", unit_scale=True)
+                    pbar = _tqdm(desc=f"Downloading {file_name}", total=file_size, unit="B", unit_scale=True)
 
                 for chunk in iter(lambda: cloud_file.read(4096), b""):  # Read in 4KB chunks
                     local_file.write(chunk)
