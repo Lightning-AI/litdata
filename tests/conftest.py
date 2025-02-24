@@ -181,6 +181,9 @@ def huggingface_hub_mock(monkeypatch, write_pq_data, tmp_path):
     hf_fs_mock = Mock()
     hf_fs_mock.ls = Mock(side_effect=lambda *args, **kwargs: os.listdir(os.path.join(tmp_path, "pq-dataset")))
     hf_fs_mock.open = Mock(side_effect=mock_open)
+    hf_fs_mock.info = Mock(
+        side_effect=lambda filename: {"size": os.path.getsize(os.path.join(tmp_path, "pq-dataset", filename))}
+    )
     huggingface_hub.HfFileSystem = Mock(return_value=hf_fs_mock)
 
     return huggingface_hub
