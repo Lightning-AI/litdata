@@ -1,3 +1,4 @@
+import logging
 import os
 import shutil
 from time import sleep
@@ -6,7 +7,7 @@ from litdata.streaming import reader
 from litdata.streaming.cache import Cache
 from litdata.streaming.config import ChunkedIndex
 from litdata.streaming.item_loader import PyTreeLoader
-from litdata.streaming.reader import _END_TOKEN, PrepareChunksThread
+from litdata.streaming.reader import _END_TOKEN, PrepareChunksThread, _get_folder_size
 from litdata.streaming.resolver import Dir
 from litdata.utilities.env import _DistributedEnv
 from tests.streaming.utils import filter_lock_files, get_lock_files
@@ -95,6 +96,45 @@ def test_reader_chunk_removal_compressed(tmpdir):
         assert cache[index] == i
 
     assert len(filter_lock_files(os.listdir(cache_dir))) in [2, 3]
+
+
+def test_get_folder_size(tmpdir, caplog):
+    cache_dir = os.path.join(tmpdir, "cache_dir")
+    cache = Cache(cache_dir, chunk_size=10)
+    for i in range(100):
+        cache[i] = i
+
+    cache.done()
+    cache.merge()
+
+    config = cache._reader._try_load_config()
+
+    with caplog.at_level(logging.WARNING):
+        cache_size = _get_folder_size(cache_dir, config)
+
+    actual_cache_size = 0
+    for file_name in filter_lock_files(os.listdir(cache_dir)):
+        if file_name in config.filename_to_size_map:
+            actual_cache_size += os.path.getsize(os.path.join(cache_dir, file_name))
+
+    assert cache_size == actual_cache_size
+    assert len(caplog.messages) == 0
+
+    # add a txt to the cache dir
+    file_name = "sample.txt"
+    with open(os.path.join(cache_dir, file_name), "w") as f:
+        f.write("sample")
+
+    with caplog.at_level(logging.WARNING):
+        cache_size = _get_folder_size(cache_dir, config)
+
+    assert cache_size == actual_cache_size
+    assert len(caplog.messages) == 1
+
+    # Assert that a warning was logged
+    assert any(
+        f"Skipping {file_name}: Not a valid chunk file." in record.message for record in caplog.records
+    ), "Expected warning about an invalid chunk file was not logged"
 
 
 def test_prepare_chunks_thread_eviction(tmpdir, monkeypatch):

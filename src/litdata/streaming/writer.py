@@ -573,14 +573,14 @@ def index_parquet_dataset(
     }
 
     pq_dir_class = get_parquet_indexer_cls(pq_dir_url, cache_dir, storage_options, remove_after_indexing, num_workers)
+
     if _TQDM_AVAILABLE:
         from tqdm.auto import tqdm as _tqdm
 
         pbar = _tqdm(
-            desc="Progress",
+            desc="Indexing progress",
             total=len(pq_dir_class.files),
             smoothing=0,
-            position=-1,
             mininterval=1,
             leave=True,
             dynamic_ncols=True,

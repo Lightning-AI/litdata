@@ -12,10 +12,10 @@
 # limitations under the License.
 
 import contextlib
+import logging
 import os
 import warnings
 from contextlib import suppress
-from logging import Logger
 from queue import Empty, Queue
 from threading import Event, Thread
 from typing import Any, Dict, List, Optional, Tuple, Union
@@ -33,7 +33,7 @@ from litdata.utilities.env import _DistributedEnv, _WorkerEnv
 warnings.filterwarnings("ignore", message=".*The given buffer is not writable.*")
 
 
-logger = Logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 _END_TOKEN = "END"  # noqa: S105
@@ -453,7 +453,9 @@ def _get_folder_size(path: str, config: ChunksConfig) -> int:
                 size += config.filename_to_size_map[filename]
         elif not filename.endswith((".cnt", ".lock", ".json", ".zstd.bin")):
             # ignore .cnt, .lock, .json and .zstd files for warning
-            logger.warning(f"File {filename} is not a valid chunk file. It will be ignored.")
+            logger.warning(
+                f"Skipping {filename}: Not a valid chunk file. It will be excluded from cache size calculation."
+            )
     return size
 
 
