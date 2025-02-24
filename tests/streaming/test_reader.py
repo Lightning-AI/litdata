@@ -3,8 +3,6 @@ import os
 import shutil
 from time import sleep
 
-import pytest
-
 from litdata.streaming import reader
 from litdata.streaming.cache import Cache
 from litdata.streaming.config import ChunkedIndex
@@ -134,9 +132,9 @@ def test_get_folder_size(tmpdir, caplog):
     assert len(caplog.messages) == 1
 
     # Assert that a warning was logged
-    assert any(f"Skipping {file_name}: Not a valid chunk file." in record.message for record in caplog.records), (
-        "Expected warning about an invalid chunk file was not logged"
-    )
+    assert any(
+        f"Skipping {file_name}: Not a valid chunk file." in record.message for record in caplog.records
+    ), "Expected warning about an invalid chunk file was not logged"
 
 
 def test_prepare_chunks_thread_eviction(tmpdir, monkeypatch):
