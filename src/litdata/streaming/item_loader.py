@@ -410,7 +410,15 @@ class TokensLoader(BaseItemLoader):
     def close(self, chunk_index: int) -> None:
         """Release the memory-mapped file for a specific chunk index."""
         if chunk_index in self._mmaps:
-            self._mmaps[chunk_index]._mmap.close()
+            # TODO: Fix memory map cleanup
+            # Currently we're only deleting references without explicitly closing memory maps,
+            # as calling mmap.close() causes segmentation faults in worker processes.
+            # Potential solutions to investigate:
+            # 1. Use a separate process for closing mmaps
+            # 2. Implement reference counting to ensure no accesses after close
+            # 3. Explore numpy.memmap lifecycle management alternatives
+
+            # self._mmaps[chunk_index]._mmap.close()
             del self._mmaps[chunk_index]
         if chunk_index in self._buffers:
             del self._buffers[chunk_index]
