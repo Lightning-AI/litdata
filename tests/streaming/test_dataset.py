@@ -605,6 +605,7 @@ def test_dataset_for_text_tokens_multiple_workers(tmpdir):
         result.append(batch[:, 0].tolist())
     assert result == expected
 
+
 @pytest.mark.timeout(30)
 def test_dataset_for_text_tokens_with_large_block_size_multiple_workers(tmpdir):
     # test to reproduce ERROR: Unexpected segmentation fault encountered in worker
