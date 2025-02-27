@@ -110,3 +110,56 @@ impl StorageBackend for LocalStorage {
         Ok(())
     }
 }
+
+// ----- LocalDownloaderWithCache -----
+pub struct LocalStorageWithCache {
+    loc_stor: LocalStorage,
+}
+
+impl LocalStorageWithCache {
+    pub fn new() -> Self {
+        LocalStorageWithCache {
+            loc_stor: LocalStorage::new(),
+        }
+    }
+}
+
+impl StorageBackend for LocalStorageWithCache {
+    fn list(&self, path: &str) -> Result<Vec<String>, Box<dyn std::error::Error>> {
+        self.loc_stor.list(path)
+    }
+
+    fn upload(
+        &self,
+        local_path: &str,
+        remote_path: &str,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        self.loc_stor.upload(local_path, remote_path)
+    }
+
+    fn download(
+        &self,
+        remote_path: &str,
+        local_path: &str,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let remote_path = remote_path.trim_start_matches("local:");
+
+        self.loc_stor.download(remote_path, local_path)
+    }
+
+    fn byte_range_download(
+        &self,
+        path: &str,
+        range: (u64, u64),
+    ) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+        self.loc_stor.byte_range_download(path, range)
+    }
+
+    fn does_file_exist(&self, path: &str) -> bool {
+        self.loc_stor.does_file_exist(path)
+    }
+
+    fn delete(&self, path: &str) -> Result<(), Box<dyn std::error::Error>> {
+        self.loc_stor.delete(path)
+    }
+}
