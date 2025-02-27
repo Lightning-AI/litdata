@@ -2,6 +2,7 @@ use super::StorageBackend;
 use aws_config::BehaviorVersion;
 use aws_sdk_s3::primitives::ByteStream;
 use aws_sdk_s3::Client;
+use pyo3::prelude::*;
 use std::sync::Arc;
 use tokio::fs::File;
 use tokio::fs::OpenOptions;
@@ -9,15 +10,64 @@ use tokio::io::{AsyncReadExt, AsyncSeekExt, AsyncWriteExt};
 use tokio::sync::Mutex;
 use tokio::task::JoinSet;
 
+#[pyclass]
 pub struct S3Storage {
     s3client: Client,
 }
 
+#[pymethods]
 impl S3Storage {
-    pub async fn new() -> Self {
-        let config = aws_config::defaults(BehaviorVersion::latest()).load().await;
+    #[new]
+    pub fn new() -> Self {
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        let config = rt.block_on(aws_config::defaults(BehaviorVersion::latest()).load());
         let s3 = aws_sdk_s3::Client::new(&config);
         S3Storage { s3client: s3 }
+    }
+
+    pub fn list(&self, path: &str) -> PyResult<Vec<String>> {
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        rt.block_on(StorageBackend::list(self, path))
+            .map_err(|e| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(e.to_string()))
+    }
+
+    pub fn does_file_exist(&self, path: &str) -> PyResult<bool> {
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        Ok(rt.block_on(StorageBackend::does_file_exist(self, path)))
+    }
+
+    pub fn upload(&self, local_path: &str, remote_path: &str) -> PyResult<()> {
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        rt.block_on(StorageBackend::upload(self, local_path, remote_path))
+            .map_err(|e| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(e.to_string()))
+    }
+
+    pub fn delete(&self, path: &str) -> PyResult<()> {
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        rt.block_on(StorageBackend::delete(self, path))
+            .map_err(|e| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(e.to_string()))
+    }
+
+    pub fn download(&self, path: &str, local_path: &str) -> PyResult<()> {
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        rt.block_on(StorageBackend::download(self, path, local_path))
+            .map_err(|e| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(e.to_string()))
+    }
+
+    pub fn byte_range_download(
+        &self,
+        remote_path: &str,
+        local_path: &str,
+        num_threads: usize,
+    ) -> PyResult<()> {
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        rt.block_on(StorageBackend::byte_range_download(
+            self,
+            remote_path,
+            local_path,
+            num_threads,
+        ))
+        .map_err(|e| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(e.to_string()))
     }
 }
 

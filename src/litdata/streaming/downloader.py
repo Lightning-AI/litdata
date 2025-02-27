@@ -22,6 +22,7 @@ from urllib import parse
 
 from filelock import FileLock, Timeout
 
+from litdata._core import S3Storage
 from litdata.constants import (
     _AZURE_STORAGE_AVAILABLE,
     _GOOGLE_STORAGE_AVAILABLE,
@@ -69,11 +70,14 @@ class S3Downloader(Downloader):
     ):
         super().__init__(remote_dir, cache_dir, chunks, storage_options)
         self._s5cmd_available = os.system("s5cmd > /dev/null 2>&1") == 0
+        self._rusty_s3 = S3Storage.new()
 
         if not self._s5cmd_available:
             self._client = S3Client(storage_options=self._storage_options)
 
     def download_file(self, remote_filepath: str, local_filepath: str, remote_chunk_filename: str = "") -> None:
+        self._rusty_s3.byte_range_download(remote_filepath, local_filepath, 10)
+        return
         obj = parse.urlparse(remote_filepath)
 
         if obj.scheme != "s3":
