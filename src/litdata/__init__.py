@@ -13,6 +13,7 @@
 from lightning_utilities.core.imports import RequirementCache
 
 from litdata.__about__ import *  # noqa: F403
+from litdata._core import hello_from_bin
 from litdata.processing.functions import map, merge_datasets, optimize, walk
 from litdata.streaming.combined import CombinedStreamingDataset
 from litdata.streaming.dataloader import StreamingDataLoader
@@ -36,6 +37,7 @@ __all__ = [
     "index_parquet_dataset",
     "index_hf_dataset",
     "breakpoint",
+    "hello_from_bin",
 ]
 if RequirementCache("lightning_sdk"):
     from lightning_sdk import Machine  # noqa: F401
