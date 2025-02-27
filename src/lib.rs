@@ -1,6 +1,6 @@
 use pyo3::prelude::*;
 
-// mod maths;
+mod rust_impl;
 
 #[pyfunction]
 fn hello_from_bin() -> String {
