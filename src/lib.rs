@@ -4,7 +4,7 @@ use pyo3::prelude::*;
 
 #[pyfunction]
 fn hello_from_bin() -> String {
-    "RUST: Hello from Deep Dummy Maths!".to_string()
+    "RUST: Hello from LitData!".to_string()
 }
 
 /// A Python module implemented in Rust. The name of this function must match
