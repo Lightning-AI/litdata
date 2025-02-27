@@ -20,7 +20,17 @@ impl S3Storage {
     #[new]
     pub fn new() -> Self {
         let rt = tokio::runtime::Runtime::new().unwrap();
-        let config = rt.block_on(aws_config::defaults(BehaviorVersion::latest()).load());
+        // Load AWS config, setting a default region if not configured
+        let config = rt.block_on(async {
+            let mut config_loader = aws_config::defaults(BehaviorVersion::latest());
+
+            if std::env::var("AWS_REGION").is_err() {
+                config_loader = config_loader.region(aws_sdk_s3::config::Region::new("us-east-1"));
+            }
+
+            config_loader.load().await
+        });
+
         let s3 = aws_sdk_s3::Client::new(&config);
         S3Storage { s3client: s3 }
     }
@@ -191,6 +201,7 @@ impl StorageBackend for S3Storage {
         let bucket_name = parts[0];
         let key = parts[1];
 
+        // println!("in download fn with: bucket_name: {bucket_name} & key: {key}");
         // Fetch the object from S3
         let response = self
             .s3client
@@ -224,7 +235,7 @@ impl StorageBackend for S3Storage {
         }
         let bucket_name = parts[0];
         let key = parts[1];
-
+        // println!("in byte-range download fn with: bucket_name: {bucket_name} & key: {key}");
         // Step 1: Get file size
         let head_response = self
             .s3client

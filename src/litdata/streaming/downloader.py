@@ -77,6 +77,7 @@ class S3Downloader(Downloader):
 
     def download_file(self, remote_filepath: str, local_filepath: str, remote_chunk_filename: str = "") -> None:
         self._rusty_s3.byte_range_download(remote_filepath, local_filepath, 10)
+        # self._rusty_s3.download(remote_filepath, local_filepath)
         return
         obj = parse.urlparse(remote_filepath)
 
