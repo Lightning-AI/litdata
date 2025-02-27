@@ -20,3 +20,6 @@ crate-type = ["cdylib"]
 # "extension-module" tells pyo3 we want to build an extension module (skips linking against libpython.so)
 # "abi3-py39" tells pyo3 (and maturin) to build using the stable ABI with minimum Python version 3.9
 pyo3 = { version = "0.22.4", features = ["extension-module", "abi3-py39"] }
+aws-config = "1.5.17"
+aws-sdk-s3 = "1.77.0"
+tokio = { version = "1.43.0", features = ["full"] }
