@@ -424,7 +424,6 @@ class TokensLoader(BaseItemLoader):
             self._mmaps[chunk_index]._mmap.close()
             del self._mmaps[chunk_index]
 
-
     @classmethod
     def encode_data(cls, data: List[bytes], _: List[int], flattened: List[Any]) -> Tuple[bytes, Optional[int]]:
         return data[0], flattened[0].shape[0]
