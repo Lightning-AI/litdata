@@ -31,6 +31,8 @@ from litdata.constants import (
 )
 from litdata.streaming.client import S3Client
 
+LITDATA_RUST_DOWNLOADER = os.getenv("LITDATA_RUST_DOWNLOADER", 0)
+
 
 class Downloader(ABC):
     def __init__(
@@ -70,15 +72,17 @@ class S3Downloader(Downloader):
     ):
         super().__init__(remote_dir, cache_dir, chunks, storage_options)
         self._s5cmd_available = os.system("s5cmd > /dev/null 2>&1") == 0
-        self._rusty_s3 = S3Storage.new()
+        if LITDATA_RUST_DOWNLOADER:
+            self._rusty_s3 = S3Storage()
 
         if not self._s5cmd_available:
             self._client = S3Client(storage_options=self._storage_options)
 
     def download_file(self, remote_filepath: str, local_filepath: str, remote_chunk_filename: str = "") -> None:
-        self._rusty_s3.byte_range_download(remote_filepath, local_filepath, 10)
-        # self._rusty_s3.download(remote_filepath, local_filepath)
-        return
+        if LITDATA_RUST_DOWNLOADER:
+            self._rusty_s3.byte_range_download(remote_filepath, local_filepath, 100)
+            # self._rusty_s3.download(remote_filepath, local_filepath)
+            return
         obj = parse.urlparse(remote_filepath)
 
         if obj.scheme != "s3":
