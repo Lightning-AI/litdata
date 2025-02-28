@@ -409,6 +409,9 @@ class TokensLoader(BaseItemLoader):
 
     def close(self, chunk_index: int) -> None:
         """Release the memory-mapped file for a specific chunk index."""
+        if chunk_index in self._buffers:
+            del self._buffers[chunk_index]
+
         if chunk_index in self._mmaps:
             # TODO: Fix memory map cleanup
             # Currently we're only deleting references without explicitly closing memory maps,
@@ -418,10 +421,9 @@ class TokensLoader(BaseItemLoader):
             # 2. Implement reference counting to ensure no accesses after close
             # 3. Explore numpy.memmap lifecycle management alternatives
 
-            # self._mmaps[chunk_index]._mmap.close()
+            self._mmaps[chunk_index]._mmap.close()
             del self._mmaps[chunk_index]
-        if chunk_index in self._buffers:
-            del self._buffers[chunk_index]
+
 
     @classmethod
     def encode_data(cls, data: List[bytes], _: List[int], flattened: List[Any]) -> Tuple[bytes, Optional[int]]:
