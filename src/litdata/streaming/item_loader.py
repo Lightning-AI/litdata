@@ -147,6 +147,27 @@ class PyTreeLoader(BaseItemLoader):
         filesize_bytes: int,
         encryption: Optional[Encryption] = None,
     ) -> bytes:
+        #
+        # A chunk may contain items from [5,9] index.
+        # And the index of the item we want to load is 7.
+        # begin = 5
+        # index = 7
+        #
+        # The chunk's binary format is structured as follows:
+        #
+        # +------------+---------------+-------------+
+        # | num_items  | offset_array  | item_data   |
+        # +------------+---------------+-------------+
+        # | uint32     | uint32[N+1]   | bytes       |
+        # | 4 bytes    | 4*(N+1) bytes | variable    |
+        # +------------+---------------+-------------+
+        #
+        # To get to the offset index of the item we want to load, we need to jumpy by:
+        #       => 1 + (index - begin) # 1 is added since first 4 bytes store `num_items`
+        #       => 1 + (7 - 5) = 3
+        #       => 3 * 4 = 12
+        #       => offset = 12
+        #
         offset = (1 + (index - begin) if index >= begin else index + 1) * 4
 
         if chunk_filepath in self._chunk_filepaths and not os.path.isfile(chunk_filepath):
@@ -175,6 +196,7 @@ class PyTreeLoader(BaseItemLoader):
             data = self._load_encrypted_data(chunk_filepath, chunk_index, offset, encryption)
         else:
             with open(chunk_filepath, "rb", 0) as fp:
+                # load the data from raw bytes using the offset for the item we want to load
                 data = self._load_data(fp, offset)
 
         # check for mosaic mds format
@@ -214,11 +236,16 @@ class PyTreeLoader(BaseItemLoader):
 
     def _load_data(self, fp: Union[FileIO, BytesIO], offset: int) -> bytes:
         """Load the data from the file pointer."""
-        fp.seek(offset)
+        fp.seek(offset)  # move the file pointer to the offset
+
+        # Refer to `writer.py::_create_chunk` for more details on the chunk's binary format
+        # We want to read the `offset_start` and `offset_end` for the item we want to load
+        # 2 uint32 (4 bytes each) => 8 bytes; are read to get the offset_start and offset_end
         pair = fp.read(8)
         begin, end = np.frombuffer(pair, np.uint32)
-        fp.seek(begin)
-        return fp.read(end - begin)
+
+        fp.seek(begin)  # move the file pointer to the offset_start where the item starts
+        return fp.read(end - begin)  # read the item
 
     def mds_deserialize(self, raw_item_data: bytes, chunk_index: int) -> "PyTree":
         """Deserialize the mds raw bytes into their python equivalent."""
@@ -268,7 +295,30 @@ class PyTreeLoader(BaseItemLoader):
 
     @classmethod
     def encode_data(cls, data: List[bytes], sizes: List[int], flattened: List[Any]) -> Tuple[bytes, Optional[int]]:
-        # Concatenante into a single byte array
+        """Encodes multiple serialized objects into a single binary format with size metadata.
+
+        This method combines multiple serialized objects into a single byte array, prefixed with their sizes.
+        The resulting format is: [size_header][concatenated_data], where size_header contains the byte sizes
+        of each object encoded as uint32.
+
+        Args:
+            data: List of serialized objects as bytes
+            sizes: List of integers representing the byte size of each object
+            flattened: List of flattened pytree leaves
+
+        Returns:
+            Tuple containing:
+                - bytes: Combined binary data with header
+                - Optional[int]: dimension of the item (None for PyTreeLoader)
+
+        Example:
+            For a row containing [int, image, tensor]:
+            - sizes might be [4, 100000, 1000] (number of bytes for each object)
+            - data would be their respective serialized bytes
+            The method combines these into:
+
+                [size_bytes][int_bytes][image_bytes][tensor_bytes]
+        """
         head = np.array(sizes, np.uint32).tobytes()
         body = b"".join(data)
         return head + body, None
