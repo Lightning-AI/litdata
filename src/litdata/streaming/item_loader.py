@@ -447,6 +447,9 @@ class TokensLoader(BaseItemLoader):
         #       -> if chunk begins at 5, and we want to load the item at index 7,
         #       -> we need to skip 2 items, and each item has `self._block_size` tokens
         #       -> and each token takes `self._dtype.itemsize` bytes
+        #
+        # Note: We have already accounted for offsets corresponding to starting bytes in `_load_chunk` function
+        # while creating the memory map.
         offset = self._dtype.itemsize * (index - begin) * self._block_size
 
         if self._serializer_name == "no_header_tensor":
