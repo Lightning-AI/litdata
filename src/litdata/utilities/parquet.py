@@ -13,11 +13,7 @@ from time import sleep, time
 from typing import Any, Dict, Generator, List, Optional, Tuple, Union
 from urllib import parse
 
-from litdata.constants import (
-    _FSSPEC_AVAILABLE,
-    _HF_HUB_AVAILABLE,
-    _INDEX_FILENAME,
-)
+from litdata.constants import _FSSPEC_AVAILABLE, _HF_HUB_AVAILABLE, _INDEX_FILENAME, _TQDM_AVAILABLE
 from litdata.streaming.resolver import Dir, _resolve_dir
 
 
@@ -254,9 +250,9 @@ class HFParquetDir(ParquetDir):
     def task(self, _file: str) -> None:
         assert isinstance(_file, str)
         assert self.cache_path is not None
-
         if _file.endswith(".parquet"):
-            local_path = os.path.join(self.cache_path, _file)
+            file_name = os.path.basename(_file)
+            local_path = os.path.join(self.cache_path, file_name)
             os.makedirs(os.path.dirname(local_path), exist_ok=True)
             temp_path = local_path + ".tmp"  # Avoid partial writes
             # if an existing temp file is present, means its corrupted
@@ -264,10 +260,20 @@ class HFParquetDir(ParquetDir):
                 os.remove(temp_path)
 
             with self.fs.open(_file, "rb") as cloud_file, open(temp_path, "wb") as local_file:
+                if _TQDM_AVAILABLE:
+                    from tqdm.auto import tqdm as _tqdm
+
+                    file_size = self.fs.info(_file)["size"]
+                    pbar = _tqdm(desc=f"Downloading {file_name}", total=file_size, unit="B", unit_scale=True)
+
                 for chunk in iter(lambda: cloud_file.read(4096), b""):  # Read in 4KB chunks
                     local_file.write(chunk)
+
+                    if _TQDM_AVAILABLE:
+                        pbar.update(len(chunk))
+
             os.rename(temp_path, local_path)  # Atomic move after successful write
-            self.process_queue.put_nowait((_file, local_path))
+            self.process_queue.put_nowait((file_name, local_path))
 
     def write_index(self, chunks_info: List[Dict[str, Any]], config: Dict[str, Any]) -> None:
         assert self.cache_path is not None
