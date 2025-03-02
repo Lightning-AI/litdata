@@ -148,9 +148,9 @@ def test_streaming_dataset_max_cache_dir(tmpdir, caplog):
         StreamingDataset(input_dir=str(tmpdir), max_cache_size="10GB")
         StreamingDataset(input_dir=str(tmpdir), max_cache_size="20GB")
     assert len(caplog.messages) == 4
-    assert all(
-        "The provided `max_cache_size` is less than 25GB." in record.message for record in caplog.records
-    ), "Expected warning about the `max_cache_size` being less than 25GB was not logged"
+    assert all("The provided `max_cache_size` is less than 25GB." in record.message for record in caplog.records), (
+        "Expected warning about the `max_cache_size` being less than 25GB was not logged"
+    )
 
 
 @pytest.mark.parametrize("drop_last", [False, True])
@@ -1200,7 +1200,7 @@ def test_dataset_distributed_drop_last(tmpdir, monkeypatch, compression):
     dataset = StreamingDataset(str(tmpdir), drop_last=False)
     assert not dataset.drop_last
 
-    warn_msg = logger_mock.warn._mock_mock_calls[0].args[0]
+    warn_msg = logger_mock.warning._mock_mock_calls[0].args[0]
     expected_warn_msg = (
         "You're operating within a distributed environment and have disabled the `drop_last` option."
         " Please note that this configuration may lead to training interruptions"
