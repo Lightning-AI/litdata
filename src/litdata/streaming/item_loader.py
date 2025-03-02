@@ -14,7 +14,7 @@
 import functools
 import os
 from abc import ABC, abstractmethod
-from collections import namedtuple
+from collections import defaultdict, namedtuple
 from copy import deepcopy
 from io import BytesIO, FileIO
 from multiprocessing import Queue
@@ -286,6 +286,8 @@ class TokensLoader(BaseItemLoader):
         self._block_size = block_size
         self._mmaps: Dict[int, np.memmap] = {}
         self._buffers: Dict[int, bytes] = {}
+        # keeps track of number of readers for each chunk (can be more than 1 if multiple workers are reading)
+        self._counter = defaultdict(int)
         self._dtype: Optional[torch.dtype] = None
         self._chunk_filepaths: Dict[str, bool] = {}
 
@@ -336,6 +338,7 @@ class TokensLoader(BaseItemLoader):
 
     def _load_chunk(self, chunk_index: int, chunk_filepath: str) -> None:
         if chunk_index in self._mmaps:
+            self._counter[chunk_index] += 1
             return
         chunk = self._chunks[chunk_index]
 
@@ -345,6 +348,7 @@ class TokensLoader(BaseItemLoader):
         offset = (1 + chunk["chunk_size"] + 1) * 4
         mmap = np.memmap(chunk_filepath, mode="r", order="C", offset=offset)
         self._mmaps[chunk_index] = mmap
+        self._counter[chunk_index] += 1
         self._buffers[chunk_index] = memoryview(mmap)  # type: ignore
 
     def pre_load_chunk(self, chunk_index: int, chunk_filepath: str) -> None:
@@ -404,25 +408,22 @@ class TokensLoader(BaseItemLoader):
             if chunk_index in self._buffers:
                 del self._buffers[chunk_index]
             if chunk_index in self._mmaps:
+                # explicitly close before deleting. Won't raise error if already closed.
+                self._mmaps[chunk_index]._mmap.close()
                 del self._mmaps[chunk_index]
+                del self._counter[chunk_index]
             os.remove(chunk_filepath)
 
     def close(self, chunk_index: int) -> None:
         """Release the memory-mapped file for a specific chunk index."""
-        if chunk_index in self._buffers:
-            del self._buffers[chunk_index]
+        self._counter[chunk_index] -= 1
 
-        if chunk_index in self._mmaps:
-            # TODO: Fix memory map cleanup
-            # Currently we're only deleting references without explicitly closing memory maps,
-            # as calling mmap.close() causes segmentation faults in worker processes.
-            # Potential solutions to investigate:
-            # 1. Use a separate process for closing mmaps
-            # 2. Implement reference counting to ensure no accesses after close
-            # 3. Explore numpy.memmap lifecycle management alternatives
-
-            self._mmaps[chunk_index]._mmap.close()
-            del self._mmaps[chunk_index]
+        if self._counter[chunk_index] == 0:
+            if chunk_index in self._buffers:
+                del self._buffers[chunk_index]
+            if chunk_index in self._mmaps:
+                self._mmaps[chunk_index]._mmap.close()
+                del self._mmaps[chunk_index]
 
     @classmethod
     def encode_data(cls, data: List[bytes], _: List[int], flattened: List[Any]) -> Tuple[bytes, Optional[int]]:
