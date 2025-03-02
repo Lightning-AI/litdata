@@ -98,6 +98,11 @@ class ChunksConfig:
 
         self._skip_chunk_indexes_deletion: Optional[List[int]] = None
         self.zero_based_roi: Optional[List[Tuple[int, int]]] = None
+        self.filename_to_size_map: Dict[str, int] = {}
+        for cnk in _original_chunks:
+            # since files downloaded while reading will be decompressed, we need to store the name without compression
+            filename_without_compression = cnk["filename"].replace(f".{self._compressor_name}", "")
+            self.filename_to_size_map[filename_without_compression] = cnk["chunk_bytes"]
 
     def can_delete(self, chunk_index: int) -> bool:
         if self._skip_chunk_indexes_deletion is None:
@@ -120,10 +125,17 @@ class ChunksConfig:
 
         if os.path.exists(local_chunkpath):
             self.try_decompress(local_chunkpath)
+            if self._downloader is not None:
+                # We don't want to redownload the base, but we should mark
+                # it as having been requested by something
+                self._downloader._increment_local_lock(local_chunkpath.replace(f".{self._compressor_name}", ""))
+                pass
             return
 
         if self._downloader is None:
             return
+
+        self._downloader._increment_local_lock(local_chunkpath.replace(f".{self._compressor_name}", ""))
 
         self._downloader.download_chunk_from_index(chunk_index)
 
@@ -230,9 +242,6 @@ class ChunksConfig:
 
         filesize_bytes = chunk["chunk_bytes"]
 
-        if self._config and self._config.get("encryption") is None and (not local_chunkpath.endswith(".parquet")):
-            filesize_bytes += (1 + chunk["chunk_size"]) * 4
-
         return local_chunkpath, begin, filesize_bytes
 
     def _get_chunk_index_from_filename(self, chunk_filename: str) -> int:
@@ -257,8 +266,16 @@ class ChunksConfig:
         cache_index_filepath = os.path.join(cache_dir, _INDEX_FILENAME)
 
         if isinstance(remote_dir, str):
-            downloader = get_downloader_cls(remote_dir, cache_dir, [], storage_options)
-            downloader.download_file(os.path.join(remote_dir, _INDEX_FILENAME), cache_index_filepath)
+            # for remote_dir, we try downloading `index.json` file.
+            # If the files are stored on HF, they don't have an index file, so we can skip downloading it.
+            if remote_dir.startswith("hf://"):
+                if not os.path.exists(cache_index_filepath):
+                    raise RuntimeError(
+                        f"This should not have happened. No index.json file found in cache: {cache_index_filepath}"
+                    )
+            else:
+                downloader = get_downloader_cls(remote_dir, cache_dir, [], storage_options)
+                downloader.download_file(os.path.join(remote_dir, _INDEX_FILENAME), cache_index_filepath)
 
         if not os.path.exists(cache_index_filepath):
             return None

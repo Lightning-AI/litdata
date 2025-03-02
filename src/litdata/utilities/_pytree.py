@@ -15,6 +15,43 @@ collection support for PyTorch APIs.
 
 This pytree implementation is not very performant due to Python overhead
 To improve the performance we can move parts of the implementation to C++.
+
+
+---
+
+## PyTree `tree_flatten` and `tree_unflatten`
+
+- leaves are the final values in the data structure (e.g. `int`, `float`, `str`, `bool`, pil, tensor, etc.)
+- serializers will be applied to the leaves (final values) and convert them into bytes
+- context is used to reconstruct the data structure
+
+### `tree_flatten`
+
+- takes  a data structure and returns a flat list of leaves and a context
+- e.g.:
+    - `dict`: `{'a': 1, 'b': 2}` -> [1, 2], ['a', 'b'] (leaves, context)
+    - `list`: `[1, 2, 3]` -> [1, 2, 3], [] (leaves, context)
+    - `tuple`: `(1, 2, 3)` -> [1, 2, 3], [] (leaves, context)
+    - `int`: `1` -> [1], [] (leaves, context)
+    - `float`: `1.0` -> [1.0], [] (leaves, context)
+    - `str`: `'hello'` -> ['hello'], [] (leaves, context)
+    - `bool`: `True` -> [True], [] (leaves, context)
+
+
+
+### `tree_unflatten`
+
+- takes a flat list of leaves and a context and returns the original data structure
+- e.g.:
+    - [1, 2], ['a', 'b'] -> `dict`: `{'a': 1, 'b': 2}`
+    - [1, 2, 3], [] -> `list`: `[1, 2, 3]`
+    - [1, 2, 3], [] -> `tuple`: `(1, 2, 3)`
+    - [1], [] -> `int`: `1`
+    - [1.0], [] -> `float`: `1.0`
+    - ['hello'], [] -> `str`: `'hello'`
+    - [True], [] -> `bool`: `True`
+
+
 """
 
 import dataclasses
@@ -26,6 +63,8 @@ import threading
 import types
 import warnings
 from collections import OrderedDict, defaultdict, deque, namedtuple
+#! TODO: Callable and many more types have been deprecated and moved to `collections.abc`.
+#!       We need to update the code to use the new types.
 from typing import (
     Any,
     Callable,
@@ -99,6 +138,12 @@ NO_SERIALIZED_TYPE_NAME_FOUND = "NO_SERIALIZED_TYPE_NAME_FOUND"
 
 
 class KeyEntry(Protocol):
+    """An object is considered a KeyEntry (via Protocol) if it defines:
+        - `__hash__() -> int`: Must return an integer hash.
+        - `__eq__(other: object) -> bool`: Must support equality comparison.
+        - `__str__() -> str`: Must return a string representation.
+        - `get(parent: Any) -> Any`: Must retrieve a value based on the given parent.
+    """
     def __hash__(self) -> int: ...
 
     def __eq__(self, other: object) -> bool: ...
@@ -108,6 +153,7 @@ class KeyEntry(Protocol):
     def get(self, parent: Any) -> Any: ...
 
 
+# define the types for the variables
 Context = Any
 PyTree = Any
 FlattenFunc = Callable[[PyTree], Tuple[List[Any], Context]]
@@ -208,6 +254,7 @@ def register_pytree_node(
         flatten_with_keys_fn=flatten_with_keys_fn,
     )
 
+    #! TODO: We can remove this as no _cxx_pytree exists.
     try:
         from . import _cxx_pytree as cxx
     except ImportError:
@@ -222,7 +269,7 @@ def register_pytree_node(
             from_dumpable_context=from_dumpable_context,
         )
 
-
+#! TODO: This is not used anywhere. Remove it.
 def _register_namedtuple(
     cls: Type[Any],
     *,
@@ -249,7 +296,7 @@ def _register_namedtuple(
         flatten_with_keys_fn=_namedtuple_flatten_with_keys,
     )
 
-
+#! TODO: Deprecated. Should we remove it?
 def _register_pytree_node(
     cls: Type[Any],
     flatten_fn: FlattenFunc,
@@ -789,6 +836,8 @@ class LeafSpec(TreeSpec):
 
     def __post_init__(self) -> None:
         self.num_nodes = 1
+        # for a leaf node, we are counting the number of leaves as 1.
+        # We're doing this for consistency in `TreeSpec->unflatten` fn.
         self.num_leaves = 1
         self.num_children = 0
 
@@ -1399,13 +1448,14 @@ def treespec_pprint(treespec: TreeSpec) -> str:
     )
     return repr(dummy_tree)
 
-
+#! TODO: Remove this.
 # TODO(angelayi): remove this function after OSS/internal stabilize
 def pytree_to_str(treespec: TreeSpec) -> str:
     warnings.warn("pytree_to_str is deprecated. Please use treespec_dumps")
     return treespec_dumps(treespec)
 
 
+#! TODO: Remove this.
 # TODO(angelayi): remove this function after OSS/internal stabilize
 def str_to_pytree(json: str) -> TreeSpec:
     warnings.warn("str_to_pytree is deprecated. Please use treespec_loads")
@@ -1538,11 +1588,13 @@ def tree_map_with_path(
     return treespec.unflatten(func(*xs) for xs in zip(*all_keypath_leaves))
 
 
+#! TODO: Not used anywhere. Remove it.
 def keystr(kp: KeyPath) -> str:
     """Given a key path, return a pretty-printed representation."""
     return "".join([str(k) for k in kp])
 
 
+#! TODO: Not used anywhere. Remove it.
 def key_get(obj: Any, kp: KeyPath) -> Any:
     """Given an object and a key path, return the value at the key path."""
     for k in kp:

@@ -30,6 +30,7 @@ from litdata.streaming.serializers import (
     _SERIALIZERS,
     _TORCH_DTYPES_MAPPING,
     _TORCH_VISION_AVAILABLE,
+    BooleanSerializer,
     IntegerSerializer,
     JPEGSerializer,
     NoHeaderNumpySerializer,
@@ -57,6 +58,7 @@ def test_serializers():
     keys = list(_SERIALIZERS.keys())
     assert keys == [
         "str",
+        "bool",
         "int",
         "float",
         "video",
@@ -319,3 +321,24 @@ def test_tiff_serializer():
 
     # Clean up
     os.remove(file_path)
+
+
+def test_boolean_serializer():
+    serializer = BooleanSerializer()
+
+    # Test serialization and deserialization of True
+    data, _ = serializer.serialize(True)
+    assert isinstance(data, bytes)
+    assert serializer.deserialize(data) is True
+
+    # Test serialization and deserialization of False
+    data, _ = serializer.serialize(False)
+    assert isinstance(data, bytes)
+    assert serializer.deserialize(data) is False
+
+    # Test can_serialize method
+    assert serializer.can_serialize(True)
+    assert serializer.can_serialize(False)
+    assert not serializer.can_serialize(1)
+    assert not serializer.can_serialize("True")
+    assert not serializer.can_serialize(None)

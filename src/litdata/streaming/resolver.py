@@ -52,7 +52,7 @@ def _resolve_dir(dir_path: Optional[Union[str, Dir]]) -> Dir:
 
     assert isinstance(dir_path, str)
 
-    cloud_prefixes = ("s3://", "gs://", "azure://")
+    cloud_prefixes = ("s3://", "gs://", "azure://", "hf://")
     if dir_path.startswith(cloud_prefixes):
         return Dir(path=None, url=dir_path)
 
@@ -366,7 +366,7 @@ def _resolve_time_template(path: str) -> str:
 def _execute(
     name: str,
     num_nodes: int,
-    machine: Optional["Machine"] = None,
+    machine: Optional[Union["Machine", str]] = None,
     command: Optional[str] = None,
     interruptible: bool = False,
 ) -> None:

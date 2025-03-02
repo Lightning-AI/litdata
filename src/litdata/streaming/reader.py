@@ -12,12 +12,15 @@
 # limitations under the License.
 
 import contextlib
+import logging
 import os
 import warnings
-from logging import Logger
+from contextlib import suppress
 from queue import Empty, Queue
 from threading import Event, Thread
 from typing import Any, Dict, List, Optional, Tuple, Union
+
+from filelock import FileLock, Timeout
 
 from litdata.constants import _DEBUG
 from litdata.streaming.config import ChunksConfig, Interval
@@ -30,7 +33,7 @@ from litdata.utilities.env import _DistributedEnv, _WorkerEnv
 warnings.filterwarnings("ignore", message=".*The given buffer is not writable.*")
 
 
-logger = Logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 _END_TOKEN = "END"  # noqa: S105
@@ -87,18 +90,62 @@ class PrepareChunksThread(Thread):
         for chunk_index in chunk_indexes:
             self._to_delete_queue.put(chunk_index)
 
+    def _remaining_locks(self, chunkpath: str) -> int:
+        countpath = chunkpath + ".cnt"
+        if not os.path.exists(countpath):
+            return 0
+        with open(countpath) as count_f:
+            try:
+                return int(count_f.read().strip())
+            except Exception:
+                return 1
+
+    def _decrement_local_lock(self, chunk_index: int) -> int:
+        """Remove a count from the local lock, return the remaining count."""
+        chunk_filepath, _, _ = self._config[ChunkedIndex(index=-1, chunk_index=chunk_index)]
+
+        countpath = chunk_filepath + ".cnt"
+        with suppress(Timeout), FileLock(countpath + ".lock", timeout=3):
+            if not os.path.exists(countpath):
+                return 0
+            with open(countpath) as count_f:
+                try:
+                    curr_count = int(count_f.read().strip())
+                except Exception:
+                    curr_count = 1
+            curr_count -= 1
+            if curr_count <= 0:
+                with contextlib.suppress(FileNotFoundError, PermissionError):
+                    os.remove(countpath)
+
+                with contextlib.suppress(FileNotFoundError, PermissionError):
+                    os.remove(countpath + ".lock")
+            else:
+                with open(countpath, "w+") as count_f:
+                    count_f.write(str(curr_count))
+            return curr_count
+        return 0
+
     def _apply_delete(self, chunk_index: int) -> None:
         """Inform the item loader of the chunk to delete."""
-        if self._config.can_delete(chunk_index):
-            chunk_filepath, _, _ = self._config[ChunkedIndex(index=-1, chunk_index=chunk_index)]
+        # TODO: Fix the can_delete method
+        can_delete_chunk = self._config.can_delete(chunk_index)
+        chunk_filepath, _, _ = self._config[ChunkedIndex(index=-1, chunk_index=chunk_index)]
 
-            self._item_loader.delete(chunk_index, chunk_filepath)
-
+        remaining_locks = self._remaining_locks(chunk_filepath)
+        if remaining_locks > 0:  # Can't delete this, something has it
             if _DEBUG:
-                print(f"Deleted {chunk_filepath} by {self._rank}")
+                print(f"Skip delete {chunk_filepath} by {self._rank or 0}, current lock count: {remaining_locks}")
+            return
 
+        self._item_loader.delete(chunk_index, chunk_filepath)
+
+        if _DEBUG:
+            print(f"Deleted {chunk_filepath} by {self._rank or 0}. Debug: {can_delete_chunk}")
+
+        for lock_extension in [".lock", ".cnt.lock"]:
             try:
-                locak_chunk_path = chunk_filepath + ".lock"
+                locak_chunk_path = chunk_filepath + lock_extension
                 if os.path.exists(locak_chunk_path):
                     os.remove(locak_chunk_path)
             except FileNotFoundError:
@@ -135,7 +182,10 @@ class PrepareChunksThread(Thread):
     def _can_delete_chunk(self) -> bool:
         if self._delete_chunks_when_processed:
             return self._pre_download_counter >= self._max_pre_download - 1
-        return self._max_cache_size is not None and _get_folder_size(self._parent_cache_dir) >= self._max_cache_size
+        return (
+            self._max_cache_size is not None
+            and _get_folder_size(self._config._cache_dir, self._config) >= self._max_cache_size
+        )
 
     def _pre_load_chunk(self, chunk_index: int) -> None:
         chunk_filepath, _, _ = self._config[ChunkedIndex(index=-1, chunk_index=chunk_index)]
@@ -187,6 +237,11 @@ class PrepareChunksThread(Thread):
                 self._maybe_delete_chunks()
 
 
+# The BinaryReader operates as the inverse of the data optimization process:
+# 1. Loads raw bytes from chunks based on specific indices
+# 2. Uses deserializers to convert bytes back into Python objects
+# 3. Reconstructs the original data structure with the data_spec from index.json and using `tree_unflatten function`
+# 4. Supports features like compression, encryption, and distributed reading
 class BinaryReader:
     def __init__(
         self,
@@ -329,6 +384,7 @@ class BinaryReader:
             item = self._item_loader.load_item_from_chunk(
                 index.index, index.chunk_index, chunk_filepath, begin, filesize_bytes
             )
+
         # We need to request deletion after the latest element has been loaded.
         # Otherwise, this could trigger segmentation fault error depending on the item loader used.
         if (
@@ -340,6 +396,7 @@ class BinaryReader:
             assert self._last_chunk_index is not None
 
             # inform the chunk has been completely consumed
+            self._prepare_thread._decrement_local_lock(self._last_chunk_index)
             self._prepare_thread.delete([self._last_chunk_index])
 
         if index.chunk_index != self._last_chunk_index:
@@ -352,6 +409,7 @@ class BinaryReader:
 
         if index.is_last_index and self._prepare_thread:
             # inform the thread it is time to stop
+            self._prepare_thread._decrement_local_lock(index.chunk_index)
             self._prepare_thread.stop()
             self._prepare_thread = None
 
@@ -382,17 +440,22 @@ class BinaryReader:
             self._prepare_thread = None
 
 
-def _get_folder_size(path: str) -> int:
+def _get_folder_size(path: str, config: ChunksConfig) -> int:
     """Collect the size of each files within a folder.
 
     This method is robust to file deletion races
 
     """
     size = 0
-    for dirpath, _, filenames in os.walk(str(path)):
-        for filename in filenames:
+    for filename in os.listdir(path):
+        if filename in config.filename_to_size_map:
             with contextlib.suppress(FileNotFoundError):
-                size += os.stat(os.path.join(dirpath, filename)).st_size
+                size += config.filename_to_size_map[filename]
+        elif not filename.endswith((".cnt", ".lock", ".json", ".zstd.bin")):
+            # ignore .cnt, .lock, .json and .zstd files for warning
+            logger.warning(
+                f"Skipping {filename}: Not a valid chunk file. It will be excluded from cache size calculation."
+            )
     return size
 
 

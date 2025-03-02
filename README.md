@@ -237,6 +237,99 @@ dataset = StreamingDataset('s3://my-bucket/my-data', cache_dir="/path/to/cache")
 </details>
 
 <details>
+  <summary> ✅ Stream Hugging Face 🤗 datasets</summary>
+
+&nbsp;
+
+To use your favorite  Hugging Face dataset with LitData, simply pass its URL to `StreamingDataset`.
+
+<details>
+  <summary>How to get HF dataset URI?</summary>
+
+https://github.com/user-attachments/assets/3ba9e2ef-bf6b-41fc-a578-e4b4113a0e72
+
+</details>
+
+```python
+import litdata as ld
+
+hf_uri = "hf://datasets/leonardPKU/clevr_cogen_a_train/data"
+
+ds = ld.StreamingDataset(hf_uri)
+
+for _ds in ds:
+    print(f"{_ds[1]}; {_ds[2]}")
+```
+
+You don’t need to worry about indexing the dataset or any other setup. **LitData** will **handle all the necessary steps automatically** and `cache` the `index.json` file, so you won't have to index it again.
+
+This ensures that the next time you stream the dataset, the indexing step is skipped..
+
+&nbsp;
+
+### Indexing the HF dataset (Optional)
+
+If the Hugging Face dataset hasn't been indexed yet, you can index it first using the `index_hf_dataset` method, and then stream it using the code above.
+
+```python
+import litdata as ld
+
+hf_uri = "hf://datasets/leonardPKU/clevr_cogen_a_train/data"
+
+ld.index_hf_dataset(hf_uri)
+```
+
+- Indexing the Hugging Face dataset ahead of time will make streaming faster, as it avoids the need for real-time indexing during streaming.
+
+- To use `HF gated dataset`, ensure the `HF_TOKEN` environment variable is set.
+
+**Note**: For HuggingFace datasets, `indexing` & `streaming` is supported only for datasets in **`Parquet format`**.
+
+&nbsp;
+
+### Full Workflow for Hugging Face Datasets
+
+For full control over the cache path(`where index.json file will be stored`) and other configurations, follow these steps:
+
+1. Index the Hugging Face dataset first:
+
+```python
+import litdata as ld
+
+hf_uri = "hf://datasets/open-thoughts/OpenThoughts-114k/data"
+
+ld.index_parquet_dataset(hf_uri, "hf-index-dir")
+```
+
+2. To stream HF datasets now, pass the `HF dataset URI`, the path where the `index.json` file is stored, and `ParquetLoader` as the `item_loader` to the **`StreamingDataset`**:
+
+```python
+import litdata as ld
+from litdata.streaming.item_loader import ParquetLoader
+
+hf_uri = "hf://datasets/open-thoughts/OpenThoughts-114k/data"
+
+ds = ld.StreamingDataset(hf_uri, item_loader=ParquetLoader(), index_path="hf-index-dir")
+
+for _ds in ds:
+    print(f"{_ds[0]}; {_ds[1]}\n")
+```
+
+&nbsp;
+
+### LitData `Optimize` v/s `Parquet`
+
+Below is the benchmark for the `Imagenet dataset (155 GB)`, demonstrating that **`optimizing the dataset using LitData is faster and results in smaller output size compared to raw Parquet files`**.
+
+| **Operation**                    | **Size (GB)** | **Time (seconds)** | **Throughput (images/sec)** |
+|-----------------------------------|---------------|---------------------|-----------------------------|
+| LitData Optimize Dataset          | 45            | 283.17             | 4000-4700                  |
+| Parquet Optimize Dataset          | 51            | 465.96             | 3600-3900                  |
+| Index Parquet Dataset (overhead)  | N/A           | 6                  | N/A                         |
+
+</details>
+
+<details>
   <summary> ✅ Streams on multi-GPU, multi-node</summary>
 
 &nbsp;

@@ -26,7 +26,7 @@ from litdata.constants import (
 from litdata.helpers import _check_version_and_prompt_upgrade
 from litdata.streaming import Cache
 from litdata.streaming.downloader import get_downloader_cls  # noqa: F401
-from litdata.streaming.item_loader import BaseItemLoader
+from litdata.streaming.item_loader import BaseItemLoader, ParquetLoader
 from litdata.streaming.resolver import Dir, _resolve_dir
 from litdata.streaming.sampler import ChunkedIndex
 from litdata.streaming.serializers import Serializer
@@ -34,6 +34,7 @@ from litdata.streaming.shuffle import FullShuffle, NoShuffle, Shuffle
 from litdata.utilities.dataset_utilities import _should_replace_path, _try_create_cache_dir, subsample_streaming_dataset
 from litdata.utilities.encryption import Encryption
 from litdata.utilities.env import _DistributedEnv, _is_in_dataloader_worker, _WorkerEnv
+from litdata.utilities.hf_dataset import index_hf_dataset
 from litdata.utilities.shuffle import (
     _find_chunks_per_workers_on_which_to_skip_deletion,
     _map_node_worker_rank_to_chunk_indexes_to_not_delete,
@@ -59,6 +60,7 @@ class StreamingDataset(IterableDataset):
         encryption: Optional[Encryption] = None,
         storage_options: Optional[Dict] = {},
         max_pre_download: int = 2,
+        index_path: Optional[str] = None,
     ) -> None:
         """The streaming dataset can be used once your data have been optimised using the DatasetOptimiser class.
 
@@ -79,6 +81,9 @@ class StreamingDataset(IterableDataset):
             encryption: The encryption object to use for decrypting the data.
             storage_options: Additional connection options for accessing storage services.
             max_pre_download: Maximum number of chunks that can be pre-downloaded by the StreamingDataset.
+            index_path: Path to `index.json` for the Parquet dataset.
+                If `index_path` is a directory, the function will look for `index.json` within it.
+                If `index_path` is a full file path, it will use that directly.
 
         """
         _check_version_and_prompt_upgrade(__version__)
@@ -93,12 +98,20 @@ class StreamingDataset(IterableDataset):
         input_dir = _resolve_dir(input_dir)
         cache_dir = _resolve_dir(cache_dir)
 
+        if input_dir.url is not None and input_dir.url.startswith("hf://"):
+            if index_path is None:
+                # no index path provide, load from cache, or try indexing on the go.
+                index_path = index_hf_dataset(input_dir.url)
+                cache_dir.path = index_path
+                input_dir.path = index_path
+            item_loader = ParquetLoader()
+
         self.input_dir = input_dir
         self.cache_dir = cache_dir
         self.subsampled_files: List[str] = []
         self.region_of_interest: List[Tuple[int, int]] = []
         self.subsampled_files, self.region_of_interest = subsample_streaming_dataset(
-            self.input_dir, self.cache_dir, item_loader, subsample, shuffle, seed, storage_options
+            self.input_dir, self.cache_dir, item_loader, subsample, shuffle, seed, storage_options, index_path
         )
 
         self.item_loader = item_loader

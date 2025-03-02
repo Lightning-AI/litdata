@@ -22,7 +22,7 @@ from datetime import datetime
 from functools import partial
 from pathlib import Path
 from types import FunctionType
-from typing import Any, Callable, Dict, List, Literal, Optional, Sequence, Tuple, Union
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Literal, Optional, Sequence, Tuple, Union
 from urllib import parse
 
 import torch
@@ -51,6 +51,9 @@ from litdata.streaming.resolver import (
 from litdata.utilities._pytree import tree_flatten
 from litdata.utilities.encryption import Encryption
 from litdata.utilities.format import _get_tqdm_iterator_if_available
+
+if TYPE_CHECKING:
+    from lightning_sdk import Machine
 
 
 def _is_remote_file(path: str) -> bool:
@@ -101,6 +104,8 @@ def _get_default_num_workers() -> int:
 
 
 class LambdaMapRecipe(MapRecipe):
+    """Recipe for `map`."""
+
     def __init__(self, fn: Callable[[str, Any], None], inputs: Union[Sequence[Any], StreamingDataLoader]):
         super().__init__()
         self._fn = fn
@@ -144,6 +149,8 @@ class LambdaMapRecipe(MapRecipe):
 
 
 class LambdaDataChunkRecipe(DataChunkRecipe):
+    """Recipe for `optimize`."""
+
     def __init__(
         self,
         fn: Callable[[Any], None],
@@ -194,7 +201,7 @@ def map(
     num_workers: Optional[int] = None,
     fast_dev_run: Union[bool, int] = False,
     num_nodes: Optional[int] = None,
-    machine: Optional[str] = None,
+    machine: Optional[Union["Machine", str]] = None,
     num_downloaders: Optional[int] = None,
     num_uploaders: Optional[int] = None,
     reorder_files: bool = True,
@@ -299,6 +306,24 @@ def map(
     )
 
 
+#
+# `Optimize` Pipeline:
+#
+# 1. optimize() function uses LambdaDataChunkRecipe to process inputs
+# 2. LambdaDataChunkRecipe is passed to DataProcess
+# 3. DataProcess spawns DataWorkerProcess (BaseWorker) instances
+# 4. Each worker:
+#    a. Processes a single input through the optimize fn
+#    b. Flattens the output using pytree:
+#       - Converts nested structures (dict, list, tuple) into flat list
+#       - Generates data_spec to preserve structure for later reconstruction
+#    c. Uses Writer to serialize (bytes) the flattened data
+#    d. Writes chunk files when either limit is reached:
+#       - Total bytes > chunk_bytes
+#       - Total items > chunk_size
+#    e. Creates chunk_{idx}.bin files in cache
+#    f. Saves data_spec in index.json for data structure preservation
+#
 def optimize(
     fn: Callable[[Any], Any],
     inputs: Union[Sequence[Any], StreamingDataLoader],
@@ -312,7 +337,7 @@ def optimize(
     num_workers: Optional[int] = None,
     fast_dev_run: bool = False,
     num_nodes: Optional[int] = None,
-    machine: Optional[str] = None,
+    machine: Optional[Union["Machine", str]] = None,
     num_downloaders: Optional[int] = None,
     num_uploaders: Optional[int] = None,
     reorder_files: bool = True,
