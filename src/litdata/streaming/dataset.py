@@ -251,6 +251,9 @@ class StreamingDataset(IterableDataset):
             self.distributed_env, self.worker_env.world_size, self.batch_size, self.current_epoch
         )
 
+        print(f"{workers_chunks=}")
+        print(f"{workers_intervals=}")
+
         worker_rank = self.distributed_env.global_rank * self.worker_env.world_size + self.worker_env.rank
         self.worker_chunks = workers_chunks[worker_rank]
         self.worker_intervals = workers_intervals[worker_rank]
@@ -384,7 +387,7 @@ class StreamingDataset(IterableDataset):
             assert self.shuffler is not None
             assert self.num_chunks is not None
             self.current_indexes = self.shuffler(current_indexes, self.num_chunks, self.current_epoch, self.chunk_index)
-
+            print(f"{self.current_indexes=}")
             self.chunk_index += 1
 
         # Get the first index
