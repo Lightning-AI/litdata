@@ -337,8 +337,8 @@ class TokensLoader(BaseItemLoader):
         return intervals
 
     def _load_chunk(self, chunk_index: int, chunk_filepath: str) -> None:
+        self._counter[chunk_index] += 1
         if chunk_index in self._mmaps:
-            self._counter[chunk_index] += 1
             return
         chunk = self._chunks[chunk_index]
 
@@ -348,7 +348,6 @@ class TokensLoader(BaseItemLoader):
         offset = (1 + chunk["chunk_size"] + 1) * 4
         mmap = np.memmap(chunk_filepath, mode="r", order="C", offset=offset)
         self._mmaps[chunk_index] = mmap
-        self._counter[chunk_index] += 1
         self._buffers[chunk_index] = memoryview(mmap)  # type: ignore
 
     def pre_load_chunk(self, chunk_index: int, chunk_filepath: str) -> None:
