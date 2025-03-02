@@ -13,6 +13,7 @@
 
 import json
 import os
+import logging
 import random
 import shutil
 import sys
@@ -117,6 +118,39 @@ def test_streaming_dataset_max_pre_download(tmpdir):
     for i in range(60):
         assert dataset[i] == i
     assert dataset.cache._reader._max_pre_download == 10
+
+
+@pytest.mark.timeout(30)
+def test_streaming_dataset_max_cache_dir(tmpdir, caplog):
+    seed_everything(42)
+
+    cache = Cache(str(tmpdir), chunk_size=10)
+    for i in range(60):
+        cache[i] = i
+    cache.done()
+    cache.merge()
+
+    dataset = StreamingDataset(input_dir=str(tmpdir))
+    assert len(dataset) == 60
+    for i in range(60):
+        assert dataset[i] == i
+
+    with caplog.at_level(logging.WARNING):
+        StreamingDataset(input_dir=str(tmpdir), max_cache_size="25GB")
+        StreamingDataset(input_dir=str(tmpdir), max_cache_size="30GB")
+        StreamingDataset(input_dir=str(tmpdir), max_cache_size="50GB")
+        StreamingDataset(input_dir=str(tmpdir), max_cache_size="100GB")
+    assert len(caplog.messages) == 0
+
+    with caplog.at_level(logging.WARNING):
+        StreamingDataset(input_dir=str(tmpdir), max_cache_size="500MB")
+        StreamingDataset(input_dir=str(tmpdir), max_cache_size="1GB")
+        StreamingDataset(input_dir=str(tmpdir), max_cache_size="10GB")
+        StreamingDataset(input_dir=str(tmpdir), max_cache_size="20GB")
+    assert len(caplog.messages) == 4
+    assert all("The provided `max_cache_size` is less than 25GB." in record.message for record in caplog.records), (
+        "Expected warning about the `max_cache_size` being less than 25GB was not logged"
+    )
 
 
 @pytest.mark.parametrize("drop_last", [False, True])
