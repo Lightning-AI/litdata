@@ -119,6 +119,9 @@ class PyTreeLoader(BaseItemLoader):
         super().__init__()
         self._chunk_filepaths: Dict[str, bool] = {}
         self._decrypted_chunks: Dict[int, bytes] = {}
+        self._mmaps: Dict[int, np.memmap] = {}
+        self._buffers: Dict[int, bytes] = {}
+        self._counter = defaultdict(int)
 
     def generate_intervals(self) -> List[Interval]:
         intervals = []
@@ -174,13 +177,33 @@ class PyTreeLoader(BaseItemLoader):
         if self._config.get("encryption"):
             data = self._load_encrypted_data(chunk_filepath, chunk_index, offset, encryption)
         else:
-            with open(chunk_filepath, "rb", 0) as fp:
-                data = self._load_data(fp, offset)
+            # with open(chunk_filepath, "rb", 0) as fp:
+            #     data = self._load_data(fp, offset)
+            # Instead of opening the file every time, memory-map it (if not already mapped)
+            self._load_chunk(chunk_index, chunk_filepath)
+            buffer = self._buffers[chunk_index]
+            data = self._load_data_from_buffer(buffer, offset)
 
         # check for mosaic mds format
         if "format" in self._config and self._config["format"] == "mds":
             return self.mds_deserialize(data, chunk_index)
         return self.deserialize(data)
+
+    def _load_chunk(self, chunk_index: int, chunk_filepath: str) -> None:
+        """Memory-map the chunk file if not already done."""
+        if chunk_index in self._mmaps:
+            return
+        mmap = np.memmap(chunk_filepath, mode="r", order="C")
+        self._mmaps[chunk_index] = mmap
+        self._buffers[chunk_index] = memoryview(mmap)  # type: ignore
+
+    def _load_data_from_buffer(self, buffer: memoryview, offset: int) -> bytes:
+        """Read the raw item data from the memory-mapped buffer."""
+        # Read 8 bytes from the given offset to get the begin and end positions.
+        pair = buffer[offset : offset + 8].tobytes()
+        begin_end = np.frombuffer(pair, np.uint32)
+        begin, end = int(begin_end[0]), int(begin_end[1])
+        return bytes(buffer[begin:end])
 
     def _load_encrypted_data(
         self, chunk_filepath: str, chunk_index: int, offset: int, encryption: Optional[Encryption]
