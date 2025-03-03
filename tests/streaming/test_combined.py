@@ -1,5 +1,6 @@
 import os
 import sys
+from copy import deepcopy
 from unittest.mock import ANY, MagicMock
 
 import numpy as np
@@ -367,578 +368,125 @@ def test_combined_dataset_with_dataloader_2_epochs(tmpdir):
     assert dataset1.current_epoch == 1
     assert dataset2.current_epoch == 1
 
+    expected_dataset_state = {
+        "dataset": {
+            "0": {
+                "num_samples_yielded": 0,
+                "num_workers": 3,
+                "batch_size": 2,
+                "current_epoch": 0,
+                "input_dir_path": ANY,
+                "input_dir_url": ANY,
+                "cache_dir_path": None,
+                "item_loader": None,
+                "drop_last": False,
+                "seed": 42,
+                "world_size": 1,
+                "shuffle": True,
+                "subsampled_files": ANY,
+                "region_of_interest": ANY,
+            },
+            "1": {
+                "num_samples_yielded": 0,
+                "num_workers": 3,
+                "batch_size": 2,
+                "current_epoch": 0,
+                "input_dir_path": ANY,
+                "input_dir_url": ANY,
+                "cache_dir_path": None,
+                "item_loader": None,
+                "drop_last": False,
+                "seed": 42,
+                "world_size": 1,
+                "shuffle": True,
+                "subsampled_files": ANY,
+                "region_of_interest": ANY,
+            },
+        },
+        "current_epoch": 0,
+        "latest_worker_idx": 0,
+        "num_samples_yielded": {},
+    }
+    expected_num_samples_yielded = [
+        {0: [2, 0]},
+        {0: [2, 0], 1: [2, 0]},
+        {0: [2, 0], 1: [2, 0], 2: [2, 0]},
+        {0: [3, 1], 1: [2, 0], 2: [2, 0]},
+        {0: [3, 1], 1: [3, 1], 2: [2, 0]},
+        {0: [3, 1], 1: [3, 1], 2: [2, 1]},
+        {0: [4, 1], 1: [3, 1], 2: [2, 1]},
+        {0: [4, 1], 1: [4, 1], 2: [2, 1]},
+    ]
+    expected_current_epoch = [0, 0, 0, 0, 0, 0, 0, 0]
+    dataset_1_current_epoch = [1, 1, 1, 1, 1, 1, 1, 1]
+    dataset_2_current_epoch = [1, 1, 1, 1, 1, 1, 1, 1]
+    expected_latest_worker_idx = [0, 1, 2, 0, 1, 2, 0, 1]
+    expected_dataset0_samples_yielded = [2, 4, 6, 7, 8, 8, 9, 10]
+    expected_dataset1_samples_yielded = [0, 0, 0, 1, 2, 3, 3, 3]
+
     batches_1 = []
-    states_1 = []
-    for batch in dataloader:
+
+    for idx, batch in enumerate(dataloader):
         batches_1.append(batch)
-        states_1.append(dataloader.state_dict())
+        curr_state_dict = dataloader.state_dict()
+
+        expected_dataset_state["num_samples_yielded"] = expected_num_samples_yielded[idx]
+        expected_dataset_state["current_epoch"] = expected_current_epoch[idx]
+        expected_dataset_state["latest_worker_idx"] = expected_latest_worker_idx[idx]
+        expected_dataset_state["dataset"]["0"]["num_samples_yielded"] = expected_dataset0_samples_yielded[idx]
+        expected_dataset_state["dataset"]["1"]["num_samples_yielded"] = expected_dataset1_samples_yielded[idx]
+        expected_dataset_state["dataset"]["0"]["current_epoch"] = dataset_1_current_epoch[idx]
+        expected_dataset_state["dataset"]["1"]["current_epoch"] = dataset_2_current_epoch[idx]
+
+        assert curr_state_dict == expected_dataset_state
 
     assert dataset1.current_epoch == 1
     assert dataset2.current_epoch == 1
 
+    saved_dataloader_state_dict = None
+
     batches_2 = []
-    states_2 = []
-    for batch in dataloader:
+
+    expected_num_samples_yielded = [
+        {0: [2, 0]},
+        {0: [2, 0], 1: [2, 0]},
+        {0: [2, 0], 1: [2, 0], 2: [2, 0]},
+        {0: [3, 1], 1: [2, 0], 2: [2, 0]},
+        {0: [3, 1], 1: [3, 1], 2: [2, 0]},
+        {0: [3, 1], 1: [3, 1], 2: [2, 1]},
+        {0: [4, 1], 1: [3, 1], 2: [2, 1]},
+        {0: [4, 1], 1: [4, 1], 2: [2, 1]},
+    ]
+    dataset_1_current_epoch = [2, 2, 2, 2, 2, 2, 2, 2]
+    dataset_2_current_epoch = [2, 2, 2, 2, 2, 2, 2, 2]
+    expected_current_epoch = [1, 1, 1, 1, 1, 1, 1, 1]
+    expected_latest_worker_idx = [0, 1, 2, 0, 1, 2, 0, 1]
+    expected_dataset0_samples_yielded = [2, 4, 6, 7, 8, 8, 9, 10]
+    expected_dataset1_samples_yielded = [0, 0, 0, 1, 2, 3, 3, 3]
+    for idx, batch in enumerate(dataloader):
         batches_2.append(batch)
-        states_2.append(dataloader.state_dict())
+        curr_state_dict = dataloader.state_dict()
+
+        expected_dataset_state["num_samples_yielded"] = expected_num_samples_yielded[idx]
+        expected_dataset_state["current_epoch"] = expected_current_epoch[idx]
+        expected_dataset_state["latest_worker_idx"] = expected_latest_worker_idx[idx]
+        expected_dataset_state["dataset"]["0"]["num_samples_yielded"] = expected_dataset0_samples_yielded[idx]
+        expected_dataset_state["dataset"]["1"]["num_samples_yielded"] = expected_dataset1_samples_yielded[idx]
+        expected_dataset_state["dataset"]["0"]["current_epoch"] = dataset_1_current_epoch[idx]
+        expected_dataset_state["dataset"]["1"]["current_epoch"] = dataset_2_current_epoch[idx]
+
+        assert curr_state_dict == expected_dataset_state
+
+        if idx == 1:
+            saved_dataloader_state_dict = deepcopy(curr_state_dict)
+
     assert dataset1.current_epoch == 2
     assert dataset2.current_epoch == 2
 
     assert sum(torch.equal(b1, b2) for b1, b2 in zip(batches_1, batches_2)) != len(batches_1)
 
-    assert states_1 == [
-        {
-            "dataset": {
-                "0": {
-                    "num_samples_yielded": 2,
-                    "num_workers": 3,
-                    "batch_size": 2,
-                    "current_epoch": 1,
-                    "input_dir_path": ANY,
-                    "input_dir_url": ANY,
-                    "cache_dir_path": None,
-                    "item_loader": None,
-                    "drop_last": False,
-                    "seed": 42,
-                    "world_size": 1,
-                    "shuffle": True,
-                    "subsampled_files": ANY,
-                    "region_of_interest": ANY,
-                },
-                "1": {
-                    "num_samples_yielded": 0,
-                    "num_workers": 3,
-                    "batch_size": 2,
-                    "current_epoch": 1,
-                    "input_dir_path": ANY,
-                    "input_dir_url": ANY,
-                    "cache_dir_path": None,
-                    "item_loader": None,
-                    "drop_last": False,
-                    "seed": 42,
-                    "world_size": 1,
-                    "shuffle": True,
-                    "subsampled_files": ANY,
-                    "region_of_interest": ANY,
-                },
-            },
-            "current_epoch": 0,
-            "latest_worker_idx": 0,
-            "num_samples_yielded": {0: [2, 0]},
-        },
-        {
-            "dataset": {
-                "0": {
-                    "num_samples_yielded": 4,
-                    "num_workers": 3,
-                    "batch_size": 2,
-                    "current_epoch": 1,
-                    "input_dir_path": ANY,
-                    "input_dir_url": ANY,
-                    "cache_dir_path": None,
-                    "item_loader": None,
-                    "drop_last": False,
-                    "seed": 42,
-                    "world_size": 1,
-                    "shuffle": True,
-                    "subsampled_files": ANY,
-                    "region_of_interest": ANY,
-                },
-                "1": {
-                    "num_samples_yielded": 0,
-                    "num_workers": 3,
-                    "batch_size": 2,
-                    "current_epoch": 1,
-                    "input_dir_path": ANY,
-                    "input_dir_url": ANY,
-                    "cache_dir_path": None,
-                    "item_loader": None,
-                    "drop_last": False,
-                    "seed": 42,
-                    "world_size": 1,
-                    "shuffle": True,
-                    "subsampled_files": ANY,
-                    "region_of_interest": ANY,
-                },
-            },
-            "current_epoch": 0,
-            "latest_worker_idx": 1,
-            "num_samples_yielded": {0: [2, 0], 1: [2, 0]},
-        },
-        {
-            "dataset": {
-                "0": {
-                    "num_samples_yielded": 6,
-                    "num_workers": 3,
-                    "batch_size": 2,
-                    "current_epoch": 1,
-                    "input_dir_path": ANY,
-                    "input_dir_url": ANY,
-                    "cache_dir_path": None,
-                    "item_loader": None,
-                    "drop_last": False,
-                    "seed": 42,
-                    "world_size": 1,
-                    "shuffle": True,
-                    "subsampled_files": ANY,
-                    "region_of_interest": ANY,
-                },
-                "1": {
-                    "num_samples_yielded": 0,
-                    "num_workers": 3,
-                    "batch_size": 2,
-                    "current_epoch": 1,
-                    "input_dir_path": ANY,
-                    "input_dir_url": ANY,
-                    "cache_dir_path": None,
-                    "item_loader": None,
-                    "drop_last": False,
-                    "seed": 42,
-                    "world_size": 1,
-                    "shuffle": True,
-                    "subsampled_files": ANY,
-                    "region_of_interest": ANY,
-                },
-            },
-            "current_epoch": 0,
-            "latest_worker_idx": 2,
-            "num_samples_yielded": {0: [2, 0], 1: [2, 0], 2: [2, 0]},
-        },
-        {
-            "dataset": {
-                "0": {
-                    "num_samples_yielded": 7,
-                    "num_workers": 3,
-                    "batch_size": 2,
-                    "current_epoch": 1,
-                    "input_dir_path": ANY,
-                    "input_dir_url": ANY,
-                    "cache_dir_path": None,
-                    "item_loader": None,
-                    "drop_last": False,
-                    "seed": 42,
-                    "world_size": 1,
-                    "shuffle": True,
-                    "subsampled_files": ANY,
-                    "region_of_interest": ANY,
-                },
-                "1": {
-                    "num_samples_yielded": 1,
-                    "num_workers": 3,
-                    "batch_size": 2,
-                    "current_epoch": 1,
-                    "input_dir_path": ANY,
-                    "input_dir_url": ANY,
-                    "cache_dir_path": None,
-                    "item_loader": None,
-                    "drop_last": False,
-                    "seed": 42,
-                    "world_size": 1,
-                    "shuffle": True,
-                    "subsampled_files": ANY,
-                    "region_of_interest": ANY,
-                },
-            },
-            "current_epoch": 0,
-            "latest_worker_idx": 0,
-            "num_samples_yielded": {0: [3, 1], 1: [2, 0], 2: [2, 0]},
-        },
-        {
-            "dataset": {
-                "0": {
-                    "num_samples_yielded": 8,
-                    "num_workers": 3,
-                    "batch_size": 2,
-                    "current_epoch": 1,
-                    "input_dir_path": ANY,
-                    "input_dir_url": ANY,
-                    "cache_dir_path": None,
-                    "item_loader": None,
-                    "drop_last": False,
-                    "seed": 42,
-                    "world_size": 1,
-                    "shuffle": True,
-                    "subsampled_files": ANY,
-                    "region_of_interest": ANY,
-                },
-                "1": {
-                    "num_samples_yielded": 2,
-                    "num_workers": 3,
-                    "batch_size": 2,
-                    "current_epoch": 1,
-                    "input_dir_path": ANY,
-                    "input_dir_url": ANY,
-                    "cache_dir_path": None,
-                    "item_loader": None,
-                    "drop_last": False,
-                    "seed": 42,
-                    "world_size": 1,
-                    "shuffle": True,
-                    "subsampled_files": ANY,
-                    "region_of_interest": ANY,
-                },
-            },
-            "current_epoch": 0,
-            "latest_worker_idx": 1,
-            "num_samples_yielded": {0: [3, 1], 1: [3, 1], 2: [2, 0]},
-        },
-        {
-            "dataset": {
-                "0": {
-                    "num_samples_yielded": 9,
-                    "num_workers": 3,
-                    "batch_size": 2,
-                    "current_epoch": 1,
-                    "input_dir_path": ANY,
-                    "input_dir_url": ANY,
-                    "cache_dir_path": None,
-                    "item_loader": None,
-                    "drop_last": False,
-                    "seed": 42,
-                    "world_size": 1,
-                    "shuffle": True,
-                    "subsampled_files": ANY,
-                    "region_of_interest": ANY,
-                },
-                "1": {
-                    "num_samples_yielded": 3,
-                    "num_workers": 3,
-                    "batch_size": 2,
-                    "current_epoch": 1,
-                    "input_dir_path": ANY,
-                    "input_dir_url": ANY,
-                    "cache_dir_path": None,
-                    "item_loader": None,
-                    "drop_last": False,
-                    "seed": 42,
-                    "world_size": 1,
-                    "shuffle": True,
-                    "subsampled_files": ANY,
-                    "region_of_interest": ANY,
-                },
-            },
-            "current_epoch": 0,
-            "latest_worker_idx": 2,
-            "num_samples_yielded": {0: [3, 1], 1: [3, 1], 2: [3, 1]},
-        },
-        {
-            "dataset": {
-                "0": {
-                    "num_samples_yielded": 10,
-                    "num_workers": 3,
-                    "batch_size": 2,
-                    "current_epoch": 1,
-                    "input_dir_path": ANY,
-                    "input_dir_url": ANY,
-                    "cache_dir_path": None,
-                    "item_loader": None,
-                    "drop_last": False,
-                    "seed": 42,
-                    "world_size": 1,
-                    "shuffle": True,
-                    "subsampled_files": ANY,
-                    "region_of_interest": ANY,
-                },
-                "1": {
-                    "num_samples_yielded": 3,
-                    "num_workers": 3,
-                    "batch_size": 2,
-                    "current_epoch": 1,
-                    "input_dir_path": ANY,
-                    "input_dir_url": ANY,
-                    "cache_dir_path": None,
-                    "item_loader": None,
-                    "drop_last": False,
-                    "seed": 42,
-                    "world_size": 1,
-                    "shuffle": True,
-                    "subsampled_files": ANY,
-                    "region_of_interest": ANY,
-                },
-            },
-            "current_epoch": 0,
-            "latest_worker_idx": 0,
-            "num_samples_yielded": {0: [4, 1], 1: [3, 1], 2: [3, 1]},
-        },
-    ]
-
-    assert states_2 == [
-        {
-            "dataset": {
-                "0": {
-                    "num_samples_yielded": 2,
-                    "num_workers": 3,
-                    "batch_size": 2,
-                    "current_epoch": 2,
-                    "input_dir_path": ANY,
-                    "input_dir_url": ANY,
-                    "cache_dir_path": None,
-                    "item_loader": None,
-                    "drop_last": False,
-                    "seed": 42,
-                    "world_size": 1,
-                    "shuffle": True,
-                    "subsampled_files": ANY,
-                    "region_of_interest": ANY,
-                },
-                "1": {
-                    "num_samples_yielded": 0,
-                    "num_workers": 3,
-                    "batch_size": 2,
-                    "current_epoch": 2,
-                    "input_dir_path": ANY,
-                    "input_dir_url": ANY,
-                    "cache_dir_path": None,
-                    "item_loader": None,
-                    "drop_last": False,
-                    "seed": 42,
-                    "world_size": 1,
-                    "shuffle": True,
-                    "subsampled_files": ANY,
-                    "region_of_interest": ANY,
-                },
-            },
-            "current_epoch": 1,
-            "latest_worker_idx": 0,
-            "num_samples_yielded": {0: [2, 0]},
-        },
-        {
-            "dataset": {
-                "0": {
-                    "num_samples_yielded": 4,
-                    "num_workers": 3,
-                    "batch_size": 2,
-                    "current_epoch": 2,
-                    "input_dir_path": ANY,
-                    "input_dir_url": ANY,
-                    "cache_dir_path": None,
-                    "item_loader": None,
-                    "drop_last": False,
-                    "seed": 42,
-                    "world_size": 1,
-                    "shuffle": True,
-                    "subsampled_files": ANY,
-                    "region_of_interest": ANY,
-                },
-                "1": {
-                    "num_samples_yielded": 0,
-                    "num_workers": 3,
-                    "batch_size": 2,
-                    "current_epoch": 2,
-                    "input_dir_path": ANY,
-                    "input_dir_url": ANY,
-                    "cache_dir_path": None,
-                    "item_loader": None,
-                    "drop_last": False,
-                    "seed": 42,
-                    "world_size": 1,
-                    "shuffle": True,
-                    "subsampled_files": ANY,
-                    "region_of_interest": ANY,
-                },
-            },
-            "current_epoch": 1,
-            "latest_worker_idx": 1,
-            "num_samples_yielded": {0: [2, 0], 1: [2, 0]},
-        },
-        {
-            "dataset": {
-                "0": {
-                    "num_samples_yielded": 6,
-                    "num_workers": 3,
-                    "batch_size": 2,
-                    "current_epoch": 2,
-                    "input_dir_path": ANY,
-                    "input_dir_url": ANY,
-                    "cache_dir_path": None,
-                    "item_loader": None,
-                    "drop_last": False,
-                    "seed": 42,
-                    "world_size": 1,
-                    "shuffle": True,
-                    "subsampled_files": ANY,
-                    "region_of_interest": ANY,
-                },
-                "1": {
-                    "num_samples_yielded": 0,
-                    "num_workers": 3,
-                    "batch_size": 2,
-                    "current_epoch": 2,
-                    "input_dir_path": ANY,
-                    "input_dir_url": ANY,
-                    "cache_dir_path": None,
-                    "item_loader": None,
-                    "drop_last": False,
-                    "seed": 42,
-                    "world_size": 1,
-                    "shuffle": True,
-                    "subsampled_files": ANY,
-                    "region_of_interest": ANY,
-                },
-            },
-            "current_epoch": 1,
-            "latest_worker_idx": 2,
-            "num_samples_yielded": {0: [2, 0], 1: [2, 0], 2: [2, 0]},
-        },
-        {
-            "dataset": {
-                "0": {
-                    "num_samples_yielded": 7,
-                    "num_workers": 3,
-                    "batch_size": 2,
-                    "current_epoch": 2,
-                    "input_dir_path": ANY,
-                    "input_dir_url": ANY,
-                    "cache_dir_path": None,
-                    "item_loader": None,
-                    "drop_last": False,
-                    "seed": 42,
-                    "world_size": 1,
-                    "shuffle": True,
-                    "subsampled_files": ANY,
-                    "region_of_interest": ANY,
-                },
-                "1": {
-                    "num_samples_yielded": 1,
-                    "num_workers": 3,
-                    "batch_size": 2,
-                    "current_epoch": 2,
-                    "input_dir_path": ANY,
-                    "input_dir_url": ANY,
-                    "cache_dir_path": None,
-                    "item_loader": None,
-                    "drop_last": False,
-                    "seed": 42,
-                    "world_size": 1,
-                    "shuffle": True,
-                    "subsampled_files": ANY,
-                    "region_of_interest": ANY,
-                },
-            },
-            "current_epoch": 1,
-            "latest_worker_idx": 0,
-            "num_samples_yielded": {0: [3, 1], 1: [2, 0], 2: [2, 0]},
-        },
-        {
-            "dataset": {
-                "0": {
-                    "num_samples_yielded": 8,
-                    "num_workers": 3,
-                    "batch_size": 2,
-                    "current_epoch": 2,
-                    "input_dir_path": ANY,
-                    "input_dir_url": ANY,
-                    "cache_dir_path": None,
-                    "item_loader": None,
-                    "drop_last": False,
-                    "seed": 42,
-                    "world_size": 1,
-                    "shuffle": True,
-                    "subsampled_files": ANY,
-                    "region_of_interest": ANY,
-                },
-                "1": {
-                    "num_samples_yielded": 2,
-                    "num_workers": 3,
-                    "batch_size": 2,
-                    "current_epoch": 2,
-                    "input_dir_path": ANY,
-                    "input_dir_url": ANY,
-                    "cache_dir_path": None,
-                    "item_loader": None,
-                    "drop_last": False,
-                    "seed": 42,
-                    "world_size": 1,
-                    "shuffle": True,
-                    "subsampled_files": ANY,
-                    "region_of_interest": ANY,
-                },
-            },
-            "current_epoch": 1,
-            "latest_worker_idx": 1,
-            "num_samples_yielded": {0: [3, 1], 1: [3, 1], 2: [2, 0]},
-        },
-        {
-            "dataset": {
-                "0": {
-                    "num_samples_yielded": 9,
-                    "num_workers": 3,
-                    "batch_size": 2,
-                    "current_epoch": 2,
-                    "input_dir_path": ANY,
-                    "input_dir_url": ANY,
-                    "cache_dir_path": None,
-                    "item_loader": None,
-                    "drop_last": False,
-                    "seed": 42,
-                    "world_size": 1,
-                    "shuffle": True,
-                    "subsampled_files": ANY,
-                    "region_of_interest": ANY,
-                },
-                "1": {
-                    "num_samples_yielded": 3,
-                    "num_workers": 3,
-                    "batch_size": 2,
-                    "current_epoch": 2,
-                    "input_dir_path": ANY,
-                    "input_dir_url": ANY,
-                    "cache_dir_path": None,
-                    "item_loader": None,
-                    "drop_last": False,
-                    "seed": 42,
-                    "world_size": 1,
-                    "shuffle": True,
-                    "subsampled_files": ANY,
-                    "region_of_interest": ANY,
-                },
-            },
-            "current_epoch": 1,
-            "latest_worker_idx": 2,
-            "num_samples_yielded": {0: [3, 1], 1: [3, 1], 2: [3, 1]},
-        },
-        {
-            "dataset": {
-                "0": {
-                    "num_samples_yielded": 10,
-                    "num_workers": 3,
-                    "batch_size": 2,
-                    "current_epoch": 2,
-                    "input_dir_path": ANY,
-                    "input_dir_url": ANY,
-                    "cache_dir_path": None,
-                    "item_loader": None,
-                    "drop_last": False,
-                    "seed": 42,
-                    "world_size": 1,
-                    "shuffle": True,
-                    "subsampled_files": ANY,
-                    "region_of_interest": ANY,
-                },
-                "1": {
-                    "num_samples_yielded": 3,
-                    "num_workers": 3,
-                    "batch_size": 2,
-                    "current_epoch": 2,
-                    "input_dir_path": ANY,
-                    "input_dir_url": ANY,
-                    "cache_dir_path": None,
-                    "item_loader": None,
-                    "drop_last": False,
-                    "seed": 42,
-                    "world_size": 1,
-                    "shuffle": True,
-                    "subsampled_files": ANY,
-                    "region_of_interest": ANY,
-                },
-            },
-            "current_epoch": 1,
-            "latest_worker_idx": 0,
-            "num_samples_yielded": {0: [4, 1], 1: [3, 1], 2: [3, 1]},
-        },
-    ]
-
-    dataloader.load_state_dict(states_2[1])
+    assert saved_dataloader_state_dict is not None
+    dataloader.load_state_dict(saved_dataloader_state_dict)
 
     assert dataloader.restore
 
