@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 pub mod gs;
 pub mod local;
 pub mod s3;
@@ -25,4 +27,17 @@ pub trait StorageBackend {
     async fn does_file_exist(&self, path: &str) -> bool;
 
     async fn delete(&self, path: &str) -> Result<(), Box<dyn std::error::Error>>;
+}
+
+///
+pub struct StorageDownloader {
+    index_to_bytes: HashMap<usize, Vec<u8>>,
+    chunk_index: Vec<usize>,
+    sample_index: Vec<Vec<usize>>,
+}
+
+impl StorageDownloader {
+    pub fn new() -> Self {
+        // Self { index_to_bytes: HashMap::new() }
+    }
 }
