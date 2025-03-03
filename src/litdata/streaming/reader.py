@@ -451,7 +451,7 @@ def _get_folder_size(path: str, config: ChunksConfig) -> int:
         if filename in config.filename_to_size_map:
             with contextlib.suppress(FileNotFoundError):
                 size += config.filename_to_size_map[filename]
-        elif not filename.endswith((".cnt", ".lock", ".json", ".zstd.bin")):
+        elif not filename.endswith((".cnt", ".lock", ".json", ".zstd.bin", ".tmp")):
             # ignore .cnt, .lock, .json and .zstd files for warning
             logger.warning(
                 f"Skipping {filename}: Not a valid chunk file. It will be excluded from cache size calculation."
