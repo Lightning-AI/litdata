@@ -606,6 +606,33 @@ def test_dataset_for_text_tokens_multiple_workers(tmpdir):
     assert result == expected
 
 
+@pytest.mark.timeout(60)
+def test_dataset_for_text_tokens_with_large_block_size_multiple_workers(tmpdir):
+    # test to reproduce ERROR: Unexpected segmentation fault encountered in worker
+    seed_everything(42)
+
+    block_size = 2048 + 1
+    cache = Cache(input_dir=str(tmpdir), chunk_bytes="64MB", item_loader=TokensLoader(block_size))
+
+    for i in range(5000):
+        text_ids = torch.randint(low=0, high=127, size=(8192,))
+        cache[i] = text_ids
+
+    cache.done()
+    cache.merge()
+
+    dataset = StreamingDataset(
+        input_dir=str(tmpdir),
+        item_loader=TokensLoader(block_size=2049),
+        shuffle=True,
+        drop_last=True,
+    )
+    dataloader = StreamingDataLoader(dataset, batch_size=8, num_workers=4, shuffle=True, drop_last=True)
+
+    for _ in dataloader:
+        pass
+
+
 def test_dataset_for_text_tokens_distributed_num_workers(tmpdir):
     seed_everything(42)
 
