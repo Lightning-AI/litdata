@@ -12,6 +12,7 @@
 # limitations under the License.
 
 import json
+import logging
 import os
 import random
 import shutil
@@ -117,6 +118,39 @@ def test_streaming_dataset_max_pre_download(tmpdir):
     for i in range(60):
         assert dataset[i] == i
     assert dataset.cache._reader._max_pre_download == 10
+
+
+@pytest.mark.timeout(30)
+def test_streaming_dataset_max_cache_dir(tmpdir, caplog):
+    seed_everything(42)
+
+    cache = Cache(str(tmpdir), chunk_size=10)
+    for i in range(60):
+        cache[i] = i
+    cache.done()
+    cache.merge()
+
+    dataset = StreamingDataset(input_dir=str(tmpdir))
+    assert len(dataset) == 60
+    for i in range(60):
+        assert dataset[i] == i
+
+    with caplog.at_level(logging.WARNING):
+        StreamingDataset(input_dir=str(tmpdir), max_cache_size="25GB")
+        StreamingDataset(input_dir=str(tmpdir), max_cache_size="30GB")
+        StreamingDataset(input_dir=str(tmpdir), max_cache_size="50GB")
+        StreamingDataset(input_dir=str(tmpdir), max_cache_size="100GB")
+    assert len(caplog.messages) == 0
+
+    with caplog.at_level(logging.WARNING):
+        StreamingDataset(input_dir=str(tmpdir), max_cache_size="500MB")
+        StreamingDataset(input_dir=str(tmpdir), max_cache_size="1GB")
+        StreamingDataset(input_dir=str(tmpdir), max_cache_size="10GB")
+        StreamingDataset(input_dir=str(tmpdir), max_cache_size="20GB")
+    assert len(caplog.messages) == 4
+    assert all(
+        "The provided `max_cache_size` is less than 25GB." in record.message for record in caplog.records
+    ), "Expected warning about the `max_cache_size` being less than 25GB was not logged"
 
 
 @pytest.mark.parametrize("drop_last", [False, True])
@@ -604,6 +638,33 @@ def test_dataset_for_text_tokens_multiple_workers(tmpdir):
     for batch in dataloader:
         result.append(batch[:, 0].tolist())
     assert result == expected
+
+
+@pytest.mark.timeout(60)
+def test_dataset_for_text_tokens_with_large_block_size_multiple_workers(tmpdir):
+    # test to reproduce ERROR: Unexpected segmentation fault encountered in worker
+    seed_everything(42)
+
+    block_size = 2048 + 1
+    cache = Cache(input_dir=str(tmpdir), chunk_bytes="64MB", item_loader=TokensLoader(block_size))
+
+    for i in range(5000):
+        text_ids = torch.randint(low=0, high=127, size=(8192,))
+        cache[i] = text_ids
+
+    cache.done()
+    cache.merge()
+
+    dataset = StreamingDataset(
+        input_dir=str(tmpdir),
+        item_loader=TokensLoader(block_size=2049),
+        shuffle=True,
+        drop_last=True,
+    )
+    dataloader = StreamingDataLoader(dataset, batch_size=8, num_workers=4, shuffle=True, drop_last=True)
+
+    for _ in dataloader:
+        pass
 
 
 def test_dataset_for_text_tokens_distributed_num_workers(tmpdir):
@@ -1166,7 +1227,7 @@ def test_dataset_distributed_drop_last(tmpdir, monkeypatch, compression):
     dataset = StreamingDataset(str(tmpdir), drop_last=False)
     assert not dataset.drop_last
 
-    warn_msg = logger_mock.warn._mock_mock_calls[0].args[0]
+    warn_msg = logger_mock.warning._mock_mock_calls[0].args[0]
     expected_warn_msg = (
         "You're operating within a distributed environment and have disabled the `drop_last` option."
         " Please note that this configuration may lead to training interruptions"
