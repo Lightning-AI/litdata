@@ -770,11 +770,15 @@ def test_dataset_for_text_tokens_distributed_num_workers_end_to_end(tmpdir, monk
 
     # L = 20, world size 2, num workers 2
     # L / (2 * 2) = 5 items per worker
-    # drop last -> 4 items per worker
-    # batch size = 2 -> 2 batches per worker -> len(dataloader) = 4
-    assert len(dataloader) == 4
+    #
+    # `utilities::shuffle::_associate_chunks_and_intervals_to_workers`
+    #       -> will associate 4 items to one worker and 6 items to other worker
+    #
+    # drop last -> no effect as each worker has complete batches (though one will produce 1 extra batch)
+    # one worker will yield 2 batches, other will yield 3 batches => len(dataloader) = 5
+    assert len(dataloader) == 5
 
-    expected = [[0, 10], [40, 50], [20, 30], [60, 70]]
+    expected = [[0, 10], [60, 70], [20, 30], [80, 90], [40, 50]]
     returned = []
     for batch in dataloader:
         returned.append(batch[:, 0].tolist())
@@ -787,9 +791,9 @@ def test_dataset_for_text_tokens_distributed_num_workers_end_to_end(tmpdir, monk
     dataloader = StreamingDataLoader(dataset, batch_size=2, shuffle=False, num_workers=2)
     assert dataset.drop_last  # in distributed setting, this is forced automatically
 
-    assert len(dataloader) == 4
+    assert len(dataloader) == 5
 
-    expected = [[80, 90], [120, 130], [100, 110], [140, 150]]
+    expected = [[100, 110], [160, 170], [120, 130], [180, 190], [140, 150]]
     returned = []
     for batch in dataloader:
         returned.append(batch[:, 0].tolist())
