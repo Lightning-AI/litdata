@@ -11,8 +11,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
 import os
-from logging import Logger
 from time import time
 from typing import Any, Dict, List, Optional, Tuple, Union
 
@@ -20,9 +20,7 @@ import numpy as np
 from torch.utils.data import IterableDataset
 
 from litdata import __version__
-from litdata.constants import (
-    _INDEX_FILENAME,
-)
+from litdata.constants import _INDEX_FILENAME
 from litdata.helpers import _check_version_and_prompt_upgrade
 from litdata.streaming import Cache
 from litdata.streaming.downloader import get_downloader_cls  # noqa: F401
@@ -34,13 +32,14 @@ from litdata.streaming.shuffle import FullShuffle, NoShuffle, Shuffle
 from litdata.utilities.dataset_utilities import _should_replace_path, _try_create_cache_dir, subsample_streaming_dataset
 from litdata.utilities.encryption import Encryption
 from litdata.utilities.env import _DistributedEnv, _is_in_dataloader_worker, _WorkerEnv
+from litdata.utilities.format import _convert_bytes_to_int
 from litdata.utilities.hf_dataset import index_hf_dataset
 from litdata.utilities.shuffle import (
     _find_chunks_per_workers_on_which_to_skip_deletion,
     _map_node_worker_rank_to_chunk_indexes_to_not_delete,
 )
 
-logger = Logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class StreamingDataset(IterableDataset):
@@ -120,7 +119,7 @@ class StreamingDataset(IterableDataset):
 
         if self.distributed_env.world_size > 1:
             if drop_last is False:
-                logger.warn(
+                logger.warning(
                     "You're operating within a distributed environment and have disabled the `drop_last` option. "
                     "Please note that this configuration may lead to training interruptions if your system depends "
                     "on distributed collectives."
@@ -132,6 +131,17 @@ class StreamingDataset(IterableDataset):
 
         self.seed = seed
         self.max_cache_size = max_cache_size
+
+        max_cache_size_in_bytes = int(
+            _convert_bytes_to_int(max_cache_size) if isinstance(max_cache_size, str) else max_cache_size,
+        )
+        min_cache_size_in_bytes = _convert_bytes_to_int("25GB")
+        if max_cache_size_in_bytes < min_cache_size_in_bytes:
+            logger.warning(
+                "The provided `max_cache_size` is less than 25GB. "
+                "This may lead to performance issues during the training process. "
+                "Consider increasing the `max_cache_size` to at least 25GB to avoid potential performance degradation."
+            )
 
         self.cache: Optional[Cache] = None
         self.worker_env: Optional[_WorkerEnv] = None
