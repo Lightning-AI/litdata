@@ -206,8 +206,34 @@ class BinaryWriter:
             sizes.append(serializer.size if hasattr(serializer, "size") else len(serialized_item))
 
     def _create_chunk(self, filename: str, on_done: bool = False) -> bytes:
-        """Create a binary chunk from all the binarized items."""
-        items = []
+        """Creates a binary chunk file from serialized items."""
+        # The chunk's binary format is structured as follows:
+
+        # +------------+---------------+-------------+
+        # | num_items  | offset_array  | item_data   |
+        # +------------+---------------+-------------+
+        # | uint32     | uint32[N+1]   | bytes       |
+        # | 4 bytes    | 4*(N+1) bytes | variable    |
+        # +------------+---------------+-------------+
+
+        # Where:
+        # - num_items: Number of items in the chunk (N)
+        # - offset_array: Array of N+1 offsets indicating where each item begins/ends
+        # - item_data: Concatenated binary data of all items
+
+        # Example:
+        #     For a chunk with 3 items of sizes [10, 20, 15] bytes:
+        #     - num_items = 3 (4 bytes)
+        #     - offset_array = [start, start+10, start+30, start+45]
+        #       where start = 4 + (4 * 4) = 20 bytes (header size)
+        #     - item_data = concatenated bytes of all items
+
+        # This format allows direct access to any item by reading its offset
+        #   from `offset_array[i]` to `offset_array[i+1]`.
+        # Then, read bytes from `offset_start` to `offset_end` to get the item bytes.
+        # Now, item_loader can use these raw bytes to deserialize the item.
+
+        items: List[Item] = []
 
         if on_done:
             indices = sorted(self._serialized_items.keys())
@@ -228,11 +254,15 @@ class BinaryWriter:
                 f" Found {self._pretty_serialized_items()} with boundaries: {self._min_index}, {self._max_index}."
             )
 
-        num_items = np.uint32(len(items))
-        sizes = list(map(len, items))
-        offsets = np.array([0] + sizes).cumsum().astype(np.uint32)
+        num_items = np.uint32(len(items))  # total number of items in the chunk
+        sizes = list(map(len, items))  # list of sizes (length of bytes) of each item
+        offsets = np.array([0] + sizes).cumsum().astype(np.uint32)  # let's say: [0, 10, 30, 45]
+
+        # add the number of bytes taken to store (num_items and offsets). Let's say 60: offsets -> [60, 70, 90, 105]
         offsets += len(num_items.tobytes()) + len(offsets.tobytes())
         sample_data = b"".join([item.data for item in items])
+
+        # combine all bytes data which will be written to the chunk file
         data = num_items.tobytes() + offsets.tobytes() + sample_data
 
         # Whether to encrypt the data at the chunk level
