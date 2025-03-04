@@ -24,6 +24,7 @@ from filelock import FileLock, Timeout
 
 from litdata.constants import (
     _AZURE_STORAGE_AVAILABLE,
+    _DATABRICKS_SDK_AVAILABLE,
     _GOOGLE_STORAGE_AVAILABLE,
     _HF_HUB_AVAILABLE,
     _INDEX_FILENAME,
@@ -232,6 +233,76 @@ class HFDownloader(Downloader):
                 if os.path.exists(temp_path):
                     os.remove(temp_path)
 
+class DBFSDownloader(Downloader):
+    def __init__(
+        self,
+        remote_dir: str,
+        cache_dir: str,
+        chunks: List[Dict[str, Any]],
+        storage_options: Optional[Dict] = {},
+    ):
+        if not _DATABRICKS_SDK_AVAILABLE:
+            raise ModuleNotFoundError(
+                "Support for Downloading dbfs dataset depends on `databricks-sdk`.",
+                "Please, run: `pip install databricks-sdk",
+            )
+        
+        super().__init__(
+            remote_dir=remote_dir,
+            cache_dir=cache_dir,
+            chunks=chunks,
+            storage_options=storage_options,
+        )
+
+        from databricks.sdk import WorkspaceClient
+        self._dbfs_client: Optional[WorkspaceClient] = None
+
+    def download_file(self, remote_filepath: str, local_filepath: str) -> None:
+        from databricks.sdk.core import DatabricksError
+
+        if self._dbfs_client is None:
+            self._create_dbfs_client()
+        assert self._dbfs_client is not None
+
+        file_path = parse.urlparse(remote_filepath)
+        if file_path.scheme != "dbfs":
+            raise ValueError(
+                f"Expected obj.scheme to be `dbfs`, instead, got {file_path.scheme} for remote={remote_filepath}"
+            )
+
+        if os.path.exists(local_filepath):
+            return
+
+        local_tmp = local_filepath + ".tmp"
+        response = self._dbfs_client.files.download(file_path.path).contents
+
+        assert response is not None
+
+        try:
+            with response:
+                with open(local_tmp, "wb") as f:
+                    for chunk in iter(lambda: response.read(1024 * 1024), b""):
+                        f.write(chunk)
+        except DatabricksError as e:
+            if e.error_code == "PERMISSION_DENIED":
+                e.args = (
+                    "Ensure the file path or credentials are set correctly. For "
+                    + "Databricks Unity Catalog, file path must starts with `dbfs:/Volumes` "
+                    + "and for Databricks File System, file path must starts with `dbfs`. "
+                    + e.args[0],
+                )
+            raise e
+        except Exception as e:
+            raise e
+        os.rename(local_tmp, local_filepath)
+
+    def _create_dbfs_client(self) -> None:
+        """Create a Databricks File System client."""
+        from databricks.sdk import WorkspaceClient
+
+        self._dbfs_client = WorkspaceClient()
+
+
 
 class LocalDownloaderWithCache(LocalDownloader):
     def download_file(self, remote_filepath: str, local_filepath: str, remote_chunk_filename: str = "") -> None:
@@ -244,6 +315,7 @@ _DOWNLOADERS = {
     "gs://": GCPDownloader,
     "azure://": AzureDownloader,
     "hf://": HFDownloader,
+    "dbfs:": DBFSDownloader,
     "local:": LocalDownloaderWithCache,
     "": LocalDownloader,
 }
