@@ -16,7 +16,7 @@ impl LocalStorage {
 }
 
 impl StorageBackend for LocalStorage {
-    fn list(&self, path: &str) -> Result<Vec<String>, Box<dyn std::error::Error>> {
+    async fn list(&self, path: &str) -> Result<Vec<String>, Box<dyn std::error::Error>> {
         let dir = Path::new(path);
         if !dir.exists() {
             return Err(format!("Directory does not exist: {}", path).into());
@@ -34,7 +34,7 @@ impl StorageBackend for LocalStorage {
         Ok(files)
     }
 
-    fn upload(
+    async fn upload(
         &self,
         local_path: &str,
         remote_path: &str,
@@ -61,7 +61,7 @@ impl StorageBackend for LocalStorage {
         Ok(())
     }
 
-    fn download(
+    async fn download(
         &self,
         remote_path: &str,
         local_path: &str,
@@ -88,7 +88,7 @@ impl StorageBackend for LocalStorage {
         Ok(())
     }
 
-    fn byte_range_download(
+    async fn byte_range_download(
         &self,
         _remote_path: &str,
         _local_path: &str,
@@ -106,15 +106,18 @@ impl StorageBackend for LocalStorage {
         _range_start: u32,
         _range_end: u32,
     ) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
-        Err(Box::new(io::Error::new(io::ErrorKind::Unsupported, "Not implemented")))
+        Err(Box::new(io::Error::new(
+            io::ErrorKind::Unsupported,
+            "Not implemented",
+        )))
     }
 
-    fn does_file_exist(&self, path: &str) -> bool {
+    async fn does_file_exist(&self, path: &str) -> bool {
         let p = Path::new(path);
         p.exists() && p.is_file()
     }
 
-    fn delete(&self, path: &str) -> Result<(), Box<dyn std::error::Error>> {
+    async fn delete(&self, path: &str) -> Result<(), Box<dyn std::error::Error>> {
         let file = Path::new(path);
         if !file.exists() {
             return Err(format!("File does not exist: {}", path).into());
@@ -142,29 +145,29 @@ impl LocalStorageWithCache {
 }
 
 impl StorageBackend for LocalStorageWithCache {
-    fn list(&self, path: &str) -> Result<Vec<String>, Box<dyn std::error::Error>> {
-        self.loc_stor.list(path)
+    async fn list(&self, path: &str) -> Result<Vec<String>, Box<dyn std::error::Error>> {
+        self.loc_stor.list(path).await
     }
 
-    fn upload(
+    async fn upload(
         &self,
         local_path: &str,
         remote_path: &str,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        self.loc_stor.upload(local_path, remote_path)
+        self.loc_stor.upload(local_path, remote_path).await
     }
 
-    fn download(
+    async fn download(
         &self,
         remote_path: &str,
         local_path: &str,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let remote_path = remote_path.trim_start_matches("local:");
 
-        self.loc_stor.download(remote_path, local_path)
+        self.loc_stor.download(remote_path, local_path).await
     }
 
-    fn byte_range_download(
+    async fn byte_range_download(
         &self,
         _remote_path: &str,
         _local_path: &str,
@@ -182,14 +185,18 @@ impl StorageBackend for LocalStorageWithCache {
         _range_start: u32,
         _range_end: u32,
     ) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
-        Err(Box::new(io::Error::new(io::ErrorKind::Unsupported, "Not implemented")))
+        Err(Box::new(io::Error::new(
+            io::ErrorKind::Unsupported,
+            "Not implemented",
+        )))
     }
 
-    fn does_file_exist(&self, path: &str) -> bool {
-        self.loc_stor.does_file_exist(path)
+    async fn does_file_exist(&self, path: &str) -> bool {
+        self.loc_stor.does_file_exist(path).await
     }
 
-    fn delete(&self, path: &str) -> Result<(), Box<dyn std::error::Error>> {
-        self.loc_stor.delete(path)
+    async fn delete(&self, path: &str) -> Result<(), Box<dyn std::error::Error>> {
+        self.loc_stor.delete(path);
+        Ok(())
     }
 }

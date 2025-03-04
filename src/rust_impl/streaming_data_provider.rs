@@ -1,4 +1,8 @@
-use std::collections::HashMap;
+use std::{
+    collections::HashMap,
+    ops::DerefMut,
+    sync::{Arc, Mutex},
+};
 use tokio::task::JoinSet;
 
 use crate::rust_impl::fs::{StorageBackend, StorageBackendType};
@@ -53,44 +57,84 @@ impl StreamingDataProvider {
         };
     }
 
-    pub fn on_start(&self) {
-        // fetch `pre_item_download_count`
-        let rt = tokio::runtime::Runtime::new().unwrap();
-        // let mut tasks = JoinSet::new();
-
+    pub fn on_start(&mut self) {
         // first we need to download offset array for all chunk indexes in parallel
         // and store them in `chunk_index_offset` map
-        for chunk_index in self.chunk_index_odd_epoch.iter() {}
+        let rt = tokio::runtime::Runtime::new().unwrap();
 
-        // for i in 0..self.pre_item_download_count {
-        //             let start = i as u64 * chunk_size;
-        //             let end = if i == num_threads - 1 {
-        //                 file_size - 1
-        //             } else {
-        //                 (start + chunk_size) - 1
-        //             };
-        //             let s3client = self.s3client.clone();
-        //             let bucket_name = bucket_name.to_string();
-        //             let key = key.to_string();
-        //             let file = Arc::clone(&file);
+        // get offset arrays for odd and even epochs
+        rt.block_on(self.get_chunk_index_offset(true)).unwrap();
+        rt.block_on(self.get_chunk_index_offset(false)).unwrap();
 
-        //             tasks.spawn(async move {
-        //                 let range_header = format!("bytes={}-{}", start, end);
-        //                 let response = s3client
-        //                     .get_object()
-        //                     .bucket(bucket_name)
-        //                     .key(key)
-        //                     .range(range_header)
-        //                     .send()
-        //                     .await?;
+        // fetch `pre_item_download_count`
+        rt.block_on(self.fetch_pre_items()).unwrap();
+    }
 
-        //                 let body = response.body.collect().await?;
-        //                 let mut file = file.lock().await;
-        //                 file.seek(std::io::SeekFrom::Start(start)).await?;
-        //                 file.write_all(&body.into_bytes()).await?;
-        //                 Ok::<(), Box<dyn std::error::Error + Send + Sync>>(())
-        //             });
-        //         }
+    pub async fn fetch_pre_items(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+        let mut tasks = JoinSet::new();
+
+        let curr_chunk_index = if self.epoch % 2 == 0 {
+            &self.chunk_index_odd_epoch
+        } else {
+            &self.chunk_index_even_epoch
+        };
+
+        let curr_sample_index = if self.epoch % 2 == 0 {
+            &self.sample_index_odd_epoch.clone()
+        } else {
+            &self.sample_index_even_epoch.clone()
+        };
+
+        for idx in 0..self.pre_item_download_count {
+            let chunk_index = curr_chunk_index[self.pointer_x];
+            let sample_index = curr_sample_index[self.pointer_x][self.pointer_y];
+
+            let byte_offset_start = self.chunk_index_offset[&chunk_index][sample_index];
+            let byte_offset_end = self.chunk_index_offset[&chunk_index][sample_index + 1];
+
+            let filename = self.chunks[chunk_index].get("filename").unwrap();
+
+            let storage_provider = self.storage_provider.clone();
+
+            let remote_dir = self.remote_dir.clone();
+            let current_epoch = self.epoch.clone();
+            let current_chunk_index = chunk_index.clone();
+            let current_sample_index = sample_index.clone();
+
+            tasks.spawn(async move {
+                let data = storage_provider
+                    .get_bytes_in_range(&remote_dir, byte_offset_start, byte_offset_end)
+                    .await;
+                // let data = self
+                //     .get_bytes_for_chunk_index_and_sample_index(chunk_index, sample_index)
+                //     .await;
+
+                if let Err(e) = data {
+                    panic!("failed to download data: {}", e);
+                }
+
+                let data = data.unwrap();
+
+                return (
+                    current_epoch,
+                    current_chunk_index,
+                    current_sample_index,
+                    data,
+                );
+            });
+
+            self.pointer_y = (self.pointer_y + 1) % curr_sample_index[self.pointer_x].len();
+            if self.pointer_y == 0 {
+                self.pointer_x += 1;
+            }
+        }
+
+        while let Some(result) = tasks.join_next().await {
+            let (epoch, chunk_index, sample_index, data) = result.unwrap();
+            self.index_to_bytes.insert(sample_index, data);
+        }
+
+        Ok(())
     }
 
     pub fn set_epoch(&mut self, epoch: usize) {
@@ -105,14 +149,6 @@ impl StreamingDataProvider {
     ) -> Result<(), Box<dyn std::error::Error>> {
         // set chunk_index and sample_index in {odd/even} depending on epoch.
         Ok(())
-    }
-
-    pub fn get_bytes_for_chunk_index_and_index(
-        &self,
-        chunk_index: usize,
-        sample_index: usize,
-    ) -> Result<(), Box<dyn std::error::Error>> {
-        panic!("Not implemented");
     }
 
     pub async fn get_chunk_index_offset(
@@ -141,11 +177,13 @@ impl StreamingDataProvider {
 
             tasks.spawn(async move {
                 let range_start = 4; // first 4 bytes of chunk store number of samples in the chunk
-                let range_end = chunks[chunk_index]
+                let items_in_chunk = chunks[chunk_index]
                     .get("chunk_size")
                     .unwrap()
                     .parse::<u32>()
                     .unwrap();
+
+                let range_end = (1 + items_in_chunk) * 4;
 
                 let offset_array_bytes = match storage_provider {
                     StorageBackendType::Local(ref local_storage) => {
@@ -158,8 +196,10 @@ impl StreamingDataProvider {
                             .get_bytes_in_range(&remote_dir, range_start, range_end)
                             .await
                     }
-                    _ => {
-                        panic!("Not implemented");
+                    StorageBackendType::S3(ref s3_storage) => {
+                        s3_storage
+                            .get_bytes_in_range(&remote_dir, range_start, range_end)
+                            .await
                     }
                 };
                 if let Err(e) = offset_array_bytes {
@@ -194,4 +234,19 @@ impl StreamingDataProvider {
     }
 
     pub fn get_chunk_index_offset_array(&self, chunk_index: u32) {}
+
+    pub async fn get_bytes_for_chunk_index_and_sample_index(
+        &self,
+        chunk_index: usize,
+        sample_index: usize,
+    ) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+        let byte_offset_start = self.chunk_index_offset[&chunk_index][sample_index];
+        let byte_offset_end = self.chunk_index_offset[&chunk_index][sample_index + 1];
+
+        let filename = self.chunks[chunk_index].get("filename").unwrap();
+
+        self.storage_provider
+            .get_bytes_in_range(&self.remote_dir, byte_offset_start, byte_offset_end)
+            .await
+    }
 }
