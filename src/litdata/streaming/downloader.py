@@ -255,6 +255,10 @@ def register_downloader(prefix: str, downloader_cls: type[Downloader], overwrite
     _DOWNLOADERS[prefix] = downloader_cls
 
 
+def unregister_downloader(prefix: str) -> None:
+    del _DOWNLOADERS[prefix]
+
+
 def get_downloader(
     remote_dir: str, cache_dir: str, chunks: List[Dict[str, Any]], storage_options: Optional[Dict] = {}
 ) -> Downloader:
