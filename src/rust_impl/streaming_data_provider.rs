@@ -2,14 +2,10 @@ use pyo3::prelude::*;
 use std::collections::HashMap;
 use tokio::task::JoinSet;
 
-use crate::rust_impl::fs::{StorageBackend, StorageBackendType};
+use crate::rust_impl::fs::StorageBackendType;
 
 use super::utils::get_storage_backend;
 
-/// StreamingDataProvider
-///     -> on start, download x upcoming items in advance
-///     -> get_next_k_item() => get next k upcomig items
-///
 #[pyclass]
 pub struct StreamingDataProvider {
     // downloading_epoch is the epoch of the items being downloaded
@@ -70,7 +66,7 @@ impl StreamingDataProvider {
             let byte_offset_start = self.chunk_index_offset[&chunk_index][sample_index as usize];
             let byte_offset_end = self.chunk_index_offset[&chunk_index][sample_index as usize + 1];
 
-            let filename = self.chunks[chunk_index as usize].get("filename").unwrap();
+            let filename = self.chunks[chunk_index as usize].get("filename").unwrap().clone();
 
             let storage_provider = self.storage_provider.clone();
 
@@ -81,7 +77,7 @@ impl StreamingDataProvider {
 
             tasks.spawn(async move {
                 let data = storage_provider
-                    .get_bytes_in_range(&remote_dir, byte_offset_start, byte_offset_end)
+                    .get_bytes_in_range(&filename, byte_offset_start, byte_offset_end)
                     .await;
 
                 if let Err(e) = data {
@@ -126,6 +122,7 @@ impl StreamingDataProvider {
             let storage_provider = self.storage_provider.clone();
             let remote_dir = self.remote_dir.clone();
             let chunks = self.chunks.clone();
+            let filename = self.chunks[chunk_index as usize].get("filename").unwrap().clone();
 
             tasks.spawn(async move {
                 let range_start = 4; // first 4 bytes of chunk store number of samples in the chunk
@@ -137,23 +134,9 @@ impl StreamingDataProvider {
 
                 let range_end = (1 + items_in_chunk) * 4;
 
-                let offset_array_bytes = match storage_provider {
-                    StorageBackendType::Local(ref local_storage) => {
-                        local_storage
-                            .get_bytes_in_range(&remote_dir, range_start, range_end)
-                            .await
-                    }
-                    StorageBackendType::LocalWithCache(ref local_with_cache) => {
-                        local_with_cache
-                            .get_bytes_in_range(&remote_dir, range_start, range_end)
-                            .await
-                    }
-                    StorageBackendType::S3(ref s3_storage) => {
-                        s3_storage
-                            .get_bytes_in_range(&remote_dir, range_start, range_end)
-                            .await
-                    }
-                };
+                let offset_array_bytes = storage_provider
+                    .get_bytes_in_range(&filename, range_start, range_end)
+                    .await;
                 if let Err(e) = offset_array_bytes {
                     panic!("failed to download offset array: {}", e);
                 }
@@ -211,7 +194,7 @@ impl StreamingDataProvider {
         let filename = self.chunks[chunk_index as usize].get("filename").unwrap();
 
         self.storage_provider
-            .get_bytes_in_range(&self.remote_dir, byte_offset_start, byte_offset_end)
+            .get_bytes_in_range(filename, byte_offset_start, byte_offset_end)
             .await
     }
 }
@@ -223,10 +206,6 @@ impl StreamingDataProvider {
         epoch: u32,
         remote_dir: String,
         chunks: Vec<HashMap<String, String>>,
-        chunk_index_odd_epoch: Vec<u32>,
-        chunk_index_even_epoch: Vec<u32>,
-        sample_index_odd_epoch: Vec<Vec<u32>>,
-        sample_index_even_epoch: Vec<Vec<u32>>,
         on_start_pre_item_download_count: u32,
         get_next_k_item_count: u32,
     ) -> Self {
@@ -235,10 +214,10 @@ impl StreamingDataProvider {
             streaming_epoch: epoch,
             remote_dir: String::from(&remote_dir),
             chunks: chunks,
-            chunk_index_odd_epoch: chunk_index_odd_epoch,
-            chunk_index_even_epoch: chunk_index_even_epoch,
-            sample_index_odd_epoch: sample_index_odd_epoch,
-            sample_index_even_epoch: sample_index_even_epoch,
+            chunk_index_odd_epoch: Vec::new(),
+            chunk_index_even_epoch: Vec::new(),
+            sample_index_odd_epoch: Vec::new(),
+            sample_index_even_epoch: Vec::new(),
             chunk_index_offset: HashMap::new(),
             pointer_x: 0,
             pointer_y: 0,
@@ -280,7 +259,8 @@ impl StreamingDataProvider {
     pub fn get_next_k_item(&mut self) -> Vec<(u32, u32, u32, Vec<u8>)> {
         let rt = tokio::runtime::Runtime::new().unwrap();
 
-        let downloaded_items = rt.block_on(self.pre_fetch_items_on_start(self.get_next_k_item_count));
+        let downloaded_items =
+            rt.block_on(self.pre_fetch_items_on_start(self.get_next_k_item_count));
 
         if let Err(e) = downloaded_items {
             panic!("failed to download items on get_next_k_item: {}", e);

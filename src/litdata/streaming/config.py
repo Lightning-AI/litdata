@@ -15,6 +15,7 @@ import os
 from collections import defaultdict
 from typing import Any, Dict, List, Optional, Tuple
 
+from litdata._core import StreamingDataProvider
 from litdata.constants import _INDEX_FILENAME
 from litdata.streaming.compression import _COMPRESSORS, Compressor
 from litdata.streaming.downloader import get_downloader_cls
@@ -36,6 +37,8 @@ class ChunksConfig:
         region_of_interest: Optional[List[Tuple[int, int]]] = None,
         storage_options: Optional[Dict] = {},
         epoch: Optional[int] = None,
+        on_start_pre_item_download_count: int = 10,
+        get_next_k_item_count: int = 10,
     ) -> None:
         """Reads the index files associated a chunked dataset and enables to map an index to its chunk.
 
@@ -49,6 +52,8 @@ class ChunksConfig:
             region_of_interest: List of tuples of {start,end} of region of interest for each chunk.
             storage_options: Additional connection options for accessing storage services.
             epoch: The epoch number.
+            on_start_pre_item_download_count: The number of items to download on start.
+            get_next_k_item_count: The number of items to download on get_next_k_item.
         """
         self._cache_dir = cache_dir
         self._intervals: List[Interval] = []
@@ -64,7 +69,13 @@ class ChunksConfig:
         _original_chunks = data["chunks"]
         self._config = data["config"]
         self._validate_item_loader()
-        self.streaming_data_provider = None
+        self.streaming_data_provider = StreamingDataProvider(
+            epoch=self._epoch,
+            remote_dir=self._remote_dir,
+            chunks=_original_chunks,
+            on_start_pre_item_download_count=on_start_pre_item_download_count,
+            get_next_k_item_count=get_next_k_item_count,
+        )
         self.index_to_sample_data = {}  # dict containing the sample data for an index
 
         assert _original_chunks is not None
