@@ -447,6 +447,7 @@ class BinaryReader:
                 )
             item = self._config.index_to_sample_data[key]
             self.last_read_key = key
+            assert self._streaming_chunks_downloader is not None
             self._streaming_chunks_downloader.trigger_to_download_next_k_items()
         else:
             chunk_filepath, begin, filesize_bytes = self.config[index]
