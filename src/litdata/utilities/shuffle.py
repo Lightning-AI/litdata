@@ -71,18 +71,39 @@ def _associate_chunks_and_intervals_to_workers(
     batch_size: int = 1,
 ) -> Tuple[List[List[int]], List[Any]]:
     num_items = sum([(interval[2] - interval[1]) for interval in chunk_intervals])
-    world_size = distributed_env.world_size * num_workers
-    num_items_per_workers: List[int] = [
-        num_items // world_size + num_items % world_size
-        if rank == world_size - 1 and not drop_last
-        else num_items // world_size
-        for rank in range(world_size)
-    ]
-    if drop_last:
-        num_items_per_workers = [batch_size * int(item // batch_size) for item in num_items_per_workers]
+    max_batches = num_items // batch_size
+    global_num_workers = distributed_env.world_size * num_workers
 
-    chunks_per_workers: List[List[int]] = [[] for _ in range(world_size)]
-    intervals_per_workers: List[List[List[int]]] = [[] for _ in range(world_size)]
+    num_items_per_workers: Any = []
+
+    for rank in range(distributed_env.world_size):
+        tmp_arr = [0 for _ in range(num_workers)]
+
+        num_batches_per_rank = int(max_batches // distributed_env.world_size)
+        base_batches = num_batches_per_rank // num_workers
+        rem_batches = num_batches_per_rank % num_workers
+        tmp_arr = [base_batches + (1 if i < rem_batches else 0) for i in range(num_workers)]
+
+        if rank == distributed_env.world_size - 1:
+            # Find how batches were associated
+            num_assigned_items = batch_size * (sum(num_items_per_workers) + sum(tmp_arr))
+
+            # Multiply with the batch_size to get the number of items
+            if batch_size > 1:
+                tmp_arr = [x * batch_size for x in tmp_arr]
+                num_items_per_workers = [x * batch_size for x in num_items_per_workers]
+
+            # If there are items left to assign, let's give it the last worker
+            left_items = num_items - num_assigned_items
+            if not drop_last and left_items > 0:
+                tmp_arr[rem_batches % num_workers] += left_items
+
+            num_items_per_workers.extend(tmp_arr)
+        else:
+            num_items_per_workers.extend(tmp_arr)
+
+    chunks_per_workers: List[List[int]] = [[] for _ in range(global_num_workers)]
+    intervals_per_workers: List[List[List[int]]] = [[] for _ in range(global_num_workers)]
 
     # 4. Assign the chunk & intervals to each rank
     for chunk_index, chunk_interval in zip(indexes, chunk_intervals):
