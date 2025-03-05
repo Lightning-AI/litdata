@@ -196,7 +196,7 @@ impl StorageBackend for LocalStorageWithCache {
     }
 
     async fn delete(&self, path: &str) -> Result<(), Box<dyn std::error::Error>> {
-        self.loc_stor.delete(path);
+        self.loc_stor.delete(path).await?;
         Ok(())
     }
 }
