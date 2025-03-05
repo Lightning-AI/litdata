@@ -239,20 +239,28 @@ class LocalDownloaderWithCache(LocalDownloader):
         super().download_file(remote_filepath, local_filepath)
 
 
-_DOWNLOADERS = {
+_DOWNLOADERS: dict[str, type[Downloader]] = {
     "s3://": S3Downloader,
     "gs://": GCPDownloader,
     "azure://": AzureDownloader,
     "hf://": HFDownloader,
     "local:": LocalDownloaderWithCache,
-    "": LocalDownloader,
 }
 
 
-def get_downloader_cls(
+def register_downloader(prefix: str, downloader_cls: type[Downloader], overwrite=False) -> None:
+    if prefix in _DOWNLOADERS and not overwrite:
+        raise ValueError(f"Downloader with prefix {prefix} already registered.")
+
+    _DOWNLOADERS[prefix] = downloader_cls
+
+
+def get_downloader(
     remote_dir: str, cache_dir: str, chunks: List[Dict[str, Any]], storage_options: Optional[Dict] = {}
 ) -> Downloader:
     for k, cls in _DOWNLOADERS.items():
         if str(remote_dir).startswith(k):
             return cls(remote_dir, cache_dir, chunks, storage_options)
-    raise ValueError(f"The provided `remote_dir` {remote_dir} doesn't have a downloader associated.")
+    else:
+        # Default to LocalDownloader if no prefix is matched
+        return LocalDownloader(remote_dir, cache_dir, chunks, storage_options)
