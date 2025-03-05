@@ -21,10 +21,6 @@ class StreamingDataProvider:
         epoch: int,
         remote_dir: str,
         chunks: list[dict[str, str]],
-        chunk_index_odd_epoch: list[int],
-        chunk_index_even_epoch: list[int],
-        sample_index_odd_epoch: list[list[int]],
-        sample_index_even_epoch: list[list[int]],
         on_start_pre_item_download_count: int,
         get_next_k_item_count: int,
     ) -> None: ...

@@ -20,9 +20,10 @@ import numpy as np
 from torch.utils.data import IterableDataset
 
 from litdata import __version__
-from litdata.constants import _INDEX_FILENAME
+from litdata.constants import _INDEX_FILENAME, _USE_RUST_IMPLEMENTATION
 from litdata.helpers import _check_version_and_prompt_upgrade
 from litdata.streaming import Cache
+from litdata.streaming.config import ChunksConfig
 from litdata.streaming.downloader import get_downloader_cls  # noqa: F401
 from litdata.streaming.item_loader import BaseItemLoader, ParquetLoader
 from litdata.streaming.resolver import Dir, _resolve_dir
@@ -60,6 +61,8 @@ class StreamingDataset(IterableDataset):
         storage_options: Optional[Dict] = {},
         max_pre_download: int = 2,
         index_path: Optional[str] = None,
+        on_start_pre_item_download_count: int = 100,
+        get_next_k_item_count: int = 10,
     ) -> None:
         """The streaming dataset can be used once your data have been optimised using the DatasetOptimiser class.
 
@@ -83,7 +86,8 @@ class StreamingDataset(IterableDataset):
             index_path: Path to `index.json` for the Parquet dataset.
                 If `index_path` is a directory, the function will look for `index.json` within it.
                 If `index_path` is a full file path, it will use that directly.
-
+            on_start_pre_item_download_count: The number of items to download on start.
+            get_next_k_item_count: The number of items to download on get_next_k_item.
         """
         _check_version_and_prompt_upgrade(__version__)
 
@@ -166,6 +170,9 @@ class StreamingDataset(IterableDataset):
         self._encryption = encryption
         self.storage_options = storage_options
         self.max_pre_download = max_pre_download
+        self._config: Optional[ChunksConfig] = None
+        self.on_start_pre_item_download_count = on_start_pre_item_download_count
+        self.get_next_k_item_count = get_next_k_item_count
 
     def set_shuffle(self, shuffle: bool) -> None:
         self.shuffle = shuffle
@@ -183,8 +190,6 @@ class StreamingDataset(IterableDataset):
         # The StreamingDataloader would clean this out
         if self._state_dict is None:
             self.current_epoch = current_epoch
-            if self.cache is not None:
-                self.cache.set_epoch(current_epoch)
 
     def _create_cache(self, worker_env: _WorkerEnv) -> Cache:
         if _should_replace_path(self.input_dir.path):
@@ -207,8 +212,14 @@ class StreamingDataset(IterableDataset):
             storage_options=self.storage_options,
             max_pre_download=self.max_pre_download,
             epoch=self.current_epoch,
+            config=self._config,
+            on_start_pre_item_download_count=self.on_start_pre_item_download_count,
+            get_next_k_item_count=self.get_next_k_item_count,
         )
         cache._reader._try_load_config()
+
+        if self._config is None and _USE_RUST_IMPLEMENTATION:
+            self._config = cache._reader._config
 
         if not cache.filled:
             raise ValueError(
@@ -259,8 +270,6 @@ class StreamingDataset(IterableDataset):
             self._validate_state_dict()
             state: Dict[str, Any] = self._state_dict
             self.current_epoch = state["current_epoch"]
-            if self.cache is not None:
-                self.cache.set_epoch(self.current_epoch)
 
         workers_chunks, workers_intervals = self.shuffler.get_chunks_and_intervals_per_workers(
             self.distributed_env, self.worker_env.world_size, self.batch_size, self.current_epoch
@@ -269,8 +278,7 @@ class StreamingDataset(IterableDataset):
         worker_rank = self.distributed_env.global_rank * self.worker_env.world_size + self.worker_env.rank
         self.worker_chunks = workers_chunks[worker_rank]
         self.worker_intervals = workers_intervals[worker_rank]
-
-        if self.current_epoch == 1:
+        if self.current_epoch == 1 and _USE_RUST_IMPLEMENTATION:
             # for the first epoch, we need to send both: current & next chunks order
             self.cache._reader.config.streaming_data_provider.set_chunk(
                 self.current_epoch, workers_chunks[worker_rank], workers_intervals[worker_rank]
@@ -288,23 +296,30 @@ class StreamingDataset(IterableDataset):
             # print(f"{self.worker_intervals=}")
             # print(f"{sample_order=}")
 
-        next_workers_chunks, next_workers_intervals = self.shuffler.get_chunks_and_intervals_per_workers(
-            self.distributed_env, self.worker_env.world_size, self.batch_size, self.current_epoch + 1
-        )
-        self.next_worker_chunks = next_workers_chunks[worker_rank]
-        self.next_worker_intervals = next_workers_intervals[worker_rank]
-        self.cache._reader.config.streaming_data_provider.set_chunk(
-            self.current_epoch + 1, next_workers_chunks[worker_rank], next_workers_intervals[worker_rank]
-        )
-        sample_order = []
-        for chnk_index, interval in enumerate(self.next_worker_intervals):
-            interval = self.next_worker_intervals[chnk_index]
-            current_indexes = np.arange(interval[1], interval[2])
-            sample_order.append(
-                self.shuffler(current_indexes, len(self.next_worker_intervals), self.current_epoch + 1, int(chnk_index))
+        if _USE_RUST_IMPLEMENTATION:
+            next_workers_chunks, next_workers_intervals = self.shuffler.get_chunks_and_intervals_per_workers(
+                self.distributed_env, self.worker_env.world_size, self.batch_size, self.current_epoch + 1
             )
-        self.cache._reader.config.streaming_data_provider.set_sample_index(self.current_epoch + 1, sample_order)
-        # print("Next sample order: ", sample_order)
+            self.next_worker_chunks = next_workers_chunks[worker_rank]
+            self.next_worker_intervals = next_workers_intervals[worker_rank]
+            self.cache._reader.config.streaming_data_provider.set_chunk(
+                self.current_epoch + 1, next_workers_chunks[worker_rank], next_workers_intervals[worker_rank]
+            )
+            sample_order = []
+            for chnk_index, interval in enumerate(self.next_worker_intervals):
+                interval = self.next_worker_intervals[chnk_index]
+                current_indexes = np.arange(interval[1], interval[2])
+                sample_order.append(
+                    self.shuffler(
+                        current_indexes, len(self.next_worker_intervals), self.current_epoch + 1, int(chnk_index)
+                    )
+                )
+            self.cache._reader.config.streaming_data_provider.set_sample_index(self.current_epoch + 1, sample_order)
+            # print(f"Next worker chunks: {self.next_worker_chunks}")
+            # print(f"Next worker intervals: {self.next_worker_intervals}")
+            # print(f"Next sample order: {sample_order}")
+            # print("Next sample order: ", sample_order)
+        self.cache.set_epoch(self.current_epoch)
 
         # The max number of samples to return from `__next__` (in worker)
         self.stop_length = sum(interval[2] - interval[1] for interval in self.worker_intervals)
@@ -416,7 +431,6 @@ class StreamingDataset(IterableDataset):
         # Prevent to create more batch on a given process
         if self.global_index >= self.stop_length:
             self.current_epoch += 1
-            self.cache.set_epoch(self.current_epoch)
             self.reset_state_dict()
             raise StopIteration
 
@@ -424,7 +438,6 @@ class StreamingDataset(IterableDataset):
         if len(self.current_indexes) == 0:
             if self.chunk_index == self.num_chunks:
                 self.current_epoch += 1
-                self.cache.set_epoch(self.current_epoch)
                 self.reset_state_dict()
                 raise StopIteration
 

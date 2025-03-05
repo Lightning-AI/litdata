@@ -17,16 +17,16 @@ pub struct StreamingDataProvider {
     chunks: Vec<HashMap<String, String>>,
 
     chunk_index_odd_epoch: Vec<u32>, // contains the index of the chunks for the odd epochs (1, 3, 5, ...)
-    chunk_index_even_epoch: Vec<u32>, // contains the index of the chunks for the even epochs (0, 2, 4, ...)
+    chunk_index_even_epoch: Vec<u32>, // contains the index of the chunks for the even epochs (2, 4, ...)
     chunk_index_begin_odd_epoch: Vec<Vec<u32>>, // beginning index of the chunks for the odd epochs (1, 3, 5, ...)
-    chunk_index_begin_even_epoch: Vec<Vec<u32>>, // beginning index of the chunks for the even epochs (0, 2, 4, ...)
+    chunk_index_begin_even_epoch: Vec<Vec<u32>>, // beginning index of the chunks for the even epochs (2, 4, ...)
     sample_index_odd_epoch: Vec<Vec<u32>>, // contains the index of the samples for the odd epochs (1, 3, 5, ...)
-    sample_index_even_epoch: Vec<Vec<u32>>, // contains the index of the samples for the even epochs (0, 2, 4, ...)
+    sample_index_even_epoch: Vec<Vec<u32>>, // contains the index of the samples for the even epochs (2, 4, ...)
 
     chunk_index_offset: HashMap<u32, Vec<u32>>, // offset array for each chunk_index
 
-    pointer_x: usize, // current pointer (x) in sample_index
-    pointer_y: usize, // current pointer (y) in sample_index
+    pointer_x: usize, // current pointer (x)
+    pointer_y: usize, // current pointer (y)
 
     on_start_pre_item_download_count: u32, // how many items to download in advance on start
     get_next_k_item_count: u32, // how many items to download in advance on get_next_k_item
@@ -37,7 +37,7 @@ pub struct StreamingDataProvider {
 #[allow(dead_code)]
 #[allow(unused_variables)]
 impl StreamingDataProvider {
-    pub async fn pre_fetch_items_on_start(
+    pub async fn pre_fetch_items(
         &mut self,
         limit: u32,
     ) -> Result<Vec<(u32, u32, u32, Vec<u8>)>, Box<dyn std::error::Error>> {
@@ -69,8 +69,8 @@ impl StreamingDataProvider {
             };
 
             let chunk_index = curr_chunk_index[self.pointer_x];
-            let sample_index = curr_sample_index[self.pointer_x][self.pointer_y]
-                - curr_chunk_index_begin[self.pointer_x][0];
+            let original_sample_index = curr_sample_index[self.pointer_x][self.pointer_y];
+            let sample_index = original_sample_index - curr_chunk_index_begin[self.pointer_x][0];
 
             let byte_offset_start = self.chunk_index_offset[&chunk_index][sample_index as usize];
             let byte_offset_end = self.chunk_index_offset[&chunk_index][sample_index as usize + 1];
@@ -101,17 +101,15 @@ impl StreamingDataProvider {
                 return (
                     current_downloading_epoch,
                     current_chunk_index,
-                    current_sample_index,
+                    original_sample_index,
                     data,
                 );
             });
 
-            self.pointer_y = (self.pointer_y + 1) % (curr_sample_index[self.pointer_x].len());
+            self.pointer_y = (self.pointer_y + 1) % curr_sample_index[self.pointer_x].len();
             if self.pointer_y == 0 {
-                self.pointer_x += 1;
-
-                if self.pointer_x >= curr_chunk_index.len() {
-                    self.pointer_x = 0;
+                self.pointer_x = (self.pointer_x + 1) % curr_chunk_index.len();
+                if self.pointer_x == 0 {
                     self.downloading_epoch += 1;
                 }
             }
@@ -119,8 +117,8 @@ impl StreamingDataProvider {
 
         let mut downloaded_items = Vec::new();
         while let Some(result) = tasks.join_next().await {
-            let (epoch, chunk_index, sample_index, data) = result.unwrap();
-            downloaded_items.push((epoch, chunk_index, sample_index, data));
+            let (epoch, chunk_index, original_sample_index, data) = result.unwrap();
+            downloaded_items.push((epoch, chunk_index, original_sample_index, data));
         }
 
         Ok(downloaded_items)
@@ -147,7 +145,7 @@ impl StreamingDataProvider {
                     .parse::<u32>()
                     .unwrap();
 
-                let range_end = (1 + items_in_chunk) * 4;
+                let range_end = (1 + items_in_chunk + 1) * 4; // +1 as offset array starts from 0
 
                 let offset_array_bytes = storage_provider
                     .get_bytes_in_range(&filename, range_start, range_end)
@@ -258,7 +256,7 @@ impl StreamingDataProvider {
 
         // fetch `pre_item_download_count`
         let downloaded_items =
-            rt.block_on(self.pre_fetch_items_on_start(self.on_start_pre_item_download_count));
+            rt.block_on(self.pre_fetch_items(self.on_start_pre_item_download_count));
 
         if let Err(e) = downloaded_items {
             panic!("failed to download items on start: {}", e);
@@ -272,8 +270,7 @@ impl StreamingDataProvider {
     pub fn get_next_k_item(&mut self) -> Vec<(u32, u32, u32, Vec<u8>)> {
         let rt = tokio::runtime::Runtime::new().unwrap();
 
-        let downloaded_items =
-            rt.block_on(self.pre_fetch_items_on_start(self.get_next_k_item_count));
+        let downloaded_items = rt.block_on(self.pre_fetch_items(self.get_next_k_item_count));
 
         if let Err(e) = downloaded_items {
             panic!("failed to download items on get_next_k_item: {}", e);

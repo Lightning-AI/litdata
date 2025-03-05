@@ -30,7 +30,7 @@ impl StorageBackend for LocalStorage {
         let _url = format!("{}{}", self.remote_dir, filename); // remote_dir ends with "/"
 
         let mut file = File::open(_url)?; // Open file in binary mode
-        let mut buffer = vec![0; (_range_end - _range_start) as usize]; // Allocate buffer
+        let mut buffer: Vec<u8> = vec![0; (_range_end - _range_start) as usize]; // Allocate buffer
 
         file.seek(SeekFrom::Start(_range_start as u64))?; // Move to start position
         file.read_exact(&mut buffer)?; // Read exact bytes into buffer

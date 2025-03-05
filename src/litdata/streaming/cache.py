@@ -18,6 +18,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 from litdata.constants import (
     _INDEX_FILENAME,
 )
+from litdata.streaming.config import ChunksConfig
 from litdata.streaming.item_loader import BaseItemLoader, Interval
 from litdata.streaming.reader import BinaryReader
 from litdata.streaming.resolver import Dir, _resolve_dir
@@ -48,6 +49,9 @@ class Cache:
         storage_options: Optional[Dict] = {},
         max_pre_download: int = 2,
         epoch: Optional[int] = None,
+        config: Optional[ChunksConfig] = None,
+        on_start_pre_item_download_count: int = 100,
+        get_next_k_item_count: int = 10,
     ):
         """The Cache enables to optimise dataset format for cloud training. This is done by grouping several elements
         together in order to accelerate fetching.
@@ -67,7 +71,9 @@ class Cache:
             storage_options: Additional connection options for accessing storage services.
             max_pre_download: Maximum number of chunks that can be pre-downloaded while filling up the cache.
             epoch: The epoch number.
-
+            config: The config object (if provided, it will be used by reader)
+            on_start_pre_item_download_count: The number of items to download on start.
+            get_next_k_item_count: The number of items to download on get_next_k_item.
         """
         super().__init__()
         input_dir = _resolve_dir(input_dir)
@@ -96,6 +102,9 @@ class Cache:
             storage_options=storage_options,
             max_pre_download=max_pre_download,
             epoch=epoch,
+            config=config,
+            on_start_pre_item_download_count=on_start_pre_item_download_count,
+            get_next_k_item_count=get_next_k_item_count,
         )
         self._is_done = False
         self._distributed_env = _DistributedEnv.detect()

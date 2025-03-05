@@ -16,7 +16,7 @@ from collections import defaultdict
 from typing import Any, Dict, List, Optional, Tuple
 
 from litdata._core import StreamingDataProvider
-from litdata.constants import _INDEX_FILENAME
+from litdata.constants import _INDEX_FILENAME, _USE_RUST_IMPLEMENTATION
 from litdata.streaming.compression import _COMPRESSORS, Compressor
 from litdata.streaming.downloader import get_downloader_cls
 from litdata.streaming.item_loader import BaseItemLoader, Interval, PyTreeLoader, TokensLoader
@@ -73,14 +73,15 @@ class ChunksConfig:
         ]
         self._config = data["config"]
         self._validate_item_loader()
-        self.streaming_data_provider = StreamingDataProvider(
-            epoch=self._epoch,
-            remote_dir=self._remote_dir or "",
-            chunks=stringified_chunk_dict,
-            on_start_pre_item_download_count=on_start_pre_item_download_count,
-            get_next_k_item_count=get_next_k_item_count,
-        )
-        self.index_to_sample_data = {}  # dict containing the sample data for an index
+        if _USE_RUST_IMPLEMENTATION:
+            self.streaming_data_provider = StreamingDataProvider(
+                epoch=self._epoch or 1,
+                remote_dir=self._remote_dir or self._cache_dir,
+                chunks=stringified_chunk_dict,
+                on_start_pre_item_download_count=on_start_pre_item_download_count,
+                get_next_k_item_count=get_next_k_item_count,
+            )
+            self.index_to_sample_data: Dict[str, Any] = {}  # dict containing the sample data for an index
 
         assert _original_chunks is not None
 
@@ -130,7 +131,8 @@ class ChunksConfig:
 
     def set_epoch(self, epoch: int) -> None:
         self._epoch = epoch
-        self.streaming_data_provider.set_epoch(epoch)
+        if _USE_RUST_IMPLEMENTATION:
+            self.streaming_data_provider.set_epoch(epoch)
 
     @property
     def skip_chunk_indexes_deletion(self) -> Optional[List[int]]:
@@ -275,19 +277,20 @@ class ChunksConfig:
                 return chunk_index
         raise ValueError(f"The provided filename doesn't exist {chunk_filename}.")
 
-    def get_sample_data_from_bytes(self, epoch: int, index: ChunkedIndex, bytes: bytes) -> None:
+    def set_index_to_sample_data(self, epoch: int, chunk_index: int, sample_index: int, data: bytes) -> None:
         """Deserialize the bytes into a PyTree (actual data) and store it for future use."""
-        data = self._item_loader.deserialize(bytes)
+        data = self._item_loader.deserialize(data)
         # since data corresponding to the same index can be different across epochs, we need to store it
         # with the epoch number as well
-        key = self.get_key_from_index(epoch, index)
+        key = self.get_key_from_index(epoch, chunk_index, sample_index)
         self.index_to_sample_data[key] = data
+        # print(f"data set for {key}")
 
-    def get_key_from_index(self, epoch: int, index: ChunkedIndex) -> str:
+    def get_key_from_index(self, epoch: int, chunk_index: int, sample_index: int) -> str:
         """Get the key for the sample data from the index and epoch number."""
         # why not use self.epoch?
         # when trying to load sample data for upcoming epochs, self._epoch will be pointing to the current running epoch
-        return f"{epoch}_{index.chunk_index}_{index.index}"
+        return f"{epoch}_{chunk_index}_{sample_index}"
 
     @classmethod
     def load(
@@ -300,6 +303,8 @@ class ChunksConfig:
         region_of_interest: Optional[List[Tuple[int, int]]] = None,
         storage_options: Optional[dict] = {},
         epoch: Optional[int] = None,
+        on_start_pre_item_download_count: int = 100,
+        get_next_k_item_count: int = 10,
     ) -> Optional["ChunksConfig"]:
         cache_index_filepath = os.path.join(cache_dir, _INDEX_FILENAME)
 
@@ -327,6 +332,8 @@ class ChunksConfig:
             region_of_interest,
             storage_options,
             epoch,
+            on_start_pre_item_download_count,
+            get_next_k_item_count,
         )
 
     def __len__(self) -> int:

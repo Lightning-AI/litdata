@@ -14,6 +14,7 @@
 import contextlib
 import logging
 import os
+import time
 import warnings
 from contextlib import suppress
 from queue import Empty, Queue
@@ -22,7 +23,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 from filelock import FileLock, Timeout
 
-from litdata.constants import _DEBUG
+from litdata.constants import _DEBUG, _USE_RUST_IMPLEMENTATION
 from litdata.streaming.config import ChunksConfig, Interval
 from litdata.streaming.item_loader import BaseItemLoader, PyTreeLoader, TokensLoader
 from litdata.streaming.sampler import ChunkedIndex
@@ -57,6 +58,7 @@ class PrepareChunksThread(Thread):
         rank: Optional[int] = None,
     ) -> None:
         super().__init__(daemon=True)
+        print(f"using rust implementation (StreamingChunksDownloader): {_USE_RUST_IMPLEMENTATION}")
         self._config = config
         self._item_loader = item_loader
         self._max_pre_download = max_pre_download
@@ -237,6 +239,35 @@ class PrepareChunksThread(Thread):
                 self._maybe_delete_chunks()
 
 
+class StreamingChunksDownloader(Thread):
+    def __init__(self, config: ChunksConfig, start: bool = False) -> None:
+        super().__init__(daemon=True)
+        print(f"using rust implementation (StreamingChunksDownloader): {_USE_RUST_IMPLEMENTATION}")
+        self._config = config
+        self.download_next_k_items_queue: Queue = Queue()
+        if _USE_RUST_IMPLEMENTATION and start:
+            pre_downloaded_items = self._config.streaming_data_provider.on_start()
+            for item in pre_downloaded_items:
+                epoch, chunk_index, sample_index, data = item
+                self._config.set_index_to_sample_data(epoch, chunk_index, sample_index, bytes(data))
+
+    def trigger_to_download_next_k_items(self) -> None:
+        """Receive the list of the chunk indices to download for the current epoch."""
+        self.download_next_k_items_queue.put(True)
+
+    def run(self) -> None:
+        while True:
+            queue_item = self.download_next_k_items_queue.get()
+            if queue_item is None:
+                self._has_exited = True
+                return
+
+            k_items = self._config.streaming_data_provider.get_next_k_item()
+            for item in k_items:
+                epoch, chunk_index, sample_index, data = item
+                self._config.set_index_to_sample_data(epoch, chunk_index, sample_index, bytes(data))
+
+
 # The BinaryReader operates as the inverse of the data optimization process:
 # 1. Loads raw bytes from chunks based on specific indices
 # 2. Uses deserializers to convert bytes back into Python objects
@@ -257,6 +288,9 @@ class BinaryReader:
         storage_options: Optional[dict] = {},
         max_pre_download: int = 2,
         epoch: Optional[int] = None,
+        config: Optional[ChunksConfig] = None,
+        on_start_pre_item_download_count: int = 100,
+        get_next_k_item_count: int = 10,
     ) -> None:
         """The BinaryReader enables to read chunked dataset in an efficient way.
 
@@ -274,6 +308,9 @@ class BinaryReader:
             storage_options: Additional connection options for accessing storage services.
             max_pre_download: Maximum number of chunks that can be pre-downloaded by the reader.
             epoch: The epoch number.
+            config: The config object.
+            on_start_pre_item_download_count: The number of items to download on start.
+            get_next_k_item_count: The number of items to download on get_next_k_item.
         """
         super().__init__()
         warnings.filterwarnings("ignore", message=".*The given buffer is not writable.*")
@@ -292,7 +329,8 @@ class BinaryReader:
         self._serializers: Dict[str, Serializer] = _get_serializers(serializers)
         self._distributed_env = _DistributedEnv.detect()
         self._rank: Optional[int] = None
-        self._config: Optional[ChunksConfig] = None
+        self._config: Optional[ChunksConfig] = config
+        self._streaming_chunks_downloader: Optional[StreamingChunksDownloader] = None
         self._prepare_thread: Optional[PrepareChunksThread] = None
         self._item_loader = item_loader or PyTreeLoader()
         self._last_chunk_index: Optional[int] = None
@@ -300,6 +338,10 @@ class BinaryReader:
         self._storage_options = storage_options
         self._max_pre_download = max_pre_download
         self._epoch = epoch
+        self.should_start_streaming_chunks_downloader = config is None
+        self.last_read_key: Optional[str] = None
+        self.on_start_pre_item_download_count = on_start_pre_item_download_count
+        self.get_next_k_item_count = get_next_k_item_count
 
     def _get_chunk_index_from_index(self, index: int) -> Tuple[int, int]:
         # Load the config containing the index
@@ -310,16 +352,19 @@ class BinaryReader:
 
     def _try_load_config(self) -> Optional[ChunksConfig]:
         """Try to load the chunks config if the index files are available."""
-        self._config = ChunksConfig.load(
-            self._cache_dir,
-            self._serializers,
-            self._remote_input_dir,
-            self._item_loader,
-            self.subsampled_files,
-            self.region_of_interest,
-            self._storage_options,
-            self._epoch,
-        )
+        if self._config is None:
+            self._config = ChunksConfig.load(
+                self._cache_dir,
+                self._serializers,
+                self._remote_input_dir,
+                self._item_loader,
+                self.subsampled_files,
+                self.region_of_interest,
+                self._storage_options,
+                self._epoch,
+                self.on_start_pre_item_download_count,
+                self.get_next_k_item_count,
+            )
         return self._config
 
     @property
@@ -344,6 +389,8 @@ class BinaryReader:
         Prefetching should reduce the wait time to be the batch available.
 
         """
+        assert self._config is not None
+
         if not isinstance(index, ChunkedIndex):
             raise ValueError("The Reader.read(...) method expects a chunked Index.")
 
@@ -351,7 +398,7 @@ class BinaryReader:
         if self._config is None and self._try_load_config() is None:
             raise Exception("The reader index isn't defined.")
 
-        if self._config and (self._config._remote_dir or self._config._compressor):
+        if self._config and (self._config._remote_dir or self._config._compressor) and not _USE_RUST_IMPLEMENTATION:
             # Create and start the prepare chunks thread
             if self._prepare_thread is None and self._config:
                 self._prepare_thread = PrepareChunksThread(
@@ -375,46 +422,75 @@ class BinaryReader:
 
             if self._last_chunk_index is None:
                 self._last_chunk_index = index.chunk_index
+        if _USE_RUST_IMPLEMENTATION and self._streaming_chunks_downloader is None:
+            self._streaming_chunks_downloader = StreamingChunksDownloader(
+                self._config, start=self.should_start_streaming_chunks_downloader
+            )
+            self._streaming_chunks_downloader.start()
 
         # Fetch the element
-        chunk_filepath, begin, filesize_bytes = self.config[index]
-
-        if isinstance(self._item_loader, PyTreeLoader):
-            item = self._item_loader.load_item_from_chunk(
-                index.index, index.chunk_index, chunk_filepath, begin, filesize_bytes, self._encryption
-            )
+        if _USE_RUST_IMPLEMENTATION:
+            with contextlib.suppress(Exception):
+                assert self.last_read_key is not None  # even if it fails, contexlib will suppress the exception
+                del self._config.index_to_sample_data[self.last_read_key]
+            key = self._config.get_key_from_index(self._epoch or 1, index.chunk_index, index.index)
+            limit = 100  # wait for 100*0.1 = 10 seconds before raising an error
+            while limit > 0:
+                if key in self._config.index_to_sample_data:
+                    break
+                limit -= 1
+                time.sleep(0.1)
+            if limit == 0:
+                raise Exception(
+                    f"The item with key: {key} is not available.",
+                    f"Current stored items: {self._config.index_to_sample_data.keys()}",
+                )
+            item = self._config.index_to_sample_data[key]
+            self.last_read_key = key
+            self._streaming_chunks_downloader.trigger_to_download_next_k_items()
         else:
-            item = self._item_loader.load_item_from_chunk(
-                index.index, index.chunk_index, chunk_filepath, begin, filesize_bytes
-            )
+            chunk_filepath, begin, filesize_bytes = self.config[index]
 
-        # We need to request deletion after the latest element has been loaded.
-        # Otherwise, this could trigger segmentation fault error depending on the item loader used.
-        if (
-            self._config
-            and (self._config._remote_dir or self._config._compressor)
-            and index.chunk_index != self._last_chunk_index
-        ):
-            assert self._prepare_thread
-            assert self._last_chunk_index is not None
+            if isinstance(self._item_loader, PyTreeLoader):
+                item = self._item_loader.load_item_from_chunk(
+                    index.index, index.chunk_index, chunk_filepath, begin, filesize_bytes, self._encryption
+                )
+            else:
+                item = self._item_loader.load_item_from_chunk(
+                    index.index, index.chunk_index, chunk_filepath, begin, filesize_bytes
+                )
 
-            # inform the chunk has been completely consumed
-            self._prepare_thread._decrement_local_lock(self._last_chunk_index)
-            self._prepare_thread.delete([self._last_chunk_index])
+            # We need to request deletion after the latest element has been loaded.
+            # Otherwise, this could trigger segmentation fault error depending on the item loader used.
+            if (
+                self._config
+                and (self._config._remote_dir or self._config._compressor)
+                and index.chunk_index != self._last_chunk_index
+            ):
+                assert self._prepare_thread
+                assert self._last_chunk_index is not None
 
-        if index.chunk_index != self._last_chunk_index:
-            # Close the memory-mapped file for the last chunk index
-            if isinstance(self._item_loader, TokensLoader) and self._last_chunk_index is not None:
-                self._item_loader.close(self._last_chunk_index)
+                # inform the chunk has been completely consumed
+                self._prepare_thread._decrement_local_lock(self._last_chunk_index)
+                self._prepare_thread.delete([self._last_chunk_index])
 
-            # track the new chunk index as the latest one
-            self._last_chunk_index = index.chunk_index
+            if index.chunk_index != self._last_chunk_index:
+                # Close the memory-mapped file for the last chunk index
+                if isinstance(self._item_loader, TokensLoader) and self._last_chunk_index is not None:
+                    self._item_loader.close(self._last_chunk_index)
 
-        if index.is_last_index and self._prepare_thread:
+                # track the new chunk index as the latest one
+                self._last_chunk_index = index.chunk_index
+
+            if index.is_last_index and self._prepare_thread:
+                # inform the thread it is time to stop
+                self._prepare_thread._decrement_local_lock(index.chunk_index)
+                self._prepare_thread.stop()
+                self._prepare_thread = None
+        if index.is_last_index and self._streaming_chunks_downloader:
             # inform the thread it is time to stop
-            self._prepare_thread._decrement_local_lock(index.chunk_index)
-            self._prepare_thread.stop()
-            self._prepare_thread = None
+            self._streaming_chunks_downloader.stop()
+            self._streaming_chunks_downloader = None
 
         return item
 
