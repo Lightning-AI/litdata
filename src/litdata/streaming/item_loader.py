@@ -122,7 +122,6 @@ class PyTreeLoader(BaseItemLoader):
         self._decrypted_chunks: Dict[int, bytes] = {}
         self._mmaps: Dict[int, np.memmap] = {}
         self._buffers: Dict[int, bytes] = {}
-        self._counter = defaultdict(int)
 
     def generate_intervals(self) -> List[Interval]:
         intervals = []
@@ -216,10 +215,9 @@ class PyTreeLoader(BaseItemLoader):
 
     def _load_chunk(self, chunk_index: int, chunk_filepath: str) -> None:
         """Memory-map the chunk file if not already done."""
-        self._counter[chunk_index] += 1
         if chunk_index in self._mmaps:
             return
-        mmap = np.memmap(chunk_filepath, mode="r", order="C")
+        mmap = np.memmap(chunk_filepath, mode="r")
         self._mmaps[chunk_index] = mmap
         self._buffers[chunk_index] = memoryview(mmap)  # type: ignore
 
@@ -323,14 +321,11 @@ class PyTreeLoader(BaseItemLoader):
         """Release the memory-mapped file for a specific chunk index."""
         if not _USE_MMAP:
             return
-        self._counter[chunk_index] -= 1
-
-        if self._counter[chunk_index] == 0:
-            if chunk_index in self._buffers:
-                del self._buffers[chunk_index]
-            if chunk_index in self._mmaps:
-                self._mmaps[chunk_index]._mmap.close()
-                del self._mmaps[chunk_index]
+        if chunk_index in self._buffers:
+            del self._buffers[chunk_index]
+        if chunk_index in self._mmaps:
+            self._mmaps[chunk_index]._mmap.close()
+            del self._mmaps[chunk_index]
 
     def _validate_encryption(self, encryption: Optional[Encryption]) -> None:
         """Validate the encryption object."""
