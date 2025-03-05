@@ -14,5 +14,6 @@ fn hello_from_bin() -> String {
 fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(hello_from_bin, m)?)?;
     // m.add_class::<rust_impl::fs::s3::S3Storage>()?;
+    m.add_class::<rust_impl::streaming_data_provider::StreamingDataProvider>()?;
     Ok(())
 }

@@ -47,6 +47,7 @@ class Cache:
         writer_chunk_index: Optional[int] = None,
         storage_options: Optional[Dict] = {},
         max_pre_download: int = 2,
+        epoch: Optional[int] = None,
     ):
         """The Cache enables to optimise dataset format for cloud training. This is done by grouping several elements
         together in order to accelerate fetching.
@@ -65,6 +66,7 @@ class Cache:
             writer_chunk_index: The index of the chunk to start from when writing.
             storage_options: Additional connection options for accessing storage services.
             max_pre_download: Maximum number of chunks that can be pre-downloaded while filling up the cache.
+            epoch: The epoch number.
 
         """
         super().__init__()
@@ -93,6 +95,7 @@ class Cache:
             serializers=serializers,
             storage_options=storage_options,
             max_pre_download=max_pre_download,
+            epoch=epoch,
         )
         self._is_done = False
         self._distributed_env = _DistributedEnv.detect()
@@ -168,3 +171,8 @@ class Cache:
     def save_checkpoint(self, checkpoint_dir: str = ".checkpoints") -> Optional[str]:
         """Save the current state of the writer to a checkpoint."""
         return self._writer.save_checkpoint(checkpoint_dir=checkpoint_dir)
+
+    def set_epoch(self, epoch: int) -> None:
+        """Set the epoch number."""
+        self._epoch = epoch
+        self._reader.set_epoch(epoch)

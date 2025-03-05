@@ -35,6 +35,7 @@ class ChunksConfig:
         subsampled_files: Optional[List[str]] = None,
         region_of_interest: Optional[List[Tuple[int, int]]] = None,
         storage_options: Optional[Dict] = {},
+        epoch: Optional[int] = None,
     ) -> None:
         """Reads the index files associated a chunked dataset and enables to map an index to its chunk.
 
@@ -47,7 +48,7 @@ class ChunksConfig:
             subsampled_files: List of subsampled chunk files loaded from `input_dir/index.json` file.
             region_of_interest: List of tuples of {start,end} of region of interest for each chunk.
             storage_options: Additional connection options for accessing storage services.
-
+            epoch: The epoch number.
         """
         self._cache_dir = cache_dir
         self._intervals: List[Interval] = []
@@ -56,12 +57,15 @@ class ChunksConfig:
         self._remote_dir = remote_dir
         self._item_loader = item_loader or PyTreeLoader()
         self._storage_options = storage_options
+        self._epoch = epoch
 
         # load data from `index.json` file
         data = load_index_file(self._cache_dir)
         _original_chunks = data["chunks"]
         self._config = data["config"]
         self._validate_item_loader()
+        self.streaming_data_provider = None
+        self.index_to_sample_data = {}  # dict containing the sample data for an index
 
         assert _original_chunks is not None
 
@@ -108,6 +112,9 @@ class ChunksConfig:
         if self._skip_chunk_indexes_deletion is None:
             return True
         return chunk_index not in self._skip_chunk_indexes_deletion
+
+    def set_epoch(self, epoch: int) -> None:
+        self._epoch = epoch
 
     @property
     def skip_chunk_indexes_deletion(self) -> Optional[List[int]]:
@@ -252,6 +259,20 @@ class ChunksConfig:
                 return chunk_index
         raise ValueError(f"The provided filename doesn't exist {chunk_filename}.")
 
+    def get_sample_data_from_bytes(self, epoch: int, index: ChunkedIndex, bytes: bytes) -> None:
+        """Deserialize the bytes into a PyTree (actual data) and store it for future use."""
+        data = self._item_loader.deserialize(bytes)
+        # since data corresponding to the same index can be different across epochs, we need to store it
+        # with the epoch number as well
+        key = self.get_key_from_index(epoch, index)
+        self.index_to_sample_data[key] = data
+
+    def get_key_from_index(self, epoch: int, index: ChunkedIndex) -> str:
+        """Get the key for the sample data from the index and epoch number."""
+        # why not use self.epoch?
+        # when trying to load sample data for upcoming epochs, self._epoch will be pointing to the current running epoch
+        return f"{epoch}_{index.chunk_index}_{index.index}"
+
     @classmethod
     def load(
         cls,
@@ -262,6 +283,7 @@ class ChunksConfig:
         subsampled_files: Optional[List[str]] = None,
         region_of_interest: Optional[List[Tuple[int, int]]] = None,
         storage_options: Optional[dict] = {},
+        epoch: Optional[int] = None,
     ) -> Optional["ChunksConfig"]:
         cache_index_filepath = os.path.join(cache_dir, _INDEX_FILENAME)
 
@@ -281,7 +303,14 @@ class ChunksConfig:
             return None
 
         return ChunksConfig(
-            cache_dir, serializers, remote_dir, item_loader, subsampled_files, region_of_interest, storage_options
+            cache_dir,
+            serializers,
+            remote_dir,
+            item_loader,
+            subsampled_files,
+            region_of_interest,
+            storage_options,
+            epoch,
         )
 
     def __len__(self) -> int:

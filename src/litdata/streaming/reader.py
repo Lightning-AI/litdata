@@ -256,6 +256,7 @@ class BinaryReader:
         serializers: Optional[Dict[str, Serializer]] = None,
         storage_options: Optional[dict] = {},
         max_pre_download: int = 2,
+        epoch: Optional[int] = None,
     ) -> None:
         """The BinaryReader enables to read chunked dataset in an efficient way.
 
@@ -272,7 +273,7 @@ class BinaryReader:
             serializers: Provide your own serializers.
             storage_options: Additional connection options for accessing storage services.
             max_pre_download: Maximum number of chunks that can be pre-downloaded by the reader.
-
+            epoch: The epoch number.
         """
         super().__init__()
         warnings.filterwarnings("ignore", message=".*The given buffer is not writable.*")
@@ -298,6 +299,7 @@ class BinaryReader:
         self._max_cache_size = int(os.getenv("MAX_CACHE_SIZE", max_cache_size or 0))
         self._storage_options = storage_options
         self._max_pre_download = max_pre_download
+        self._epoch = epoch
 
     def _get_chunk_index_from_index(self, index: int) -> Tuple[int, int]:
         # Load the config containing the index
@@ -316,6 +318,7 @@ class BinaryReader:
             self.subsampled_files,
             self.region_of_interest,
             self._storage_options,
+            self._epoch,
         )
         return self._config
 
@@ -428,6 +431,12 @@ class BinaryReader:
             raise Exception("The reader index isn't defined.")
 
         return self.config.intervals
+
+    def set_epoch(self, epoch: int) -> None:
+        """Set the epoch number."""
+        self._epoch = epoch
+        if self._config:
+            self._config.set_epoch(epoch)
 
     def __getstate__(self) -> Dict[str, Any]:
         state = self.__dict__.copy()

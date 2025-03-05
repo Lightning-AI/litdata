@@ -183,6 +183,8 @@ class StreamingDataset(IterableDataset):
         # The StreamingDataloader would clean this out
         if self._state_dict is None:
             self.current_epoch = current_epoch
+            if self.cache is not None:
+                self.cache.set_epoch(current_epoch)
 
     def _create_cache(self, worker_env: _WorkerEnv) -> Cache:
         if _should_replace_path(self.input_dir.path):
@@ -204,6 +206,7 @@ class StreamingDataset(IterableDataset):
             encryption=self._encryption,
             storage_options=self.storage_options,
             max_pre_download=self.max_pre_download,
+            epoch=self.current_epoch,
         )
         cache._reader._try_load_config()
 
@@ -256,6 +259,8 @@ class StreamingDataset(IterableDataset):
             self._validate_state_dict()
             state: Dict[str, Any] = self._state_dict
             self.current_epoch = state["current_epoch"]
+            if self.cache is not None:
+                self.cache.set_epoch(self.current_epoch)
 
         workers_chunks, workers_intervals = self.shuffler.get_chunks_and_intervals_per_workers(
             self.distributed_env, self.worker_env.world_size, self.batch_size, self.current_epoch
