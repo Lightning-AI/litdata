@@ -257,7 +257,7 @@ class DBFSDownloader(Downloader):
         from databricks.sdk import WorkspaceClient
         self._dbfs_client: Optional[WorkspaceClient] = None
 
-    def download_file(self, remote_filepath: str, local_filepath: str) -> None:
+    def download_file(self, remote_filepath: str, local_filepath: str, remote_chunk_filename: str = "") -> None:
         from databricks.sdk.core import DatabricksError
 
         if self._dbfs_client is None:
