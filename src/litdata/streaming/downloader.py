@@ -256,10 +256,12 @@ class DBFSDownloader(Downloader):
         )
 
         from databricks.sdk import WorkspaceClient
+
         self._dbfs_client = WorkspaceClient(**self._storage_options)
 
     def download_file(self, remote_filepath: str, local_filepath: str, remote_chunk_filename: str = "") -> None:
         from databricks.sdk.core import DatabricksError
+
         assert self._dbfs_client is not None
 
         obj = parse.urlparse(remote_filepath)
@@ -298,7 +300,6 @@ class DBFSDownloader(Downloader):
                 # Ensure cleanup of temp file if an error occurs
                 if os.path.exists(local_tmp):
                     os.remove(local_tmp)
-
 
 
 class LocalDownloaderWithCache(LocalDownloader):
