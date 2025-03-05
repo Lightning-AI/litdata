@@ -267,7 +267,7 @@ class DBFSDownloader(Downloader):
         file_path = parse.urlparse(remote_filepath)
         if file_path.scheme != "dbfs":
             raise ValueError(
-                f"Expected obj.scheme to be `dbfs`, instead, got {file_path.scheme} for remote={remote_filepath}"
+                f"Expected scheme to be `dbfs`, instead, got {file_path.scheme} for remote={remote_filepath}"
             )
 
         if os.path.exists(local_filepath):
@@ -279,10 +279,9 @@ class DBFSDownloader(Downloader):
         assert response is not None
 
         try:
-            with response:
-                with open(local_tmp, "wb") as f:
-                    for chunk in iter(lambda: response.read(1024 * 1024), b""):
-                        f.write(chunk)
+            with response, open(local_tmp, "wb") as f:
+                for chunk in iter(lambda: response.read(1024 * 1024), b""):
+                    f.write(chunk)
         except DatabricksError as e:
             if e.error_code == "PERMISSION_DENIED":
                 e.args = (
