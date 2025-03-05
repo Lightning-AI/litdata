@@ -256,14 +256,10 @@ class DBFSDownloader(Downloader):
         )
 
         from databricks.sdk import WorkspaceClient
-
-        self._dbfs_client: Optional[WorkspaceClient] = None
+        self._dbfs_client = WorkspaceClient(**self._storage_options)
 
     def download_file(self, remote_filepath: str, local_filepath: str, remote_chunk_filename: str = "") -> None:
         from databricks.sdk.core import DatabricksError
-
-        if self._dbfs_client is None:
-            self._create_dbfs_client()
         assert self._dbfs_client is not None
 
         obj = parse.urlparse(remote_filepath)
@@ -303,11 +299,6 @@ class DBFSDownloader(Downloader):
                 if os.path.exists(local_tmp):
                     os.remove(local_tmp)
 
-    def _create_dbfs_client(self) -> None:
-        """Create a Databricks File System client."""
-        from databricks.sdk import WorkspaceClient
-
-        self._dbfs_client = WorkspaceClient()
 
 
 class LocalDownloaderWithCache(LocalDownloader):
@@ -321,7 +312,7 @@ _DOWNLOADERS = {
     "gs://": GCPDownloader,
     "azure://": AzureDownloader,
     "hf://": HFDownloader,
-    "dbfs:": DBFSDownloader,
+    "dbfs:/": DBFSDownloader,
     "local:": LocalDownloaderWithCache,
     "": LocalDownloader,
 }
