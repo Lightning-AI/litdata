@@ -52,7 +52,7 @@ def _resolve_dir(dir_path: Optional[Union[str, Dir]]) -> Dir:
 
     assert isinstance(dir_path, str)
 
-    cloud_prefixes = ("s3://", "gs://", "azure://", "hf://")
+    cloud_prefixes = ("s3://", "gs://", "azure://", "hf://", "dbfs:/")
     if dir_path.startswith(cloud_prefixes):
         return Dir(path=None, url=dir_path)
 
