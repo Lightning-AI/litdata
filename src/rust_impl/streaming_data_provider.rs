@@ -18,6 +18,8 @@ pub struct StreamingDataProvider {
 
     chunk_index_odd_epoch: Vec<u32>, // contains the index of the chunks for the odd epochs (1, 3, 5, ...)
     chunk_index_even_epoch: Vec<u32>, // contains the index of the chunks for the even epochs (0, 2, 4, ...)
+    chunk_index_begin_odd_epoch: Vec<Vec<u32>>, // beginning index of the chunks for the odd epochs (1, 3, 5, ...)
+    chunk_index_begin_even_epoch: Vec<Vec<u32>>, // beginning index of the chunks for the even epochs (0, 2, 4, ...)
     sample_index_odd_epoch: Vec<Vec<u32>>, // contains the index of the samples for the odd epochs (1, 3, 5, ...)
     sample_index_even_epoch: Vec<Vec<u32>>, // contains the index of the samples for the even epochs (0, 2, 4, ...)
 
@@ -54,6 +56,12 @@ impl StreamingDataProvider {
                 &self.chunk_index_even_epoch
             };
 
+            let curr_chunk_index_begin = if self.downloading_epoch % 2 == 0 {
+                &self.chunk_index_begin_odd_epoch
+            } else {
+                &self.chunk_index_begin_even_epoch
+            };
+
             let curr_sample_index = if self.downloading_epoch % 2 == 0 {
                 &self.sample_index_odd_epoch
             } else {
@@ -61,12 +69,16 @@ impl StreamingDataProvider {
             };
 
             let chunk_index = curr_chunk_index[self.pointer_x];
-            let sample_index = curr_sample_index[self.pointer_x][self.pointer_y];
+            let sample_index = curr_sample_index[self.pointer_x][self.pointer_y]
+                - curr_chunk_index_begin[self.pointer_x][0];
 
             let byte_offset_start = self.chunk_index_offset[&chunk_index][sample_index as usize];
             let byte_offset_end = self.chunk_index_offset[&chunk_index][sample_index as usize + 1];
 
-            let filename = self.chunks[chunk_index as usize].get("filename").unwrap().clone();
+            let filename = self.chunks[chunk_index as usize]
+                .get("filename")
+                .unwrap()
+                .clone();
 
             let storage_provider = self.storage_provider.clone();
 
@@ -122,7 +134,10 @@ impl StreamingDataProvider {
             let storage_provider = self.storage_provider.clone();
             let remote_dir = self.remote_dir.clone();
             let chunks = self.chunks.clone();
-            let filename = self.chunks[chunk_index as usize].get("filename").unwrap().clone();
+            let filename = self.chunks[chunk_index as usize]
+                .get("filename")
+                .unwrap()
+                .clone();
 
             tasks.spawn(async move {
                 let range_start = 4; // first 4 bytes of chunk store number of samples in the chunk
@@ -209,13 +224,15 @@ impl StreamingDataProvider {
         on_start_pre_item_download_count: u32,
         get_next_k_item_count: u32,
     ) -> Self {
-        let mut provider = StreamingDataProvider {
+        StreamingDataProvider {
             downloading_epoch: epoch,
             streaming_epoch: epoch,
             remote_dir: String::from(&remote_dir),
             chunks: chunks,
             chunk_index_odd_epoch: Vec::new(),
             chunk_index_even_epoch: Vec::new(),
+            chunk_index_begin_odd_epoch: Vec::new(),
+            chunk_index_begin_even_epoch: Vec::new(),
             sample_index_odd_epoch: Vec::new(),
             sample_index_even_epoch: Vec::new(),
             chunk_index_offset: HashMap::new(),
@@ -224,11 +241,7 @@ impl StreamingDataProvider {
             on_start_pre_item_download_count: on_start_pre_item_download_count,
             get_next_k_item_count: get_next_k_item_count,
             storage_provider: get_storage_backend(&remote_dir),
-        };
-
-        provider.on_start();
-
-        provider
+        }
     }
 
     /// on_start
@@ -292,12 +305,26 @@ impl StreamingDataProvider {
         }
     }
 
-    pub fn set_chunk(&mut self, epoch: u32, chunk_index: Vec<u32>) {
+    pub fn set_chunk(
+        &mut self,
+        epoch: u32,
+        chunk_index: Vec<u32>,
+        chunk_index_begin: Vec<Vec<u32>>,
+    ) {
         // set chunk_index and sample_index in {odd/even} depending on epoch.
+        assert!(
+            chunk_index.len() == chunk_index_begin.len(),
+            "chunk_index and chunk_index_begin must have the same length. Found chunk_index.len() = {} and chunk_index_begin.len() = {}",
+            chunk_index.len(),
+            chunk_index_begin.len()
+        );
+
         if epoch % 2 == 0 {
             self.chunk_index_odd_epoch = chunk_index;
+            self.chunk_index_begin_odd_epoch = chunk_index_begin;
         } else {
             self.chunk_index_even_epoch = chunk_index;
+            self.chunk_index_begin_even_epoch = chunk_index_begin;
         }
     }
 

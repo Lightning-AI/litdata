@@ -37,7 +37,7 @@ class ChunksConfig:
         region_of_interest: Optional[List[Tuple[int, int]]] = None,
         storage_options: Optional[Dict] = {},
         epoch: Optional[int] = None,
-        on_start_pre_item_download_count: int = 10,
+        on_start_pre_item_download_count: int = 100,
         get_next_k_item_count: int = 10,
     ) -> None:
         """Reads the index files associated a chunked dataset and enables to map an index to its chunk.
@@ -67,12 +67,16 @@ class ChunksConfig:
         # load data from `index.json` file
         data = load_index_file(self._cache_dir)
         _original_chunks = data["chunks"]
+        # Convert all values to strings
+        stringified_chunk_dict = [
+            {key: str(value) for key, value in chnk_dict.items()} for chnk_dict in _original_chunks
+        ]
         self._config = data["config"]
         self._validate_item_loader()
         self.streaming_data_provider = StreamingDataProvider(
             epoch=self._epoch,
-            remote_dir=self._remote_dir,
-            chunks=_original_chunks,
+            remote_dir=self._remote_dir or "",
+            chunks=stringified_chunk_dict,
             on_start_pre_item_download_count=on_start_pre_item_download_count,
             get_next_k_item_count=get_next_k_item_count,
         )
@@ -126,6 +130,7 @@ class ChunksConfig:
 
     def set_epoch(self, epoch: int) -> None:
         self._epoch = epoch
+        self.streaming_data_provider.set_epoch(epoch)
 
     @property
     def skip_chunk_indexes_deletion(self) -> Optional[List[int]]:
