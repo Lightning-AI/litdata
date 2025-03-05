@@ -199,7 +199,7 @@ class PyTreeLoader(BaseItemLoader):
         if self._config.get("encryption"):
             data = self._load_encrypted_data(chunk_filepath, chunk_index, offset, encryption)
 
-        elif _USE_MMAP:  # TOOD: find better way to handle this
+        elif _USE_MMAP:  # TODO: find better way to handle this
             # Instead of opening the file every time, memory-map it (if not already mapped)
             self._load_chunk(chunk_index, chunk_filepath)
             buffer = self._buffers[chunk_index]
