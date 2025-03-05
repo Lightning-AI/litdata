@@ -30,6 +30,7 @@ from litdata.constants import (
     _NUMPY_DTYPES_MAPPING,
     _POLARS_AVAILABLE,
     _TORCH_DTYPES_MAPPING,
+    _USE_MMAP,
 )
 from litdata.streaming.serializers import Serializer
 from litdata.utilities._pytree import PyTree, tree_unflatten
@@ -197,14 +198,16 @@ class PyTreeLoader(BaseItemLoader):
 
         if self._config.get("encryption"):
             data = self._load_encrypted_data(chunk_filepath, chunk_index, offset, encryption)
-        else:
-            # load the data from raw bytes using the offset for the item we want to load
-            # with open(chunk_filepath, "rb", 0) as fp:
-            #     data = self._load_data(fp, offset)
+
+        elif _USE_MMAP:  # TOOD: find better way to handle this
             # Instead of opening the file every time, memory-map it (if not already mapped)
             self._load_chunk(chunk_index, chunk_filepath)
             buffer = self._buffers[chunk_index]
             data = self._load_data_from_buffer(buffer, offset)
+        else:  # to keep both options for now
+            # load the data from raw bytes using the offset for the item we want to load
+            with open(chunk_filepath, "rb", 0) as fp:
+                data = self._load_data(fp, offset)
 
         # check for mosaic mds format
         if "format" in self._config and self._config["format"] == "mds":
@@ -213,6 +216,7 @@ class PyTreeLoader(BaseItemLoader):
 
     def _load_chunk(self, chunk_index: int, chunk_filepath: str) -> None:
         """Memory-map the chunk file if not already done."""
+        self._counter[chunk_index] += 1
         if chunk_index in self._mmaps:
             return
         mmap = np.memmap(chunk_filepath, mode="r", order="C")
@@ -305,7 +309,28 @@ class PyTreeLoader(BaseItemLoader):
 
     def delete(self, chunk_index: int, chunk_filepath: str) -> None:
         if os.path.exists(chunk_filepath):
+            if _USE_MMAP:
+                if chunk_index in self._buffers:
+                    del self._buffers[chunk_index]
+                if chunk_index in self._mmaps:
+                    # explicitly close before deleting. Won't raise error if already closed.
+                    self._mmaps[chunk_index]._mmap.close()
+                    del self._mmaps[chunk_index]
+                    del self._counter[chunk_index]
             os.remove(chunk_filepath)
+
+    def close(self, chunk_index: int) -> None:
+        """Release the memory-mapped file for a specific chunk index."""
+        if not _USE_MMAP:
+            return
+        self._counter[chunk_index] -= 1
+
+        if self._counter[chunk_index] == 0:
+            if chunk_index in self._buffers:
+                del self._buffers[chunk_index]
+            if chunk_index in self._mmaps:
+                self._mmaps[chunk_index]._mmap.close()
+                del self._mmaps[chunk_index]
 
     def _validate_encryption(self, encryption: Optional[Encryption]) -> None:
         """Validate the encryption object."""
