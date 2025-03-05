@@ -233,6 +233,7 @@ class HFDownloader(Downloader):
                 if os.path.exists(temp_path):
                     os.remove(temp_path)
 
+
 class DBFSDownloader(Downloader):
     def __init__(
         self,
@@ -255,6 +256,7 @@ class DBFSDownloader(Downloader):
         )
 
         from databricks.sdk import WorkspaceClient
+
         self._dbfs_client: Optional[WorkspaceClient] = None
 
     def download_file(self, remote_filepath: str, local_filepath: str, remote_chunk_filename: str = "") -> None:
@@ -266,9 +268,7 @@ class DBFSDownloader(Downloader):
 
         obj = parse.urlparse(remote_filepath)
         if obj.scheme != "dbfs":
-            raise ValueError(
-                f"Expected scheme to be `dbfs`, instead, got {obj.scheme} for remote={remote_filepath}"
-            )
+            raise ValueError(f"Expected scheme to be `dbfs`, instead, got {obj.scheme} for remote={remote_filepath}")
 
         if os.path.exists(local_filepath):
             return
@@ -308,7 +308,6 @@ class DBFSDownloader(Downloader):
         from databricks.sdk import WorkspaceClient
 
         self._dbfs_client = WorkspaceClient()
-
 
 
 class LocalDownloaderWithCache(LocalDownloader):
