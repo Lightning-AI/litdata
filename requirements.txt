@@ -1,3 +1,4 @@
+maturin
 torch
 lightning-utilities
 filelock
