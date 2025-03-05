@@ -246,7 +246,7 @@ class DBFSDownloader(Downloader):
                 "Support for Downloading dbfs dataset depends on `databricks-sdk`.",
                 "Please, run: `pip install databricks-sdk",
             )
-        
+
         super().__init__(
             remote_dir=remote_dir,
             cache_dir=cache_dir,
@@ -264,36 +264,44 @@ class DBFSDownloader(Downloader):
             self._create_dbfs_client()
         assert self._dbfs_client is not None
 
-        file_path = parse.urlparse(remote_filepath)
-        if file_path.scheme != "dbfs":
+        obj = parse.urlparse(remote_filepath)
+        if obj.scheme != "dbfs":
             raise ValueError(
-                f"Expected scheme to be `dbfs`, instead, got {file_path.scheme} for remote={remote_filepath}"
+                f"Expected scheme to be `dbfs`, instead, got {obj.scheme} for remote={remote_filepath}"
             )
 
         if os.path.exists(local_filepath):
             return
 
-        local_tmp = local_filepath + ".tmp"
-        response = self._dbfs_client.files.download(file_path.path).contents
+        with suppress(Timeout), FileLock(
+            local_filepath + ".lock", timeout=3 if obj.path.endswith(_INDEX_FILENAME) else 0
+        ):
+            local_tmp = local_filepath + ".tmp"
+            response = self._dbfs_client.files.download(obj.path).contents
 
-        assert response is not None
+            assert response is not None
 
-        try:
-            with response, open(local_tmp, "wb") as f:
-                for chunk in iter(lambda: response.read(1024 * 1024), b""):
-                    f.write(chunk)
-        except DatabricksError as e:
-            if e.error_code == "PERMISSION_DENIED":
-                e.args = (
-                    "Ensure the file path or credentials are set correctly. For "
-                    + "Databricks Unity Catalog, file path must starts with `dbfs:/Volumes` "
-                    + "and for Databricks File System, file path must starts with `dbfs`. "
-                    + e.args[0],
-                )
-            raise e
-        except Exception as e:
-            raise e
-        os.rename(local_tmp, local_filepath)
+            try:
+                with response, open(local_tmp, "wb") as f:
+                    for chunk in iter(lambda: response.read(1024 * 1024), b""):
+                        f.write(chunk)
+
+                os.rename(local_tmp, local_filepath)
+            except DatabricksError as e:
+                if e.error_code == "PERMISSION_DENIED":
+                    e.args = (
+                        "Ensure the file path or credentials are set correctly. For "
+                        + "Databricks Unity Catalog, file path must starts with `dbfs:/Volumes` "
+                        + "and for Databricks File System, file path must starts with `dbfs`. "
+                        + e.args[0],
+                    )
+                raise e
+            except Exception as e:
+                raise e
+            finally:
+                # Ensure cleanup of temp file if an error occurs
+                if os.path.exists(local_tmp):
+                    os.remove(local_tmp)
 
     def _create_dbfs_client(self) -> None:
         """Create a Databricks File System client."""
