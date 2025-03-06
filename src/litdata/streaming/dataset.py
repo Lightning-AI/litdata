@@ -458,8 +458,7 @@ class StreamingDataset(IterableDataset):
 
     def _override_state_dict(self) -> None:
         logger.warning(
-            "Using state dict override, may lead to unexpected behavior if you're not "
-            "certain what you're doing."
+            "Using state dict override, may lead to unexpected behavior if you're not " "certain what you're doing."
         )
         assert self._state_dict
         assert self.worker_env
