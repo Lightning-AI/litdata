@@ -300,7 +300,7 @@ def map(
             start_method=start_method,
         )
 
-        with optimize_dns_context(optimize_dns if optimize_dns is not None else True):
+        with optimize_dns_context(optimize_dns if optimize_dns is not None else False):
             return data_processor.run(LambdaMapRecipe(fn, inputs))
     return _execute(
         f"litdata-map-{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}",
@@ -480,7 +480,7 @@ def optimize(
             start_method=start_method,
         )
 
-        with optimize_dns_context(optimize_dns if optimize_dns is not None else True):
+        with optimize_dns_context(optimize_dns if optimize_dns is not None else False):
             data_processor.run(
                 LambdaDataChunkRecipe(
                     fn,
