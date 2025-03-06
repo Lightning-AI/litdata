@@ -278,6 +278,7 @@ class StreamingChunksDownloader(Thread):
                 epoch, chunk_index, sample_index, data = item
             self._config.set_index_to_sample_data(epoch, chunk_index, sample_index, bytes(data))
 
+
 # The BinaryReader operates as the inverse of the data optimization process:
 # 1. Loads raw bytes from chunks based on specific indices
 # 2. Uses deserializers to convert bytes back into Python objects
@@ -549,7 +550,7 @@ def _get_folder_size(path: str, config: ChunksConfig) -> int:
         if filename in config.filename_to_size_map:
             with contextlib.suppress(FileNotFoundError):
                 size += config.filename_to_size_map[filename]
-        elif  ".bin" in filename: # for temporary files
+        elif ".bin" in filename:  # for temporary files
             with contextlib.suppress(FileNotFoundError):
                 size += os.path.getsize(filename)
         elif not filename.endswith((".cnt", ".lock", ".json", ".zstd.bin", ".tmp")):
