@@ -17,7 +17,7 @@ import shutil
 import subprocess
 from abc import ABC
 from contextlib import suppress
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Type
 from urllib import parse
 
 from filelock import FileLock, Timeout
@@ -239,7 +239,7 @@ class LocalDownloaderWithCache(LocalDownloader):
         super().download_file(remote_filepath, local_filepath)
 
 
-_DOWNLOADERS: dict[str, type[Downloader]] = {
+_DOWNLOADERS: Dict[str, Type[Downloader]] = {
     "s3://": S3Downloader,
     "gs://": GCPDownloader,
     "azure://": AzureDownloader,
@@ -248,7 +248,7 @@ _DOWNLOADERS: dict[str, type[Downloader]] = {
 }
 
 
-def register_downloader(prefix: str, downloader_cls: type[Downloader], overwrite=False) -> None:
+def register_downloader(prefix: str, downloader_cls: Type[Downloader], overwrite=False) -> None:
     """Register a new downloader class with a specific prefix.
 
     Args:
