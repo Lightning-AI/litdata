@@ -299,8 +299,6 @@ def map(
             start_method=start_method,
         )
 
-        print("HERE ", optimize_dns)
-
         with optimize_dns_context(optimize_dns if optimize_dns is not None else True):
             return data_processor.run(LambdaMapRecipe(fn, inputs))
     return _execute(
