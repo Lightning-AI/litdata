@@ -201,7 +201,6 @@ class StreamingDataset(IterableDataset):
             if cache_path is not None:
                 self.input_dir.path = cache_path
         # select the chunks and intervals associated to this worker
-        worker_rank = self.distributed_env.global_rank * self.worker_env.world_size + self.worker_env.rank
         worker_local_rank = self.worker_env.rank
 
         cache = Cache(
