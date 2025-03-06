@@ -185,9 +185,13 @@ class CombinedStreamingDataset(IterableDataset):
 
         if len(state_dict["dataset"]) != len(self._datasets):
             if not self._force_override_state_dict:
-                raise RuntimeError(f"The provided state doesn't match the current number of datasets: {self._datasets}.")
-            elif len(state_dict["dataset"]) > len(self._datasets):
-                raise RuntimeError(f"Currently it's only possible to add datasets to the end of the dataset list when overriding state")
+                raise RuntimeError(
+                    f"The provided state doesn't match the current number of datasets: {self._datasets}."
+                )
+            if len(state_dict["dataset"]) > len(self._datasets):
+                raise RuntimeError(
+                    "Currently it's only possible to add datasets to the end of the dataset list when overriding state"
+                )
 
         for dataset_idx, dataset in enumerate(self._datasets):
             if str(dataset_idx) in state_dict["dataset"]:
@@ -195,7 +199,6 @@ class CombinedStreamingDataset(IterableDataset):
 
             elif not self._force_override_state_dict:
                 raise RuntimeError(f"The provided state doesn't contain the index {dataset_idx}.")
-
 
         # Used to iterate over the sampler to avoid sampling the same samples
         if self._use_streaming_dataloader:
