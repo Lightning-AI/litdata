@@ -453,6 +453,7 @@ class StreamingDataset(IterableDataset):
     def reset_state_dict(self) -> None:
         self._state_dict = None
 
+<<<<<<< HEAD
     def _validate_state_dict(self) -> None:
         if self._force_override_state_dict:
             logger.warning(
@@ -460,6 +461,12 @@ class StreamingDataset(IterableDataset):
                 "certain what you're doing."
             )
 
+=======
+    def _override_state_dict(self) -> None:
+        logger.warning(
+            "Using state dict override, may lead to unexpected behavior if you're not " "certain what you're doing."
+        )
+>>>>>>> 4b927f64e47369aa113e48d4a680665ba0022c12
         assert self._state_dict
         assert self.worker_env
         assert self.cache
