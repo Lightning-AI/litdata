@@ -133,7 +133,8 @@ def test_get_folder_size(tmpdir, caplog):
 
     # Assert that a warning was logged
     assert any(
-        f"Skipping {file_name}: Not a valid chunk file." in record.message for record in caplog.records
+        f"Ignoring '{file_name}': This file doesn't appear to be a valid chunk file" in record.message
+        for record in caplog.records
     ), "Expected warning about an invalid chunk file was not logged"
 
 
