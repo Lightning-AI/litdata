@@ -209,6 +209,7 @@ def map(
     reader: Optional[BaseReader] = None,
     batch_size: Optional[int] = None,
     start_method: Optional[str] = None,
+    optimize_dns: Optional[bool] = None,
 ) -> None:
     """Maps a callable over a collection of inputs, possibly in a distributed way.
 
@@ -297,7 +298,10 @@ def map(
             reader=reader,
             start_method=start_method,
         )
-        with optimize_dns_context(True):
+
+        print("HERE ", optimize_dns)
+
+        with optimize_dns_context(optimize_dns if optimize_dns is not None else True):
             return data_processor.run(LambdaMapRecipe(fn, inputs))
     return _execute(
         f"litdata-map-{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}",
