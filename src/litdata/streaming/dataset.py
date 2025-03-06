@@ -161,7 +161,7 @@ class StreamingDataset(IterableDataset):
         self.shuffler: Optional[Shuffle] = None
         self.serializers = serializers
         self._state_dict: Optional[Dict[str, Any]] = None
-        self.force_override_state_dict = force_override_state_dict
+        self._force_override_state_dict = force_override_state_dict
         # Has slightly different meaning in the context of the dataset
         # We consider `num_workers = 0` from `torch.utils.DataLoader` still as 1 worker (the main process)
         self.num_workers: int = 1
@@ -256,10 +256,7 @@ class StreamingDataset(IterableDataset):
 
         # Handle restart
         if self._state_dict:
-            if self.force_override_state_dict:
-                self._override_state_dict()
-            else:
-                self._validate_state_dict()
+            self._validate_state_dict()
             state: Dict[str, Any] = self._state_dict
             self.current_epoch = state["current_epoch"]
 
@@ -456,29 +453,43 @@ class StreamingDataset(IterableDataset):
     def reset_state_dict(self) -> None:
         self._state_dict = None
 
-    def _override_state_dict(self) -> None:
-        logger.warning(
-            "Using state dict override, may lead to unexpected behavior if you're not "
-            "certain what you're doing."
-        )
+    def _validate_state_dict(self) -> None:
+        if self._force_override_state_dict:
+            logger.warning(
+                "Using state dict override, may lead to unexpected behavior if you're not "
+                "certain what you're doing."
+            )
+
         assert self._state_dict
         assert self.worker_env
         assert self.cache
 
         state: Dict[str, Any] = self._state_dict
         if state["shuffle"] != self.shuffle:
-            state["shuffle"] = self.shuffle
-            logger.warning(
-                f"Overriding state shuffle {state['shuffle']} to {self.shuffle}, "
-                "this may lead to repeated or skipped datapoints within an episode."
-            )
+            if not self._force_override_state_dict:
+                raise ValueError(
+                    "The provided `shuffle` state doesn't match the current one. "
+                    f"Found `{self.shuffle}` instead of `{state['shuffle']}`."
+                )
+            else:
+                state["shuffle"] = self.shuffle
+                logger.warning(
+                    f"Overriding state shuffle {state['shuffle']} to {self.shuffle}, "
+                    "this may lead to repeated or skipped datapoints within an episode."
+                )
 
         if state["num_workers"] != self.worker_env.world_size:
-            state["num_workers"] = self.worker_env.world_size
-            logger.warning(
-                f"Overriding num workers {state['num_workers']} to {self.worker_env.world_size}. "
-                "This may lead to repeated or skipped datapoints within an episode due to different shuffles."
-            )
+            if not self._force_override_state_dict:
+                raise ValueError(
+                    "The provided `num_workers` state doesn't match the current one. "
+                    f"Found `{self.worker_env.world_size}` instead of `{state['num_workers']}`."
+                )
+            else:
+                state["num_workers"] = self.worker_env.world_size
+                logger.warning(
+                    f"Overriding num workers {state['num_workers']} to {self.worker_env.world_size}. "
+                    "This may lead to repeated or skipped datapoints within an episode due to different shuffles."
+                )
 
         # Note: We need to check whether the path has been resolved to its associated cache.
         # In this case, validate the cache folder is the same.
@@ -488,105 +499,79 @@ class StreamingDataset(IterableDataset):
                 cache_dir=state.get("cache_dir_path"),
             )
             if cache_path != self.input_dir.path:
+                if not self._force_override_state_dict:
+                    raise ValueError(
+                        "The provided `input_dir` path state doesn't match the current one. "
+                        f"Found `{self.input_dir.path}` instead of `{cache_path}`."
+                    )
+                else:
+                    state["input_dir_path"] = self.input_dir.path
+                    logger.warning(
+                        f"Overriding state input_dir_path {state['input_dir_path']} to {self.input_dir.path}, "
+                        "this may lead to entirely different data loading."
+                    )
+
+        elif state["input_dir_path"] != self.input_dir.path:
+            if not self._force_override_state_dict:
+                raise ValueError(
+                    "The provided `input_dir` path state doesn't match the current one. "
+                    f"Found `{self.input_dir.path}` instead of `{state['input_dir_path']}`."
+                )
+            else:
                 state["input_dir_path"] = self.input_dir.path
                 logger.warning(
                     f"Overriding state input_dir_path {state['input_dir_path']} to {self.input_dir.path}, "
                     "this may lead to entirely different data loading."
                 )
-        elif state["input_dir_path"] != self.input_dir.path:
-            state["input_dir_path"] = self.input_dir.path
-            logger.warning(
-                f"Overriding state input_dir_path {state['input_dir_path']} to {self.input_dir.path}, "
-                "this may lead to entirely different data loading."
-            )
 
         if state["input_dir_url"] != self.input_dir.url:
-            state["input_dir_url"] = self.input_dir.url
-            logger.warning(
-                f"Overriding state input_dir_url {state['input_dir_url']} to {self.input_dir.url}, "
-                "this may lead to entirely different data loading."
-            )
-
-        if state["seed"] != self.seed:
-            state["seed"] = self.seed
-            logger.warning(
-                f"Overriding state seed {state['seed']} to {self.seed}, "
-                "this may lead to repeated or skipped datapoints within an episode."
-            )
-
-        if self.item_loader and state["item_loader"] != self.item_loader.state_dict():
-            logger.warning(f"Overriding state item_loader {state['item_loader']} to {self.item_loader.state_dict()}.")
-
-        if state["drop_last"] != self.drop_last:
-            state["drop_last"] = self.drop_last
-            logger.warning(f"Overriding state drop_last {state['drop_last']} to {self.drop_last}.")
-
-        if state["num_samples_yielded"] > len(self):
-            # This actually is an error in all cases, can't override this one
-            raise ValueError(
-                "The provided `num_samples_yielded` state is greater than the dataset length. "
-                f"Found `{state['num_samples_yielded']}` instead of `{len(self)}`."
-            )
-
-    def _validate_state_dict(self) -> None:
-        assert self._state_dict
-        assert self.worker_env
-        assert self.cache
-
-        state: Dict[str, Any] = self._state_dict
-        if state["shuffle"] != self.shuffle:
-            raise ValueError(
-                "The provided `shuffle` state doesn't match the current one. "
-                f"Found `{self.shuffle}` instead of `{state['shuffle']}`."
-            )
-
-        if state["num_workers"] != self.worker_env.world_size:
-            raise ValueError(
-                "The provided `num_workers` state doesn't match the current one. "
-                f"Found `{self.worker_env.world_size}` instead of `{state['num_workers']}`."
-            )
-
-        # Note: We need to check whether the path has been resolved to its associated cache.
-        # In this case, validate the cache folder is the same.
-        if _should_replace_path(state["input_dir_path"]):
-            cache_path = _try_create_cache_dir(
-                input_dir=state["input_dir_path"] if state["input_dir_path"] else state["input_dir_url"],
-                cache_dir=state.get("cache_dir_path"),
-            )
-            if cache_path != self.input_dir.path:
+            if not self._force_override_state_dict:
                 raise ValueError(
-                    "The provided `input_dir` path state doesn't match the current one. "
-                    f"Found `{self.input_dir.path}` instead of `{cache_path}`."
+                    "The provided `input_dir` URL state doesn't match the current one. "
+                    f"Found `{self.input_dir.url}` instead of `{state['input_dir_url']}`."
                 )
-        elif state["input_dir_path"] != self.input_dir.path:
-            raise ValueError(
-                "The provided `input_dir` path state doesn't match the current one. "
-                f"Found `{self.input_dir.path}` instead of `{state['input_dir_path']}`."
-            )
-
-        if state["input_dir_url"] != self.input_dir.url:
-            raise ValueError(
-                "The provided `input_dir` URL state doesn't match the current one. "
-                f"Found `{self.input_dir.url}` instead of `{state['input_dir_url']}`."
-            )
+            else:
+                state["input_dir_url"] = self.input_dir.url
+                logger.warning(
+                    f"Overriding state input_dir_url {state['input_dir_url']} to {self.input_dir.url}, "
+                    "this may lead to entirely different data loading."
+                )
 
         if state["seed"] != self.seed:
-            raise ValueError(
-                "The provided `seed` state doesn't match the current one. "
-                f"Found `{self.seed}` instead of `{state['seed']}`."
-            )
+            if not self._force_override_state_dict:
+                raise ValueError(
+                    "The provided `seed` state doesn't match the current one. "
+                    f"Found `{self.seed}` instead of `{state['seed']}`."
+                )
+            else:
+                state["seed"] = self.seed
+                logger.warning(
+                    f"Overriding state seed {state['seed']} to {self.seed}, "
+                    "this may lead to repeated or skipped datapoints within an episode."
+                )
 
         if self.item_loader and state["item_loader"] != self.item_loader.state_dict():
-            raise ValueError(
-                "The provided `item_loader` state doesn't match the current one. "
-                f"Found `{self.item_loader.state_dict()}` instead of `{state['item_loader']}`."
-            )
+            if not self._override_state_dict:
+                raise ValueError(
+                    "The provided `item_loader` state doesn't match the current one. "
+                    f"Found `{self.item_loader.state_dict()}` instead of `{state['item_loader']}`."
+                )
+            else:
+                logger.warning(
+                    f"Overriding state item_loader {state['item_loader']} "
+                    f"to {self.item_loader.state_dict()}."
+                )
+                state['item_loader'] = self.item_loader.state_dict()
 
         if state["drop_last"] != self.drop_last:
-            raise ValueError(
-                "The provided `drop_last` state doesn't match the current one. "
-                f"Found `{self.drop_last}` instead of `{state['drop_last']}`."
-            )
+            if not self._force_override_state_dict:
+                raise ValueError(
+                    "The provided `drop_last` state doesn't match the current one. "
+                    f"Found `{self.drop_last}` instead of `{state['drop_last']}`."
+                )
+            else:
+                state["drop_last"] = self.drop_last
+                logger.warning(f"Overriding state drop_last {state['drop_last']} to {self.drop_last}.")
 
         if state["num_samples_yielded"] > len(self):
             raise ValueError(
