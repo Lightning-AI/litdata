@@ -3,7 +3,7 @@ use std::io::{Read, Seek, SeekFrom};
 
 use super::StorageBackend;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct LocalStorage {
     remote_dir: String,
 }
@@ -41,7 +41,7 @@ impl StorageBackend for LocalStorage {
 
 // ----- LocalStorageWithCache -----
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct LocalStorageWithCache {
     loc_stor: LocalStorage,
 }

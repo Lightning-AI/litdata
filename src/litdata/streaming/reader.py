@@ -245,7 +245,9 @@ class StreamingChunksDownloader(Thread):
         print(f"using rust implementation (StreamingChunksDownloader): {_USE_RUST_IMPLEMENTATION}")
         self._config = config
         self.download_next_k_items_queue: Queue = Queue()
+        self._meow_meow = 0
         if _USE_RUST_IMPLEMENTATION and start:
+            # print("going to call on_start method of rust")
             pre_downloaded_items = self._config.streaming_data_provider.on_start()
             for item in pre_downloaded_items:
                 epoch, chunk_index, sample_index, data = item
@@ -253,20 +255,28 @@ class StreamingChunksDownloader(Thread):
 
     def trigger_to_download_next_k_items(self) -> None:
         """Receive the list of the chunk indices to download for the current epoch."""
-        self.download_next_k_items_queue.put(True)
+        # queue fills with multiple True values causing program to crash
+        # get_no_wait from queue and increase the counter
+        try:
+            curr_download_count = self.download_next_k_items_queue.get_nowait()
+            self.download_next_k_items_queue.put(curr_download_count + 1)
+        except Empty:
+            self.download_next_k_items_queue.put(1)
+        except Exception as e:
+            print(f"Error in trigger_to_download_next_k_items: {e}")
 
     def run(self) -> None:
         while True:
-            queue_item = self.download_next_k_items_queue.get()
-            if queue_item is None:
-                self._has_exited = True
-                return
-
+            # print("meow meow")
+            # queue_item_count = self.download_next_k_items_queue.get()
+            # if queue_item_count is None:
+            #     self._has_exited = True
+            #     return
+            # for _ in range(queue_item_count):
             k_items = self._config.streaming_data_provider.get_next_k_item()
             for item in k_items:
                 epoch, chunk_index, sample_index, data = item
-                self._config.set_index_to_sample_data(epoch, chunk_index, sample_index, bytes(data))
-
+            self._config.set_index_to_sample_data(epoch, chunk_index, sample_index, bytes(data))
 
 # The BinaryReader operates as the inverse of the data optimization process:
 # 1. Loads raw bytes from chunks based on specific indices
@@ -339,6 +349,7 @@ class BinaryReader:
         self._max_pre_download = max_pre_download
         self._epoch = epoch
         self.should_start_streaming_chunks_downloader = config is None
+        # print(f"reader got config: {config}")
         self.last_read_key: Optional[str] = None
         self.on_start_pre_item_download_count = on_start_pre_item_download_count
         self.get_next_k_item_count = get_next_k_item_count
@@ -423,6 +434,7 @@ class BinaryReader:
             if self._last_chunk_index is None:
                 self._last_chunk_index = index.chunk_index
         if _USE_RUST_IMPLEMENTATION and self._streaming_chunks_downloader is None:
+            # print(f"{self.should_start_streaming_chunks_downloader}")
             self._streaming_chunks_downloader = StreamingChunksDownloader(
                 self._config, start=self.should_start_streaming_chunks_downloader
             )
@@ -434,7 +446,7 @@ class BinaryReader:
                 assert self.last_read_key is not None  # even if it fails, contexlib will suppress the exception
                 del self._config.index_to_sample_data[self.last_read_key]
             key = self._config.get_key_from_index(self._epoch or 1, index.chunk_index, index.index)
-            limit = 100  # wait for 100*0.1 = 10 seconds before raising an error
+            limit = 100  # wait for 600*0.1 = 60 seconds before raising an error
             while limit > 0:
                 if key in self._config.index_to_sample_data:
                     break
@@ -448,7 +460,7 @@ class BinaryReader:
             item = self._config.index_to_sample_data[key]
             self.last_read_key = key
             assert self._streaming_chunks_downloader is not None
-            self._streaming_chunks_downloader.trigger_to_download_next_k_items()
+            # self._streaming_chunks_downloader.trigger_to_download_next_k_items()
         else:
             chunk_filepath, begin, filesize_bytes = self.config[index]
 
@@ -537,6 +549,9 @@ def _get_folder_size(path: str, config: ChunksConfig) -> int:
         if filename in config.filename_to_size_map:
             with contextlib.suppress(FileNotFoundError):
                 size += config.filename_to_size_map[filename]
+        elif  ".bin" in filename: # for temporary files
+            with contextlib.suppress(FileNotFoundError):
+                size += os.path.getsize(filename)
         elif not filename.endswith((".cnt", ".lock", ".json", ".zstd.bin", ".tmp")):
             # ignore .cnt, .lock, .json and .zstd files for warning
             logger.warning(

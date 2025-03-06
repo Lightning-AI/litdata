@@ -3,7 +3,7 @@ pub mod local;
 pub mod s3;
 // pub mod error;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum StorageBackendType {
     Local(local::LocalStorage),
     LocalWithCache(local::LocalStorageWithCache),

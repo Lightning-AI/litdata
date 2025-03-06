@@ -249,11 +249,15 @@ impl StreamingDataProvider {
     pub fn on_start(&mut self) -> Vec<(u32, u32, u32, Vec<u8>)> {
         // first we need to download offset array for all chunk indexes in parallel
         // and store them in `chunk_index_offset` map
+        // println!("on start method called");
         let rt = tokio::runtime::Runtime::new().unwrap();
 
         // get offset arrays for odd and even epochs
         rt.block_on(self.get_chunk_offset()).unwrap();
 
+        // println!("chunk offsets downloaded: {:?}",self.chunk_index_offset);
+
+        // println!("now going to download next items");
         // fetch `pre_item_download_count`
         let downloaded_items =
             rt.block_on(self.pre_fetch_items(self.on_start_pre_item_download_count));

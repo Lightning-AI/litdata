@@ -170,9 +170,10 @@ class StreamingDataset(IterableDataset):
         self._encryption = encryption
         self.storage_options = storage_options
         self.max_pre_download = max_pre_download
-        self._config: Optional[ChunksConfig] = None
+        self._config: Dict[int, ChunksConfig] = {}
         self.on_start_pre_item_download_count = on_start_pre_item_download_count
         self.get_next_k_item_count = get_next_k_item_count
+        # print(f"dataset initialization: {self._config}")
 
     def set_shuffle(self, shuffle: bool) -> None:
         self.shuffle = shuffle
@@ -199,6 +200,9 @@ class StreamingDataset(IterableDataset):
             )
             if cache_path is not None:
                 self.input_dir.path = cache_path
+        # select the chunks and intervals associated to this worker
+        worker_rank = self.distributed_env.global_rank * self.worker_env.world_size + self.worker_env.rank
+        worker_local_rank = self.worker_env.rank
 
         cache = Cache(
             input_dir=self.input_dir,
@@ -212,14 +216,17 @@ class StreamingDataset(IterableDataset):
             storage_options=self.storage_options,
             max_pre_download=self.max_pre_download,
             epoch=self.current_epoch,
-            config=self._config,
+            config=self._config.get(worker_local_rank, None),
             on_start_pre_item_download_count=self.on_start_pre_item_download_count,
             get_next_k_item_count=self.get_next_k_item_count,
         )
+        # print(f"Dataset: for cache creation, used config: {self._config}")
         cache._reader._try_load_config()
 
-        if self._config is None and _USE_RUST_IMPLEMENTATION:
-            self._config = cache._reader._config
+        if self._config.get(worker_local_rank, None) is None and _USE_RUST_IMPLEMENTATION:
+            cache_config = cache._reader._config
+            assert cache_config
+            self._config[worker_local_rank] = cache_config
 
         if not cache.filled:
             raise ValueError(

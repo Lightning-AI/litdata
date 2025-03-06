@@ -4,7 +4,7 @@ use super::StorageBackend;
 use aws_config::BehaviorVersion;
 use aws_sdk_s3::Client;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct S3Storage {
     s3client: Client,
     remote_dir: String,
@@ -46,8 +46,9 @@ impl StorageBackend for S3Storage {
         _range_end: u32,
     ) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
         let _url = &format!("{}{}", self.remote_dir, filename); // remote_dir ends with "/"
+        // println!("going to download {_url}");
         let (bucket_name, key) = get_bucket_name_and_key(_url);
-        let range_header = format!("bytes={}-{}", _range_start, _range_end);
+        let range_header = format!("bytes={}-{}", _range_start, _range_end-1);
 
         let response = self
             .s3client
@@ -56,8 +57,11 @@ impl StorageBackend for S3Storage {
             .key(key)
             .range(range_header)
             .send()
-            .await?;
-
+            .await;
+        if let Err(e) = response {
+            panic!("failed to download data: {:?}", e);
+        }
+        let response = response.unwrap();
         let body = response.body.collect().await?;
         let bytes = body.into_bytes().to_vec();
         Ok(bytes)
