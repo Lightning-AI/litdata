@@ -60,6 +60,7 @@ class StreamingDataset(IterableDataset):
         storage_options: Optional[Dict] = {},
         max_pre_download: int = 2,
         index_path: Optional[str] = None,
+        force_override_state_dict: bool = False,
     ) -> None:
         """The streaming dataset can be used once your data have been optimised using the DatasetOptimiser class.
 
@@ -83,6 +84,7 @@ class StreamingDataset(IterableDataset):
             index_path: Path to `index.json` for the Parquet dataset.
                 If `index_path` is a directory, the function will look for `index.json` within it.
                 If `index_path` is a full file path, it will use that directly.
+            force_override_state_dict: Boolean flag for allowing local arguments to override those in a loaded state dict.
 
         """
         _check_version_and_prompt_upgrade(__version__)
@@ -159,6 +161,7 @@ class StreamingDataset(IterableDataset):
         self.shuffler: Optional[Shuffle] = None
         self.serializers = serializers
         self._state_dict: Optional[Dict[str, Any]] = None
+        self.force_override_state_dict = force_override_state_dict
         # Has slightly different meaning in the context of the dataset
         # We consider `num_workers = 0` from `torch.utils.DataLoader` still as 1 worker (the main process)
         self.num_workers: int = 1
@@ -253,7 +256,10 @@ class StreamingDataset(IterableDataset):
 
         # Handle restart
         if self._state_dict:
-            self._validate_state_dict()
+            if self.force_override_state_dict:
+                self._override_state_dict()
+            else:
+                self._validate_state_dict()
             state: Dict[str, Any] = self._state_dict
             self.current_epoch = state["current_epoch"]
 
@@ -449,6 +455,78 @@ class StreamingDataset(IterableDataset):
 
     def reset_state_dict(self) -> None:
         self._state_dict = None
+
+    def _override_state_dict(self) -> None:
+        logger.warning(
+            "Using state dict override, may lead to unexpected behavior if you're not "
+            "certain what you're doing."
+        )
+        assert self._state_dict
+        assert self.worker_env
+        assert self.cache
+
+        state: Dict[str, Any] = self._state_dict
+        if state["shuffle"] != self.shuffle:
+            state["shuffle"] = self.shuffle
+            logger.warning(
+                f"Overriding state shuffle {state['shuffle']} to {self.shuffle}, "
+                "this may lead to repeated or skipped datapoints within an episode."
+            )
+
+        if state["num_workers"] != self.worker_env.world_size:
+            state["num_workers"] = self.worker_env.world_size
+            logger.warning(
+                f"Overriding num workers {state['num_workers']} to {self.worker_env.world_size}. "
+                "This may lead to repeated or skipped datapoints within an episode due to different shuffles."
+            )
+
+        # Note: We need to check whether the path has been resolved to its associated cache.
+        # In this case, validate the cache folder is the same.
+        if _should_replace_path(state["input_dir_path"]):
+            cache_path = _try_create_cache_dir(
+                input_dir=state["input_dir_path"] if state["input_dir_path"] else state["input_dir_url"],
+                cache_dir=state.get("cache_dir_path"),
+            )
+            if cache_path != self.input_dir.path:
+                state["input_dir_path"] = self.input_dir.path
+                logger.warning(
+                    f"Overriding state input_dir_path {state['input_dir_path']} to {self.input_dir.path}, "
+                    "this may lead to entirely different data loading."
+                )
+        elif state["input_dir_path"] != self.input_dir.path:
+            state["input_dir_path"] = self.input_dir.path
+            logger.warning(
+                f"Overriding state input_dir_path {state['input_dir_path']} to {self.input_dir.path}, "
+                "this may lead to entirely different data loading."
+            )
+
+        if state["input_dir_url"] != self.input_dir.url:
+            state["input_dir_url"] = self.input_dir.url
+            logger.warning(
+                f"Overriding state input_dir_url {state['input_dir_url']} to {self.input_dir.url}, "
+                "this may lead to entirely different data loading."
+            )
+
+        if state["seed"] != self.seed:
+            state["seed"] = self.seed
+            logger.warning(
+                f"Overriding state seed {state['seed']} to {self.seed}, "
+                "this may lead to repeated or skipped datapoints within an episode."
+            )
+
+        if self.item_loader and state["item_loader"] != self.item_loader.state_dict():
+            logger.warning(f"Overriding state item_loader {state['item_loader']} to {self.item_loader.state_dict()}.")
+
+        if state["drop_last"] != self.drop_last:
+            state["drop_last"] = self.drop_last
+            logger.warning(f"Overriding state drop_last {state['drop_last']} to {self.drop_last}.")
+
+        if state["num_samples_yielded"] > len(self):
+            # This actually is an error in all cases, can't override this one
+            raise ValueError(
+                "The provided `num_samples_yielded` state is greater than the dataset length. "
+                f"Found `{state['num_samples_yielded']}` instead of `{len(self)}`."
+            )
 
     def _validate_state_dict(self) -> None:
         assert self._state_dict
