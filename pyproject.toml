@@ -122,6 +122,7 @@ exclude = [
     "src/litdata/streaming/shuffle.py",
     "src/litdata/imports.py",
     "src/litdata/imports.py",
+    "src/litdata/processing/data_processor.py",
 ]
 install_types = "True"
 non_interactive = "True"
