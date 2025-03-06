@@ -248,7 +248,7 @@ _DOWNLOADERS: Dict[str, Type[Downloader]] = {
 }
 
 
-def register_downloader(prefix: str, downloader_cls: Type[Downloader], overwrite=False) -> None:
+def register_downloader(prefix: str, downloader_cls: Type[Downloader], overwrite: bool = False) -> None:
     """Register a new downloader class with a specific prefix.
 
     Args:
