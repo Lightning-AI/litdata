@@ -3,6 +3,7 @@ use crate::rust_impl::utils::get_bucket_name_and_key;
 use super::StorageBackend;
 use aws_config::BehaviorVersion;
 use aws_sdk_s3::Client;
+use std::time::Duration;
 
 #[derive(Clone, Debug)]
 pub struct S3Storage {
@@ -42,28 +43,42 @@ impl StorageBackend for S3Storage {
     async fn get_bytes_in_range(
         &self,
         filename: &str,
-        _range_start: u32,
-        _range_end: u32,
+        range_start: u32,
+        range_end: u32,
     ) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
-        let _url = &format!("{}{}", self.remote_dir, filename); // remote_dir ends with "/"
-                                                                // println!("going to download {_url}");
-        let (bucket_name, key) = get_bucket_name_and_key(_url);
-        let range_header = format!("bytes={}-{}", _range_start, _range_end - 1);
+        let (bucket_name, key) =
+            get_bucket_name_and_key(&format!("{}{}", self.remote_dir, filename));
+        let range_header = format!("bytes={}-{}", range_start, range_end - 1);
 
-        let response = self
-            .s3client
-            .get_object()
-            .bucket(bucket_name)
-            .key(key)
-            .range(range_header)
-            .send()
-            .await;
-        if let Err(e) = response {
-            panic!("failed to download data: {:?}", e);
+        const MAX_RETRIES: u32 = 3;
+        const INITIAL_BACKOFF_MS: u64 = 100;
+
+        let mut attempt = 0;
+        loop {
+            match self
+                .s3client
+                .get_object()
+                .bucket(&bucket_name)
+                .key(&key)
+                .range(&range_header)
+                .send()
+                .await
+            {
+                Ok(response) => {
+                    let body = response.body.collect().await?;
+                    return Ok(body.into_bytes().to_vec());
+                }
+                Err(e) => {
+                    attempt += 1;
+                    if attempt >= MAX_RETRIES {
+                        return Err(e.into());
+                    }
+                    // Exponential backoff
+                    let delay = INITIAL_BACKOFF_MS * (2_u64.pow(attempt - 1));
+                    tokio::time::sleep(Duration::from_millis(delay)).await;
+                    continue;
+                }
+            }
         }
-        let response = response.unwrap();
-        let body = response.body.collect().await?;
-        let bytes = body.into_bytes().to_vec();
-        Ok(bytes)
     }
 }
