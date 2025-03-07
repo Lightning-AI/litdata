@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import numpy as np
 
 from litdata.constants import _DEFAULT_CACHE_DIR, _DEFAULT_LIGHTNING_CACHE_DIR, _INDEX_FILENAME
-from litdata.streaming.downloader import get_downloader_cls
+from litdata.streaming.downloader import get_downloader
 from litdata.streaming.item_loader import BaseItemLoader, TokensLoader
 from litdata.streaming.resolver import Dir, _resolve_dir
 from litdata.utilities.subsample import shuffle_lists_together, subsample_filenames_and_roi
@@ -59,7 +59,7 @@ def subsample_streaming_dataset(
         if index_path is not None:
             copy_index_to_cache_index_filepath(index_path, cache_index_filepath)
         else:
-            downloader = get_downloader_cls(input_dir.url, input_dir.path, [], storage_options)
+            downloader = get_downloader(input_dir.url, input_dir.path, [], storage_options)
             downloader.download_file(os.path.join(input_dir.url, _INDEX_FILENAME), cache_index_filepath)
 
     if not os.path.exists(input_dir.path):
@@ -150,7 +150,7 @@ def _read_updated_at(
             if index_path is not None:
                 copy_index_to_cache_index_filepath(index_path, temp_index_filepath)
             else:
-                downloader = get_downloader_cls(input_dir.url, tmp_directory, [], storage_options)
+                downloader = get_downloader(input_dir.url, tmp_directory, [], storage_options)
                 downloader.download_file(os.path.join(input_dir.url, _INDEX_FILENAME), temp_index_filepath)
             index_json_content = load_index_file(tmp_directory)
 

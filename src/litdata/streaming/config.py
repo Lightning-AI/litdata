@@ -17,7 +17,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from litdata.constants import _INDEX_FILENAME
 from litdata.streaming.compression import _COMPRESSORS, Compressor
-from litdata.streaming.downloader import get_downloader_cls
+from litdata.streaming.downloader import get_downloader
 from litdata.streaming.item_loader import BaseItemLoader, Interval, PyTreeLoader, TokensLoader
 from litdata.streaming.sampler import ChunkedIndex
 from litdata.streaming.serializers import Serializer
@@ -80,7 +80,7 @@ class ChunksConfig:
         self._downloader = None
 
         if remote_dir:
-            self._downloader = get_downloader_cls(remote_dir, cache_dir, self._chunks, self._storage_options)
+            self._downloader = get_downloader(remote_dir, cache_dir, self._chunks, self._storage_options)
 
         self._compressor_name = self._config["compression"]
         self._compressor: Optional[Compressor] = None
@@ -274,7 +274,7 @@ class ChunksConfig:
                         f"This should not have happened. No index.json file found in cache: {cache_index_filepath}"
                     )
             else:
-                downloader = get_downloader_cls(remote_dir, cache_dir, [], storage_options)
+                downloader = get_downloader(remote_dir, cache_dir, [], storage_options)
                 downloader.download_file(os.path.join(remote_dir, _INDEX_FILENAME), cache_index_filepath)
 
         if not os.path.exists(cache_index_filepath):
