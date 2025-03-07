@@ -456,8 +456,7 @@ class StreamingDataset(IterableDataset):
     def _validate_state_dict(self) -> None:
         if self._force_override_state_dict:
             logger.warning(
-                "Using state dict override, may lead to unexpected behavior if you're not "
-                "certain what you're doing."
+                "Using state dict override, may lead to unexpected behavior if you're not " "certain what you're doing."
             )
 
         assert self._state_dict
@@ -471,12 +470,11 @@ class StreamingDataset(IterableDataset):
                     "The provided `shuffle` state doesn't match the current one. "
                     f"Found `{self.shuffle}` instead of `{state['shuffle']}`."
                 )
-            else:
-                state["shuffle"] = self.shuffle
-                logger.warning(
-                    f"Overriding state shuffle {state['shuffle']} to {self.shuffle}, "
-                    "this may lead to repeated or skipped datapoints within an episode."
-                )
+            state["shuffle"] = self.shuffle
+            logger.warning(
+                f"Overriding state shuffle {state['shuffle']} to {self.shuffle}, "
+                "this may lead to repeated or skipped datapoints within an episode."
+            )
 
         if state["num_workers"] != self.worker_env.world_size:
             if not self._force_override_state_dict:
@@ -484,12 +482,11 @@ class StreamingDataset(IterableDataset):
                     "The provided `num_workers` state doesn't match the current one. "
                     f"Found `{self.worker_env.world_size}` instead of `{state['num_workers']}`."
                 )
-            else:
-                state["num_workers"] = self.worker_env.world_size
-                logger.warning(
-                    f"Overriding num workers {state['num_workers']} to {self.worker_env.world_size}. "
-                    "This may lead to repeated or skipped datapoints within an episode due to different shuffles."
-                )
+            state["num_workers"] = self.worker_env.world_size
+            logger.warning(
+                f"Overriding num workers {state['num_workers']} to {self.worker_env.world_size}. "
+                "This may lead to repeated or skipped datapoints within an episode due to different shuffles."
+            )
 
         # Note: We need to check whether the path has been resolved to its associated cache.
         # In this case, validate the cache folder is the same.
@@ -504,12 +501,11 @@ class StreamingDataset(IterableDataset):
                         "The provided `input_dir` path state doesn't match the current one. "
                         f"Found `{self.input_dir.path}` instead of `{cache_path}`."
                     )
-                else:
-                    state["input_dir_path"] = self.input_dir.path
-                    logger.warning(
-                        f"Overriding state input_dir_path {state['input_dir_path']} to {self.input_dir.path}, "
-                        "this may lead to entirely different data loading."
-                    )
+                state["input_dir_path"] = self.input_dir.path
+                logger.warning(
+                    f"Overriding state input_dir_path {state['input_dir_path']} to {self.input_dir.path}, "
+                    "this may lead to entirely different data loading."
+                )
 
         elif state["input_dir_path"] != self.input_dir.path:
             if not self._force_override_state_dict:
@@ -517,12 +513,11 @@ class StreamingDataset(IterableDataset):
                     "The provided `input_dir` path state doesn't match the current one. "
                     f"Found `{self.input_dir.path}` instead of `{state['input_dir_path']}`."
                 )
-            else:
-                state["input_dir_path"] = self.input_dir.path
-                logger.warning(
-                    f"Overriding state input_dir_path {state['input_dir_path']} to {self.input_dir.path}, "
-                    "this may lead to entirely different data loading."
-                )
+            state["input_dir_path"] = self.input_dir.path
+            logger.warning(
+                f"Overriding state input_dir_path {state['input_dir_path']} to {self.input_dir.path}, "
+                "this may lead to entirely different data loading."
+            )
 
         if state["input_dir_url"] != self.input_dir.url:
             if not self._force_override_state_dict:
@@ -530,12 +525,11 @@ class StreamingDataset(IterableDataset):
                     "The provided `input_dir` URL state doesn't match the current one. "
                     f"Found `{self.input_dir.url}` instead of `{state['input_dir_url']}`."
                 )
-            else:
-                state["input_dir_url"] = self.input_dir.url
-                logger.warning(
-                    f"Overriding state input_dir_url {state['input_dir_url']} to {self.input_dir.url}, "
-                    "this may lead to entirely different data loading."
-                )
+            state["input_dir_url"] = self.input_dir.url
+            logger.warning(
+                f"Overriding state input_dir_url {state['input_dir_url']} to {self.input_dir.url}, "
+                "this may lead to entirely different data loading."
+            )
 
         if state["seed"] != self.seed:
             if not self._force_override_state_dict:
@@ -543,12 +537,11 @@ class StreamingDataset(IterableDataset):
                     "The provided `seed` state doesn't match the current one. "
                     f"Found `{self.seed}` instead of `{state['seed']}`."
                 )
-            else:
-                state["seed"] = self.seed
-                logger.warning(
-                    f"Overriding state seed {state['seed']} to {self.seed}, "
-                    "this may lead to repeated or skipped datapoints within an episode."
-                )
+            state["seed"] = self.seed
+            logger.warning(
+                f"Overriding state seed {state['seed']} to {self.seed}, "
+                "this may lead to repeated or skipped datapoints within an episode."
+            )
 
         if self.item_loader and state["item_loader"] != self.item_loader.state_dict():
             if not self._override_state_dict:
@@ -556,12 +549,10 @@ class StreamingDataset(IterableDataset):
                     "The provided `item_loader` state doesn't match the current one. "
                     f"Found `{self.item_loader.state_dict()}` instead of `{state['item_loader']}`."
                 )
-            else:
-                logger.warning(
-                    f"Overriding state item_loader {state['item_loader']} "
-                    f"to {self.item_loader.state_dict()}."
-                )
-                state['item_loader'] = self.item_loader.state_dict()
+            logger.warning(
+                f"Overriding state item_loader {state['item_loader']} " f"to {self.item_loader.state_dict()}."
+            )
+            state["item_loader"] = self.item_loader.state_dict()
 
         if state["drop_last"] != self.drop_last:
             if not self._force_override_state_dict:
@@ -569,9 +560,8 @@ class StreamingDataset(IterableDataset):
                     "The provided `drop_last` state doesn't match the current one. "
                     f"Found `{self.drop_last}` instead of `{state['drop_last']}`."
                 )
-            else:
-                state["drop_last"] = self.drop_last
-                logger.warning(f"Overriding state drop_last {state['drop_last']} to {self.drop_last}.")
+            state["drop_last"] = self.drop_last
+            logger.warning(f"Overriding state drop_last {state['drop_last']} to {self.drop_last}.")
 
         if state["num_samples_yielded"] > len(self):
             raise ValueError(

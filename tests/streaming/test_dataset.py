@@ -1244,7 +1244,7 @@ def test_dataset_valid_state_override(tmpdir, monkeypatch):
     state_dict["item_loader"] = {}
     dataset.load_state_dict(state_dict)
     dataset._validate_state_dict()
-    assert state_dict["item_loader"] == {'block_size': 20}, "item_loader not overridden"
+    assert state_dict["item_loader"] == {"block_size": 20}, "item_loader not overridden"
 
     state_dict["seed"] = 12
     dataset.load_state_dict(state_dict)
