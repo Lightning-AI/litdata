@@ -268,12 +268,11 @@ class StreamingChunksDownloader(Thread):
     def run(self) -> None:
         # for now, just keep continuously downloading data. Read will be much faster than download.
         # But, for real world use case, we can introduce some short of delay or how frequently to fetch `next_k_items()`
-        while True: 
+        while True:
             k_items = self._config.streaming_data_provider.get_next_k_item()
             for item in k_items:
                 epoch, chunk_index, sample_index, data = item
             self._config.set_index_to_sample_data(epoch, chunk_index, sample_index, bytes(data))
-
 
 
 # The BinaryReader operates as the inverse of the data optimization process:
