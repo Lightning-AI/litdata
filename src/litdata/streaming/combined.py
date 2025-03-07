@@ -52,7 +52,7 @@ class CombinedStreamingDataset(IterableDataset):
             weights: The sampling ratio for the datasets
             iterate_over_all: When iterate_over_all is True, the combined dataset iterates over all the datasets.
                 Otherwise, it stops as soon as one raises a StopIteration.
-
+            force_override_state_dict: Boolean flag for allowing local arguments to override a loaded state dict.
         """
         self._check_datasets(datasets)
 

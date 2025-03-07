@@ -1239,7 +1239,7 @@ def test_dataset_valid_state_override(tmpdir, monkeypatch):
     state_dict["drop_last"] = True
     dataset.load_state_dict(state_dict)
     dataset._validate_state_dict()
-    assert state_dict["drop_last"] == False, "drop_last not overridden"
+    assert state_dict["drop_last"] is False, "drop_last not overridden"
 
     state_dict["item_loader"] = {}
     dataset.load_state_dict(state_dict)
@@ -1269,7 +1269,7 @@ def test_dataset_valid_state_override(tmpdir, monkeypatch):
     state_dict["shuffle"] = True
     dataset.load_state_dict(state_dict)
     dataset._validate_state_dict()
-    assert state_dict["shuffle"] == False, "shuffle not overridden"
+    assert state_dict["shuffle"] is False, "shuffle not overridden"
 
 
 def test_replay_sampling():
