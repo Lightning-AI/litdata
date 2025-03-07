@@ -119,6 +119,7 @@ class PyTreeLoader(BaseItemLoader):
         super().__init__()
         self._chunk_filepaths: Dict[str, bool] = {}
         self._decrypted_chunks: Dict[int, bytes] = {}
+        self._offsets: Dict[int, Tuple[int, int]] = {}
 
     def generate_intervals(self) -> List[Interval]:
         intervals = []
@@ -196,13 +197,41 @@ class PyTreeLoader(BaseItemLoader):
             data = self._load_encrypted_data(chunk_filepath, chunk_index, offset, encryption)
         else:
             with open(chunk_filepath, "rb", 0) as fp:
-                # load the data from raw bytes using the offset for the item we want to load
-                data = self._load_data(fp, offset)
+                # load the header if it hasn't been loaded yet
+                self._load_offset_header(fp, chunk_index)
+
+                # get the item's begin and end offsets
+                sample_index = index - begin
+                begin, end = self._offsets[chunk_index][sample_index]
+
+                # read the item's data
+                fp.seek(begin)
+                data = fp.read(end - begin)
 
         # check for mosaic mds format
         if "format" in self._config and self._config["format"] == "mds":
             return self.mds_deserialize(data, chunk_index)
         return self.deserialize(data)
+
+    def _load_offset_header(self, fp: Union[FileIO, BytesIO], chunk_index: int) -> None:
+        """Load the offset header from the file pointer of the chunk."""
+        if chunk_index in self._offsets:
+            return
+
+        # Skip the first 4 bytes for num_items (uint32)
+        fp.seek(4)
+
+        # Calculate the size of the offsets array (4 bytes * (num_items + 1))
+        num_items = int(self._chunks[chunk_index]["chunk_size"])
+        offsets_size = 4 * (num_items + 1)
+        offset_data = fp.read(offsets_size)
+
+        # Convert the offset data to numpy array
+        offset_array = np.frombuffer(offset_data, np.uint32)
+
+        # Calculate item ranges as (start, end) pairs
+        item_ranges = [(offset_array[i], offset_array[i + 1]) for i in range(num_items)]
+        self._offsets[chunk_index] = item_ranges  # TODO: check to replace entire dict or just the chunk_index
 
     def _load_encrypted_data(
         self, chunk_filepath: str, chunk_index: int, offset: int, encryption: Optional[Encryption]
