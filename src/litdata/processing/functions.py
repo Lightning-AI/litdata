@@ -209,6 +209,7 @@ def map(
     reader: Optional[BaseReader] = None,
     batch_size: Optional[int] = None,
     start_method: Optional[str] = None,
+    optimize_dns: Optional[bool] = None,
 ) -> None:
     """Maps a callable over a collection of inputs, possibly in a distributed way.
 
@@ -232,6 +233,7 @@ def map(
         batch_size: Group the inputs into batches of batch_size length.
         start_method: The start method used by python multiprocessing package. Default to spawn unless running
             inside an interactive shell like Ipython.
+        optimize_dns: Whether the optimized dns should be used.
     """
     _check_version_and_prompt_upgrade(__version__)
 
@@ -297,7 +299,8 @@ def map(
             reader=reader,
             start_method=start_method,
         )
-        with optimize_dns_context(True):
+
+        with optimize_dns_context(optimize_dns if optimize_dns is not None else False):
             return data_processor.run(LambdaMapRecipe(fn, inputs))
     return _execute(
         f"litdata-map-{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}",
@@ -347,6 +350,7 @@ def optimize(
     use_checkpoint: bool = False,
     item_loader: Optional[BaseItemLoader] = None,
     start_method: Optional[str] = None,
+    optimize_dns: Optional[bool] = None,
 ) -> None:
     """This function converts a dataset into chunks, possibly in a distributed way.
 
@@ -381,7 +385,7 @@ def optimize(
                 the format in which the data is stored and optimized for loading.
         start_method: The start method used by python multiprocessing package. Default to spawn unless running
             inside an interactive shell like Ipython.
-
+        optimize_dns: Whether the optimized dns should be used.
     """
     _check_version_and_prompt_upgrade(__version__)
 
@@ -476,7 +480,7 @@ def optimize(
             start_method=start_method,
         )
 
-        with optimize_dns_context(True):
+        with optimize_dns_context(optimize_dns if optimize_dns is not None else False):
             data_processor.run(
                 LambdaDataChunkRecipe(
                     fn,

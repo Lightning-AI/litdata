@@ -3,14 +3,50 @@ import os
 from unittest import mock
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 from litdata.streaming.downloader import (
+    _DOWNLOADERS,
     AzureDownloader,
+    Downloader,
     GCPDownloader,
     LocalDownloaderWithCache,
     S3Downloader,
+    get_downloader,
+    register_downloader,
     shutil,
     subprocess,
+    unregister_downloader,
 )
+
+
+class DummyDownloader(Downloader):
+    def download_file(self, remote_path: str, local_path: str) -> None:
+        pass
+
+
+def test_register_downloader():
+    assert "dummy://" not in _DOWNLOADERS
+    register_downloader("dummy://", DummyDownloader)
+    assert "dummy://" in _DOWNLOADERS
+    unregister_downloader("dummy://")
+    assert "dummy://" not in _DOWNLOADERS
+
+
+def test_register_downloader_overwrite():
+    register_downloader("dummy://", DummyDownloader)
+    with pytest.raises(ValueError, match="Downloader with prefix dummy:// already registered."):
+        register_downloader("dummy://", DummyDownloader)
+
+    register_downloader("dummy://", DummyDownloader, overwrite=True)
+    assert "dummy://" in _DOWNLOADERS
+    unregister_downloader("dummy://")
+
+
+def test_get_downloader(tmpdir):
+    register_downloader("dummy://", DummyDownloader)
+    assert isinstance(get_downloader("dummy://dummy", tmpdir, []), DummyDownloader)
+    unregister_downloader("dummy://")
 
 
 def test_s3_downloader_fast(tmpdir, monkeypatch):
