@@ -138,4 +138,6 @@ class FullShuffle(Shuffle):
         return workers_chunks, workers_intervals
 
     def __call__(self, array: np.ndarray, num_chunks: int, current_epoch: int, chunk_index: int) -> List[int]:
-        return np.random.RandomState([self.seed, num_chunks, current_epoch, chunk_index]).permutation(array).tolist()
+        seed = hash((self.seed, num_chunks, current_epoch, chunk_index)) % (2**32)  # Hash to a single integer
+
+        return np.random.RandomState(seed).permutation(array).tolist()

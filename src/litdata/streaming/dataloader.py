@@ -196,7 +196,7 @@ class WorkerLoop:
             fetcher = create_fetcher(*args, **kwargs)
             return fetcher
 
-        _DatasetKind.create_fetcher = create_fetcher_fn  # type: ignore
+        _DatasetKind.create_fetcher = create_fetcher_fn
 
         reloaded_worker._worker_loop(
             dataset_kind,
@@ -329,7 +329,7 @@ class CacheDataLoader(DataLoader):
         super().__init__(
             dataset,
             *args,
-            batch_sampler=batch_sampler,  # type: ignore
+            batch_sampler=batch_sampler,
             collate_fn=CacheCollateFn(collate_fn),
             num_workers=num_workers,
             **kwargs,
@@ -413,7 +413,7 @@ class _ProfileWorkerLoop:
                 fetcher.fetch = _wrapper(fetcher, fetcher.fetch, tracer, self._profile, self._profile_dir)
             return fetcher
 
-        _DatasetKind.create_fetcher = create_fetcher_fn  # type: ignore
+        _DatasetKind.create_fetcher = create_fetcher_fn
 
         reloaded_worker._worker_loop(
             dataset_kind,
@@ -603,7 +603,7 @@ class StreamingDataLoader(DataLoader):
             prefetch_factor=(10 if num_workers > 0 else None) if prefetch_factor is None else prefetch_factor,
             collate_fn=collate_fn,
             **kwargs,
-        )  # type: ignore
+        )
 
     def __iter__(self) -> Any:
         if not self.restore:
