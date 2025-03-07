@@ -120,8 +120,6 @@ class PyTreeLoader(BaseItemLoader):
         super().__init__()
         self._chunk_filepaths: Dict[str, bool] = {}
         self._decrypted_chunks: Dict[int, bytes] = {}
-        self._mmaps: Dict[int, np.memmap] = {}
-        self._buffers: Dict[int, bytes] = {}
         self._offsets: Dict[int, List[Tuple[int, int]]] = {}
         self._fds: Dict[int, int] = {}
 
@@ -238,7 +236,13 @@ class PyTreeLoader(BaseItemLoader):
         """Read sample data using pread() at the given offset."""
         fd = self._fds[chunk_index]
         begin, end = self._offsets[chunk_index][sample_idx]
-        return os.pread(fd, end - begin, begin)
+
+        # Use os.pread if available, otherwise fall back to a manual read
+        try:
+            return os.pread(fd, end - begin, begin)
+        except AttributeError:
+            os.lseek(fd, begin, os.SEEK_SET)
+            return os.read(fd, end - begin)
 
     def _load_encrypted_data(
         self, chunk_filepath: str, chunk_index: int, offset: int, encryption: Optional[Encryption]
@@ -319,27 +323,22 @@ class PyTreeLoader(BaseItemLoader):
     def delete(self, chunk_index: int, chunk_filepath: str) -> None:
         if os.path.exists(chunk_filepath):
             if _USE_MMAP:
-                if chunk_index in self._buffers:
-                    del self._buffers[chunk_index]
-                if chunk_index in self._mmaps:
-                    # explicitly close before deleting. Won't raise error if already closed.
-                    self._mmaps[chunk_index]._mmap.close()
-                    del self._mmaps[chunk_index]
-                    del self._counter[chunk_index]
+                if chunk_index in self._offsets:
+                    del self._offsets[chunk_index]
+                if chunk_index in self._fds:
+                    os.close(self._fds[chunk_index])
+                    self._fds.pop(chunk_index, None)
             os.remove(chunk_filepath)
 
     def close(self, chunk_index: int) -> None:
         """Release the memory-mapped file for a specific chunk index."""
         if not _USE_MMAP:
             return
-        if chunk_index in self._buffers:
-            del self._buffers[chunk_index]
-        if chunk_index in self._mmaps:
-            self._mmaps[chunk_index]._mmap.close()
-            del self._mmaps[chunk_index]
+        if chunk_index in self._offsets:
+            del self._offsets[chunk_index]
         if chunk_index in self._fds:
             os.close(self._fds[chunk_index])
-            del self._fds[chunk_index]
+            self._fds.pop(chunk_index, None)
 
     def _validate_encryption(self, encryption: Optional[Encryption]) -> None:
         """Validate the encryption object."""
