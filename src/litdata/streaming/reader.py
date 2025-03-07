@@ -267,6 +267,7 @@ class StreamingChunksDownloader(Thread):
 
     def run(self) -> None:
         while True:
+<<<<<<< HEAD
             # print("meow meow")
             # queue_item_count = self.download_next_k_items_queue.get()
             # if queue_item_count is None:
@@ -277,6 +278,17 @@ class StreamingChunksDownloader(Thread):
             for item in k_items:
                 epoch, chunk_index, sample_index, data = item
             self._config.set_index_to_sample_data(epoch, chunk_index, sample_index, bytes(data))
+=======
+            queue_item_count = self.download_next_k_items_queue.get()
+            if queue_item_count is None:
+                self._has_exited = True
+                return
+            for _ in range(queue_item_count):
+                k_items = self._config.streaming_data_provider.get_next_k_item()
+                for item in k_items:
+                    epoch, chunk_index, sample_index, data = item
+                self._config.set_index_to_sample_data(epoch, chunk_index, sample_index, bytes(data))
+>>>>>>> c02e8ac (update)
 
 
 # The BinaryReader operates as the inverse of the data optimization process:

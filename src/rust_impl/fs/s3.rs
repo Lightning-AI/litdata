@@ -58,10 +58,18 @@ impl StorageBackend for S3Storage {
             .range(range_header)
             .send()
             .await;
+<<<<<<< HEAD
+=======
+
+>>>>>>> c02e8ac (update)
         if let Err(e) = response {
             panic!("failed to download data: {:?}", e);
         }
         let response = response.unwrap();
+<<<<<<< HEAD
+=======
+
+>>>>>>> c02e8ac (update)
         let body = response.body.collect().await?;
         let bytes = body.into_bytes().to_vec();
         Ok(bytes)
