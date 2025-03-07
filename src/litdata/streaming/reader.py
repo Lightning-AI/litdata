@@ -272,7 +272,7 @@ class StreamingChunksDownloader(Thread):
             k_items = self._config.streaming_data_provider.get_next_k_item()
             for item in k_items:
                 epoch, chunk_index, sample_index, data = item
-            self._config.set_index_to_sample_data(epoch, chunk_index, sample_index, bytes(data))
+                self._config.set_index_to_sample_data(epoch, chunk_index, sample_index, bytes(data))
 
 
 # The BinaryReader operates as the inverse of the data optimization process:
@@ -499,7 +499,7 @@ class BinaryReader:
                 self._prepare_thread = None
         if index.is_last_index and self._streaming_chunks_downloader:
             # inform the thread it is time to stop
-            self._streaming_chunks_downloader.stop()
+            # self._streaming_chunks_downloader.stop()
             self._streaming_chunks_downloader = None
 
         return item

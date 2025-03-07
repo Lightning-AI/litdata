@@ -24,7 +24,6 @@ from litdata.constants import _INDEX_FILENAME, _USE_RUST_IMPLEMENTATION
 from litdata.helpers import _check_version_and_prompt_upgrade
 from litdata.streaming import Cache
 from litdata.streaming.config import ChunksConfig
-from litdata.streaming.downloader import get_downloader_cls  # noqa: F401
 from litdata.streaming.item_loader import BaseItemLoader, ParquetLoader
 from litdata.streaming.resolver import Dir, _resolve_dir
 from litdata.streaming.sampler import ChunkedIndex

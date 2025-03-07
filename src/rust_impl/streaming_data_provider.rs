@@ -93,7 +93,7 @@ impl StreamingDataProvider {
                     .await;
 
                 if let Err(e) = data {
-                    panic!("failed to download data: {}", e);
+                    panic!("failed to download data: {:?}", e);
                 }
 
                 let data = data.unwrap();
