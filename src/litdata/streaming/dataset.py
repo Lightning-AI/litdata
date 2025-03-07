@@ -84,7 +84,7 @@ class StreamingDataset(IterableDataset):
             index_path: Path to `index.json` for the Parquet dataset.
                 If `index_path` is a directory, the function will look for `index.json` within it.
                 If `index_path` is a full file path, it will use that directly.
-            force_override_state_dict: Boolean flag for allowing local arguments to override those in a loaded state dict.
+            force_override_state_dict: Boolean flag for allowing local arguments to override a loaded state dict.
 
         """
         _check_version_and_prompt_upgrade(__version__)
@@ -453,7 +453,6 @@ class StreamingDataset(IterableDataset):
     def reset_state_dict(self) -> None:
         self._state_dict = None
 
-<<<<<<< HEAD
     def _validate_state_dict(self) -> None:
         if self._force_override_state_dict:
             logger.warning(
@@ -461,12 +460,6 @@ class StreamingDataset(IterableDataset):
                 "certain what you're doing."
             )
 
-=======
-    def _override_state_dict(self) -> None:
-        logger.warning(
-            "Using state dict override, may lead to unexpected behavior if you're not " "certain what you're doing."
-        )
->>>>>>> 4b927f64e47369aa113e48d4a680665ba0022c12
         assert self._state_dict
         assert self.worker_env
         assert self.cache
