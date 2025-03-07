@@ -226,7 +226,14 @@ class PyTreeLoader(BaseItemLoader):
         # Calculate the size of the offsets array (4 bytes * (num_items + 1))
         offsets_size = 4 * (num_items + 1)
         # Extract the offsets array
-        offsets = np.frombuffer(os.pread(fd, offsets_size, begin), np.uint32)
+        try:
+            offsets_data = os.pread(fd, offsets_size, begin)
+        except AttributeError:  # os.pread is not available on Windows
+            os.lseek(fd, begin, os.SEEK_SET)
+            offsets_data = os.read(fd, offsets_size)
+
+        # Convert the offsets array to a numpy array
+        offsets = np.frombuffer(offsets_data, np.uint32)
         # Calculate item ranges as (start, end) pairs
         item_ranges = [(offsets[i], offsets[i + 1]) for i in range(num_items)]
 
@@ -240,7 +247,7 @@ class PyTreeLoader(BaseItemLoader):
         # Use os.pread if available, otherwise fall back to a manual read
         try:
             return os.pread(fd, end - begin, begin)
-        except AttributeError:
+        except AttributeError:  # os.pread is not available on Windows
             os.lseek(fd, begin, os.SEEK_SET)
             return os.read(fd, end - begin)
 
