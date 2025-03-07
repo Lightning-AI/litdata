@@ -30,6 +30,7 @@ from litdata.constants import (
     _NUMPY_DTYPES_MAPPING,
     _POLARS_AVAILABLE,
     _TORCH_DTYPES_MAPPING,
+    _USE_MMAP,
 )
 from litdata.streaming.serializers import Serializer
 from litdata.utilities._pytree import PyTree, tree_unflatten
@@ -119,6 +120,8 @@ class PyTreeLoader(BaseItemLoader):
         super().__init__()
         self._chunk_filepaths: Dict[str, bool] = {}
         self._decrypted_chunks: Dict[int, bytes] = {}
+        self._offsets: Dict[int, List[Tuple[int, int]]] = {}
+        self._fds: Dict[int, int] = {}
 
     def generate_intervals(self) -> List[Interval]:
         intervals = []
@@ -194,15 +197,59 @@ class PyTreeLoader(BaseItemLoader):
 
         if self._config.get("encryption"):
             data = self._load_encrypted_data(chunk_filepath, chunk_index, offset, encryption)
-        else:
+
+        elif _USE_MMAP:  # TODO: find better way to handle this
+            # Instead of opening the file every time, memory-map it (if not already mapped)
+            self._load_chunk(chunk_index, chunk_filepath)
+            data = self._load_data_from_buffer(chunk_index, index - begin)
+        else:  # to keep both options for now
+            # load the data from raw bytes using the offset for the item we want to load
             with open(chunk_filepath, "rb", 0) as fp:
-                # load the data from raw bytes using the offset for the item we want to load
                 data = self._load_data(fp, offset)
 
         # check for mosaic mds format
         if "format" in self._config and self._config["format"] == "mds":
             return self.mds_deserialize(data, chunk_index)
         return self.deserialize(data)
+
+    def _load_chunk(self, chunk_index: int, chunk_filepath: str) -> None:
+        """Load chunk metadata and also Open the file and store the file descriptor (FD)."""
+        if chunk_index in self._fds:
+            return
+
+        fd = os.open(chunk_filepath, os.O_RDONLY)  # Open file for reading
+        self._fds[chunk_index] = fd
+
+        num_items = int(self._chunks[chunk_index]["chunk_size"])
+        # Skip the first 4 bytes for num_items (uint32)
+        begin = 4
+        # Calculate the size of the offsets array (4 bytes * (num_items + 1))
+        offsets_size = 4 * (num_items + 1)
+        # Extract the offsets array
+        try:
+            offsets_data = os.pread(fd, offsets_size, begin)
+        except AttributeError:  # os.pread is not available on Windows
+            os.lseek(fd, begin, os.SEEK_SET)
+            offsets_data = os.read(fd, offsets_size)
+
+        # Convert the offsets array to a numpy array
+        offsets = np.frombuffer(offsets_data, np.uint32)
+        # Calculate item ranges as (start, end) pairs
+        item_ranges = [(offsets[i], offsets[i + 1]) for i in range(num_items)]
+
+        self._offsets[chunk_index] = item_ranges
+
+    def _load_data_from_buffer(self, chunk_index: int, sample_idx: int) -> bytes:
+        """Read sample data using pread() at the given offset."""
+        fd = self._fds[chunk_index]
+        begin, end = self._offsets[chunk_index][sample_idx]
+
+        # Use os.pread if available, otherwise fall back to a manual read
+        try:
+            return os.pread(fd, end - begin, begin)
+        except AttributeError:  # os.pread is not available on Windows
+            os.lseek(fd, begin, os.SEEK_SET)
+            return os.read(fd, end - begin)
 
     def _load_encrypted_data(
         self, chunk_filepath: str, chunk_index: int, offset: int, encryption: Optional[Encryption]
@@ -282,7 +329,23 @@ class PyTreeLoader(BaseItemLoader):
 
     def delete(self, chunk_index: int, chunk_filepath: str) -> None:
         if os.path.exists(chunk_filepath):
+            if _USE_MMAP:
+                if chunk_index in self._offsets:
+                    del self._offsets[chunk_index]
+                if chunk_index in self._fds:
+                    os.close(self._fds[chunk_index])
+                    self._fds.pop(chunk_index, None)
             os.remove(chunk_filepath)
+
+    def close(self, chunk_index: int) -> None:
+        """Release the memory-mapped file for a specific chunk index."""
+        if not _USE_MMAP:
+            return
+        if chunk_index in self._offsets:
+            del self._offsets[chunk_index]
+        if chunk_index in self._fds:
+            os.close(self._fds[chunk_index])
+            self._fds.pop(chunk_index, None)
 
     def _validate_encryption(self, encryption: Optional[Encryption]) -> None:
         """Validate the encryption object."""
