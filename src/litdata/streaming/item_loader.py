@@ -122,6 +122,8 @@ class PyTreeLoader(BaseItemLoader):
         self._decrypted_chunks: Dict[int, bytes] = {}
         self._mmaps: Dict[int, np.memmap] = {}
         self._buffers: Dict[int, bytes] = {}
+        self._offsets: Dict[int, List[Tuple[int, int]]] = {}
+        self._fds: Dict[int, int] = {}
 
     def generate_intervals(self) -> List[Interval]:
         intervals = []
@@ -201,8 +203,7 @@ class PyTreeLoader(BaseItemLoader):
         elif _USE_MMAP:  # TODO: find better way to handle this
             # Instead of opening the file every time, memory-map it (if not already mapped)
             self._load_chunk(chunk_index, chunk_filepath)
-            buffer = self._buffers[chunk_index]
-            data = self._load_data_from_buffer(buffer, offset)
+            data = self._load_data_from_buffer(chunk_index, index - begin)
         else:  # to keep both options for now
             # load the data from raw bytes using the offset for the item we want to load
             with open(chunk_filepath, "rb", 0) as fp:
@@ -214,20 +215,30 @@ class PyTreeLoader(BaseItemLoader):
         return self.deserialize(data)
 
     def _load_chunk(self, chunk_index: int, chunk_filepath: str) -> None:
-        """Memory-map the chunk file if not already done."""
-        if chunk_index in self._mmaps:
+        """Load chunk metadata and also Open the file and store the file descriptor (FD)."""
+        if chunk_index in self._fds:
             return
-        mmap = np.memmap(chunk_filepath, mode="r")
-        self._mmaps[chunk_index] = mmap
-        self._buffers[chunk_index] = memoryview(mmap)  # type: ignore
 
-    def _load_data_from_buffer(self, buffer: memoryview, offset: int) -> bytes:
-        """Read the raw item data from the memory-mapped buffer."""
-        # Read 8 bytes from the given offset to get the begin and end positions.
-        pair = buffer[offset : offset + 8].tobytes()
-        begin_end = np.frombuffer(pair, np.uint32)
-        begin, end = int(begin_end[0]), int(begin_end[1])
-        return bytes(buffer[begin:end])
+        fd = os.open(chunk_filepath, os.O_RDONLY)  # Open file for reading
+        self._fds[chunk_index] = fd
+
+        num_items = int(self._chunks[chunk_index]["chunk_size"])
+        # Skip the first 4 bytes for num_items (uint32)
+        begin = 4
+        # Calculate the size of the offsets array (4 bytes * (num_items + 1))
+        offsets_size = 4 * (num_items + 1)
+        # Extract the offsets array
+        offsets = np.frombuffer(os.pread(fd, offsets_size, begin), np.uint32)
+        # Calculate item ranges as (start, end) pairs
+        item_ranges = [(offsets[i], offsets[i + 1]) for i in range(num_items)]
+
+        self._offsets[chunk_index] = item_ranges
+
+    def _load_data_from_buffer(self, chunk_index: int, sample_idx: int) -> bytes:
+        """Read sample data using pread() at the given offset."""
+        fd = self._fds[chunk_index]
+        begin, end = self._offsets[chunk_index][sample_idx]
+        return os.pread(fd, end - begin, begin)
 
     def _load_encrypted_data(
         self, chunk_filepath: str, chunk_index: int, offset: int, encryption: Optional[Encryption]
@@ -326,6 +337,9 @@ class PyTreeLoader(BaseItemLoader):
         if chunk_index in self._mmaps:
             self._mmaps[chunk_index]._mmap.close()
             del self._mmaps[chunk_index]
+        if chunk_index in self._fds:
+            os.close(self._fds[chunk_index])
+            del self._fds[chunk_index]
 
     def _validate_encryption(self, encryption: Optional[Encryption]) -> None:
         """Validate the encryption object."""
