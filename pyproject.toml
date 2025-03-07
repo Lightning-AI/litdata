@@ -124,6 +124,12 @@ exclude = [
     "src/litdata/utilities/_pytree.py",
     "src/litdata/streaming/item_loader.py",
     "src/litdata/utilities/breakpoint.py",
+    "src/litdata/utilities/subsample.py",
+    "src/litdata/streaming/sampler.py",
+    "src/litdata/streaming/shuffle.py",
+    "src/litdata/imports.py",
+    "src/litdata/imports.py",
+    "src/litdata/processing/data_processor.py",
 ]
 install_types = "True"
 non_interactive = "True"

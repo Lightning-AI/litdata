@@ -1101,6 +1101,7 @@ def test_empty_optimize(tmpdir, inputs):
         output_dir=str(tmpdir),
         chunk_bytes="64MB",
         num_workers=1,
+        optimize_dns=False,
     )
 
     assert os.listdir(tmpdir) == ["index.json"]
