@@ -17,7 +17,7 @@ import shutil
 import subprocess
 from abc import ABC
 from contextlib import suppress
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Type
 from urllib import parse
 
 from filelock import FileLock, Timeout
@@ -239,20 +239,58 @@ class LocalDownloaderWithCache(LocalDownloader):
         super().download_file(remote_filepath, local_filepath)
 
 
-_DOWNLOADERS = {
+_DOWNLOADERS: Dict[str, Type[Downloader]] = {
     "s3://": S3Downloader,
     "gs://": GCPDownloader,
     "azure://": AzureDownloader,
     "hf://": HFDownloader,
     "local:": LocalDownloaderWithCache,
-    "": LocalDownloader,
 }
 
 
-def get_downloader_cls(
+def register_downloader(prefix: str, downloader_cls: Type[Downloader], overwrite: bool = False) -> None:
+    """Register a new downloader class with a specific prefix.
+
+    Args:
+        prefix (str): The prefix associated with the downloader.
+        downloader_cls (type[Downloader]): The downloader class to register.
+        overwrite (bool, optional): Whether to overwrite an existing downloader with the same prefix. Defaults to False.
+
+    Raises:
+        ValueError: If a downloader with the given prefix is already registered and overwrite is False.
+    """
+    if prefix in _DOWNLOADERS and not overwrite:
+        raise ValueError(f"Downloader with prefix {prefix} already registered.")
+
+    _DOWNLOADERS[prefix] = downloader_cls
+
+
+def unregister_downloader(prefix: str) -> None:
+    """Unregister a downloader class associated with a specific prefix.
+
+    Args:
+        prefix (str): The prefix associated with the downloader to unregister.
+    """
+    del _DOWNLOADERS[prefix]
+
+
+def get_downloader(
     remote_dir: str, cache_dir: str, chunks: List[Dict[str, Any]], storage_options: Optional[Dict] = {}
 ) -> Downloader:
+    """Get the appropriate downloader instance based on the remote directory prefix.
+
+    Args:
+        remote_dir (str): The remote directory URL.
+        cache_dir (str): The local cache directory.
+        chunks (List[Dict[str, Any]]): List of chunks to managed by the downloader.
+        storage_options (Optional[Dict], optional): Additional storage options. Defaults to {}.
+
+    Returns:
+        Downloader: An instance of the appropriate downloader class.
+    """
     for k, cls in _DOWNLOADERS.items():
         if str(remote_dir).startswith(k):
             return cls(remote_dir, cache_dir, chunks, storage_options)
-    raise ValueError(f"The provided `remote_dir` {remote_dir} doesn't have a downloader associated.")
+    else:
+        # Default to LocalDownloader if no prefix is matched
+        return LocalDownloader(remote_dir, cache_dir, chunks, storage_options)
