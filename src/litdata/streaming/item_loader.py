@@ -200,13 +200,13 @@ class PyTreeLoader(BaseItemLoader):
                 # load the header if it hasn't been loaded yet
                 self._load_offset_header(fp, chunk_index)
 
-                # get the item's begin and end offsets
+                # get the item's start, end bytes offsets
                 sample_index = index - begin
-                begin, end = self._offsets[chunk_index][sample_index]
+                start, end = self._offsets[chunk_index][sample_index]
 
                 # read the item's data
-                fp.seek(begin)
-                data = fp.read(end - begin)
+                fp.seek(start)
+                data = fp.read(end - start)
 
         # check for mosaic mds format
         if "format" in self._config and self._config["format"] == "mds":
