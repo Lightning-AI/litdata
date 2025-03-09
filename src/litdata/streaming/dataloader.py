@@ -352,6 +352,7 @@ def _wrapper(fetcher: Any, func: Callable, tracer: Any, profile: int, profile_di
 
         if skip_batches > 0 and skip_batches == counter and tracer is None:
             from viztracer import VizTracer
+
             output_file = os.path.join(profile_dir, "result.json")
 
             if os.path.exists(output_file):
@@ -425,7 +426,9 @@ class _ProfileWorkerLoop:
             fetcher = create_fetcher(*args, **kwargs)
 
             if worker_id == 0 and isinstance(self._profile, int):
-                fetcher.fetch = _wrapper(fetcher, fetcher.fetch, tracer, self._profile, self._profile_dir, self._skip_batches)
+                fetcher.fetch = _wrapper(
+                    fetcher, fetcher.fetch, tracer, self._profile, self._profile_dir, self._skip_batches
+                )
             return fetcher
 
         _DatasetKind.create_fetcher = create_fetcher_fn  # type: ignore
@@ -466,7 +469,9 @@ class _StreamingMultiProcessingDataLoaderIter(_MultiProcessingDataLoaderIter):
         if self._loader._profile_batches and distributed_env.global_rank == 0 and _VIZ_TRACKER_AVAILABLE:
             from torch.utils.data._utils import worker
 
-            worker._worker_loop = _ProfileWorkerLoop(self._loader._profile_batches, self._loader._profile_skip_batches, self._loader._profile_dir)
+            worker._worker_loop = _ProfileWorkerLoop(
+                self._loader._profile_batches, self._loader._profile_skip_batches, self._loader._profile_dir
+            )
 
         super().__init__(loader)
 
