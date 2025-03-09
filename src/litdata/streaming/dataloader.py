@@ -449,7 +449,7 @@ class _ProfileWorkerLoop:
             **kwargs,
         )
 
-        if worker_id == 0 and isinstance(self._profile, bool):
+        if tracer is not None and worker_id == 0 and isinstance(self._profile, bool):
             tracer.stop()
             tracer.save()
 
