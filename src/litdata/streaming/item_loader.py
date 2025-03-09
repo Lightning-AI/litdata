@@ -231,7 +231,7 @@ class PyTreeLoader(BaseItemLoader):
 
         # Calculate item ranges as (start, end) pairs
         item_ranges = [(offset_array[i], offset_array[i + 1]) for i in range(num_items)]
-        self._offsets[chunk_index] = item_ranges  # TODO: check to replace entire dict or just the chunk_index
+        self._offsets[chunk_index] = item_ranges
 
     def _load_encrypted_data(
         self, chunk_filepath: str, chunk_index: int, offset: int, encryption: Optional[Encryption]
@@ -311,7 +311,14 @@ class PyTreeLoader(BaseItemLoader):
 
     def delete(self, chunk_index: int, chunk_filepath: str) -> None:
         if os.path.exists(chunk_filepath):
+            if chunk_index in self._offsets:
+                del self._offsets[chunk_index]
             os.remove(chunk_filepath)
+
+    def close(self, chunk_index: int) -> None:
+        """Release the offset data for a specific chunk index."""
+        if chunk_index in self._offsets:
+            del self._offsets[chunk_index]
 
     def _validate_encryption(self, encryption: Optional[Encryption]) -> None:
         """Validate the encryption object."""
