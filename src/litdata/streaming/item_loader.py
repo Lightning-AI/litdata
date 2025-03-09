@@ -192,7 +192,7 @@ class PyTreeLoader(BaseItemLoader):
             if self._open_handle is not None:
                 self._open_handle.close()
 
-            self._open_handle = open(chunk_filepath, "rb", 0)
+            self._open_handle = open(chunk_filepath, "rb", 0)  # noqa: SIM115
 
         if self._config.get("encryption"):
             data = self._load_encrypted_data(chunk_filepath, chunk_index, offset, encryption)
@@ -282,6 +282,12 @@ class PyTreeLoader(BaseItemLoader):
             data.append(serializer.deserialize(data_bytes))
             idx += size
         return tree_unflatten(data, self._config["data_spec"])
+
+    def close(self, chunk_index: int) -> None:
+        """Close the open file handle."""
+        if self._open_handle is not None:
+            self._open_handle.close()
+            self._open_handle = None
 
     def delete(self, chunk_index: int, chunk_filepath: str) -> None:
         if os.path.exists(chunk_filepath):
