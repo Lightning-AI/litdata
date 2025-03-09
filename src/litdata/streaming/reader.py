@@ -400,7 +400,10 @@ class BinaryReader:
             self._prepare_thread.delete([self._last_chunk_index])
 
         if index.chunk_index != self._last_chunk_index:
-            # Close the memory-mapped file for the last chunk index
+            # Release memory resources associated with the previous chunk to prevent memory leaks
+            # This is particularly important for PyTreeLoader and TokensLoader which maintain internal caches
+            # The close() method cleans up any in-memory data structures related to the chunk, such as
+            # offsets or memory-mapped files, or buffers data that are no longer needed.
             if isinstance(self._item_loader, (TokensLoader, PyTreeLoader)) and self._last_chunk_index is not None:
                 self._item_loader.close(self._last_chunk_index)
 
