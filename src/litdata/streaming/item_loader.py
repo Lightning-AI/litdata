@@ -117,8 +117,9 @@ class PyTreeLoader(BaseItemLoader):
 
     def __init__(self) -> None:
         super().__init__()
-        self._chunk_filepaths: Dict[str, bool] = {}
+        self._chunk_filepath: str | None = None
         self._decrypted_chunks: Dict[int, bytes] = {}
+        self._open_handle: FileIO | None = None
 
     def generate_intervals(self) -> List[Interval]:
         intervals = []
@@ -170,13 +171,9 @@ class PyTreeLoader(BaseItemLoader):
         #
         offset = (1 + (index - begin) if index >= begin else index + 1) * 4
 
-        if chunk_filepath in self._chunk_filepaths and not os.path.isfile(chunk_filepath):
-            del self._chunk_filepaths[chunk_filepath]
-
-        if chunk_filepath not in self._chunk_filepaths:
-            exists = os.path.exists(chunk_filepath) and os.stat(chunk_filepath).st_size >= filesize_bytes
-
+        if chunk_filepath != self._chunk_filepath:
             start_time = time()
+            exists = os.path.exists(chunk_filepath) and os.stat(chunk_filepath).st_size >= filesize_bytes
             requested_force_download = False
 
             while not exists:
@@ -190,18 +187,24 @@ class PyTreeLoader(BaseItemLoader):
                 if (time() - start_time) > _MAX_WAIT_TIME:
                     raise FileNotFoundError(f"The {chunk_filepath} hasn't been found.")
 
-            self._chunk_filepaths[chunk_filepath] = True
+            self._chunk_filepath = chunk_filepath
+
+            if self._open_handle is not None:
+                self._open_handle.close()
+
+            self._open_handle = open(chunk_filepath, "rb", 0)
 
         if self._config.get("encryption"):
             data = self._load_encrypted_data(chunk_filepath, chunk_index, offset, encryption)
         else:
-            with open(chunk_filepath, "rb", 0) as fp:
-                # load the data from raw bytes using the offset for the item we want to load
-                data = self._load_data(fp, offset)
+            assert self._open_handle
+            # load the data from raw bytes using the offset for the item we want to load
+            data = self._load_data(self._open_handle, offset)
 
         # check for mosaic mds format
         if "format" in self._config and self._config["format"] == "mds":
             return self.mds_deserialize(data, chunk_index)
+
         return self.deserialize(data)
 
     def _load_encrypted_data(
