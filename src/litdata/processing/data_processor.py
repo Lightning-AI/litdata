@@ -98,8 +98,9 @@ def _get_cache_data_dir(name: Optional[str] = None) -> str:
 def _wait_for_file_to_exist(remote_filepath: str, sleep_time: int = 2) -> Any:
     """Wait until the file exists."""
     file_exists = False
+    fs_provider = _get_fs_provider(remote_filepath)
     while not file_exists:
-        file_exists = _get_fs_provider(remote_filepath).exists(remote_filepath)
+        file_exists = fs_provider.exists(remote_filepath)
         if not file_exists:
             sleep(sleep_time)
 
@@ -122,7 +123,7 @@ def _wait_for_disk_usage_higher_than_threshold(input_dir: str, threshold_in_gb: 
 #
 def _download_data_target(input_dir: Dir, cache_dir: str, queue_in: Queue, queue_out: Queue) -> None:
     """Download data from a remote directory to a cache directory to optimise reading."""
-    fs_provider = _get_fs_provider(input_dir.url)
+    fs_provider = None
 
     while True:
         # 2. Fetch from the queue
@@ -161,6 +162,8 @@ def _download_data_target(input_dir: Dir, cache_dir: str, queue_in: Queue, queue
                 if obj.scheme in _SUPPORTED_PROVIDERS:
                     dirpath = os.path.dirname(local_path)
                     os.makedirs(dirpath, exist_ok=True)
+                    if fs_provider is None:
+                        fs_provider = _get_fs_provider(input_dir.url)
                     fs_provider.download_file(path, local_path)
 
                 elif os.path.isfile(path):

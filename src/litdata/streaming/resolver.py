@@ -245,7 +245,7 @@ def _assert_dir_is_empty(output_dir: Dir, append: bool = False, overwrite: bool 
 
     is_empty = fs_provider.is_empty(output_dir.url)
 
-    # We aren't alloweing to add more data
+    # We aren't allowing to add more data
     # TODO: Add support for `append` and `overwrite`.
     if not is_empty:
         raise RuntimeError(
