@@ -455,7 +455,7 @@ class StreamingDataset(IterableDataset):
     def _validate_state_dict(self) -> None:
         if self._force_override_state_dict:
             logger.warning(
-                "Using state dict override, may lead to unexpected behavior if you're not " "certain what you're doing."
+                "Using state dict override, may lead to unexpected behavior if you're not certain what you're doing."
             )
 
         assert self._state_dict
