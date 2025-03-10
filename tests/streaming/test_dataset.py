@@ -1193,7 +1193,7 @@ def test_dataset_valid_state_override(tmpdir, monkeypatch):
     downloader.download_file = fn
 
     monkeypatch.setattr(resolver_module, "_resolve_datasets", mock_resolve_dataset)
-    monkeypatch.setattr(dataset_utilities_module, "get_downloader_cls", mock.MagicMock(return_value=downloader))
+    monkeypatch.setattr(dataset_utilities_module, "get_downloader", mock.MagicMock(return_value=downloader))
 
     data_dir = os.path.join(tmpdir, "data")
     cache_dir = os.path.join(tmpdir, "cache_dir")

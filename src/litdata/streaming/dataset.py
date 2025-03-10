@@ -543,7 +543,7 @@ class StreamingDataset(IterableDataset):
             )
 
         if self.item_loader and state["item_loader"] != self.item_loader.state_dict():
-            if not self._override_state_dict:
+            if not self._force_override_state_dict:
                 raise ValueError(
                     "The provided `item_loader` state doesn't match the current one. "
                     f"Found `{self.item_loader.state_dict()}` instead of `{state['item_loader']}`."
