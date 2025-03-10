@@ -12,7 +12,7 @@
 # limitations under the License.
 import os
 from abc import ABC, abstractmethod
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 from urllib import parse
 
 from litdata.constants import _GOOGLE_STORAGE_AVAILABLE
@@ -47,7 +47,7 @@ class FsProvider(ABC):
 
 
 class GCPFsProvider(FsProvider):
-    def __init__(self, storage_options: Optional[Dict] = {}):
+    def __init__(self, storage_options: Optional[Dict[str, Any]] = {}):
         if not _GOOGLE_STORAGE_AVAILABLE:
             raise ModuleNotFoundError(str(_GOOGLE_STORAGE_AVAILABLE))
         from google.cloud import storage
@@ -131,19 +131,19 @@ class GCPFsProvider(FsProvider):
 
 
 class S3FsProvider(FsProvider):
-    def __init__(self, storage_options: Optional[Dict] = {}):
+    def __init__(self, storage_options: Optional[Dict[str, Any]] = {}):
         super().__init__()
         self.storage_options = storage_options
         self.client = S3Client(storage_options=storage_options)
 
     def upload_file(self, local_path: str, remote_path: str) -> None:
         bucket_name, blob_path = get_bucket_and_path(remote_path, "s3")
-        self.client.upload_file(local_path, bucket_name, blob_path)
+        self.client.client.upload_file(local_path, bucket_name, blob_path)
 
     def download_file(self, remote_path: str, local_path: str) -> None:
         bucket_name, blob_path = get_bucket_and_path(remote_path, "s3")
         with open(local_path, "wb") as f:
-            self.client.download_fileobj(bucket_name, blob_path, f)
+            self.client.client.download_fileobj(bucket_name, blob_path, f)
 
     def download_directory(self, remote_path: str, local_directory_name: str) -> str:
         import boto3
@@ -169,7 +169,7 @@ class S3FsProvider(FsProvider):
     def copy(self, remote_source: str, remote_destination: str) -> None:
         input_obj = parse.urlparse(remote_source)
         output_obj = parse.urlparse(remote_destination)
-        self.client.copy(
+        self.client.client.copy(
             {"Bucket": input_obj.netloc, "Key": input_obj.path.lstrip("/")},
             output_obj.netloc,
             output_obj.path.lstrip("/"),
@@ -193,7 +193,7 @@ class S3FsProvider(FsProvider):
 
         bucket_name, blob_path = get_bucket_and_path(path, "s3")
         try:
-            _ = self.client.head_object(Bucket=bucket_name, Key=blob_path)
+            _ = self.client.client.head_object(Bucket=bucket_name, Key=blob_path)
             return True
         except botocore.exceptions.ClientError as e:
             if "the HeadObject operation: Not Found" in str(e):
@@ -246,7 +246,7 @@ def get_bucket_and_path(remote_filepath: str, expected_scheme: str = "s3") -> Tu
     return bucket_name, blob_path
 
 
-def _get_fs_provider(remote_filepath: str, storage_options: Optional[Dict] = {}) -> FsProvider:
+def _get_fs_provider(remote_filepath: str, storage_options: Optional[Dict[str, Any]] = {}) -> FsProvider:
     obj = parse.urlparse(remote_filepath)
     if obj.scheme == "gs":
         return GCPFsProvider(storage_options=storage_options)
