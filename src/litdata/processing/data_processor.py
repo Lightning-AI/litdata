@@ -248,7 +248,7 @@ def _upload_fn(upload_queue: Queue, remove_queue: Queue, cache_dir: str, output_
 
         if obj.scheme in _SUPPORTED_PROVIDERS:
             try:
-                output_filepath = str(obj.path).lstrip("/")
+                output_filepath = output_dir.url
 
                 if local_filepath.__contains__(".checkpoints"):
                     output_filepath = os.path.join(output_filepath, ".checkpoints")
@@ -941,7 +941,7 @@ class DataChunkRecipe(DataRecipe):
             fs_provider = _get_fs_provider(output_dir.url)
             fs_provider.upload_file(
                 local_filepath,
-                os.path.join(str(obj.path).lstrip("/"), os.path.basename(local_filepath)),
+                os.path.join(output_dir.url, os.path.basename(local_filepath)),
             )
         elif output_dir.path and os.path.isdir(output_dir.path):
             shutil.copyfile(local_filepath, os.path.join(output_dir.path, os.path.basename(local_filepath)))
@@ -1339,7 +1339,7 @@ class DataProcessor:
                 f"The provided folder should start with {_SUPPORTED_PROVIDERS}. Found {self.output_dir.path}."
             )
 
-        prefix = obj.path.lstrip("/").rstrip("/") + "/"
+        prefix = self.output_dir.url.rstrip("/") + "/"
         checkpoint_prefix = os.path.join(prefix, ".checkpoints")
 
         fs_provider = _get_fs_provider(self.output_dir.url)
@@ -1376,7 +1376,7 @@ class DataProcessor:
 
             fs_provider = _get_fs_provider(self.output_dir.url)
 
-            prefix = obj.path.lstrip("/").rstrip("/") + "/" + ".checkpoints/"
+            prefix = self.output_dir.url.rstrip("/") + "/" + ".checkpoints/"
 
             # write config.json file to temp directory and upload it to the cloud provider
             with tempfile.TemporaryDirectory() as temp_dir:
@@ -1443,7 +1443,7 @@ class DataProcessor:
 
         # TODO: Add support for all cloud providers
 
-        prefix = obj.path.lstrip("/").rstrip("/") + "/" + ".checkpoints/"
+        prefix = self.output_dir.url.rstrip("/") + "/" + ".checkpoints/"
 
         # Delete all the files (including the index file in overwrite mode)
 
