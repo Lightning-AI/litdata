@@ -27,7 +27,7 @@ class FsProvider(ABC):
     def download_file(self, remote_path: str, local_path: str) -> None:
         raise NotImplementedError
 
-    def download_directory(self, remote_path: str, local_directory_name: str) -> None:
+    def download_directory(self, remote_path: str, local_directory_name: str) -> str:
         raise NotImplementedError
 
     def copy(self, remote_source: str, remote_destination: str) -> None:
@@ -68,10 +68,12 @@ class GCPFsProvider(FsProvider):
         blob = bucket.blob(blob_path)
         blob.download_to_filename(local_path)
 
-    def download_directory(self, remote_path: str, local_directory_name: str) -> None:
+    def download_directory(self, remote_path: str, local_directory_name: str) -> str:
         bucket_name, blob_path = get_bucket_and_path(remote_path, "gs")
         bucket = self.client.get_bucket(bucket_name=bucket_name)
         blobs = bucket.list_blobs(prefix=blob_path)  # Get list of files
+
+        saved_file_dir = "."
 
         for blob in blobs:
             if blob.name.endswith("/"):  # Skip directories
@@ -81,6 +83,9 @@ class GCPFsProvider(FsProvider):
 
             os.makedirs(os.path.dirname(local_filename), exist_ok=True)  # Create local directory
             blob.download_to_filename(local_filename)  # Download to the correct local path
+            saved_file_dir = os.path.dirname(local_filename)
+
+        return saved_file_dir
 
     def list_directory(self, path: str) -> List[str]:
         raise NotImplementedError
@@ -140,7 +145,7 @@ class S3FsProvider(FsProvider):
         with open(local_path, "wb") as f:
             self.client.download_fileobj(bucket_name, blob_path, f)
 
-    def download_directory(self, remote_path: str, local_directory_name: str) -> None:
+    def download_directory(self, remote_path: str, local_directory_name: str) -> str:
         import boto3
 
         bucket_name, remote_directory_name = get_bucket_and_path(remote_path, "s3")
