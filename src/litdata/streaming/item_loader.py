@@ -609,5 +609,10 @@ class ParquetLoader(BaseItemLoader):
         if chunk_filepath in self._df:
             del self._df[chunk_filepath]
 
+    def close(self, chunk_index: int) -> None:
+        """Release the memory-mapped file for a specific chunk index."""
+        if chunk_index in self._df:
+            del self._df[chunk_index]
+
     def encode_data(self, data: List[bytes], sizes: List[int], flattened: List[Any]) -> Any:
         pass
