@@ -304,7 +304,7 @@ def _assert_dir_has_index_file(
 
     fs_provider = _get_fs_provider(output_dir.url)
 
-    prefix = obj.path.lstrip("/").rstrip("/") + "/"
+    prefix = output_dir.url.rstrip("/") + "/"
 
     is_empty = fs_provider.is_empty(output_dir.url)
 

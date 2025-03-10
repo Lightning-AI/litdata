@@ -224,7 +224,7 @@ def read_index_file_content(output_dir: Dir) -> Optional[Dict[str, Any]]:
         # TODO: Add support for all cloud providers
         fs_provider = _get_fs_provider(output_dir.url)
 
-        prefix = obj.path.lstrip("/").rstrip("/") + "/"
+        prefix = output_dir.url.rstrip("/") + "/"
 
         # Check the index file exists
         try:
