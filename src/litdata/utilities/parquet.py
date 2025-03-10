@@ -1,6 +1,7 @@
 """contains utility functions to return parquet files from local, s3, or gs."""
 
 import hashlib
+import io
 import json
 import os
 import sys
@@ -13,7 +14,7 @@ from time import sleep, time
 from typing import Any, Dict, Generator, List, Optional, Tuple, Union
 from urllib import parse
 
-from litdata.constants import _FSSPEC_AVAILABLE, _HF_HUB_AVAILABLE, _INDEX_FILENAME, _TQDM_AVAILABLE
+from litdata.constants import _FSSPEC_AVAILABLE, _HF_HUB_AVAILABLE, _INDEX_FILENAME, _PYARROW_AVAILABLE
 from litdata.streaming.resolver import Dir, _resolve_dir
 
 
@@ -67,11 +68,12 @@ class ParquetDir(ABC):
         )
         t_worker.start()
 
+        # TODO: simplify this
         while True:
-            file_name, file_path = self.process_queue.get()
+            file_name, file_path, order = self.process_queue.get()
             if file_name is None and file_path is None:  # Sentinel value to exit
                 break
-            yield file_name, file_path
+            yield file_name, file_path, order
             if self.is_delete_thread_running:
                 self.delete_queue.put_nowait(file_path)
 
@@ -82,13 +84,13 @@ class ParquetDir(ABC):
         t_worker.join()  # should've completed by now. But, just to be on safe side.
 
     @abstractmethod
-    def task(self, _file: Any) -> None: ...
+    def task(self, _file: Any, order: int) -> None: ...
 
     def worker(self) -> None:
         with ThreadPoolExecutor(max_workers=self.num_workers) as executor:
-            for _file in self.files:
-                executor.submit(self.task, _file)
-        self.process_queue.put_nowait((None, None))
+            for order, _file in enumerate(self.files):
+                executor.submit(self.task, _file, order)
+        self.process_queue.put_nowait((None, None, None))
 
     @abstractmethod
     def write_index(self, chunks_info: List[Dict[str, Any]], config: Dict[str, Any]) -> None: ...
@@ -109,7 +111,7 @@ class LocalParquetDir(ParquetDir):
             if _f.endswith(".parquet"):
                 self.files.append(_f)
 
-    def task(self, _file: str) -> None:
+    def task(self, _file: str, order: int) -> None:
         assert isinstance(_file, str)
 
         if _file.endswith(".parquet"):
@@ -117,7 +119,7 @@ class LocalParquetDir(ParquetDir):
             assert self.dir.path != "", "Dir path can't be empty"
 
             file_path = os.path.join(self.dir.path, _file)
-            self.process_queue.put_nowait((_file, file_path))
+            self.process_queue.put_nowait((_file, file_path, order))
 
     def write_index(self, chunks_info: List[Dict[str, Any]], config: Dict[str, Any]) -> None:
         # write to index.json file
@@ -169,7 +171,7 @@ class CloudParquetDir(ParquetDir):
             if _f["type"] == "file" and _f["name"].endswith(".parquet"):
                 self.files.append(_f)
 
-    def task(self, _file: Any) -> None:
+    def task(self, _file: Any, order: int) -> None:
         if _file["type"] == "file" and _file["name"].endswith(".parquet"):
             file_name = os.path.basename(_file["name"])
             assert self.cache_path is not None
@@ -185,7 +187,7 @@ class CloudParquetDir(ParquetDir):
                     local_file.write(chunk)
 
             os.rename(temp_path, local_path)  # Atomic move after successful write
-            self.process_queue.put_nowait((file_name, local_path))
+            self.process_queue.put_nowait((file_name, local_path, order))
 
     def write_index(self, chunks_info: List[Dict[str, Any]], config: Dict[str, Any]) -> None:
         assert self.cache_path is not None
@@ -228,6 +230,8 @@ class HFParquetDir(ParquetDir):
             raise ModuleNotFoundError(
                 "Support for Indexing HF depends on `huggingface_hub`.", "Please, run: `pip install huggingface_hub"
             )
+        if not _PYARROW_AVAILABLE:
+            raise ModuleNotFoundError("Please, run: `pip install pyarrow`")
 
         super().__init__(dir_path, cache_path, storage_options, remove_after_indexing, num_workers)
 
@@ -243,37 +247,61 @@ class HFParquetDir(ParquetDir):
 
         self.fs = HfFileSystem()
 
-        for _f in self.fs.ls(self.dir.url, detail=False):
-            if _f.endswith(".parquet"):
+        for _f in self.fs.ls(self.dir.url, detail=True):
+            if _f["name"].endswith(".parquet"):
                 self.files.append(_f)
 
-    def task(self, _file: str) -> None:
-        assert isinstance(_file, str)
+    def task(self, _file: dict, order: int) -> None:
+        """Extract metadata from a Parquet file on Hugging Face Hub without downloading the entire file.
+
+        This method:
+        1. Accesses only the footer section of the Parquet file, which contains schema information
+        2. Parses the schema to extract data types and row count
+        3. Passes the metadata to the processing queue
+
+        Args:
+            _file: Dictionary containing file metadata from HF filesystem
+            order: Order of the file in the list
+        """
+        import pyarrow.parquet as pq
+
+        # Validate inputs
+        if not isinstance(_file, dict) or "name" not in _file or "size" not in _file:
+            raise ValueError(f"Invalid file object: {_file}")
+
         assert self.cache_path is not None
-        if _file.endswith(".parquet"):
-            file_name = os.path.basename(_file)
-            local_path = os.path.join(self.cache_path, file_name)
-            os.makedirs(os.path.dirname(local_path), exist_ok=True)
-            temp_path = local_path + ".tmp"  # Avoid partial writes
-            # if an existing temp file is present, means its corrupted
-            if os.path.exists(temp_path):
-                os.remove(temp_path)
+        assert _file["name"].endswith(".parquet")
 
-            with self.fs.open(_file, "rb") as cloud_file, open(temp_path, "wb") as local_file:
-                if _TQDM_AVAILABLE:
-                    from tqdm.auto import tqdm as _tqdm
+        file_name = os.path.basename(_file["name"])
+        file_size = _file["size"]
 
-                    file_size = self.fs.info(_file)["size"]
-                    pbar = _tqdm(desc=f"Downloading {file_name}", total=file_size, unit="B", unit_scale=True)
+        with self.fs.open(_file["name"], "rb") as f:
+            # Read footer size (last 8 bytes: 4 for footer size + 4 for magic number)
+            f.seek(file_size - 8)
+            footer_size = int.from_bytes(f.read(4), "little")
 
-                for chunk in iter(lambda: cloud_file.read(4096), b""):  # Read in 4KB chunks
-                    local_file.write(chunk)
+            # seek to the start of the footer and read the footer data
+            footer_start = file_size - footer_size - 8
+            f.seek(footer_start)
+            footer_data = f.read(file_size - footer_start)
 
-                    if _TQDM_AVAILABLE:
-                        pbar.update(len(chunk))
+            if len(footer_data) != file_size - footer_start:
+                raise ValueError(f"Failed to read complete footer data from {file_name}")
 
-            os.rename(temp_path, local_path)  # Atomic move after successful write
-            self.process_queue.put_nowait((file_name, local_path))
+        # Parse the footer data to extract schema information
+        with io.BytesIO(footer_data) as footer_buffer:
+            pq_file = pq.ParquetFile(footer_buffer)
+            dtypes = [str(col.type) for col in pq_file.schema_arrow]
+            num_rows = pq_file.metadata.num_rows
+
+        file_object = {
+            "chunk_size": num_rows,
+            "chunk_bytes": file_size,
+            "dtypes": dtypes,
+        }
+
+        # os.rename(temp_path, local_path)  # Atomic move after successful write
+        self.process_queue.put_nowait((file_name, file_object, order))
 
     def write_index(self, chunks_info: List[Dict[str, Any]], config: Dict[str, Any]) -> None:
         assert self.cache_path is not None

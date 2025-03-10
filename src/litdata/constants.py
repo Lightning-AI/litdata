@@ -38,6 +38,7 @@ _AZURE_STORAGE_AVAILABLE = RequirementCache("azure.storage.blob")
 _TQDM_AVAILABLE = RequirementCache("tqdm")
 _LIGHTNING_SDK_AVAILABLE = RequirementCache("lightning_sdk")
 _HF_HUB_AVAILABLE = RequirementCache("huggingface_hub")
+_PYARROW_AVAILABLE = RequirementCache("pyarrow")
 _POLARS_AVAILABLE = RequirementCache("polars>1.0.0")
 _DEBUG = bool(int(os.getenv("DEBUG", "0")))
 
