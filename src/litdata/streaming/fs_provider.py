@@ -42,6 +42,9 @@ class FsProvider(ABC):
     def exists(self, path: str) -> bool:
         raise NotImplementedError
 
+    def is_empty(self, path: str) -> bool:
+        raise NotImplementedError
+
 
 class GCPFsProvider(FsProvider):
     def __init__(self, storage_options: Optional[Dict] = {}):
@@ -105,6 +108,21 @@ class GCPFsProvider(FsProvider):
         bucket = self.client.bucket(bucket_name)
         blob = bucket.blob(blob_path)
         return blob.exists()
+
+    def is_empty(self, path: str) -> bool:
+        from google.cloud import storage
+
+        client = storage.Client()  # Initialize the GCS client
+
+        bucket_name, blob_path = self.get_bucket_and_path(path, "gs")
+        bucket = client.bucket(bucket_name)
+
+        # List blobs with the given prefix
+        blobs = bucket.list_blobs(prefix=blob_path.lstrip("/"))
+
+        # Check if any objects are returned (if KeyCount > 0 in S3)
+        # If no blobs are found, it's considered empty
+        return not any(blobs)
 
 
 class S3FsProvider(FsProvider):
@@ -178,6 +196,20 @@ class S3FsProvider(FsProvider):
             raise e
         except Exception as e:
             raise e
+
+    def is_empty(self, path: str) -> bool:
+        import boto3
+
+        s3 = boto3.client("s3")
+        obj = parse.urlparse(path)
+
+        objects = s3.list_objects_v2(
+            Bucket=obj.netloc,
+            Delimiter="/",
+            Prefix=obj.path.lstrip("/").rstrip("/") + "/",
+        )
+
+        return not objects["KeyCount"] > 0
 
 
 def get_bucket_and_path(remote_filepath: str, expected_scheme: str = "s3") -> Tuple[str, str]:
