@@ -1167,6 +1167,111 @@ def test_dataset_valid_state(tmpdir, monkeypatch):
         dataset._validate_state_dict()
 
 
+@pytest.mark.timeout(60)
+@pytest.mark.skipif(sys.platform == "win32", reason="Not tested on windows and MacOs")
+def test_dataset_valid_state_override(tmpdir, monkeypatch):
+    seed_everything(42)
+
+    index_json_content: Optional[Dict[str, Any]] = None
+
+    def mock_resolve_dataset(dir_path: str) -> Dir:
+        return Dir(
+            path=dir_path,
+            url=os.path.join(
+                "s3://dummy_bucket/projects/project_id/datasets/",
+                *dir_path.split("/")[3:],
+            ),
+        )
+
+    downloader = mock.MagicMock()
+
+    def fn(remote_chunkpath: str, local_chunkpath: str):
+        assert index_json_content is not None
+        with open(local_chunkpath, "w") as f:
+            json.dump(index_json_content, f)
+
+    downloader.download_file = fn
+
+    monkeypatch.setattr(resolver_module, "_resolve_datasets", mock_resolve_dataset)
+    monkeypatch.setattr(dataset_utilities_module, "get_downloader", mock.MagicMock(return_value=downloader))
+
+    data_dir = os.path.join(tmpdir, "data")
+    cache_dir = os.path.join(tmpdir, "cache_dir")
+
+    os.makedirs(data_dir)
+    os.makedirs(cache_dir)
+
+    block_size = 20
+    cache = Cache(input_dir=str(data_dir), chunk_size=40, item_loader=TokensLoader(block_size))
+
+    counter = 0
+    for i in range(100):
+        text_ids = torch.arange(counter, counter + 20).to(torch.int)
+        cache[i] = text_ids
+        counter += 20
+
+    cache.done()
+    cache.merge()
+
+    index_json_content = load_index_file(data_dir)
+
+    dataset = EmulateS3StreamingDataset(
+        input_dir=Dir(cache_dir, data_dir),
+        item_loader=TokensLoader(block_size),
+        shuffle=False,
+        drop_last=False,
+        force_override_state_dict=True,
+    )
+    dataloader = DataLoader(dataset, num_workers=1, batch_size=2)
+    dataloader_iter = iter(dataloader)
+    next(dataloader_iter)
+
+    sleep(1)
+
+    state_dict = dataset.state_dict(0, 1, 2)
+
+    dataset.load_state_dict(state_dict)
+    dataset.worker_env = _WorkerEnv(world_size=1, rank=0)
+    dataset.cache = cache
+
+    dataset._validate_state_dict()
+
+    state_dict["drop_last"] = True
+    dataset.load_state_dict(state_dict)
+    dataset._validate_state_dict()
+    assert state_dict["drop_last"] is False, "drop_last not overridden"
+
+    state_dict["item_loader"] = {}
+    dataset.load_state_dict(state_dict)
+    dataset._validate_state_dict()
+    assert state_dict["item_loader"] == {"block_size": 20}, "item_loader not overridden"
+
+    state_dict["seed"] = 12
+    dataset.load_state_dict(state_dict)
+    dataset._validate_state_dict()
+    assert state_dict["seed"] == 42, "seed not overridden"
+
+    state_dict["input_dir_url"] = "toto"
+    dataset.load_state_dict(state_dict)
+    dataset._validate_state_dict()
+    assert state_dict["input_dir_url"] == data_dir, "input_dir_url not overridden"
+
+    state_dict["input_dir_path"] = "toto"
+    dataset.load_state_dict(state_dict)
+    dataset._validate_state_dict()
+    assert state_dict["input_dir_path"] == cache_dir, "input_dir_path not overridden"
+
+    state_dict["num_workers"] = "8"
+    dataset.load_state_dict(state_dict)
+    dataset._validate_state_dict()
+    assert state_dict["num_workers"] == 1, "num_workers not overridden"
+
+    state_dict["shuffle"] = True
+    dataset.load_state_dict(state_dict)
+    dataset._validate_state_dict()
+    assert state_dict["shuffle"] is False, "shuffle not overridden"
+
+
 def test_replay_sampling():
     assert _replay_sampling(27, 8, 2) == {0: 16, 1: 11}  # {0: 8 + 8, 1: 8 + 3}
     assert _replay_sampling(27, 7, 2) == {0: 14, 1: 13}  # {0: 7 + 7, 1: 7 + 6}
