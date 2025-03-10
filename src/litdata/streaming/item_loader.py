@@ -332,6 +332,12 @@ class PyTreeLoader(BaseItemLoader):
         body = b"".join(data)
         return head + body, None
 
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        state["_open_handle"] = None
+        state["_chunk_filepath"] = None
+        return state
+
 
 class TokensLoader(BaseItemLoader):
     def __init__(self, block_size: Optional[int] = None):
