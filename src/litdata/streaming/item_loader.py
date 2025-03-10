@@ -569,7 +569,7 @@ class ParquetLoader(BaseItemLoader):
         """Logic to load the chunk in background to gain some time."""
         import polars as pl
 
-        if chunk_filepath not in self._df:
+        if chunk_filepath not in self._df and os.path.exists(chunk_filepath):
             self._df[chunk_filepath] = pl.scan_parquet(chunk_filepath).collect()
 
     def load_item_from_chunk(
