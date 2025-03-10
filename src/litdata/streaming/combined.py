@@ -42,6 +42,7 @@ class CombinedStreamingDataset(IterableDataset):
         seed: int = 42,
         weights: Optional[Sequence[float]] = None,
         iterate_over_all: bool = True,
+        force_override_state_dict: bool = False,
     ) -> None:
         """Enable to stream data from multiple StreamingDataset with the sampling ratio of your choice.
 
@@ -51,7 +52,7 @@ class CombinedStreamingDataset(IterableDataset):
             weights: The sampling ratio for the datasets
             iterate_over_all: When iterate_over_all is True, the combined dataset iterates over all the datasets.
                 Otherwise, it stops as soon as one raises a StopIteration.
-
+            force_override_state_dict: Boolean flag for allowing local arguments to override a loaded state dict.
         """
         self._check_datasets(datasets)
 
@@ -59,6 +60,7 @@ class CombinedStreamingDataset(IterableDataset):
         self._datasets = datasets
         self._weights = weights
         self._iterate_over_all = iterate_over_all
+        self._force_override_state_dict = force_override_state_dict
 
         if iterate_over_all and weights:
             raise ValueError(
@@ -182,13 +184,21 @@ class CombinedStreamingDataset(IterableDataset):
             return
 
         if len(state_dict["dataset"]) != len(self._datasets):
-            raise RuntimeError(f"The provided state doesn't match the current number of datasets: {self._datasets}.")
+            if not self._force_override_state_dict:
+                raise RuntimeError(
+                    f"The provided state doesn't match the current number of datasets: {self._datasets}."
+                )
+            if len(state_dict["dataset"]) > len(self._datasets):
+                raise RuntimeError(
+                    "Currently it's only possible to add datasets to the end of the dataset list when overriding state"
+                )
 
         for dataset_idx, dataset in enumerate(self._datasets):
-            if str(dataset_idx) not in state_dict["dataset"]:
-                raise RuntimeError(f"The provided state doesn't contain the index {dataset_idx}.")
+            if str(dataset_idx) in state_dict["dataset"]:
+                dataset.load_state_dict(state_dict["dataset"][str(dataset_idx)])
 
-            dataset.load_state_dict(state_dict["dataset"][str(dataset_idx)])
+            elif not self._force_override_state_dict:
+                raise RuntimeError(f"The provided state doesn't contain the index {dataset_idx}.")
 
         # Used to iterate over the sampler to avoid sampling the same samples
         if self._use_streaming_dataloader:

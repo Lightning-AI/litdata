@@ -1,3 +1,4 @@
+import contextlib
 import logging
 import os
 import shutil
@@ -27,7 +28,10 @@ def test_reader_chunk_removal(tmpdir):
     cache.merge()
 
     shutil.copytree(cache_dir, remote_dir)
-    shutil.rmtree(cache_dir)
+
+    with contextlib.suppress(Exception):
+        shutil.rmtree(cache_dir)
+
     os.makedirs(cache_dir, exist_ok=True)
 
     for i in range(25):
@@ -42,7 +46,9 @@ def test_reader_chunk_removal(tmpdir):
     # a chunk with only 1 item is 24 bytes (values determined by checking actual chunk sizes)
     cache = Cache(input_dir=Dir(path=cache_dir, url=remote_dir), chunk_size=2, max_cache_size=90)
 
-    shutil.rmtree(cache_dir)
+    with contextlib.suppress(Exception):
+        shutil.rmtree(cache_dir)
+
     os.makedirs(cache_dir, exist_ok=True)
 
     for i in range(25):
@@ -70,7 +76,10 @@ def test_reader_chunk_removal_compressed(tmpdir):
     cache.merge()
 
     shutil.copytree(cache_dir, remote_dir)
-    shutil.rmtree(cache_dir)
+
+    with contextlib.suppress(Exception):
+        shutil.rmtree(cache_dir)
+
     os.makedirs(cache_dir, exist_ok=True)
 
     for i in range(25):
@@ -84,7 +93,9 @@ def test_reader_chunk_removal_compressed(tmpdir):
     # a chunk with only 1 item is 24 bytes (values determined by checking actual chunk sizes)
     cache = Cache(input_dir=Dir(path=cache_dir, url=remote_dir), chunk_size=2, max_cache_size=90, compression="zstd")
 
-    shutil.rmtree(cache_dir)
+    with contextlib.suppress(Exception):
+        shutil.rmtree(cache_dir)
+
     os.makedirs(cache_dir, exist_ok=True)
 
     for i in range(25):
