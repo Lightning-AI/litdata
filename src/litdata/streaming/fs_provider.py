@@ -70,17 +70,17 @@ class GCPFsProvider(FsProvider):
 
     def download_directory(self, remote_path: str, local_directory_name: str) -> str:
         bucket_name, blob_path = get_bucket_and_path(remote_path, "gs")
-        bucket = self.client.get_bucket(bucket_name=bucket_name)
+        bucket = self.client.get_bucket(bucket_name)
         blobs = bucket.list_blobs(prefix=blob_path)  # Get list of files
-
+        local_directory_name = os.path.abspath(local_directory_name)
+        os.makedirs(local_directory_name, exist_ok=True)
         saved_file_dir = "."
 
         for blob in blobs:
-            if blob.name.endswith("/"):  # Skip directories
+            if blob.name.endswith("/") or blob.name == blob_path:  # Skip directories
                 continue
             file_split = blob.name.split("/")
             local_filename = os.path.join(local_directory_name, *file_split[1:])
-
             os.makedirs(os.path.dirname(local_filename), exist_ok=True)  # Create local directory
             blob.download_to_filename(local_filename)  # Download to the correct local path
             saved_file_dir = os.path.dirname(local_filename)
@@ -91,6 +91,7 @@ class GCPFsProvider(FsProvider):
         raise NotImplementedError
 
     def copy(self, remote_source: str, remote_destination: str) -> None:
+        # WARNING: you need to pass complete path (+file_name.ext), else it will fail silently.
         source_bucket_name, source_blob_path = get_bucket_and_path(remote_source, "gs")
         destination_bucket_name, destination_blob_path = get_bucket_and_path(remote_destination, "gs")
 
@@ -98,15 +99,21 @@ class GCPFsProvider(FsProvider):
         destination_bucket = self.client.bucket(destination_bucket_name)
 
         source_blob = source_bucket.blob(source_blob_path)
-        destination_blob = destination_bucket.blob(destination_blob_path)
 
-        source_blob.copy_to(destination_blob)
+        # Check if the source blob exists
+        if not source_blob.exists():
+            raise FileNotFoundError(f"Source blob {source_blob_path} not found.")
+
+        # Use the correct `copy_blob` method
+        source_bucket.copy_blob(source_blob, destination_bucket, destination_blob_path)
 
     def delete_file_or_directory(self, path: str) -> None:
         bucket_name, blob_path = get_bucket_and_path(path, "gs")
         bucket = self.client.bucket(bucket_name)
-        blob = bucket.blob(blob_path)
-        blob.delete()
+        # if it's a single file, only one will match the prefix
+        blobs = bucket.list_blobs(prefix=blob_path)
+        for blob in blobs:
+            blob.delete()
 
     def exists(self, path: str) -> bool:
         bucket_name, blob_path = get_bucket_and_path(path, "gs")
@@ -115,17 +122,10 @@ class GCPFsProvider(FsProvider):
         return blob.exists()
 
     def is_empty(self, path: str) -> bool:
-        from google.cloud import storage
-
-        client = storage.Client()  # Initialize the GCS client
-
-        bucket_name, blob_path = self.get_bucket_and_path(path, "gs")
-        bucket = client.bucket(bucket_name)
-
+        bucket_name, blob_path = get_bucket_and_path(path, "gs")
+        bucket = self.client.bucket(bucket_name)
         # List blobs with the given prefix
-        blobs = bucket.list_blobs(prefix=blob_path.lstrip("/"))
-
-        # Check if any objects are returned (if KeyCount > 0 in S3)
+        blobs = bucket.list_blobs(prefix=blob_path)
         # If no blobs are found, it's considered empty
         return not any(blobs)
 
