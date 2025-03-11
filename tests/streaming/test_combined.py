@@ -552,9 +552,9 @@ def test_combined_dataset_dataloader_states_partial_iterations(combined_dataset,
         if batch_idx == break_at:
             break
 
-    assert not dataloader.restore, (
-        "Dataloader should not be in restore state after partial iteration, before loading state."
-    )
+    assert (
+        not dataloader.restore
+    ), "Dataloader should not be in restore state after partial iteration, before loading state."
     dataloader.load_state_dict(dataloader.state_dict())
     assert dataloader.restore, "Dataloader should be in restore state after loading the state from a partial iteration."
 
@@ -564,9 +564,9 @@ def test_combined_dataset_dataloader_states_partial_iterations(combined_dataset,
         assert dataloader.current_epoch == 1, "Current epoch should be 1 during restore"
         count += 1
     expected_batches = total_batches - break_at - 1
-    assert count >= expected_batches, (
-        f"There should be at least{expected_batches} remaining batches in the first epoch."
-    )
+    assert (
+        count >= expected_batches
+    ), f"There should be at least{expected_batches} remaining batches in the first epoch."
     assert not dataloader.restore, "Dataloader should not be in restore state after completing first epoch."
 
     # Verify batches in the second epoch
