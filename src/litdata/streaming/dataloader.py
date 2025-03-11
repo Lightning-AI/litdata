@@ -695,8 +695,6 @@ class StreamingDataLoader(DataLoader):
 
         return {
             "dataset": self.dataset.state_dict(self.num_workers, self.batch_size, num_samples_yieled),
-            # TODO: Rediscuss on the current_epoch setting.
-            # If we start from 0, then it would not match with the epoch inside of dataset as it starts from 1.
             "current_epoch": self.current_epoch,
             "latest_worker_idx": self._latest_worker_idx,
             "num_samples_yielded": deepcopy(self._num_samples_yielded_combined),
