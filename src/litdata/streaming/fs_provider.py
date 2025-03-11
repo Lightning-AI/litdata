@@ -215,7 +215,7 @@ class S3FsProvider(FsProvider):
     def is_empty(self, path: str) -> bool:
         obj = parse.urlparse(path)
 
-        objects = self.client.list_objects_v2(
+        objects = self.client.client.list_objects_v2(
             Bucket=obj.netloc,
             Delimiter="/",
             Prefix=obj.path.lstrip("/").rstrip("/") + "/",
