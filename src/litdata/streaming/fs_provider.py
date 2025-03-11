@@ -20,6 +20,9 @@ from litdata.streaming.client import S3Client
 
 
 class FsProvider(ABC):
+    def __init__(self, storage_options: Optional[Dict[str, Any]] = {}):
+        self.storage_options = storage_options
+
     @abstractmethod
     def upload_file(self, local_path: str, remote_path: str) -> None:
         raise NotImplementedError
@@ -52,8 +55,7 @@ class GCPFsProvider(FsProvider):
             raise ModuleNotFoundError(str(_GOOGLE_STORAGE_AVAILABLE))
         from google.cloud import storage
 
-        super().__init__()
-        self.storage_options = storage_options
+        super().__init__(storage_options=storage_options)
         self.client = storage.Client(**self.storage_options)
 
     def upload_file(self, local_path: str, remote_path: str) -> None:
@@ -132,8 +134,7 @@ class GCPFsProvider(FsProvider):
 
 class S3FsProvider(FsProvider):
     def __init__(self, storage_options: Optional[Dict[str, Any]] = {}):
-        super().__init__()
-        self.storage_options = storage_options
+        super().__init__(storage_options=storage_options)
         self.client = S3Client(storage_options=storage_options)
 
     def upload_file(self, local_path: str, remote_path: str) -> None:
@@ -146,23 +147,30 @@ class S3FsProvider(FsProvider):
             self.client.client.download_fileobj(bucket_name, blob_path, f)
 
     def download_directory(self, remote_path: str, local_directory_name: str) -> str:
-        import boto3
-
+        """Download all objects under a given S3 prefix (directory) using the existing client."""
         bucket_name, remote_directory_name = get_bucket_and_path(remote_path, "s3")
 
-        s3_resource = boto3.resource("s3")
-        bucket = s3_resource.Bucket(bucket_name)
+        # Ensure local directory exists
+        local_directory_name = os.path.abspath(local_directory_name)
+        os.makedirs(local_directory_name, exist_ok=True)
 
         saved_file_dir = "."
 
-        for obj in bucket.objects.filter(Prefix=remote_directory_name):
-            local_filename = os.path.join(local_directory_name, obj.key)
+        # List objects under the given prefix
+        objects = self.client.client.list_objects_v2(Bucket=bucket_name, Prefix=remote_directory_name)
 
-            if not os.path.exists(os.path.dirname(local_filename)):
-                os.makedirs(os.path.dirname(local_filename))
-            with open(local_filename, "wb") as f:
-                s3_resource.meta.client.download_fileobj(bucket_name, obj.key, f)
-                saved_file_dir = os.path.dirname(local_filename)
+        # Check if objects exist
+        if "Contents" in objects:
+            for obj in objects["Contents"]:
+                local_filename = os.path.join(local_directory_name, obj["Key"])
+
+                # Ensure parent directories exist
+                os.makedirs(os.path.dirname(local_filename), exist_ok=True)
+
+                # Download each file
+                with open(local_filename, "wb") as f:
+                    self.client.client.download_fileobj(bucket_name, obj["Key"], f)
+                    saved_file_dir = os.path.dirname(local_filename)
 
         return saved_file_dir
 
@@ -180,13 +188,15 @@ class S3FsProvider(FsProvider):
 
     def delete_file_or_directory(self, path: str) -> None:
         """Delete the file or the directory."""
-        import boto3
-
-        s3 = boto3.resource("s3")
         bucket_name, blob_path = get_bucket_and_path(path, "s3")
 
-        for obj in s3.Bucket(bucket_name).objects.filter(Prefix=blob_path):
-            s3.Object(bucket_name, obj.key).delete()
+        # List objects under the given path
+        objects = self.client.client.list_objects_v2(Bucket=bucket_name, Prefix=blob_path)
+
+        # Check if objects exist
+        if "Contents" in objects:
+            for obj in objects["Contents"]:
+                self.client.client.delete_object(Bucket=bucket_name, Key=obj["Key"])
 
     def exists(self, path: str) -> bool:
         import botocore
@@ -203,12 +213,9 @@ class S3FsProvider(FsProvider):
             raise e
 
     def is_empty(self, path: str) -> bool:
-        import boto3
-
-        s3 = boto3.client("s3")
         obj = parse.urlparse(path)
 
-        objects = s3.list_objects_v2(
+        objects = self.client.list_objects_v2(
             Bucket=obj.netloc,
             Delimiter="/",
             Prefix=obj.path.lstrip("/").rstrip("/") + "/",
