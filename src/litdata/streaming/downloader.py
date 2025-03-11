@@ -252,7 +252,7 @@ class HFDownloader(Downloader):
             )
             if downloaded_path != local_filepath and os.path.exists(downloaded_path):
                 temp_file_path = local_filepath + ".tmp"
-                shutil.copy2(downloaded_path, temp_file_path)
+                shutil.copyfile(downloaded_path, temp_file_path)
                 os.rename(temp_file_path, local_filepath)
 
 
