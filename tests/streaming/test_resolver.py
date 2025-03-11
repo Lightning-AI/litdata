@@ -329,52 +329,46 @@ def test_execute(phase, monkeypatch, lightning_sdk_mock):
 
 
 def test_assert_dir_is_empty(monkeypatch):
-    boto3 = mock.MagicMock()
-    client_s3_mock = mock.MagicMock()
-    client_s3_mock.list_objects_v2.return_value = {"KeyCount": 1, "Contents": []}
-    boto3.client.return_value = client_s3_mock
-    resolver.boto3 = boto3
+    fs_provider = mock.MagicMock()
+    fs_provider.is_empty = mock.MagicMock(return_value=False)
+    monkeypatch.setattr(resolver, "_get_fs_provider", mock.MagicMock(return_value=fs_provider))
 
     with pytest.raises(RuntimeError, match="The provided output_dir"):
         resolver._assert_dir_is_empty(resolver.Dir(path="/teamspace/...", url="s3://"))
 
-    client_s3_mock.list_objects_v2.return_value = {"KeyCount": 0, "Contents": []}
-    boto3.client.return_value = client_s3_mock
-    resolver.boto3 = boto3
+    fs_provider.is_empty = mock.MagicMock(return_value=True)
 
     resolver._assert_dir_is_empty(resolver.Dir(path="/teamspace/...", url="s3://"))
 
 
 def test_assert_dir_has_index_file(monkeypatch):
-    boto3 = mock.MagicMock()
-    client_s3_mock = mock.MagicMock()
-    client_s3_mock.list_objects_v2.return_value = {"KeyCount": 1, "Contents": []}
-    boto3.client.return_value = client_s3_mock
-    resolver.boto3 = boto3
+    fs_provider = mock.MagicMock()
+    fs_provider.is_empty = mock.MagicMock(return_value=False)
+    monkeypatch.setattr(resolver, "_get_fs_provider", mock.MagicMock(return_value=fs_provider))
 
     with pytest.raises(RuntimeError, match="The provided output_dir"):
         resolver._assert_dir_has_index_file(resolver.Dir(path="/teamspace/...", url="s3://"))
 
-    client_s3_mock.list_objects_v2.return_value = {"KeyCount": 0, "Contents": []}
-    boto3.client.return_value = client_s3_mock
-    resolver.boto3 = boto3
+    fs_provider.is_empty = mock.MagicMock(return_value=True)
 
     resolver._assert_dir_has_index_file(resolver.Dir(path="/teamspace/...", url="s3://"))
 
-    client_s3_mock.list_objects_v2.return_value = {"KeyCount": 1, "Contents": []}
+    fs_provider.exists = mock.MagicMock(return_value=False)
 
-    def head_object(*args, **kwargs):
-        import botocore
-
-        raise botocore.exceptions.ClientError({"Error": {"Code": "404", "Message": "Not Found"}}, "HeadObject")
-
-    client_s3_mock.head_object = head_object
-    boto3.client.return_value = client_s3_mock
-    resolver.boto3 = boto3
+    fs_provider.is_empty = mock.MagicMock(return_value=True)
 
     resolver._assert_dir_has_index_file(resolver.Dir(path="/teamspace/...", url="s3://"))
 
-    boto3.resource.assert_called()
+    fs_provider.exists = mock.MagicMock(return_value=True)
+
+    fs_provider.is_empty = mock.MagicMock(return_value=False)
+    fs_provider.delete_file_or_directory = mock.MagicMock()
+
+    resolver._assert_dir_has_index_file(resolver.Dir(path="/teamspace/...", url="s3://"), mode="overwrite")
+
+    resolver._assert_dir_has_index_file(resolver.Dir(path="/teamspace/...", url="s3://"), mode="append")
+
+    assert fs_provider.delete_file_or_directory.call_count == 1
 
 
 def test_resolve_dir_absolute(tmp_path, monkeypatch):
