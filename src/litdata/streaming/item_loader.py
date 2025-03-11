@@ -567,7 +567,10 @@ class ParquetLoader(BaseItemLoader):
 
     def pre_load_chunk(self, chunk_index: int, chunk_filepath: str) -> None:
         """Logic to load the chunk in background to gain some time."""
-        self.get_df(chunk_index, chunk_filepath)
+        import polars as pl
+
+        if chunk_index not in self._df and os.path.exists(chunk_filepath):
+            self._df[chunk_index] = pl.scan_parquet(chunk_filepath, low_memory=True).collect()
 
     def load_item_from_chunk(
         self,
@@ -595,7 +598,7 @@ class ParquetLoader(BaseItemLoader):
     def get_df(self, chunk_index: int, chunk_filepath: str) -> Any:
         import polars as pl
 
-        if chunk_index not in self._df and os.path.exists(chunk_filepath):
+        if chunk_index not in self._df:
             self._df[chunk_index] = pl.scan_parquet(chunk_filepath, low_memory=True).collect()
         return self._df[chunk_index]
 
