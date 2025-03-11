@@ -359,6 +359,17 @@ def test_assert_dir_has_index_file(monkeypatch):
 
     resolver._assert_dir_has_index_file(resolver.Dir(path="/teamspace/...", url="s3://"))
 
+    fs_provider.exists = mock.MagicMock(return_value=True)
+
+    fs_provider.is_empty = mock.MagicMock(return_value=False)
+    fs_provider.delete_file_or_directory = mock.MagicMock()
+
+    resolver._assert_dir_has_index_file(resolver.Dir(path="/teamspace/...", url="s3://"), mode="overwrite")
+
+    resolver._assert_dir_has_index_file(resolver.Dir(path="/teamspace/...", url="s3://"), mode="append")
+
+    assert fs_provider.delete_file_or_directory.call_count == 1
+
 
 def test_resolve_dir_absolute(tmp_path, monkeypatch):
     """Test that the directory gets resolved to an absolute path and symlinks are followed."""
