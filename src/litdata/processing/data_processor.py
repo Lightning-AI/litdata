@@ -48,7 +48,7 @@ from litdata.processing.utilities import _create_dataset, remove_uuid_from_filen
 from litdata.streaming import Cache
 from litdata.streaming.cache import Dir
 from litdata.streaming.dataloader import StreamingDataLoader
-from litdata.streaming.fs_provider import _get_fs_provider
+from litdata.streaming.fs_provider import _get_fs_provider, not_supported_provider
 from litdata.streaming.item_loader import BaseItemLoader
 from litdata.streaming.resolver import _resolve_dir
 from litdata.utilities._pytree import tree_flatten, tree_unflatten, treespec_loads
@@ -1335,9 +1335,7 @@ class DataProcessor:
 
         obj = parse.urlparse(self.output_dir.url)
         if obj.scheme not in _SUPPORTED_PROVIDERS:
-            raise ValueError(
-                f"The provided folder should start with {_SUPPORTED_PROVIDERS}. Found {self.output_dir.path}."
-            )
+            not_supported_provider(self.output_dir.url)
 
         prefix = self.output_dir.url.rstrip("/") + "/"
         checkpoint_prefix = os.path.join(prefix, ".checkpoints")
@@ -1370,9 +1368,7 @@ class DataProcessor:
             obj = parse.urlparse(self.output_dir.url)
 
             if obj.scheme not in _SUPPORTED_PROVIDERS:
-                raise ValueError(
-                    f"The provided folder should start with {_SUPPORTED_PROVIDERS}. Found {self.output_dir.path}."
-                )
+                not_supported_provider(self.output_dir.url)
 
             fs_provider = _get_fs_provider(self.output_dir.url)
 
@@ -1437,11 +1433,7 @@ class DataProcessor:
         obj = parse.urlparse(self.output_dir.url)
 
         if obj.scheme not in _SUPPORTED_PROVIDERS:
-            raise ValueError(
-                f"The provided folder should start with {_SUPPORTED_PROVIDERS}. Found {self.output_dir.path}."
-            )
-
-        # TODO: Add support for all cloud providers
+            not_supported_provider(self.output_dir.url)
 
         prefix = self.output_dir.url.rstrip("/") + "/" + ".checkpoints/"
 

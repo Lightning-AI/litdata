@@ -3,7 +3,13 @@ from unittest.mock import Mock
 import pytest
 
 from litdata.streaming import fs_provider as fs_provider_module
-from litdata.streaming.fs_provider import GCPFsProvider, S3FsProvider, _get_fs_provider, get_bucket_and_path
+from litdata.streaming.fs_provider import (
+    GCPFsProvider,
+    S3FsProvider,
+    _get_fs_provider,
+    get_bucket_and_path,
+    not_supported_provider,
+)
 
 
 def test_get_bucket_and_path():
@@ -33,3 +39,8 @@ def test_get_fs_provider(monkeypatch, google_mock):
 
     with pytest.raises(ValueError, match="Unsupported scheme"):
         _get_fs_provider("http://bucket/path/to/file.txt")
+
+
+def test_not_supported_provider():
+    with pytest.raises(ValueError, match="URL should start with one of"):
+        not_supported_provider("http://bucket/path/to/file.txt")

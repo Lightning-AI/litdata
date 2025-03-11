@@ -24,7 +24,7 @@ from typing import TYPE_CHECKING, Any, Literal, Optional, Union
 from urllib import parse
 
 from litdata.constants import _LIGHTNING_SDK_AVAILABLE, _SUPPORTED_PROVIDERS
-from litdata.streaming.fs_provider import _get_fs_provider
+from litdata.streaming.fs_provider import _get_fs_provider, not_supported_provider
 
 if TYPE_CHECKING:
     from lightning_sdk import Machine
@@ -239,7 +239,7 @@ def _assert_dir_is_empty(output_dir: Dir, append: bool = False, overwrite: bool 
     obj = parse.urlparse(output_dir.url)
 
     if obj.scheme not in _SUPPORTED_PROVIDERS:
-        raise ValueError(f"The provided folder should start with {_SUPPORTED_PROVIDERS}. Found {output_dir.url}.")
+        not_supported_provider(output_dir.url)
 
     fs_provider = _get_fs_provider(output_dir.url)
 
@@ -300,7 +300,7 @@ def _assert_dir_has_index_file(
     obj = parse.urlparse(output_dir.url)
 
     if obj.scheme not in _SUPPORTED_PROVIDERS:
-        raise ValueError(f"The provided folder should start with {_SUPPORTED_PROVIDERS}. Found {output_dir.url}.")
+        not_supported_provider(output_dir.url)
 
     fs_provider = _get_fs_provider(output_dir.url)
 

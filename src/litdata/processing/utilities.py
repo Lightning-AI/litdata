@@ -23,7 +23,7 @@ from urllib import parse
 
 from litdata.constants import _INDEX_FILENAME, _IS_IN_STUDIO, _SUPPORTED_PROVIDERS
 from litdata.streaming.cache import Dir
-from litdata.streaming.fs_provider import _get_fs_provider
+from litdata.streaming.fs_provider import _get_fs_provider, not_supported_provider
 
 
 #! TODO: Not sure what this function is used for.
@@ -219,9 +219,8 @@ def read_index_file_content(output_dir: Dir) -> Optional[Dict[str, Any]]:
         obj = parse.urlparse(output_dir.url)
 
         if obj.scheme not in _SUPPORTED_PROVIDERS:
-            raise ValueError(f"The provided folder should start with {_SUPPORTED_PROVIDERS}. Found {output_dir.path}.")
+            not_supported_provider(output_dir.url)
 
-        # TODO: Add support for all cloud providers
         fs_provider = _get_fs_provider(output_dir.url)
 
         prefix = output_dir.url.rstrip("/") + "/"

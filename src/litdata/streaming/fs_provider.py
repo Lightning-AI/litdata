@@ -15,7 +15,7 @@ from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional, Tuple
 from urllib import parse
 
-from litdata.constants import _GOOGLE_STORAGE_AVAILABLE
+from litdata.constants import _GOOGLE_STORAGE_AVAILABLE, _SUPPORTED_PROVIDERS
 from litdata.streaming.client import S3Client
 
 
@@ -260,3 +260,9 @@ def _get_fs_provider(remote_filepath: str, storage_options: Optional[Dict[str, A
     if obj.scheme == "s3":
         return S3FsProvider(storage_options=storage_options)
     raise ValueError(f"Unsupported scheme: {obj.scheme}")
+
+
+def not_supported_provider(remote_filepath: str) -> bool:
+    raise ValueError(
+        f"URL should start with one of {[el + '://' for el in _SUPPORTED_PROVIDERS]}." f"Found {remote_filepath}."
+    )
