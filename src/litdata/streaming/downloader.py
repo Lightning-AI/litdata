@@ -27,6 +27,7 @@ from litdata.constants import (
     _GOOGLE_STORAGE_AVAILABLE,
     _HF_HUB_AVAILABLE,
     _INDEX_FILENAME,
+    _S5CMD,
 )
 from litdata.streaming.client import S3Client
 
@@ -70,7 +71,7 @@ class S3Downloader(Downloader):
         super().__init__(remote_dir, cache_dir, chunks, storage_options)
         self._s5cmd_available = os.system("s5cmd > /dev/null 2>&1") == 0
 
-        if not self._s5cmd_available:
+        if not self._s5cmd_available or not _S5CMD:
             self._client = S3Client(storage_options=self._storage_options)
 
     def download_file(self, remote_filepath: str, local_filepath: str, remote_chunk_filename: str = "") -> None:
@@ -91,13 +92,20 @@ class S3Downloader(Downloader):
             if os.path.exists(local_filepath):
                 return
 
-            if self._s5cmd_available:
+            if self._s5cmd_available and _S5CMD:
                 env = None
                 if self._storage_options:
                     env = os.environ.copy()
                     env.update(self._storage_options)
+
+                aws_no_sign_request = self._storage_options.get("AWS_NO_SIGN_REQUEST", "no").lower() == "yes"
+                # prepare the s5cmd command
+                no_signed_option = "--no-sign-request" if aws_no_sign_request else None
+                cmd_parts = ["s5cmd", no_signed_option, "cp", remote_filepath, local_filepath]
+                cmd = " ".join(part for part in cmd_parts if part)
+
                 proc = subprocess.Popen(
-                    f"s5cmd cp {remote_filepath} {local_filepath}",
+                    cmd,
                     shell=True,
                     stdout=subprocess.PIPE,
                     env=env,
