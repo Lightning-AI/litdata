@@ -44,6 +44,7 @@ _DEBUG = bool(int(os.getenv("DEBUG", "0")))
 
 _MAX_WAIT_TIME = int(os.getenv("MAX_WAIT_TIME", "120"))
 _FORCE_DOWNLOAD_TIME = int(os.getenv("FORCE_DOWNLOAD_TIME", "30"))
+_S5CMD = bool(int(os.getenv("S5CMD", "1")))
 
 # DON'T CHANGE ORDER
 _TORCH_DTYPES_MAPPING = {
