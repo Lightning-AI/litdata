@@ -686,14 +686,16 @@ class StreamingDataLoader(DataLoader):
                 "latest_worker_idx": self._latest_worker_idx,
             }
 
-        num_samples_yieled = [0 for _ in range(len(list(self._num_samples_yielded_combined.values())[0]))]
+        # initialize a list to track the number of samples yielded for each dataset
+        num_samples_yieled = [0 for _ in range(len(self.dataset._datasets))]
+
         for worker_idx in self._num_samples_yielded_combined:
             for dataset_idx, samples_yieled in enumerate(self._num_samples_yielded_combined[worker_idx]):
                 num_samples_yieled[dataset_idx] += samples_yieled
 
         return {
             "dataset": self.dataset.state_dict(self.num_workers, self.batch_size, num_samples_yieled),
-            "current_epoch": self.current_epoch if self.restore else self.current_epoch - 1,
+            "current_epoch": self.current_epoch,
             "latest_worker_idx": self._latest_worker_idx,
             "num_samples_yielded": deepcopy(self._num_samples_yielded_combined),
         }
@@ -728,16 +730,27 @@ class StreamingDataLoader(DataLoader):
             self.dataset._set_use_streaming_dataloader(True)
             self.dataset.load_state_dict(obj)
 
-            # Inform that the dataloader is resuming.
-            # TODO: Check if the number of samples yielded is less than the length of the dataset.
-            # Also, len is not available for CombinedStreamingDataset in case of provided weights.
-            self.restore = True
+            total_samples_yielded = sum([sum(samples) for samples in self._num_samples_yielded_combined.values()])
+
+            # Check if we need to restore for the case without weights.
+            if (
+                self.dataset._iterate_over_all
+                and total_samples_yielded > 0
+                and total_samples_yielded < len(self.dataset)  # type: ignore
+            ):
+                self.restore = True
+
+            # Check if we need to restore for the case with weights.
+            # Note: `len` is not available for CombinedStreamingDataset in case of provided weights.
+            # TODO: handle the case with weights.
+            if not self.dataset._iterate_over_all:
+                self.restore = True
 
         elif isinstance(self.dataset, StreamingDataset):
             self.dataset.load_state_dict(obj["dataset"])
 
             # Inform that the dataloader is resuming.
-            if self._num_samples_yielded_streaming < len(self.dataset):
+            if self._num_samples_yielded_streaming > 0 and self._num_samples_yielded_streaming < len(self.dataset):
                 self.restore = True
         else:
             raise RuntimeError("The provided dataset should be a `StreamingDataset` or a `CombinedStreamingDataset`.")
