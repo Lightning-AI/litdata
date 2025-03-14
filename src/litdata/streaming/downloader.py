@@ -24,10 +24,10 @@ from filelock import FileLock, Timeout
 
 from litdata.constants import (
     _AZURE_STORAGE_AVAILABLE,
+    _DISABLE_S5CMD,
     _GOOGLE_STORAGE_AVAILABLE,
     _HF_HUB_AVAILABLE,
     _INDEX_FILENAME,
-    _S5CMD,
 )
 from litdata.streaming.client import S3Client
 
@@ -71,7 +71,7 @@ class S3Downloader(Downloader):
         super().__init__(remote_dir, cache_dir, chunks, storage_options)
         self._s5cmd_available = os.system("s5cmd > /dev/null 2>&1") == 0
 
-        if not self._s5cmd_available or not _S5CMD:
+        if not self._s5cmd_available or _DISABLE_S5CMD:
             self._client = S3Client(storage_options=self._storage_options)
 
     def download_file(self, remote_filepath: str, local_filepath: str, remote_chunk_filename: str = "") -> None:
@@ -92,7 +92,7 @@ class S3Downloader(Downloader):
             if os.path.exists(local_filepath):
                 return
 
-            if self._s5cmd_available and _S5CMD:
+            if self._s5cmd_available and not _DISABLE_S5CMD:
                 env = None
                 if self._storage_options:
                     env = os.environ.copy()
@@ -108,9 +108,31 @@ class S3Downloader(Downloader):
                     cmd,
                     shell=True,
                     stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
                     env=env,
                 )
-                proc.wait()
+                return_code = proc.wait()
+
+                if return_code != 0:
+                    stderr_output = proc.stderr.read().decode().strip()
+                    error_message = (
+                        f"Failed to execute command `{cmd}` (exit code: {return_code}). "
+                        "This might be due to an incorrect file path, insufficient permissions, or network issues. "
+                        "To resolve this issue, you can either:\n"
+                        "- Pass `storage_options` with the necessary credentials and endpoint. \n"
+                        "- Example:\n"
+                        "  storage_options = {\n"
+                        '      "AWS_ACCESS_KEY_ID": "your-key",\n'
+                        '      "AWS_SECRET_ACCESS_KEY": "your-secret",\n'
+                        '      "S3_ENDPOINT_URL": "https://s3.example.com" (Optional if using AWS)\n'
+                        "  }\n"
+                        "- or disable `s5cmd` by setting `DISABLE_S5CMD=1` if `storage_options` do not work.\n"
+                    )
+                    if stderr_output:
+                        error_message += (
+                            f"For further debugging, please check the command output below:\n{stderr_output}"
+                        )
+                    raise RuntimeError(error_message)
             else:
                 from boto3.s3.transfer import TransferConfig
 
