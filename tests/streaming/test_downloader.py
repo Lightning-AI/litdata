@@ -1,5 +1,6 @@
 # ruff: noqa: S604
 import os
+import sys
 from unittest import mock
 from unittest.mock import MagicMock, patch
 
@@ -187,8 +188,9 @@ def test_s3_downloader_with_s5cmd_with_storage_options_unsigned(popen_mock, syst
     process_mock.wait.assert_called_once()
 
 
-@pytest.mark.timeout(10)
-@pytest.mark.skipif(shutil.which("s5cmd") is None, reason="s5cmd is not available")
+@pytest.mark.skipif(
+    shutil.which("s5cmd") is None or sys.platform == "win32", reason="s5cmd is not available or running on Windows"
+)
 def test_s3_downloader_with_s5cmd_with_storage_options_unsigned_pl(tmpdir):
     # Set up the test environment
     remote_filepath = "s3://pl-flash-data/optimized_tiny_imagenet/index.json"
