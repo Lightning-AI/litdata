@@ -42,7 +42,7 @@ class Downloader(ABC):
 
     def _increment_local_lock(self, chunkpath: str) -> None:
         countpath = chunkpath + ".cnt"
-        with suppress(Timeout), FileLock(countpath + ".lock", timeout=3):
+        with suppress(Timeout), FileLock(countpath + ".lock", timeout=1):
             try:
                 with open(countpath) as count_f:
                     curr_count = int(count_f.read().strip())
@@ -79,12 +79,18 @@ class S3Downloader(Downloader):
         if obj.scheme != "s3":
             raise ValueError(f"Expected obj.scheme to be `s3`, instead, got {obj.scheme} for remote={remote_filepath}")
 
+        if os.path.exists(local_filepath + ".lock"):
+            return
+
         if os.path.exists(local_filepath):
             return
 
         with suppress(Timeout), FileLock(
-            local_filepath + ".lock", timeout=3 if obj.path.endswith(_INDEX_FILENAME) else 0
+            local_filepath + ".lock", timeout=1 if obj.path.endswith(_INDEX_FILENAME) else 0
         ):
+            if os.path.exists(local_filepath):
+                return
+
             if self._s5cmd_available:
                 env = None
                 if self._storage_options:
@@ -134,7 +140,7 @@ class GCPDownloader(Downloader):
             return
 
         with suppress(Timeout), FileLock(
-            local_filepath + ".lock", timeout=3 if obj.path.endswith(_INDEX_FILENAME) else 0
+            local_filepath + ".lock", timeout=1 if obj.path.endswith(_INDEX_FILENAME) else 0
         ):
             bucket_name = obj.netloc
             key = obj.path
@@ -167,11 +173,14 @@ class AzureDownloader(Downloader):
                 f"Expected obj.scheme to be `azure`, instead, got {obj.scheme} for remote={remote_filepath}"
             )
 
+        if os.path.exists(local_filepath + ".lock"):
+            return
+
         if os.path.exists(local_filepath):
             return
 
         with suppress(Timeout), FileLock(
-            local_filepath + ".lock", timeout=3 if obj.path.endswith(_INDEX_FILENAME) else 0
+            local_filepath + ".lock", timeout=1 if obj.path.endswith(_INDEX_FILENAME) else 0
         ):
             service = BlobServiceClient(**self._storage_options)
             blob_client = service.get_blob_client(container=obj.netloc, blob=obj.path.lstrip("/"))
@@ -186,7 +195,7 @@ class LocalDownloader(Downloader):
             raise FileNotFoundError(f"The provided remote_path doesn't exist: {remote_filepath}")
 
         with suppress(Timeout), FileLock(
-            local_filepath + ".lock", timeout=3 if remote_filepath.endswith(_INDEX_FILENAME) else 0
+            local_filepath + ".lock", timeout=1 if remote_filepath.endswith(_INDEX_FILENAME) else 0
         ):
             if remote_filepath == local_filepath or os.path.exists(local_filepath):
                 return

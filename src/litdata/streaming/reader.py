@@ -501,6 +501,10 @@ class BinaryReader:
             # inform the thread it is time to stop
             # self._streaming_chunks_downloader.stop()
             self._streaming_chunks_downloader = None
+            self._prepare_thread._decrement_local_lock(index.chunk_index)
+            self._prepare_thread.stop()
+            self._prepare_thread = None
+            self._item_loader.close(self._last_chunk_index)
 
         return item
 

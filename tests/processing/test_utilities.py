@@ -72,7 +72,7 @@ def test_extract_rank_and_index_from_filename():
         assert index == rank_and_index[idx][1]
 
 
-def test_read_index_file_content(tmpdir):
+def test_read_index_file_content(tmpdir, monkeypatch):
     output_dir = tmpdir / "output_dir"
 
     assert read_index_file_content(_resolve_dir(str(output_dir))) is None
@@ -85,6 +85,16 @@ def test_read_index_file_content(tmpdir):
         json.dump(dummy_dict, f)
 
     assert read_index_file_content(_resolve_dir(str(output_dir))) == dummy_dict
+
+    def _fn(remote_path, local_path):
+        with open(local_path, "w") as f:
+            json.dump(dummy_dict, f)
+
+    fs_provider = MagicMock()
+    fs_provider.download_file = _fn
+
+    monkeypatch.setattr(utilities_module, "_get_fs_provider", MagicMock(return_value=fs_provider))
+    assert read_index_file_content(_resolve_dir("s3://bucket/path")) == dummy_dict
 
 
 def test_remove_uuid_from_filename():

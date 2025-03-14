@@ -28,7 +28,7 @@ from urllib import parse
 import torch
 
 from litdata import __version__
-from litdata.constants import _INDEX_FILENAME, _IS_IN_STUDIO
+from litdata.constants import _INDEX_FILENAME, _IS_IN_STUDIO, _SUPPORTED_PROVIDERS
 from litdata.helpers import _check_version_and_prompt_upgrade
 from litdata.processing.data_processor import DataChunkRecipe, DataProcessor, MapRecipe
 from litdata.processing.readers import BaseReader
@@ -38,8 +38,8 @@ from litdata.processing.utilities import (
     optimize_dns_context,
     read_index_file_content,
 )
-from litdata.streaming.client import S3Client
 from litdata.streaming.dataloader import StreamingDataLoader
+from litdata.streaming.fs_provider import _get_fs_provider
 from litdata.streaming.item_loader import BaseItemLoader
 from litdata.streaming.resolver import (
     Dir,
@@ -58,7 +58,7 @@ if TYPE_CHECKING:
 
 def _is_remote_file(path: str) -> bool:
     obj = parse.urlparse(path)
-    return obj.scheme in ["s3", "gcs"]
+    return obj.scheme in _SUPPORTED_PROVIDERS
 
 
 def _get_indexed_paths(data: Any) -> Dict[int, str]:
@@ -641,15 +641,11 @@ def _apply_copy(copy_info: CopyInfo, output_dir: Dir) -> None:
         shutil.copyfile(input_filepath, output_filepath)
 
     elif output_dir.url and copy_info.input_dir.url:
-        input_obj = parse.urlparse(os.path.join(copy_info.input_dir.url, copy_info.old_filename))
-        output_obj = parse.urlparse(os.path.join(output_dir.url, copy_info.new_filename))
+        input_filepath = os.path.join(copy_info.input_dir.url, copy_info.old_filename)
+        output_filepath = os.path.join(output_dir.url, copy_info.new_filename)
 
-        s3 = S3Client()
-        s3.client.copy(
-            {"Bucket": input_obj.netloc, "Key": input_obj.path.lstrip("/")},
-            output_obj.netloc,
-            output_obj.path.lstrip("/"),
-        )
+        fs_provider = _get_fs_provider(output_dir.url)
+        fs_provider.copy(input_filepath, output_filepath)
     else:
         raise NotImplementedError
 
@@ -665,11 +661,7 @@ def _save_index(index_json: Dict, output_dir: Dir) -> None:
 
             f.flush()
 
-            obj = parse.urlparse(os.path.join(output_dir.url, _INDEX_FILENAME))
+            remote_path = os.path.join(output_dir.url, _INDEX_FILENAME)
 
-            s3 = S3Client()
-            s3.client.upload_file(
-                f.name,
-                obj.netloc,
-                obj.path.lstrip("/"),
-            )
+            fs_provider = _get_fs_provider(output_dir.url)
+            fs_provider.upload_file(f.name, remote_path)
