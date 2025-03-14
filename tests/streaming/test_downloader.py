@@ -52,6 +52,7 @@ def test_get_downloader(tmpdir):
 def test_s3_downloader_fast(tmpdir, monkeypatch):
     monkeypatch.setattr(os, "system", MagicMock(return_value=0))
     popen_mock = MagicMock()
+    popen_mock.wait.return_value = 0  # Simulate a successful download
     monkeypatch.setattr(subprocess, "Popen", MagicMock(return_value=popen_mock))
     downloader = S3Downloader(tmpdir, tmpdir, [])
     downloader.download_file("s3://random_bucket/a.txt", os.path.join(tmpdir, "a.txt"))
@@ -63,6 +64,7 @@ def test_s3_downloader_fast(tmpdir, monkeypatch):
 def test_s3_downloader_with_s5cmd_no_storage_options(popen_mock, system_mock, tmpdir):
     system_mock.return_value = 0  # Simulates s5cmd being available
     process_mock = MagicMock()
+    process_mock.wait.return_value = 0  # Simulate a successful download
     popen_mock.return_value = process_mock
 
     # Initialize the S3Downloader without storage options
@@ -78,6 +80,7 @@ def test_s3_downloader_with_s5cmd_no_storage_options(popen_mock, system_mock, tm
         f"s5cmd cp {remote_filepath} {local_filepath}",
         shell=True,
         stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
         env=None,
     )
     process_mock.wait.assert_called_once()
@@ -123,6 +126,7 @@ def test_s3_downloader_s5cmd_available_but_disabled(boto3_client_mock, popen_moc
 def test_s3_downloader_with_s5cmd_with_storage_options(popen_mock, system_mock, tmpdir):
     system_mock.return_value = 0  # Simulates s5cmd being available
     process_mock = MagicMock()
+    process_mock.wait.return_value = 0  # Simulate a successful download
     popen_mock.return_value = process_mock
 
     storage_options = {"AWS_ACCESS_KEY_ID": "dummy_key", "AWS_SECRET_ACCESS_KEY": "dummy_secret"}
@@ -144,6 +148,7 @@ def test_s3_downloader_with_s5cmd_with_storage_options(popen_mock, system_mock, 
         f"s5cmd cp {remote_filepath} {local_filepath}",
         shell=True,
         stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
         env=expected_env,
     )
     process_mock.wait.assert_called_once()
@@ -154,6 +159,7 @@ def test_s3_downloader_with_s5cmd_with_storage_options(popen_mock, system_mock, 
 def test_s3_downloader_with_s5cmd_with_storage_options_unsigned(popen_mock, system_mock, tmpdir):
     system_mock.return_value = 0  # Simulates s5cmd being available
     process_mock = MagicMock()
+    process_mock.wait.return_value = 0  # Simulate a successful download
     popen_mock.return_value = process_mock
 
     storage_options = {"AWS_NO_SIGN_REQUEST": "Yes"}
@@ -175,6 +181,7 @@ def test_s3_downloader_with_s5cmd_with_storage_options_unsigned(popen_mock, syst
         f"s5cmd --no-sign-request cp {remote_filepath} {local_filepath}",
         shell=True,
         stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
         env=expected_env,
     )
     process_mock.wait.assert_called_once()
