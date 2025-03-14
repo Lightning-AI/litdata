@@ -20,7 +20,7 @@ from contextlib import suppress
 from dataclasses import dataclass
 from pathlib import Path
 from time import sleep
-from typing import TYPE_CHECKING, Any, Literal, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, Literal, Optional, Union
 from urllib import parse
 
 from litdata.constants import _LIGHTNING_SDK_AVAILABLE, _SUPPORTED_PROVIDERS
@@ -229,7 +229,9 @@ def _resolve_datasets(dir_path: str) -> Dir:
     )
 
 
-def _assert_dir_is_empty(output_dir: Dir, append: bool = False, overwrite: bool = False) -> None:
+def _assert_dir_is_empty(
+    output_dir: Dir, append: bool = False, overwrite: bool = False, storage_options: Dict[str, Any] = {}
+) -> None:
     if not isinstance(output_dir, Dir):
         raise ValueError("The provided output_dir isn't a `Dir` Object.")
 
@@ -241,7 +243,7 @@ def _assert_dir_is_empty(output_dir: Dir, append: bool = False, overwrite: bool 
     if obj.scheme not in _SUPPORTED_PROVIDERS:
         not_supported_provider(output_dir.url)
 
-    fs_provider = _get_fs_provider(output_dir.url)
+    fs_provider = _get_fs_provider(output_dir.url, storage_options)
 
     is_empty = fs_provider.is_empty(output_dir.url)
 
@@ -255,7 +257,10 @@ def _assert_dir_is_empty(output_dir: Dir, append: bool = False, overwrite: bool 
 
 
 def _assert_dir_has_index_file(
-    output_dir: Dir, mode: Optional[Literal["append", "overwrite"]] = None, use_checkpoint: bool = False
+    output_dir: Dir,
+    mode: Optional[Literal["append", "overwrite"]] = None,
+    use_checkpoint: bool = False,
+    storage_options: Dict[str, Any] = {},
 ) -> None:
     if mode is not None and mode not in ["append", "overwrite"]:
         raise ValueError(f"The provided `mode` should be either `append` or `overwrite`. Found {mode}.")
@@ -302,7 +307,7 @@ def _assert_dir_has_index_file(
     if obj.scheme not in _SUPPORTED_PROVIDERS:
         not_supported_provider(output_dir.url)
 
-    fs_provider = _get_fs_provider(output_dir.url)
+    fs_provider = _get_fs_provider(output_dir.url, storage_options)
 
     prefix = output_dir.url.rstrip("/") + "/"
 
@@ -326,9 +331,7 @@ def _assert_dir_has_index_file(
             "\n HINT: If you want to append/overwrite to the existing dataset, use `mode='append | overwrite'`."
         )
 
-    # all the files (including the index file in overwrite mode)
-    fs_provider = _get_fs_provider(output_dir.url)
-
+    # delete all the files (including the index file in overwrite mode)
     if mode == "overwrite" or (mode is None and not use_checkpoint):
         fs_provider.delete_file_or_directory(output_dir.url)
 
