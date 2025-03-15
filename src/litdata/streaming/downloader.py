@@ -77,7 +77,6 @@ class S3Downloader(Downloader):
             from litdata._core import S3ByteRangeDownloader
 
             self.s3_byte_range_downloader = S3ByteRangeDownloader()
-            return
 
         self._s5cmd_available = os.system("s5cmd > /dev/null 2>&1") == 0
 
@@ -85,7 +84,7 @@ class S3Downloader(Downloader):
             self._client = S3Client(storage_options=self._storage_options)
 
     def download_file(self, remote_filepath: str, local_filepath: str, remote_chunk_filename: str = "") -> None:
-        if _USE_EXPERIMENTAL_RUST:
+        if _USE_EXPERIMENTAL_RUST and not remote_filepath.endswith(_INDEX_FILENAME):
             if remote_chunk_filename not in self.chunk_filename_to_chunk_bytes:
                 raise ValueError(f"Chunk filename {remote_chunk_filename} not found in chunk_filename_to_chunk_bytes")
             self.s3_byte_range_downloader.byte_range_download(
