@@ -1,4 +1,6 @@
 use crate::rust_impl::utils::get_bucket_name_and_key;
+use pyo3::exceptions::PyRuntimeError;
+use pyo3::prelude::*;
 
 use super::StorageBackend;
 use aws_config::BehaviorVersion;
@@ -6,12 +8,15 @@ use aws_sdk_s3::Client;
 use std::time::Duration;
 
 #[derive(Clone, Debug)]
+#[pyclass]
 pub struct S3Storage {
     s3client: Client,
     remote_dir: String,
 }
 
+#[pymethods]
 impl S3Storage {
+    #[new]
     pub fn new(remote_dir: String) -> Self {
         let rt = tokio::runtime::Runtime::new().unwrap();
         // Load AWS config, setting a default region if not configured
@@ -36,6 +41,18 @@ impl S3Storage {
             s3client: s3,
             remote_dir: remote_dir,
         }
+    }
+
+    fn byte_range_download(
+        &self,
+        remote_path: &str,
+        local_path: &str,
+        num_workers: usize,
+    ) -> PyResult<()> {
+        _ = (remote_path, local_path, num_workers);
+        Err(PyErr::new::<PyRuntimeError, &str>(
+            "S3 byte_range_download -> Not implemented",
+        ))
     }
 }
 

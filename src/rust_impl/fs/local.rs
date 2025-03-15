@@ -8,8 +8,6 @@ pub struct LocalStorage {
     remote_dir: String,
 }
 
-#[allow(dead_code)]
-#[allow(unused_variables)]
 impl LocalStorage {
     pub fn new(remote_dir: String) -> Self {
         let mut remote_dir = remote_dir;
@@ -46,8 +44,6 @@ pub struct LocalStorageWithCache {
     loc_stor: LocalStorage,
 }
 
-#[allow(dead_code)]
-#[allow(unused_variables)]
 impl LocalStorageWithCache {
     pub fn new(remote_dir: String) -> Self {
         let remote_dir_without_local = remote_dir.replace("local:", "");

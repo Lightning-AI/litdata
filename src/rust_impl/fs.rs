@@ -1,4 +1,3 @@
-pub mod gs;
 pub mod local;
 pub mod s3;
 // pub mod error;
@@ -8,7 +7,6 @@ pub enum StorageBackendType {
     Local(local::LocalStorage),
     LocalWithCache(local::LocalStorageWithCache),
     S3(s3::S3Storage),
-    // GS(gs::GSStorage),
 }
 
 impl StorageBackendType {
@@ -55,11 +53,11 @@ pub trait StorageBackend {
     //     local_path: &str,
     // ) -> Result<(), Box<dyn std::error::Error>>;
 
-    // async fn byte_range_download(
+    // fn byte_range_download(
     //     &self,
     //     remote_path: &str,
     //     local_path: &str,
-    //     num_threads: usize,
+    //     num_workers: usize,
     // ) -> Result<(), Box<dyn std::error::Error>>;
 
     async fn get_bytes_in_range(
