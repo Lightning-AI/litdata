@@ -27,6 +27,7 @@ from litdata.constants import (
     _GOOGLE_STORAGE_AVAILABLE,
     _HF_HUB_AVAILABLE,
     _INDEX_FILENAME,
+    _USE_EXPERIMENTAL_RUST,
 )
 from litdata.streaming.client import S3Client
 
@@ -39,6 +40,7 @@ class Downloader(ABC):
         self._cache_dir = cache_dir
         self._chunks = chunks
         self._storage_options = storage_options or {}
+        self.chunk_filename_to_chunk_bytes: Dict[str, int] = {}
 
     def _increment_local_lock(self, chunkpath: str) -> None:
         countpath = chunkpath + ".cnt"
@@ -56,6 +58,8 @@ class Downloader(ABC):
         chunk_filename = self._chunks[chunk_index]["filename"]
         local_chunkpath = os.path.join(self._cache_dir, chunk_filename)
         remote_chunkpath = os.path.join(self._remote_dir, chunk_filename)
+        if _USE_EXPERIMENTAL_RUST:
+            self.chunk_filename_to_chunk_bytes[chunk_filename] = self._chunks[chunk_index]["chunk_bytes"]
 
         self.download_file(remote_chunkpath, local_chunkpath, chunk_filename)
 
@@ -68,12 +72,29 @@ class S3Downloader(Downloader):
         self, remote_dir: str, cache_dir: str, chunks: List[Dict[str, Any]], storage_options: Optional[Dict] = {}
     ):
         super().__init__(remote_dir, cache_dir, chunks, storage_options)
+        if _USE_EXPERIMENTAL_RUST:
+            from litdata._core import S3ByteRangeDownloader
+
+            self.s3_byte_range_downloader = S3ByteRangeDownloader()
+            return
+
         self._s5cmd_available = os.system("s5cmd > /dev/null 2>&1") == 0
 
         if not self._s5cmd_available:
             self._client = S3Client(storage_options=self._storage_options)
 
     def download_file(self, remote_filepath: str, local_filepath: str, remote_chunk_filename: str = "") -> None:
+        if _USE_EXPERIMENTAL_RUST:
+            if remote_chunk_filename not in self.chunk_filename_to_chunk_bytes:
+                raise ValueError(f"Chunk filename {remote_chunk_filename} not found in chunk_filename_to_chunk_bytes")
+            self.s3_byte_range_downloader.byte_range_download(
+                remote_filepath,
+                local_filepath,
+                num_of_bytes=self.chunk_filename_to_chunk_bytes[remote_chunk_filename],
+                num_workers=128,
+            )
+            return
+
         obj = parse.urlparse(remote_filepath)
 
         if obj.scheme != "s3":
