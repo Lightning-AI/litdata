@@ -548,7 +548,7 @@ class ParquetLoader(BaseItemLoader):
         self._data_format = self._config["data_format"]
         self._shift_idx = len(self._data_format) * 4
         self.region_of_interest = region_of_interest
-        self._df: Dict[str, Any] = {}
+        self._df: Dict[int, Any] = {}
 
     def generate_intervals(self) -> List[Interval]:
         intervals = []
@@ -569,8 +569,8 @@ class ParquetLoader(BaseItemLoader):
         """Logic to load the chunk in background to gain some time."""
         import polars as pl
 
-        if chunk_filepath not in self._df:
-            self._df[chunk_filepath] = pl.scan_parquet(chunk_filepath).collect()
+        if chunk_index not in self._df and os.path.exists(chunk_filepath):
+            self._df[chunk_index] = pl.scan_parquet(chunk_filepath, low_memory=True).collect()
 
     def load_item_from_chunk(
         self,
@@ -593,21 +593,26 @@ class ParquetLoader(BaseItemLoader):
 
             self._chunk_filepaths[chunk_filepath] = True
 
-        return self.get_df(chunk_filepath).row(index - begin)
+        return self.get_df(chunk_index, chunk_filepath).row(index - begin)
 
-    def get_df(self, chunk_filepath: str) -> Any:
+    def get_df(self, chunk_index: int, chunk_filepath: str) -> Any:
         import polars as pl
 
-        if chunk_filepath not in self._df:
-            self._df[chunk_filepath] = pl.scan_parquet(chunk_filepath).collect()
-        return self._df[chunk_filepath]
+        if chunk_index not in self._df:
+            self._df[chunk_index] = pl.scan_parquet(chunk_filepath, low_memory=True).collect()
+        return self._df[chunk_index]
 
     def delete(self, chunk_index: int, chunk_filepath: str) -> None:
         """Delete a chunk from the local filesystem."""
+        if chunk_index in self._df:
+            del self._df[chunk_index]
         if os.path.exists(chunk_filepath):
             os.remove(chunk_filepath)
-        if chunk_filepath in self._df:
-            del self._df[chunk_filepath]
+
+    def close(self, chunk_index: int) -> None:
+        """Release the memory-mapped file for a specific chunk index."""
+        if chunk_index in self._df:
+            del self._df[chunk_index]
 
     def encode_data(self, data: List[bytes], sizes: List[int], flattened: List[Any]) -> Any:
         pass

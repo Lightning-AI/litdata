@@ -20,7 +20,7 @@ def index_hf_dataset(hf_url: str) -> str:
         print(f"Found HF index.json file in {cache_index_path}.")
     else:
         print("Indexing HF dataset...")
-        index_parquet_dataset(hf_url, cache_dir, remove_after_indexing=False)
+        index_parquet_dataset(hf_url, cache_dir, remove_after_indexing=False, num_workers=os.cpu_count())
 
     print("=" * 50)
 

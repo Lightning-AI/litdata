@@ -16,12 +16,9 @@ import os
 from abc import ABC, abstractmethod
 from typing import Any, List
 
-from lightning_utilities.core.imports import RequirementCache
-
+from litdata.constants import _PYARROW_AVAILABLE
 from litdata.streaming.dataloader import StreamingDataLoader
 from litdata.utilities.format import _get_tqdm_iterator_if_available
-
-_PYARROW_AVAILABLE = RequirementCache("pyarrow")
 
 
 class BaseReader(ABC):

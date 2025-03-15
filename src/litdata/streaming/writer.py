@@ -616,13 +616,21 @@ def index_parquet_dataset(
             dynamic_ncols=True,
             unit="step",
         )
+
+    results = {}
     # iterate the directory and for all files ending in `.parquet` index them
-    for file_name, file_path in pq_dir_class:
-        file_size = os.path.getsize(file_path)
-        pq_polars = pl.scan_parquet(file_path)
-        chunk_dtypes = pq_polars.collect_schema().dtypes()
-        chunk_dtypes = [str(dt) for dt in chunk_dtypes]
-        chunk_size = pq_polars.select(pl.count()).collect().item()
+    for file_name, _file, order in pq_dir_class:
+        if isinstance(_file, str):
+            file_path = _file
+            file_size = os.path.getsize(file_path)
+            pq_polars = pl.scan_parquet(file_path)
+            chunk_dtypes = pq_polars.collect_schema().dtypes()
+            chunk_dtypes = [str(dt) for dt in chunk_dtypes]
+            chunk_size = pq_polars.select(pl.count()).collect().item()
+        else:
+            file_size = _file["chunk_bytes"]
+            chunk_size = _file["chunk_size"]
+            chunk_dtypes = _file["dtypes"]
 
         if len(config["data_format"]) != 0 and config["data_format"] != chunk_dtypes:
             raise Exception(
@@ -636,9 +644,13 @@ def index_parquet_dataset(
             "filename": file_name,
             "dim": None,
         }
-        pq_chunks_info.append(chunk_info)
+        results[order] = chunk_info
         if _TQDM_AVAILABLE:
             pbar.update(1)
 
+    for i in sorted(results.keys()):
+        pq_chunks_info.append(results[i])
+
+    del results
     print(flush=True)  # to prevent truncated printing when using concurrent threads/processes
     pq_dir_class.write_index(pq_chunks_info, config)

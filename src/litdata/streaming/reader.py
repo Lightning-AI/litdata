@@ -24,7 +24,7 @@ from filelock import FileLock, Timeout
 
 from litdata.constants import _DEBUG
 from litdata.streaming.config import ChunksConfig, Interval
-from litdata.streaming.item_loader import BaseItemLoader, PyTreeLoader, TokensLoader
+from litdata.streaming.item_loader import BaseItemLoader, ParquetLoader, PyTreeLoader, TokensLoader
 from litdata.streaming.sampler import ChunkedIndex
 from litdata.streaming.serializers import Serializer, _get_serializers
 from litdata.utilities.encryption import Encryption
@@ -401,7 +401,7 @@ class BinaryReader:
 
         if index.chunk_index != self._last_chunk_index:
             # Close the memory-mapped file for the last chunk index
-            if isinstance(self._item_loader, TokensLoader) and self._last_chunk_index is not None:
+            if isinstance(self._item_loader, (TokensLoader, ParquetLoader)) and self._last_chunk_index is not None:
                 self._item_loader.close(self._last_chunk_index)
 
             # track the new chunk index as the latest one
