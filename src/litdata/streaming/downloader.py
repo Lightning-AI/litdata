@@ -114,7 +114,7 @@ class S3Downloader(Downloader):
                 return_code = proc.wait()
 
                 if return_code != 0:
-                    stderr_output = proc.stderr.read().decode().strip()
+                    stderr_output = proc.stderr.read().decode().strip() if proc.stderr else ""
                     error_message = (
                         f"Failed to execute command `{cmd}` (exit code: {return_code}). "
                         "This might be due to an incorrect file path, insufficient permissions, or network issues. "
