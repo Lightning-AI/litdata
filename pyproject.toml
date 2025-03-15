@@ -21,7 +21,14 @@ url = "https://github.com/Lightning-AI/lit-data"
 requires = [
     "setuptools",
     "wheel",
+    "maturin>=1.0,<2.0",
 ]
+build-backend = "maturin"
+
+[tool.maturin]
+module-name = "litdata._core"
+python-packages = ["litdata"]
+python-source = "src"
 
 [tool.docformatter]
 recursive = true
