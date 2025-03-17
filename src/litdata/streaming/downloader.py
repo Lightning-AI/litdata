@@ -80,73 +80,76 @@ class S3Downloader(Downloader):
         if obj.scheme != "s3":
             raise ValueError(f"Expected obj.scheme to be `s3`, instead, got {obj.scheme} for remote={remote_filepath}")
 
-        if os.path.exists(local_filepath + ".lock"):
-            return
+        # if os.path.exists(local_filepath + ".lock"):
+        #     return
 
         if os.path.exists(local_filepath):
             return
 
+        RETRIES = 3
+
         with suppress(Timeout), FileLock(
             local_filepath + ".lock", timeout=1 if obj.path.endswith(_INDEX_FILENAME) else 0
         ):
-            if os.path.exists(local_filepath):
-                return
+            for _attempt in range(RETRIES):
+                if os.path.exists(local_filepath):
+                    return
 
-            if self._s5cmd_available and not _DISABLE_S5CMD:
-                env = None
-                if self._storage_options:
-                    env = os.environ.copy()
-                    env.update(self._storage_options)
+                if self._s5cmd_available and not _DISABLE_S5CMD:
+                    env = None
+                    if self._storage_options:
+                        env = os.environ.copy()
+                        env.update(self._storage_options)
 
-                aws_no_sign_request = self._storage_options.get("AWS_NO_SIGN_REQUEST", "no").lower() == "yes"
-                # prepare the s5cmd command
-                no_signed_option = "--no-sign-request" if aws_no_sign_request else None
-                cmd_parts = ["s5cmd", no_signed_option, "cp", remote_filepath, local_filepath]
-                cmd = " ".join(part for part in cmd_parts if part)
+                    aws_no_sign_request = self._storage_options.get("AWS_NO_SIGN_REQUEST", "no").lower() == "yes"
+                    # prepare the s5cmd command
+                    no_signed_option = "--no-sign-request" if aws_no_sign_request else None
+                    cmd_parts = ["s5cmd", no_signed_option, "cp", remote_filepath, local_filepath]
+                    cmd = " ".join(part for part in cmd_parts if part)
 
-                proc = subprocess.Popen(
-                    cmd,
-                    shell=True,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    env=env,
-                )
-                return_code = proc.wait()
-
-                if return_code != 0:
-                    stderr_output = proc.stderr.read().decode().strip() if proc.stderr else ""
-                    error_message = (
-                        f"Failed to execute command `{cmd}` (exit code: {return_code}). "
-                        "This might be due to an incorrect file path, insufficient permissions, or network issues. "
-                        "To resolve this issue, you can either:\n"
-                        "- Pass `storage_options` with the necessary credentials and endpoint. \n"
-                        "- Example:\n"
-                        "  storage_options = {\n"
-                        '      "AWS_ACCESS_KEY_ID": "your-key",\n'
-                        '      "AWS_SECRET_ACCESS_KEY": "your-secret",\n'
-                        '      "S3_ENDPOINT_URL": "https://s3.example.com" (Optional if using AWS)\n'
-                        "  }\n"
-                        "- or disable `s5cmd` by setting `DISABLE_S5CMD=1` if `storage_options` do not work.\n"
+                    proc = subprocess.Popen(
+                        cmd,
+                        shell=True,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        env=env,
                     )
-                    if stderr_output:
-                        error_message += (
-                            f"For further debugging, please check the command output below:\n{stderr_output}"
+                    return_code = proc.wait()
+
+                    if return_code != 0:
+                        stderr_output = proc.stderr.read().decode().strip() if proc.stderr else ""
+                        error_message = (
+                            f"Failed to execute command `{cmd}` (exit code: {return_code}). "
+                            "This might be due to an incorrect file path, insufficient permissions, or network issues. "
+                            "To resolve this issue, you can either:\n"
+                            "- Pass `storage_options` with the necessary credentials and endpoint. \n"
+                            "- Example:\n"
+                            "  storage_options = {\n"
+                            '      "AWS_ACCESS_KEY_ID": "your-key",\n'
+                            '      "AWS_SECRET_ACCESS_KEY": "your-secret",\n'
+                            '      "S3_ENDPOINT_URL": "https://s3.example.com" (Optional if using AWS)\n'
+                            "  }\n"
+                            "- or disable `s5cmd` by setting `DISABLE_S5CMD=1` if `storage_options` do not work.\n"
                         )
-                    raise RuntimeError(error_message)
-            else:
-                from boto3.s3.transfer import TransferConfig
+                        if stderr_output:
+                            error_message += (
+                                f"For further debugging, please check the command output below:\n{stderr_output}"
+                            )
+                        raise RuntimeError(error_message)
+                else:
+                    from boto3.s3.transfer import TransferConfig
 
-                extra_args: Dict[str, Any] = {}
+                    extra_args: Dict[str, Any] = {}
 
-                if not os.path.exists(local_filepath):
-                    # Issue: https://github.com/boto/boto3/issues/3113
-                    self._client.client.download_file(
-                        obj.netloc,
-                        obj.path.lstrip("/"),
-                        local_filepath,
-                        ExtraArgs=extra_args,
-                        Config=TransferConfig(use_threads=False),
-                    )
+                    if not os.path.exists(local_filepath):
+                        # Issue: https://github.com/boto/boto3/issues/3113
+                        self._client.client.download_file(
+                            obj.netloc,
+                            obj.path.lstrip("/"),
+                            local_filepath,
+                            ExtraArgs=extra_args,
+                            Config=TransferConfig(use_threads=False),
+                        )
 
 
 class GCPDownloader(Downloader):
