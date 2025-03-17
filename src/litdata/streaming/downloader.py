@@ -171,16 +171,20 @@ class GCPDownloader(Downloader):
         with suppress(Timeout), FileLock(
             local_filepath + ".lock", timeout=1 if obj.path.endswith(_INDEX_FILENAME) else 0
         ):
-            bucket_name = obj.netloc
-            key = obj.path
-            # Remove the leading "/":
-            if key[0] == "/":
-                key = key[1:]
+            for _attempt in range(_DOWNLOAD_RETRIES):
+                if os.path.exists(local_filepath):
+                    return
+                
+                bucket_name = obj.netloc
+                key = obj.path
+                # Remove the leading "/":
+                if key[0] == "/":
+                    key = key[1:]
 
-            client = storage.Client(**self._storage_options)
-            bucket = client.bucket(bucket_name)
-            blob = bucket.blob(key)
-            blob.download_to_filename(local_filepath)
+                client = storage.Client(**self._storage_options)
+                bucket = client.bucket(bucket_name)
+                blob = bucket.blob(key)
+                blob.download_to_filename(local_filepath)
 
 
 class AzureDownloader(Downloader):
@@ -202,20 +206,21 @@ class AzureDownloader(Downloader):
                 f"Expected obj.scheme to be `azure`, instead, got {obj.scheme} for remote={remote_filepath}"
             )
 
-        if os.path.exists(local_filepath + ".lock"):
-            return
-
         if os.path.exists(local_filepath):
             return
 
         with suppress(Timeout), FileLock(
             local_filepath + ".lock", timeout=1 if obj.path.endswith(_INDEX_FILENAME) else 0
         ):
-            service = BlobServiceClient(**self._storage_options)
-            blob_client = service.get_blob_client(container=obj.netloc, blob=obj.path.lstrip("/"))
-            with open(local_filepath, "wb") as download_file:
-                blob_data = blob_client.download_blob()
-                blob_data.readinto(download_file)
+            for _attempt in range(_DOWNLOAD_RETRIES):
+                if os.path.exists(local_filepath):
+                    return
+
+                service = BlobServiceClient(**self._storage_options)
+                blob_client = service.get_blob_client(container=obj.netloc, blob=obj.path.lstrip("/"))
+                with open(local_filepath, "wb") as download_file:
+                    blob_data = blob_client.download_blob()
+                    blob_data.readinto(download_file)
 
 
 class LocalDownloader(Downloader):
@@ -226,14 +231,15 @@ class LocalDownloader(Downloader):
         with suppress(Timeout), FileLock(
             local_filepath + ".lock", timeout=1 if remote_filepath.endswith(_INDEX_FILENAME) else 0
         ):
-            if remote_filepath == local_filepath or os.path.exists(local_filepath):
-                return
-            # make an atomic operation to be safe
-            temp_file_path = local_filepath + ".tmp"
-            shutil.copy(remote_filepath, temp_file_path)
-            os.rename(temp_file_path, local_filepath)
-            with contextlib.suppress(Exception):
-                os.remove(local_filepath + ".lock")
+            for _attempt in range(_DOWNLOAD_RETRIES):
+                if remote_filepath == local_filepath or os.path.exists(local_filepath):
+                    return
+                # make an atomic operation to be safe
+                temp_file_path = local_filepath + ".tmp"
+                shutil.copy(remote_filepath, temp_file_path)
+                os.rename(temp_file_path, local_filepath)
+                with contextlib.suppress(Exception):
+                    os.remove(local_filepath + ".lock")
 
 
 class HFDownloader(Downloader):
@@ -254,21 +260,25 @@ class HFDownloader(Downloader):
     def download_file(self, remote_filepath: str, local_filepath: str, remote_chunk_filename: str = "") -> None:
         # for HF dataset downloading, we don't need remote_filepath, but remote_chunk_filename
         with suppress(Timeout), FileLock(local_filepath + ".lock", timeout=0):
-            temp_path = local_filepath + ".tmp"  # Avoid partial writes
-            try:
-                with self.fs.open(remote_chunk_filename, "rb") as cloud_file, open(temp_path, "wb") as local_file:
-                    for chunk in iter(lambda: cloud_file.read(4096), b""):  # Stream in 4KB chunks local_file.
-                        local_file.write(chunk)
+            for _attempt in range(_DOWNLOAD_RETRIES):
+                if os.path.exists(local_filepath):
+                    return
 
-                os.rename(temp_path, local_filepath)  # Atomic move after successful write
+                temp_path = local_filepath + ".tmp"  # Avoid partial writes
+                try:
+                    with self.fs.open(remote_chunk_filename, "rb") as cloud_file, open(temp_path, "wb") as local_file:
+                        for chunk in iter(lambda: cloud_file.read(4096), b""):  # Stream in 4KB chunks local_file.
+                            local_file.write(chunk)
 
-            except Exception as e:
-                print(f"Error processing {remote_chunk_filename}: {e}")
+                    os.rename(temp_path, local_filepath)  # Atomic move after successful write
 
-            finally:
-                # Ensure cleanup of temp file if an error occurs
-                if os.path.exists(temp_path):
-                    os.remove(temp_path)
+                except Exception as e:
+                    print(f"Error processing {remote_chunk_filename}: {e}")
+
+                finally:
+                    # Ensure cleanup of temp file if an error occurs
+                    if os.path.exists(temp_path):
+                        os.remove(temp_path)
 
 
 class LocalDownloaderWithCache(LocalDownloader):
