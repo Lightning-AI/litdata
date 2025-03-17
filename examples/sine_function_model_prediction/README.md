@@ -1,4 +1,4 @@
-# Sine function model prediction
+# Sine function model prediction with LitData & PyTorch Lightning
 
 <a target="_blank" href="https://lightning.ai/new?repo_url=https%3A%2F%2Flightning.ai%2Fdeependu%2Fstudios%2Fsine-function-model-prediction-with-litdata-and-pytorch-lightning%3Fsection%3Ddata%2Bprocessing"><img src="https://pl-bolts-doc-images.s3.us-east-2.amazonaws.com/app-2/studio-badge.svg" alt="Open in Studio"/>
 </a>
