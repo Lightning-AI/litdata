@@ -116,7 +116,6 @@ class SineDataModule(L.LightningDataModule):
         )
 
     def test_dataloader(self):
-        print("using datamodule test_dataloader")
         return ld.StreamingDataLoader(
             self.test_dataset, batch_size=self.batch_size, num_workers=7, persistent_workers=True
         )
