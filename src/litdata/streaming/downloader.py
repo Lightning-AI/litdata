@@ -25,6 +25,7 @@ from filelock import FileLock, Timeout
 from litdata.constants import (
     _AZURE_STORAGE_AVAILABLE,
     _DISABLE_S5CMD,
+    _DOWNLOAD_RETRIES,
     _GOOGLE_STORAGE_AVAILABLE,
     _HF_HUB_AVAILABLE,
     _INDEX_FILENAME,
@@ -80,18 +81,13 @@ class S3Downloader(Downloader):
         if obj.scheme != "s3":
             raise ValueError(f"Expected obj.scheme to be `s3`, instead, got {obj.scheme} for remote={remote_filepath}")
 
-        # if os.path.exists(local_filepath + ".lock"):
-        #     return
-
         if os.path.exists(local_filepath):
             return
-
-        RETRIES = 3
 
         with suppress(Timeout), FileLock(
             local_filepath + ".lock", timeout=1 if obj.path.endswith(_INDEX_FILENAME) else 0
         ):
-            for _attempt in range(RETRIES):
+            for _attempt in range(_DOWNLOAD_RETRIES):
                 if os.path.exists(local_filepath):
                     return
 
