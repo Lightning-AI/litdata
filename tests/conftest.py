@@ -207,7 +207,7 @@ def huggingface_hub_fs_mock(monkeypatch, write_pq_data, tmp_path):
         return open(file_path, mode)
 
     def mock_ls(*args, **kwargs):
-        files = os.listdir(os.path.join(tmp_path, "pq-dataset"))
+        files = sorted(os.listdir(os.path.join(tmp_path, "pq-dataset")))
         return [
             {
                 "type": "file",
@@ -217,10 +217,14 @@ def huggingface_hub_fs_mock(monkeypatch, write_pq_data, tmp_path):
             for file_name in files
         ]
 
+    def mock_hf_hub_download(repo_id, filename, cache_dir, repo_type, **kwargs):
+        return os.path.join(tmp_path, "pq-dataset", os.path.basename(filename))
+
     hf_fs_mock = Mock()
     hf_fs_mock.ls = Mock(side_effect=mock_ls)
     hf_fs_mock.open = Mock(side_effect=mock_open)
     huggingface_hub.HfFileSystem = Mock(return_value=hf_fs_mock)
+    huggingface_hub.hf_hub_download = Mock(side_effect=mock_hf_hub_download)
 
     return huggingface_hub
 
