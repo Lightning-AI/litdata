@@ -615,35 +615,68 @@ class ParquetLoader(BaseItemLoader):
         # relative index of the desired row within the chunk.
         relative_index = index - begin
         if self._low_memory:
-            return self.get_low_memory_df(chunk_index, chunk_filepath, relative_index)
+            return self._get_item_with_low_memory(chunk_index, chunk_filepath, relative_index)
 
-        return self.get_df(chunk_index, chunk_filepath, index).row(relative_index)
+        return self._get_item(chunk_index, chunk_filepath, relative_index)
 
-    def get_low_memory_df(self, chunk_index: int, chunk_filepath: str, row_index: int) -> Any:
+    def _get_item_with_low_memory(self, chunk_index: int, chunk_filepath: str, row_index: int) -> Any:
+        """Retrieve a dataframe row from a parquet chunk in low memory mode.
+
+        This method reads only the necessary row group from the parquet file using PyArrow and Polars,
+        which helps in reducing memory usage.
+
+        Args:
+            chunk_index (int): The index of the chunk to be accessed.
+            chunk_filepath (str): The file path of the parquet chunk.
+            row_index (int): The relative row index within the loaded chunk.
+
+        Returns:
+            Any: The dataframe row corresponding to the specified index.
+        """
         import polars as pl
         import pyarrow.parquet as pq
 
+        # Load the parquet file if not already loaded and keep the handle in memory
         if chunk_index not in self._df:
             self._df[chunk_index] = pq.ParquetFile(chunk_filepath)
 
+        # Determine the row group and the row index within the row group
         num_rows_in_row_group = self._df[chunk_index].metadata.row_group(0).num_rows
         row_group_index = row_index // num_rows_in_row_group
         row_index_in_row_group = row_index % num_rows_in_row_group
 
+        # Check if the row group is already loaded
         if chunk_index in self._row_groups and row_group_index in self._row_groups[chunk_index]:
-            table = self._row_groups[chunk_index][row_group_index]
+            df = self._row_groups[chunk_index][row_group_index]
         else:
+            # Read the row group and convert it to a Polars dataframe
             row_group = self._df[chunk_index].read_row_group(row_group_index)
-            table = pl.from_arrow(row_group)
-            self._row_groups[chunk_index] = {row_group_index: table}
-        return table.row(row_index_in_row_group)  # type: ignore
+            df = pl.from_arrow(row_group)
+            self._row_groups[chunk_index] = {row_group_index: df}
 
-    def get_df(self, chunk_index: int, chunk_filepath: str, index: int) -> Any:
+        # Return the specific row from the dataframe
+        return df.row(row_index_in_row_group)  # type: ignore
+
+    def _get_item(self, chunk_index: int, chunk_filepath: str, index: int) -> Any:
+        """Retrieve a dataframe row from a parquet chunk by loading the entire chunk into memory.
+
+        Note:
+            This method reads the complete parquet file using Polars. Exercise caution with large files as it
+            may significantly increase memory usage.
+
+        Args:
+            chunk_index (int): The index of the chunk to be accessed.
+            chunk_filepath (str): The file path of the parquet chunk.
+            index (int): The relative row index within the loaded chunk.
+
+        Returns:
+            Any: The dataframe row corresponding to the specified index.
+        """
         import polars as pl
 
         if chunk_index not in self._df:
             self._df[chunk_index] = pl.scan_parquet(chunk_filepath, low_memory=True).collect()
-        return self._df[chunk_index]
+        return self._df[chunk_index].row(index)
 
     def delete(self, chunk_index: int, chunk_filepath: str) -> None:
         """Delete a chunk from the local filesystem."""
