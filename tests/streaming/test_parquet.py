@@ -184,8 +184,8 @@ def test_stream_hf_parquet_dataset(huggingface_hub_fs_mock, pq_data):
         assert _ds[1] == pq_data["weight"][idx]
         assert _ds[2] == pq_data["height"][idx]
 
-    # Test case 3: Streaming with ParquetLoader as item_loader
-    ds = StreamingDataset(hf_url, item_loader=ParquetLoader())
+    # Test case 3: Streaming with ParquetLoader as item_loader and low_memory=False
+    ds = StreamingDataset(hf_url, item_loader=ParquetLoader(low_memory=False))
     assert len(ds) == 25
     for i, _ds in enumerate(ds):
         idx = i % 5
