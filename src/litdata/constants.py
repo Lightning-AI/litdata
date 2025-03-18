@@ -41,7 +41,7 @@ _LIGHTNING_SDK_AVAILABLE = RequirementCache("lightning_sdk")
 _HF_HUB_AVAILABLE = RequirementCache("huggingface_hub")
 _PYARROW_AVAILABLE = RequirementCache("pyarrow")
 _POLARS_AVAILABLE = RequirementCache("polars>1.0.0")
-_DEBUG = bool(int(os.getenv("DEBUG", "0")))
+_DEBUG = bool(int(os.getenv("DEBUG_LITDATA", "0")))
 
 _MAX_WAIT_TIME = int(os.getenv("MAX_WAIT_TIME", "120"))
 _FORCE_DOWNLOAD_TIME = int(os.getenv("FORCE_DOWNLOAD_TIME", "30"))
