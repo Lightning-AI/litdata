@@ -181,7 +181,17 @@ def clean_pq_index_cache():
 
 
 @pytest.fixture
-def huggingface_hub_mock(monkeypatch, write_pq_data, tmp_path):
+def huggingface_hub_mock(monkeypatch):
+    huggingface_hub = ModuleType("huggingface_hub")
+    monkeypatch.setitem(sys.modules, "huggingface_hub", huggingface_hub)
+    hf_hub_download = ModuleType("hf_hub_download")
+    monkeypatch.setitem(sys.modules, "huggingface_hub.hf_hub_download", hf_hub_download)
+    huggingface_hub.hf_hub_download = hf_hub_download
+    return huggingface_hub
+
+
+@pytest.fixture
+def huggingface_hub_fs_mock(monkeypatch, write_pq_data, tmp_path):
     huggingface_hub = ModuleType("huggingface_hub")
     hf_file_system = ModuleType("hf_file_system")
 
@@ -196,12 +206,20 @@ def huggingface_hub_mock(monkeypatch, write_pq_data, tmp_path):
         assert os.path.exists(file_path), "file hf is trying to access, doesn't exist."
         return open(file_path, mode)
 
+    def mock_ls(*args, **kwargs):
+        files = os.listdir(os.path.join(tmp_path, "pq-dataset"))
+        return [
+            {
+                "type": "file",
+                "name": file_name,
+                "size": os.path.getsize(os.path.join(tmp_path, "pq-dataset", file_name)),
+            }
+            for file_name in files
+        ]
+
     hf_fs_mock = Mock()
-    hf_fs_mock.ls = Mock(side_effect=lambda *args, **kwargs: os.listdir(os.path.join(tmp_path, "pq-dataset")))
+    hf_fs_mock.ls = Mock(side_effect=mock_ls)
     hf_fs_mock.open = Mock(side_effect=mock_open)
-    hf_fs_mock.info = Mock(
-        side_effect=lambda filename: {"size": os.path.getsize(os.path.join(tmp_path, "pq-dataset", filename))}
-    )
     huggingface_hub.HfFileSystem = Mock(return_value=hf_fs_mock)
 
     return huggingface_hub
@@ -220,7 +238,13 @@ def fsspec_pq_mock(monkeypatch, write_pq_data, tmp_path, fsspec_mock):
     def mock_fsspec_ls(*args, **kwargs):
         file_list = []
         for file_name in os.listdir(os.path.join(tmp_path, "pq-dataset")):
-            file_list.append({"type": "file", "name": file_name})
+            file_list.append(
+                {
+                    "type": "file",
+                    "name": file_name,
+                    "size": os.path.getsize(os.path.join(tmp_path, "pq-dataset", file_name)),
+                }
+            )
         return file_list
 
     fs_mock = Mock()
