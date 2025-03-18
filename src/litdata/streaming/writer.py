@@ -566,22 +566,21 @@ def index_parquet_dataset(
     pq_dir_url: str,
     cache_dir: Optional[str] = None,
     storage_options: Optional[Dict] = {},
-    remove_after_indexing: bool = True,
     num_workers: int = 4,
 ) -> None:
     """Index a Parquet dataset from a specified URL.
 
-    This function scans all `.parquet` files in the specified directory URL, extracts metadata
-    such as file size, chunk size, and data types, and indexes them. Optionally, the files
-    can be removed after indexing.
+
+    This function scans the metadata of all `.parquet` files in the specified directory URL, extracts metadata
+    such as file size, chunk size, and data types, and indexes them. The index is saved as a JSON file in the
+    specified cache directory.
 
     Args:
         pq_dir_url (str): URL of the directory containing the Parquet files.
         cache_dir (Optional[str]): Local cache directory for storing temporary files.
             For HF dataset, index.json file will be stored here.
         storage_options (Optional[Dict]): Additional storage options for accessing the Parquet files.
-        remove_after_indexing (bool): Whether to remove files after indexing (default is True).
-        num_workers (int): Number of workers to download files and index them.
+        num_workers (int): Number of workers to download metadata of Parquet files and index them.
 
     Raises:
         ModuleNotFoundError: If the required `polars` module is not installed.
@@ -602,7 +601,7 @@ def index_parquet_dataset(
         "item_loader": ParquetLoader.__name__,
     }
 
-    pq_dir_class = get_parquet_indexer_cls(pq_dir_url, cache_dir, storage_options, remove_after_indexing, num_workers)
+    pq_dir_class = get_parquet_indexer_cls(pq_dir_url, cache_dir, storage_options, num_workers)
 
     if _TQDM_AVAILABLE:
         from tqdm.auto import tqdm as _tqdm
@@ -618,19 +617,9 @@ def index_parquet_dataset(
         )
 
     results = {}
-    # iterate the directory and for all files ending in `.parquet` index them
-    for file_name, _file, order in pq_dir_class:
-        if isinstance(_file, str):
-            file_path = _file
-            file_size = os.path.getsize(file_path)
-            pq_polars = pl.scan_parquet(file_path)
-            chunk_dtypes = pq_polars.collect_schema().dtypes()
-            chunk_dtypes = [str(dt) for dt in chunk_dtypes]
-            chunk_size = pq_polars.select(pl.count()).collect().item()
-        else:
-            file_size = _file["chunk_bytes"]
-            chunk_size = _file["chunk_size"]
-            chunk_dtypes = _file["dtypes"]
+    # iterate through the directory and index each file ending with ".parquet"
+    for file_metadata, order in pq_dir_class:
+        chunk_dtypes = file_metadata["data_types"]
 
         if len(config["data_format"]) != 0 and config["data_format"] != chunk_dtypes:
             raise Exception(
@@ -639,9 +628,9 @@ def index_parquet_dataset(
             )
         config["data_format"] = chunk_dtypes
         chunk_info = {
-            "chunk_bytes": file_size,
-            "chunk_size": chunk_size,
-            "filename": file_name,
+            "chunk_bytes": file_metadata["file_size"],
+            "chunk_size": file_metadata["num_rows"],
+            "filename": file_metadata["file_name"],
             "dim": None,
         }
         results[order] = chunk_info
