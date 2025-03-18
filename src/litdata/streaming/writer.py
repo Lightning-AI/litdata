@@ -588,8 +588,6 @@ def index_parquet_dataset(
     if not _POLARS_AVAILABLE:
         raise ModuleNotFoundError("Please, run: `pip install polars`")
 
-    import polars as pl
-
     pq_chunks_info = []
     config: Dict[str, Any] = {
         "compression": None,
