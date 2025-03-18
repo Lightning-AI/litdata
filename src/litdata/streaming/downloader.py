@@ -249,9 +249,6 @@ class HFDownloader(Downloader):
             )
 
         super().__init__(remote_dir, cache_dir, chunks, storage_options)
-        from huggingface_hub import HfFileSystem
-
-        self.fs = HfFileSystem()
 
     def download_file(self, remote_filepath: str, local_filepath: str) -> None:
         """Download a file from the Hugging Face Hub.
