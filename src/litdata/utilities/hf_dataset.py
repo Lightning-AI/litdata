@@ -29,6 +29,6 @@ def index_hf_dataset(hf_url: str) -> str:
         print(f"Found existing HF {_INDEX_FILENAME} file for {hf_url} at {cache_index_path}.")
     else:
         print(f"Indexing HF dataset from {hf_url} into {cache_index_path}.")
-        index_parquet_dataset(hf_url, cache_dir)
+        index_parquet_dataset(hf_url, cache_dir, num_workers=os.cpu_count())
 
     return cache_dir
