@@ -10,6 +10,7 @@ import pytest
 
 from litdata.constants import _INDEX_FILENAME
 from litdata.streaming.dataset import StreamingDataset
+from litdata.streaming.item_loader import PyTreeLoader
 from litdata.streaming.writer import index_parquet_dataset
 from litdata.utilities.hf_dataset import index_hf_dataset
 from litdata.utilities.parquet import (
@@ -168,10 +169,12 @@ def test_get_parquet_indexer_cls(pq_url, cls, expectation, monkeypatch, fsspec_m
 @pytest.mark.usefixtures("clean_pq_index_cache")
 def test_stream_hf_parquet_dataset(huggingface_hub_fs_mock, pq_data):
     hf_url = "hf://datasets/some_org/some_repo/some_path"
+
+    with pytest.raises(ValueError, match="Invalid item_loader for hf://datasets."):
+        StreamingDataset(hf_url, item_loader=PyTreeLoader)
+
     ds = StreamingDataset(hf_url)
-
     assert len(ds) == 25  # 5 datasets for 5 loops
-
     for i, _ds in enumerate(ds):
         idx = i % 5
         assert len(_ds) == 3
