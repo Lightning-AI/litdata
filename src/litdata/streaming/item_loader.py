@@ -10,8 +10,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 import functools
+import logging
 import os
 from abc import ABC, abstractmethod
 from collections import defaultdict, namedtuple
@@ -29,6 +29,7 @@ from litdata.constants import (
     _MAX_WAIT_TIME,
     _NUMPY_DTYPES_MAPPING,
     _POLARS_AVAILABLE,
+    _PYARROW_AVAILABLE,
     _TORCH_DTYPES_MAPPING,
 )
 from litdata.streaming.serializers import Serializer
@@ -36,6 +37,8 @@ from litdata.utilities._pytree import PyTree, tree_unflatten
 from litdata.utilities.encryption import Encryption, EncryptionLevel
 
 Interval = namedtuple("Interval", ["chunk_start", "roi_start_idx", "roi_end_idx", "chunk_end"])
+
+logger = logging.getLogger(__name__)
 
 
 class BaseItemLoader(ABC):
@@ -527,13 +530,25 @@ class TokensLoader(BaseItemLoader):
 
 
 class ParquetLoader(BaseItemLoader):
-    def __init__(self) -> None:
+    def __init__(self, pre_load_chunk: bool = False, low_memory: bool = True) -> None:
         if not _POLARS_AVAILABLE:
             raise ModuleNotFoundError(
                 "You are using the Parquet item loader, which depends on `Polars > 1.0.0`.",
                 "Please, run: `pip install polars>1.0.0`",
             )
+        if not _PYARROW_AVAILABLE:
+            raise ModuleNotFoundError("Please, run: `pip install pyarrow`")
+
         self._chunk_filepaths: Dict[str, bool] = {}
+        self._pre_load_chunk = pre_load_chunk
+        self._low_memory = low_memory
+
+        if not self._low_memory:
+            logger.warning(
+                "You have set low_memory=False in ParquetLoader. "
+                "This may result in high memory usage when processing large Parquet chunk files. "
+                "Consider setting low_memory=True to reduce memory consumption."
+            )
 
     def setup(
         self,
@@ -549,6 +564,7 @@ class ParquetLoader(BaseItemLoader):
         self._shift_idx = len(self._data_format) * 4
         self.region_of_interest = region_of_interest
         self._df: Dict[int, Any] = {}
+        self._row_groups: Dict[int, Any] = {}
 
     def generate_intervals(self) -> List[Interval]:
         intervals = []
@@ -566,7 +582,10 @@ class ParquetLoader(BaseItemLoader):
         return intervals
 
     def pre_load_chunk(self, chunk_index: int, chunk_filepath: str) -> None:
-        """Logic to load the chunk in background to gain some time."""
+        """Preload the chunk in the background to gain some time."""
+        if not self._pre_load_chunk or self._low_memory:
+            return
+
         import polars as pl
 
         if chunk_index not in self._df and os.path.exists(chunk_filepath):
@@ -580,7 +599,7 @@ class ParquetLoader(BaseItemLoader):
         begin: int,
         filesize_bytes: int,
     ) -> Any:
-        """Returns an item loaded from a chunk."""
+        """Returns an item loaded from a parquet chunk."""
         if chunk_filepath in self._chunk_filepaths and not os.path.isfile(chunk_filepath):
             del self._chunk_filepaths[chunk_filepath]
 
@@ -593,9 +612,33 @@ class ParquetLoader(BaseItemLoader):
 
             self._chunk_filepaths[chunk_filepath] = True
 
-        return self.get_df(chunk_index, chunk_filepath).row(index - begin)
+        # relative index of the desired row within the chunk.
+        relative_index = index - begin
+        if self._low_memory:
+            return self.get_low_memory_df(chunk_index, chunk_filepath, relative_index)
 
-    def get_df(self, chunk_index: int, chunk_filepath: str) -> Any:
+        return self.get_df(chunk_index, chunk_filepath, index).row(relative_index)
+
+    def get_low_memory_df(self, chunk_index: int, chunk_filepath: str, row_index: int) -> Any:
+        import polars as pl
+        import pyarrow.parquet as pq
+
+        if chunk_index not in self._df:
+            self._df[chunk_index] = pq.ParquetFile(chunk_filepath)
+
+        num_rows_in_row_group = self._df[chunk_index].metadata.row_group(0).num_rows
+        row_group_index = row_index // num_rows_in_row_group
+        row_index_in_row_group = row_index % num_rows_in_row_group
+
+        if chunk_index in self._row_groups and row_group_index in self._row_groups[chunk_index]:
+            table = self._row_groups[chunk_index][row_group_index]
+        else:
+            row_group = self._df[chunk_index].read_row_group(row_group_index)
+            table = pl.from_arrow(row_group)
+            self._row_groups[chunk_index] = {row_group_index: table}
+        return table.row(row_index_in_row_group)  # type: ignore
+
+    def get_df(self, chunk_index: int, chunk_filepath: str, index: int) -> Any:
         import polars as pl
 
         if chunk_index not in self._df:
@@ -606,6 +649,8 @@ class ParquetLoader(BaseItemLoader):
         """Delete a chunk from the local filesystem."""
         if chunk_index in self._df:
             del self._df[chunk_index]
+        if chunk_index in self._row_groups:
+            del self._row_groups[chunk_index]
         if os.path.exists(chunk_filepath):
             os.remove(chunk_filepath)
 
@@ -613,6 +658,9 @@ class ParquetLoader(BaseItemLoader):
         """Release the memory-mapped file for a specific chunk index."""
         if chunk_index in self._df:
             del self._df[chunk_index]
+
+        if chunk_index in self._row_groups:
+            del self._row_groups[chunk_index]
 
     def encode_data(self, data: List[bytes], sizes: List[int], flattened: List[Any]) -> Any:
         pass
