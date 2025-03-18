@@ -28,7 +28,7 @@ class ParquetDir(ABC):
         self.files: List[Any] = []
         self.num_workers = num_workers
 
-    def __iter__(self) -> Generator[Tuple[str, str, int], None, None]:
+    def __iter__(self) -> Generator[Tuple[Dict[str, Any], int], None, None]:
         """Iterate over the Parquet files and yield their metadata.
 
         Yields:
@@ -39,7 +39,7 @@ class ParquetDir(ABC):
             for future in futures:
                 file_metadata = future.result()
                 order, _ = futures[future]
-                yield file_metadata, order
+                yield file_metadata, order  # type: ignore
 
     @abstractmethod
     def task(self, _file: Any) -> Dict[str, Any] | None: ...
@@ -249,7 +249,7 @@ class HFParquetDir(ParquetDir):
         self.fs = HfFileSystem()
 
         for _f in self.fs.ls(self.dir.url, detail=True):
-            if _f["name"].endswith(".parquet"):
+            if isinstance(_f, dict) and _f["name"].endswith(".parquet"):
                 self.files.append(_f)
 
     def task(self, _file: dict) -> Dict[str, Any] | None:
