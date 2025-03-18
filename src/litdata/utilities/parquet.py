@@ -351,8 +351,24 @@ def get_parquet_indexer_cls(
 
 
 def default_cache_dir(url: str) -> str:
-    # Hash the URL using SHA256 and take the first 16 characters for brevity
+    """Generate a default cache directory path based on the given URL.
+
+    The directory is created under the user's home directory at
+    ~/.cache/litdata-cache-index-pq if it does not already exist.
+
+    Args:
+        url (str): The URL to be hashed for generating the cache directory path.
+
+    Returns:
+        str: The path to the generated cache directory.
+    """
+    # Hash the URL using SHA256
     url_hash = hashlib.sha256(url.encode()).hexdigest()
+
+    # Generate the cache directory path
     cache_path = os.path.join(os.path.expanduser("~"), ".cache", "litdata-cache-index-pq", url_hash)
-    os.makedirs(cache_path, exist_ok=True)  # Ensure the directory exists
+
+    # Ensure the directory exists
+    os.makedirs(cache_path, exist_ok=True)
+
     return cache_path
