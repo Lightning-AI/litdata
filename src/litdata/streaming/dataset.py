@@ -111,6 +111,13 @@ class StreamingDataset(IterableDataset):
                     "The item_loader must be an instance of ParquetLoader. "
                     "Please provide a valid ParquetLoader instance."
                 )
+
+            if item_loader is not None and item_loader._low_memory and shuffle:
+                raise ValueError(
+                    "You have enabled shuffling when using low memory with ParquetLoader. "
+                    "This configuration may lead to performance issues during the training process. "
+                    "Consider disabling shuffling or using a ParquetLoader without low memory mode."
+                )
             item_loader = item_loader or ParquetLoader()
 
         self.input_dir = input_dir
