@@ -4,13 +4,14 @@ import os
 import sys
 from contextlib import nullcontext
 from types import ModuleType
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 import pytest
 
 from litdata.constants import _INDEX_FILENAME
 from litdata.streaming.dataset import StreamingDataset
 from litdata.streaming.writer import index_parquet_dataset
+from litdata.utilities.hf_dataset import index_hf_dataset
 from litdata.utilities.parquet import (
     CloudParquetDir,
     HFParquetDir,
@@ -83,6 +84,21 @@ def test_parquet_index_write(
             assert _ds[0] == pq_data["name"][idx]
             assert _ds[1] == pq_data["weight"][idx]
             assert _ds[2] == pq_data["height"][idx]
+
+
+@pytest.mark.usefixtures("clean_pq_index_cache")
+@patch("litdata.utilities.parquet._HF_HUB_AVAILABLE", False)
+def test_index_hf_dataset(monkeypatch, tmp_path, huggingface_hub_fs_mock):
+    monkeypatch.setattr("litdata.utilities.parquet._HF_HUB_AVAILABLE", True)
+
+    with pytest.raises(ValueError, match="Invalid Hugging Face dataset URL"):
+        index_hf_dataset("invalid_url")
+
+    hf_url = "hf://datasets/some_org/some_repo/some_path"
+    cache_dir = index_hf_dataset(hf_url)
+    assert os.path.exists(cache_dir)
+    assert len(os.listdir(cache_dir)) == 1
+    assert os.path.exists(os.path.join(cache_dir, _INDEX_FILENAME))
 
 
 def test_default_cache_dir(monkeypatch):
