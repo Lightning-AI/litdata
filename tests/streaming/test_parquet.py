@@ -23,7 +23,7 @@ from litdata.utilities.parquet import (
 
 
 #! TODO: Fix test failing on windows
-# @pytest.mark.skipif(condition=sys.platform == "win32", reason="Fails on windows and test gets cancelled")
+@pytest.mark.skipif(condition=sys.platform == "win32", reason="Fails on windows and test gets cancelled")
 @pytest.mark.usefixtures("clean_pq_index_cache")
 @pytest.mark.parametrize(
     ("pq_dir_url"),
@@ -35,12 +35,12 @@ from litdata.utilities.parquet import (
     ],
 )
 @pytest.mark.parametrize(("num_worker"), [None, 1, 2, 4])
+@patch("litdata.utilities.parquet._HF_HUB_AVAILABLE", True)
+@patch("litdata.streaming.downloader._HF_HUB_AVAILABLE", True)
+@patch("litdata.utilities.parquet._FSSPEC_AVAILABLE", True)
 def test_parquet_index_write(
     monkeypatch, tmp_path, pq_data, huggingface_hub_fs_mock, fsspec_pq_mock, pq_dir_url, num_worker
 ):
-    monkeypatch.setattr("litdata.utilities.parquet._HF_HUB_AVAILABLE", True)
-    monkeypatch.setattr("litdata.utilities.parquet._FSSPEC_AVAILABLE", True)
-
     if pq_dir_url is None:
         pq_dir_url = os.path.join(tmp_path, "pq-dataset")
 
@@ -87,11 +87,10 @@ def test_parquet_index_write(
             assert _ds[2] == pq_data["height"][idx]
 
 
+@pytest.mark.skipif(condition=sys.platform == "win32", reason="Fails on windows and test gets cancelled")
 @pytest.mark.usefixtures("clean_pq_index_cache")
-@patch("litdata.utilities.parquet._HF_HUB_AVAILABLE", False)
+@patch("litdata.utilities.parquet._HF_HUB_AVAILABLE", True)
 def test_index_hf_dataset(monkeypatch, tmp_path, huggingface_hub_fs_mock):
-    monkeypatch.setattr("litdata.utilities.parquet._HF_HUB_AVAILABLE", True)
-
     with pytest.raises(ValueError, match="Invalid Hugging Face dataset URL"):
         index_hf_dataset("invalid_url")
 
@@ -167,7 +166,9 @@ def test_get_parquet_indexer_cls(pq_url, cls, expectation, monkeypatch, fsspec_m
 
 
 @pytest.mark.usefixtures("clean_pq_index_cache")
-def test_stream_hf_parquet_dataset(huggingface_hub_fs_mock, pq_data):
+@patch("litdata.utilities.parquet._HF_HUB_AVAILABLE", True)
+@patch("litdata.streaming.downloader._HF_HUB_AVAILABLE", True)
+def test_stream_hf_parquet_dataset(monkeypatch, huggingface_hub_fs_mock, pq_data):
     hf_url = "hf://datasets/some_org/some_repo/some_path"
 
     # Test case 1: Invalid item_loader
