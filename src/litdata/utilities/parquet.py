@@ -39,10 +39,10 @@ class ParquetDir(ABC):
             for future in futures:
                 file_metadata = future.result()
                 order, _ = futures[future]
-                yield file_metadata, order  # type: ignore
+                yield file_metadata, order
 
     @abstractmethod
-    def task(self, _file: Any) -> Dict[str, Any] | None: ...
+    def task(self, _file: Any) -> Dict[str, Any]: ...
 
     @abstractmethod
     def write_index(self, chunks_info: List[Dict[str, Any]], config: Dict[str, Any]) -> None:
@@ -82,30 +82,28 @@ class LocalParquetDir(ParquetDir):
             if _f.endswith(".parquet"):
                 self.files.append(_f)
 
-    def task(self, _file: str) -> Dict[str, Any] | None:
+    def task(self, _file: str) -> Dict[str, Any]:
         """Extract metadata from a Parquet file on the local filesystem."""
         import pyarrow.parquet as pq
 
         assert isinstance(_file, str)
-        if _file.endswith(".parquet"):
-            assert self.dir.path is not None
-            assert self.dir.path != "", "Dir path can't be empty"
+        assert _file.endswith(".parquet")
+        assert self.dir.path is not None
+        assert self.dir.path != "", "Dir path can't be empty"
 
-            file_path = os.path.join(self.dir.path, _file)
-            parquet_file = pq.ParquetFile(file_path)
-            num_rows = parquet_file.metadata.num_rows
-            data_types = [str(col.type) for col in parquet_file.schema_arrow]
-            file_size = os.path.getsize(file_path)
-            file_name = os.path.basename(file_path)
+        file_path = os.path.join(self.dir.path, _file)
+        parquet_file = pq.ParquetFile(file_path)
+        num_rows = parquet_file.metadata.num_rows
+        data_types = [str(col.type) for col in parquet_file.schema_arrow]
+        file_size = os.path.getsize(file_path)
+        file_name = os.path.basename(file_path)
 
-            return {
-                "file_name": file_name,
-                "num_rows": num_rows,
-                "file_size": file_size,
-                "data_types": data_types,
-            }
-
-        return None
+        return {
+            "file_name": file_name,
+            "num_rows": num_rows,
+            "file_size": file_size,
+            "data_types": data_types,
+        }
 
     def write_index(self, chunks_info: List[Dict[str, Any]], config: Dict[str, Any]) -> None:
         """Write the index file to the cache directory."""
@@ -155,7 +153,7 @@ class CloudParquetDir(ParquetDir):
             if _f["type"] == "file" and _f["name"].endswith(".parquet"):
                 self.files.append(_f)
 
-    def task(self, _file: Any) -> Dict[str, Any] | None:
+    def task(self, _file: Any) -> Dict[str, Any]:
         """Extract metadata from a Parquet file on the cloud filesystem without downloading the entire file."""
         import pyarrow.parquet as pq
 
@@ -252,7 +250,7 @@ class HFParquetDir(ParquetDir):
             if isinstance(_f, dict) and _f["name"].endswith(".parquet"):
                 self.files.append(_f)
 
-    def task(self, _file: dict) -> Dict[str, Any] | None:
+    def task(self, _file: dict) -> Dict[str, Any]:
         """Extract metadata from a Parquet file on Hugging Face Hub without downloading the entire file."""
         import pyarrow.parquet as pq
 
