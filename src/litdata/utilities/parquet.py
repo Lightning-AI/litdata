@@ -71,12 +71,12 @@ class LocalParquetDir(ParquetDir):
         storage_options: Optional[Dict] = {},
         num_workers: int = 4,
     ):
-        super().__init__(dir_path, cache_path, storage_options, num_workers)
         if not _PYARROW_AVAILABLE:
             raise ModuleNotFoundError(
                 "The 'pyarrow' module is required for processing Parquet files. "
                 "Please install it by running: `pip install pyarrow`"
             )
+        super().__init__(dir_path, cache_path, storage_options, num_workers)
 
         for _f in os.listdir(self.dir.path):
             if _f.endswith(".parquet"):
@@ -122,8 +122,6 @@ class CloudParquetDir(ParquetDir):
         storage_options: Optional[Dict] = None,
         num_workers: int = 4,
     ):
-        super().__init__(dir_path, cache_path, storage_options, num_workers)
-
         if not _FSSPEC_AVAILABLE:
             raise ModuleNotFoundError(
                 "Support for Indexing cloud parquet files depends on `fsspec`.", "Please, run: `pip install fsspec`"
@@ -133,6 +131,7 @@ class CloudParquetDir(ParquetDir):
                 "The 'pyarrow' module is required for processing Parquet files. "
                 "Please install it by running: `pip install pyarrow`"
             )
+        super().__init__(dir_path, cache_path, storage_options, num_workers)
 
         assert self.dir.url is not None
 
@@ -226,8 +225,6 @@ class HFParquetDir(ParquetDir):
         storage_options: Optional[Dict] = None,
         num_workers: int = 4,
     ):
-        super().__init__(dir_path, cache_path, storage_options, num_workers)
-
         if not _HF_HUB_AVAILABLE:
             raise ModuleNotFoundError(
                 "Support for Indexing HF depends on `huggingface_hub`.", "Please, run: `pip install huggingface_hub"
@@ -237,6 +234,7 @@ class HFParquetDir(ParquetDir):
                 "The 'pyarrow' module is required for processing Parquet files. "
                 "Please install it by running: `pip install pyarrow`"
             )
+        super().__init__(dir_path, cache_path, storage_options, num_workers)
 
         assert self.dir.url is not None
         assert self.dir.url.startswith("hf")
