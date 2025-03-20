@@ -200,7 +200,7 @@ def _get_work_dir() -> str:
     return f"s3://{bucket_name}/projects/{project_id}/lightningapps/{app_id}/artifacts/{work_id}/content/"
 
 
-def read_index_file_content(output_dir: Dir) -> Optional[Dict[str, Any]]:
+def read_index_file_content(output_dir: Dir, storage_options: Dict[str, Any] = {}) -> Optional[Dict[str, Any]]:
     """Read the index file content."""
     if not isinstance(output_dir, Dir):
         raise ValueError("The provided output_dir should be a Dir object.")
@@ -221,7 +221,7 @@ def read_index_file_content(output_dir: Dir) -> Optional[Dict[str, Any]]:
         if obj.scheme not in _SUPPORTED_PROVIDERS:
             not_supported_provider(output_dir.url)
 
-        fs_provider = _get_fs_provider(output_dir.url)
+        fs_provider = _get_fs_provider(output_dir.url, storage_options)
 
         prefix = output_dir.url.rstrip("/") + "/"
 
