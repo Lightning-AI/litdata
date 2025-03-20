@@ -15,6 +15,7 @@ import contextlib
 import os
 import shutil
 import subprocess
+import tempfile
 from abc import ABC
 from contextlib import suppress
 from typing import Any, Dict, List, Optional, Type
@@ -58,9 +59,9 @@ class Downloader(ABC):
         local_chunkpath = os.path.join(self._cache_dir, chunk_filename)
         remote_chunkpath = os.path.join(self._remote_dir, chunk_filename)
 
-        self.download_file(remote_chunkpath, local_chunkpath, chunk_filename)
+        self.download_file(remote_chunkpath, local_chunkpath)
 
-    def download_file(self, remote_chunkpath: str, local_chunkpath: str, remote_chunk_filename: str = "") -> None:
+    def download_file(self, remote_chunkpath: str, local_chunkpath: str) -> None:
         pass
 
 
@@ -74,7 +75,7 @@ class S3Downloader(Downloader):
         if not self._s5cmd_available or _DISABLE_S5CMD:
             self._client = S3Client(storage_options=self._storage_options)
 
-    def download_file(self, remote_filepath: str, local_filepath: str, remote_chunk_filename: str = "") -> None:
+    def download_file(self, remote_filepath: str, local_filepath: str) -> None:
         obj = parse.urlparse(remote_filepath)
 
         if obj.scheme != "s3":
@@ -158,7 +159,7 @@ class GCPDownloader(Downloader):
 
         super().__init__(remote_dir, cache_dir, chunks, storage_options)
 
-    def download_file(self, remote_filepath: str, local_filepath: str, remote_chunk_filename: str = "") -> None:
+    def download_file(self, remote_filepath: str, local_filepath: str) -> None:
         from google.cloud import storage
 
         obj = parse.urlparse(remote_filepath)
@@ -193,7 +194,7 @@ class AzureDownloader(Downloader):
 
         super().__init__(remote_dir, cache_dir, chunks, storage_options)
 
-    def download_file(self, remote_filepath: str, local_filepath: str, remote_chunk_filename: str = "") -> None:
+    def download_file(self, remote_filepath: str, local_filepath: str) -> None:
         from azure.storage.blob import BlobServiceClient
 
         obj = parse.urlparse(remote_filepath)
@@ -220,7 +221,7 @@ class AzureDownloader(Downloader):
 
 
 class LocalDownloader(Downloader):
-    def download_file(self, remote_filepath: str, local_filepath: str, remote_chunk_filename: str = "") -> None:
+    def download_file(self, remote_filepath: str, local_filepath: str) -> None:
         if not os.path.exists(remote_filepath):
             raise FileNotFoundError(f"The provided remote_path doesn't exist: {remote_filepath}")
 
@@ -248,32 +249,42 @@ class HFDownloader(Downloader):
             )
 
         super().__init__(remote_dir, cache_dir, chunks, storage_options)
-        from huggingface_hub import HfFileSystem
 
-        self.fs = HfFileSystem()
+    def download_file(self, remote_filepath: str, local_filepath: str) -> None:
+        """Download a file from the Hugging Face Hub.
+        The remote_filepath should be in the format `hf://<repo_type>/<repo_org>/<repo_name>/path`. For more
+        information, see
+        https://huggingface.co/docs/huggingface_hub/en/guides/hf_file_system#integrations.
+        """
+        from huggingface_hub import hf_hub_download
 
-    def download_file(self, remote_filepath: str, local_filepath: str, remote_chunk_filename: str = "") -> None:
-        # for HF dataset downloading, we don't need remote_filepath, but remote_chunk_filename
-        with suppress(Timeout), FileLock(local_filepath + ".lock", timeout=0):
-            temp_path = local_filepath + ".tmp"  # Avoid partial writes
-            try:
-                with self.fs.open(remote_chunk_filename, "rb") as cloud_file, open(temp_path, "wb") as local_file:
-                    for chunk in iter(lambda: cloud_file.read(4096), b""):  # Stream in 4KB chunks local_file.
-                        local_file.write(chunk)
+        obj = parse.urlparse(remote_filepath)
 
-                os.rename(temp_path, local_filepath)  # Atomic move after successful write
+        if obj.scheme != "hf":
+            raise ValueError(f"Expected obj.scheme to be `hf`, instead, got {obj.scheme} for remote={remote_filepath}")
 
-            except Exception as e:
-                print(f"Error processing {remote_chunk_filename}: {e}")
+        if os.path.exists(local_filepath):
+            return
 
-            finally:
-                # Ensure cleanup of temp file if an error occurs
-                if os.path.exists(temp_path):
-                    os.remove(temp_path)
+        with suppress(Timeout), FileLock(local_filepath + ".lock", timeout=0), tempfile.TemporaryDirectory() as tmpdir:
+            _, _, _, repo_org, repo_name, path = remote_filepath.split("/", 5)
+            repo_id = f"{repo_org}/{repo_name}"
+
+            downloaded_path = hf_hub_download(
+                repo_id,
+                path,
+                cache_dir=tmpdir,
+                repo_type="dataset",
+                **self._storage_options,
+            )
+            if downloaded_path != local_filepath and os.path.exists(downloaded_path):
+                temp_file_path = local_filepath + ".tmp"
+                shutil.copyfile(downloaded_path, temp_file_path)
+                os.rename(temp_file_path, local_filepath)
 
 
 class LocalDownloaderWithCache(LocalDownloader):
-    def download_file(self, remote_filepath: str, local_filepath: str, remote_chunk_filename: str = "") -> None:
+    def download_file(self, remote_filepath: str, local_filepath: str) -> None:
         remote_filepath = remote_filepath.replace("local:", "")
         super().download_file(remote_filepath, local_filepath)
 
