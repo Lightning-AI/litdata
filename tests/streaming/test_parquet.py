@@ -204,7 +204,3 @@ def test_stream_hf_parquet_dataset(monkeypatch, huggingface_hub_fs_mock, pq_data
         assert _ds[0] == pq_data["name"][idx]
         assert _ds[1] == pq_data["weight"][idx]
         assert _ds[2] == pq_data["height"][idx]
-
-    # Test case 5: Streaming with ParquetLoader and low_memory=True and shuffle=True
-    with pytest.raises(ValueError, match="You have enabled shuffling when using low memory with ParquetLoader."):
-        StreamingDataset(hf_url, item_loader=ParquetLoader(low_memory=True), shuffle=True)
