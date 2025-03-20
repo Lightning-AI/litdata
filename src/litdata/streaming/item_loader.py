@@ -564,7 +564,8 @@ class ParquetLoader(BaseItemLoader):
         self._shift_idx = len(self._data_format) * 4
         self.region_of_interest = region_of_interest
         self._df: Dict[int, Any] = {}
-        self._row_groups: Dict[int, Any] = {}
+        self._chunk_row_groups: Dict[int, Any] = {}
+        self._chunk_row_group_item_read_count: Dict[int, Any] = {}
 
     def generate_intervals(self) -> List[Interval]:
         intervals = []
@@ -636,26 +637,44 @@ class ParquetLoader(BaseItemLoader):
         import polars as pl
         import pyarrow.parquet as pq
 
-        # Load the parquet file if not already loaded and keep the handle in memory
+        # Load the Parquet file metadata if not already loaded
         if chunk_index not in self._df:
             self._df[chunk_index] = pq.ParquetFile(chunk_filepath)
 
         # Determine the row group and the row index within the row group
-        num_rows_in_row_group = self._df[chunk_index].metadata.row_group(0).num_rows
-        row_group_index = row_index // num_rows_in_row_group
-        row_index_in_row_group = row_index % num_rows_in_row_group
+        parquet_file = self._df[chunk_index]
+        num_rows_per_row_group = parquet_file.metadata.row_group(0).num_rows
+        row_group_index = row_index // num_rows_per_row_group
+        row_index_within_group = row_index % num_rows_per_row_group
 
         # Check if the row group is already loaded
-        if chunk_index in self._row_groups and row_group_index in self._row_groups[chunk_index]:
-            df = self._row_groups[chunk_index][row_group_index]
+        if chunk_index in self._chunk_row_groups and row_group_index in self._chunk_row_groups[chunk_index]:
+            # Use the cached row group
+            row_group_df = self._chunk_row_groups[chunk_index][row_group_index]
+            # update read count
+            self._chunk_row_group_item_read_count[chunk_index][row_group_index] += 1
         else:
-            # Read the row group and convert it to a Polars dataframe
+            # Load the row group and convert it to a Polars DataFrame
             row_group = self._df[chunk_index].read_row_group(row_group_index)
-            df = pl.from_arrow(row_group)
-            self._row_groups[chunk_index] = {row_group_index: df}
+            row_group_df = pl.from_arrow(row_group)
+
+            # Cache the loaded row group
+            if chunk_index not in self._chunk_row_groups:
+                self._chunk_row_groups[chunk_index] = {}
+                self._chunk_row_group_item_read_count[chunk_index] = {}
+
+            self._chunk_row_groups[chunk_index][row_group_index] = row_group_df
+            self._chunk_row_group_item_read_count[chunk_index][row_group_index] = 1
+
+        # Check if the row group has been fully read and release memory if necessary
+        read_count = self._chunk_row_group_item_read_count[chunk_index][row_group_index]
+        if read_count >= num_rows_per_row_group:
+            # Release memory for the fully read row group
+            del self._chunk_row_groups[chunk_index][row_group_index]
+            del self._chunk_row_group_item_read_count[chunk_index][row_group_index]
 
         # Return the specific row from the dataframe
-        return df.row(row_index_in_row_group)  # type: ignore
+        return row_group_df.row(row_index_within_group)  # type: ignore
 
     def _get_item(self, chunk_index: int, chunk_filepath: str, index: int) -> Any:
         """Retrieve a dataframe row from a parquet chunk by loading the entire chunk into memory.
@@ -682,8 +701,11 @@ class ParquetLoader(BaseItemLoader):
         """Delete a chunk from the local filesystem."""
         if chunk_index in self._df:
             del self._df[chunk_index]
-        if chunk_index in self._row_groups:
-            del self._row_groups[chunk_index]
+        if chunk_index in self._chunk_row_groups:
+            del self._chunk_row_groups[chunk_index]
+
+        if chunk_index in self._chunk_row_group_item_read_count:
+            del self._chunk_row_group_item_read_count[chunk_index]
         if os.path.exists(chunk_filepath):
             os.remove(chunk_filepath)
 
@@ -692,8 +714,11 @@ class ParquetLoader(BaseItemLoader):
         if chunk_index in self._df:
             del self._df[chunk_index]
 
-        if chunk_index in self._row_groups:
-            del self._row_groups[chunk_index]
+        if chunk_index in self._chunk_row_groups:
+            del self._chunk_row_groups[chunk_index]
+
+        if chunk_index in self._chunk_row_group_item_read_count:
+            del self._chunk_row_group_item_read_count[chunk_index]
 
     def encode_data(self, data: List[bytes], sizes: List[int], flattened: List[Any]) -> Any:
         pass
