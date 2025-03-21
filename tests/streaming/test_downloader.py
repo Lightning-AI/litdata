@@ -1,4 +1,5 @@
 # ruff: noqa: S604
+import contextlib
 import os
 import sys
 from unittest import mock
@@ -11,6 +12,7 @@ from litdata.streaming.downloader import (
     AzureDownloader,
     Downloader,
     GCPDownloader,
+    HFDownloader,
     LocalDownloaderWithCache,
     S3Downloader,
     get_downloader,
@@ -312,3 +314,38 @@ def test_download_with_cache(tmpdir, monkeypatch):
         os_mock.assert_called()
     finally:
         os.remove("a.txt")
+
+
+@mock.patch("litdata.streaming.downloader._HF_HUB_AVAILABLE", True)
+def test_hf_downloader(tmpdir, huggingface_hub_mock):
+    # Create a mock for hf_hub_download
+    mock_hf_hub_download = MagicMock()
+    huggingface_hub_mock.hf_hub_download = mock_hf_hub_download
+
+    # Initialize the downloader
+    storage_options = {}
+    downloader = HFDownloader("hf://datasets/sample_org/sample_repo", tmpdir, [], storage_options)
+    local_filepath = os.path.join(tmpdir, "a.txt")
+
+    # Configure the mock to return the local_filepath
+    mock_hf_hub_download.return_value = local_filepath
+
+    # Test case 1: File doesn’t exist, should download
+    with contextlib.suppress(FileNotFoundError):
+        downloader.download_file("hf://datasets/sample_org/sample_repo/a.txt", local_filepath)
+
+    # Verify that hf_hub_download was called with the correct arguments
+    huggingface_hub_mock.hf_hub_download.assert_called_once()
+
+    # Reset the mock for the next test case
+    mock_hf_hub_download.reset_mock()
+
+    # Test case 2: File exists, should skip download
+    with open(local_filepath, "w") as f:
+        f.write("dummy content")
+
+    with contextlib.suppress(FileNotFoundError):
+        downloader.download_file("hf://datasets/sample_org/sample_repo/a.txt", local_filepath)
+
+    # Verify that hf_hub_download was not called
+    mock_hf_hub_download.assert_not_called()

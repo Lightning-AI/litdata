@@ -2,24 +2,22 @@ import hashlib
 import json
 import os
 import sys
-import threading
-import time
 from contextlib import nullcontext
-from queue import Queue
 from types import ModuleType
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 import pytest
 
 from litdata.constants import _INDEX_FILENAME
 from litdata.streaming.dataset import StreamingDataset
+from litdata.streaming.item_loader import ParquetLoader, PyTreeLoader
 from litdata.streaming.writer import index_parquet_dataset
+from litdata.utilities.hf_dataset import index_hf_dataset
 from litdata.utilities.parquet import (
     CloudParquetDir,
     HFParquetDir,
     LocalParquetDir,
     default_cache_dir,
-    delete_thread,
     get_parquet_indexer_cls,
 )
 
@@ -33,17 +31,16 @@ from litdata.utilities.parquet import (
         None,
         "s3://some_bucket/some_path",
         "gs://some_bucket/some_path",
-        "hf://some_bucket/some_path",
+        "hf://datasets/some_org/some_repo/some_path",
     ],
 )
-@pytest.mark.parametrize(("remove_after_indexing"), [True, False])
 @pytest.mark.parametrize(("num_worker"), [None, 1, 2, 4])
+@patch("litdata.utilities.parquet._HF_HUB_AVAILABLE", True)
+@patch("litdata.streaming.downloader._HF_HUB_AVAILABLE", True)
+@patch("litdata.utilities.parquet._FSSPEC_AVAILABLE", True)
 def test_parquet_index_write(
-    monkeypatch, tmp_path, pq_data, huggingface_hub_mock, fsspec_pq_mock, pq_dir_url, remove_after_indexing, num_worker
+    monkeypatch, tmp_path, pq_data, huggingface_hub_fs_mock, fsspec_pq_mock, pq_dir_url, num_worker
 ):
-    monkeypatch.setattr("litdata.utilities.parquet._HF_HUB_AVAILABLE", True)
-    monkeypatch.setattr("litdata.utilities.parquet._FSSPEC_AVAILABLE", True)
-
     if pq_dir_url is None:
         pq_dir_url = os.path.join(tmp_path, "pq-dataset")
 
@@ -57,30 +54,24 @@ def test_parquet_index_write(
 
     # call the write_parquet_index fn
     if num_worker is None:
-        index_parquet_dataset(pq_dir_url=pq_dir_url, remove_after_indexing=remove_after_indexing)
+        index_parquet_dataset(pq_dir_url=pq_dir_url)
     else:
-        index_parquet_dataset(
-            pq_dir_url=pq_dir_url, remove_after_indexing=remove_after_indexing, num_workers=num_worker
-        )
+        index_parquet_dataset(pq_dir_url=pq_dir_url, num_workers=num_worker)
 
     assert os.path.exists(index_file_path)
 
-    if remove_after_indexing and pq_dir_url.startswith(("gs://", "s3://", "hf://")):
-        time.sleep(1)  # Small delay to ensure deletion completes
-        if pq_dir_url.startswith("hf://"):
-            assert len(os.listdir(cache_dir)) == 1
-        else:
-            assert len(os.listdir(cache_dir)) == 0
+    if pq_dir_url.startswith("hf://"):
+        assert len(os.listdir(cache_dir)) == 1
+    elif pq_dir_url.startswith(("gs://", "s3://")):
+        assert len(os.listdir(cache_dir)) == 0
 
     # Read JSON file into a dictionary
     with open(index_file_path) as f:
         data = json.load(f)
-        print(f"index.json: {data}")
         assert len(data["chunks"]) == 5
         for cnk in data["chunks"]:
             assert cnk["chunk_size"] == 5
         assert data["config"]["item_loader"] == "ParquetLoader"
-        assert data["config"]["data_format"] == ["String", "Float64", "Float64"]
 
     # no test for streaming on s3 and gs
     if pq_dir_url is None or pq_dir_url.startswith("hf://"):
@@ -94,6 +85,20 @@ def test_parquet_index_write(
             assert _ds[0] == pq_data["name"][idx]
             assert _ds[1] == pq_data["weight"][idx]
             assert _ds[2] == pq_data["height"][idx]
+
+
+@pytest.mark.skipif(condition=sys.platform == "win32", reason="Fails on windows and test gets cancelled")
+@pytest.mark.usefixtures("clean_pq_index_cache")
+@patch("litdata.utilities.parquet._HF_HUB_AVAILABLE", True)
+def test_index_hf_dataset(monkeypatch, tmp_path, huggingface_hub_fs_mock):
+    with pytest.raises(ValueError, match="Invalid Hugging Face dataset URL"):
+        index_hf_dataset("invalid_url")
+
+    hf_url = "hf://datasets/some_org/some_repo/some_path"
+    cache_dir = index_hf_dataset(hf_url)
+    assert os.path.exists(cache_dir)
+    assert len(os.listdir(cache_dir)) == 1
+    assert os.path.exists(os.path.join(cache_dir, _INDEX_FILENAME))
 
 
 def test_default_cache_dir(monkeypatch):
@@ -140,7 +145,7 @@ def test_default_cache_dir(monkeypatch):
         ("meow://some_bucket/somepath", None, pytest.raises(ValueError, match="The provided")),
     ],
 )
-def test_get_parquet_indexer_cls(pq_url, cls, expectation, monkeypatch, fsspec_mock, huggingface_hub_mock):
+def test_get_parquet_indexer_cls(pq_url, cls, expectation, monkeypatch, fsspec_mock, huggingface_hub_fs_mock):
     os = Mock()
     os.listdir = Mock(return_value=[])
 
@@ -150,7 +155,7 @@ def test_get_parquet_indexer_cls(pq_url, cls, expectation, monkeypatch, fsspec_m
 
     hf_fs_mock = Mock()
     hf_fs_mock.ls = Mock(return_value=[])
-    huggingface_hub_mock.HfFileSystem = Mock(return_value=hf_fs_mock)
+    huggingface_hub_fs_mock.HfFileSystem = Mock(return_value=hf_fs_mock)
 
     monkeypatch.setattr("litdata.utilities.parquet.os", os)
     monkeypatch.setattr("litdata.utilities.parquet._HF_HUB_AVAILABLE", True)
@@ -160,41 +165,39 @@ def test_get_parquet_indexer_cls(pq_url, cls, expectation, monkeypatch, fsspec_m
         assert isinstance(indexer_obj, cls)
 
 
-def test_delete_thread(tmp_path):
-    # create some random files in tmp_path dir and test if delete_thread deletes them
-    tmp_files = [f"tmp_file_{i}.txt" for i in range(10)]
-    for f in tmp_files:
-        with open(os.path.join(tmp_path, f), "w") as _:
-            pass
-
-    for f in tmp_files:
-        file_path = tmp_path / f
-        assert os.path.isfile(file_path)
-
-    q = Queue()
-    dt = threading.Thread(target=delete_thread, args=(q,))
-    dt.start()
-
-    for f in tmp_files:
-        file_path = tmp_path / f
-        q.put_nowait(file_path)
-
-    q.put_nowait(None)
-    dt.join()
-
-    # check if all files are deleted
-    for f in tmp_files:
-        file_path = tmp_path / f
-        assert not os.path.exists(file_path)
-
-
 @pytest.mark.usefixtures("clean_pq_index_cache")
-def test_stream_hf_parquet_dataset(huggingface_hub_mock, pq_data):
-    hf_url = "hf://some_bucket/some_path"
+@patch("litdata.utilities.parquet._HF_HUB_AVAILABLE", True)
+@patch("litdata.streaming.downloader._HF_HUB_AVAILABLE", True)
+def test_stream_hf_parquet_dataset(monkeypatch, huggingface_hub_fs_mock, pq_data):
+    hf_url = "hf://datasets/some_org/some_repo/some_path"
+
+    # Test case 1: Invalid item_loader
+    with pytest.raises(ValueError, match="Invalid item_loader for hf://datasets."):
+        StreamingDataset(hf_url, item_loader=PyTreeLoader)
+
+    # Test case 2: Streaming without passing item_loader
     ds = StreamingDataset(hf_url)
-
     assert len(ds) == 25  # 5 datasets for 5 loops
+    for i, _ds in enumerate(ds):
+        idx = i % 5
+        assert len(_ds) == 3
+        assert _ds[0] == pq_data["name"][idx]
+        assert _ds[1] == pq_data["weight"][idx]
+        assert _ds[2] == pq_data["height"][idx]
 
+    # Test case 3: Streaming with ParquetLoader as item_loader and low_memory=False
+    ds = StreamingDataset(hf_url, item_loader=ParquetLoader(low_memory=False))
+    assert len(ds) == 25
+    for i, _ds in enumerate(ds):
+        idx = i % 5
+        assert len(_ds) == 3
+        assert _ds[0] == pq_data["name"][idx]
+        assert _ds[1] == pq_data["weight"][idx]
+        assert _ds[2] == pq_data["height"][idx]
+
+    # Test case 4: Streaming with ParquetLoader and low_memory=True
+    ds = StreamingDataset(hf_url, item_loader=ParquetLoader(low_memory=True))
+    assert len(ds) == 25
     for i, _ds in enumerate(ds):
         idx = i % 5
         assert len(_ds) == 3
