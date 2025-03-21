@@ -100,7 +100,7 @@ class S3Downloader(Downloader):
                     aws_no_sign_request = self._storage_options.get("AWS_NO_SIGN_REQUEST", "no").lower() == "yes"
                     # prepare the s5cmd command
                     no_signed_option = "--no-sign-request" if aws_no_sign_request else None
-                    cmd_parts = ["s5cmd", no_signed_option, "cp", remote_filepath, local_filepath]
+                    cmd_parts = ["s5cmd", no_signed_option, "--log", "info", "cp", remote_filepath, local_filepath]
                     cmd = " ".join(part for part in cmd_parts if part)
 
                     proc = subprocess.Popen(

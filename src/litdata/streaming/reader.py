@@ -137,6 +137,9 @@ class PrepareChunksThread(Thread):
             if _DEBUG:
                 print(f"Skip delete {chunk_filepath} by {self._rank or 0}, current lock count: {remaining_locks}")
             return
+        
+        with open(chunk_filepath+".tmb", "w+") as tombstone_file:
+            tombstone_file.write(f"Deleted {chunk_filepath} by {self._rank or 0}. Debug: {can_delete_chunk}")
 
         self._item_loader.delete(chunk_index, chunk_filepath)
 
@@ -198,7 +201,7 @@ class PrepareChunksThread(Thread):
                 chunk_filepath, _, _ = self._config[ChunkedIndex(index=-1, chunk_index=chunk_index)]
                 print(f"Requested force download for {chunk_filepath} by {self._rank}")
 
-            self._config.download_chunk_from_index(chunk_index)
+            self._config.download_chunk_from_index(chunk_index, skip_lock=True)
 
             # Preload item if possible to gain some time but only
             # if this is one of the pre-downloaded chunk
