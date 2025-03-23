@@ -25,7 +25,6 @@ from filelock import FileLock, Timeout
 from litdata.constants import (
     _AZURE_STORAGE_AVAILABLE,
     _DISABLE_S5CMD,
-    _DOWNLOAD_RETRIES,
     _GOOGLE_STORAGE_AVAILABLE,
     _HF_HUB_AVAILABLE,
     _INDEX_FILENAME,
@@ -87,65 +86,64 @@ class S3Downloader(Downloader):
         with suppress(Timeout), FileLock(
             local_filepath + ".lock", timeout=1 if obj.path.endswith(_INDEX_FILENAME) else 0
         ):
-            for _attempt in range(_DOWNLOAD_RETRIES):
-                if os.path.exists(local_filepath):
-                    return
+            if os.path.exists(local_filepath):
+                return
 
-                if self._s5cmd_available and not _DISABLE_S5CMD:
-                    env = None
-                    if self._storage_options:
-                        env = os.environ.copy()
-                        env.update(self._storage_options)
+            if self._s5cmd_available and not _DISABLE_S5CMD:
+                env = None
+                if self._storage_options:
+                    env = os.environ.copy()
+                    env.update(self._storage_options)
 
-                    aws_no_sign_request = self._storage_options.get("AWS_NO_SIGN_REQUEST", "no").lower() == "yes"
-                    # prepare the s5cmd command
-                    no_signed_option = "--no-sign-request" if aws_no_sign_request else None
-                    cmd_parts = ["s5cmd", no_signed_option, "--log", "info", "cp", remote_filepath, local_filepath]
-                    cmd = " ".join(part for part in cmd_parts if part)
+                aws_no_sign_request = self._storage_options.get("AWS_NO_SIGN_REQUEST", "no").lower() == "yes"
+                # prepare the s5cmd command
+                no_signed_option = "--no-sign-request" if aws_no_sign_request else None
+                cmd_parts = ["s5cmd", no_signed_option, "--log", "info", "cp", remote_filepath, local_filepath]
+                cmd = " ".join(part for part in cmd_parts if part)
 
-                    proc = subprocess.Popen(
-                        cmd,
-                        shell=True,
-                        stdout=subprocess.PIPE,
-                        stderr=subprocess.PIPE,
-                        env=env,
+                proc = subprocess.Popen(
+                    cmd,
+                    shell=True,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    env=env,
+                )
+                return_code = proc.wait()
+
+                if return_code != 0:
+                    stderr_output = proc.stderr.read().decode().strip() if proc.stderr else ""
+                    error_message = (
+                        f"Failed to execute command `{cmd}` (exit code: {return_code}). "
+                        "This might be due to an incorrect file path, insufficient permissions, or network issues. "
+                        "To resolve this issue, you can either:\n"
+                        "- Pass `storage_options` with the necessary credentials and endpoint. \n"
+                        "- Example:\n"
+                        "  storage_options = {\n"
+                        '      "AWS_ACCESS_KEY_ID": "your-key",\n'
+                        '      "AWS_SECRET_ACCESS_KEY": "your-secret",\n'
+                        '      "S3_ENDPOINT_URL": "https://s3.example.com" (Optional if using AWS)\n'
+                        "  }\n"
+                        "- or disable `s5cmd` by setting `DISABLE_S5CMD=1` if `storage_options` do not work.\n"
                     )
-                    return_code = proc.wait()
-
-                    if return_code != 0:
-                        stderr_output = proc.stderr.read().decode().strip() if proc.stderr else ""
-                        error_message = (
-                            f"Failed to execute command `{cmd}` (exit code: {return_code}). "
-                            "This might be due to an incorrect file path, insufficient permissions, or network issues. "
-                            "To resolve this issue, you can either:\n"
-                            "- Pass `storage_options` with the necessary credentials and endpoint. \n"
-                            "- Example:\n"
-                            "  storage_options = {\n"
-                            '      "AWS_ACCESS_KEY_ID": "your-key",\n'
-                            '      "AWS_SECRET_ACCESS_KEY": "your-secret",\n'
-                            '      "S3_ENDPOINT_URL": "https://s3.example.com" (Optional if using AWS)\n'
-                            "  }\n"
-                            "- or disable `s5cmd` by setting `DISABLE_S5CMD=1` if `storage_options` do not work.\n"
+                    if stderr_output:
+                        error_message += (
+                            f"For further debugging, please check the command output below:\n{stderr_output}"
                         )
-                        if stderr_output:
-                            error_message += (
-                                f"For further debugging, please check the command output below:\n{stderr_output}"
-                            )
-                        raise RuntimeError(error_message)
-                else:
-                    from boto3.s3.transfer import TransferConfig
+                    raise RuntimeError(error_message)
+            else:
+                from boto3.s3.transfer import TransferConfig
 
-                    extra_args: Dict[str, Any] = {}
+                extra_args: Dict[str, Any] = {}
 
-                    if not os.path.exists(local_filepath):
-                        # Issue: https://github.com/boto/boto3/issues/3113
-                        self._client.client.download_file(
-                            obj.netloc,
-                            obj.path.lstrip("/"),
-                            local_filepath,
-                            ExtraArgs=extra_args,
-                            Config=TransferConfig(use_threads=False),
-                        )
+                if not os.path.exists(local_filepath):
+                    # Issue: https://github.com/boto/boto3/issues/3113
+                    self._client.client.download_file(
+                        obj.netloc,
+                        obj.path.lstrip("/"),
+                        local_filepath,
+                        ExtraArgs=extra_args,
+                        Config=TransferConfig(use_threads=False),
+                    )
 
 
 class GCPDownloader(Downloader):
@@ -171,20 +169,19 @@ class GCPDownloader(Downloader):
         with suppress(Timeout), FileLock(
             local_filepath + ".lock", timeout=1 if obj.path.endswith(_INDEX_FILENAME) else 0
         ):
-            for _attempt in range(_DOWNLOAD_RETRIES):
-                if os.path.exists(local_filepath):
-                    return
-                
-                bucket_name = obj.netloc
-                key = obj.path
-                # Remove the leading "/":
-                if key[0] == "/":
-                    key = key[1:]
+            if os.path.exists(local_filepath):
+                return
+            
+            bucket_name = obj.netloc
+            key = obj.path
+            # Remove the leading "/":
+            if key[0] == "/":
+                key = key[1:]
 
-                client = storage.Client(**self._storage_options)
-                bucket = client.bucket(bucket_name)
-                blob = bucket.blob(key)
-                blob.download_to_filename(local_filepath)
+            client = storage.Client(**self._storage_options)
+            bucket = client.bucket(bucket_name)
+            blob = bucket.blob(key)
+            blob.download_to_filename(local_filepath)
 
 
 class AzureDownloader(Downloader):
@@ -212,15 +209,14 @@ class AzureDownloader(Downloader):
         with suppress(Timeout), FileLock(
             local_filepath + ".lock", timeout=1 if obj.path.endswith(_INDEX_FILENAME) else 0
         ):
-            for _attempt in range(_DOWNLOAD_RETRIES):
-                if os.path.exists(local_filepath):
-                    return
+            if os.path.exists(local_filepath):
+                return
 
-                service = BlobServiceClient(**self._storage_options)
-                blob_client = service.get_blob_client(container=obj.netloc, blob=obj.path.lstrip("/"))
-                with open(local_filepath, "wb") as download_file:
-                    blob_data = blob_client.download_blob()
-                    blob_data.readinto(download_file)
+            service = BlobServiceClient(**self._storage_options)
+            blob_client = service.get_blob_client(container=obj.netloc, blob=obj.path.lstrip("/"))
+            with open(local_filepath, "wb") as download_file:
+                blob_data = blob_client.download_blob()
+                blob_data.readinto(download_file)
 
 
 class LocalDownloader(Downloader):
@@ -231,15 +227,14 @@ class LocalDownloader(Downloader):
         with suppress(Timeout), FileLock(
             local_filepath + ".lock", timeout=1 if remote_filepath.endswith(_INDEX_FILENAME) else 0
         ):
-            for _attempt in range(_DOWNLOAD_RETRIES):
-                if remote_filepath == local_filepath or os.path.exists(local_filepath):
-                    return
-                # make an atomic operation to be safe
-                temp_file_path = local_filepath + ".tmp"
-                shutil.copy(remote_filepath, temp_file_path)
-                os.rename(temp_file_path, local_filepath)
-                with contextlib.suppress(Exception):
-                    os.remove(local_filepath + ".lock")
+            if remote_filepath == local_filepath or os.path.exists(local_filepath):
+                return
+            # make an atomic operation to be safe
+            temp_file_path = local_filepath + ".tmp"
+            shutil.copy(remote_filepath, temp_file_path)
+            os.rename(temp_file_path, local_filepath)
+            with contextlib.suppress(Exception):
+                os.remove(local_filepath + ".lock")
 
 
 class HFDownloader(Downloader):
@@ -260,25 +255,24 @@ class HFDownloader(Downloader):
     def download_file(self, remote_filepath: str, local_filepath: str, remote_chunk_filename: str = "") -> None:
         # for HF dataset downloading, we don't need remote_filepath, but remote_chunk_filename
         with suppress(Timeout), FileLock(local_filepath + ".lock", timeout=0):
-            for _attempt in range(_DOWNLOAD_RETRIES):
-                if os.path.exists(local_filepath):
-                    return
+            if os.path.exists(local_filepath):
+                return
 
-                temp_path = local_filepath + ".tmp"  # Avoid partial writes
-                try:
-                    with self.fs.open(remote_chunk_filename, "rb") as cloud_file, open(temp_path, "wb") as local_file:
-                        for chunk in iter(lambda: cloud_file.read(4096), b""):  # Stream in 4KB chunks local_file.
-                            local_file.write(chunk)
+            temp_path = local_filepath + ".tmp"  # Avoid partial writes
+            try:
+                with self.fs.open(remote_chunk_filename, "rb") as cloud_file, open(temp_path, "wb") as local_file:
+                    for chunk in iter(lambda: cloud_file.read(4096), b""):  # Stream in 4KB chunks local_file.
+                        local_file.write(chunk)
 
-                    os.rename(temp_path, local_filepath)  # Atomic move after successful write
+                os.rename(temp_path, local_filepath)  # Atomic move after successful write
 
-                except Exception as e:
-                    print(f"Error processing {remote_chunk_filename}: {e}")
+            except Exception as e:
+                print(f"Error processing {remote_chunk_filename}: {e}")
 
-                finally:
-                    # Ensure cleanup of temp file if an error occurs
-                    if os.path.exists(temp_path):
-                        os.remove(temp_path)
+            finally:
+                # Ensure cleanup of temp file if an error occurs
+                if os.path.exists(temp_path):
+                    os.remove(temp_path)
 
 
 class LocalDownloaderWithCache(LocalDownloader):
