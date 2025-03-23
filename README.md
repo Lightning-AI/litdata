@@ -1152,7 +1152,7 @@ Speed to stream Imagenet 1.2M from AWS S3:
 
 | Framework | Images / sec  1st Epoch (float32)  | Images / sec   2nd Epoch (float32) | Images / sec 1st Epoch (torch16) | Images / sec 2nd Epoch (torch16) |
 |---|---|---|---|---|
-| LitData | **5800** | **6589**  | **6282**  | **7221**  |
+| LitData | **5839** | **6692**  | **6282**  | **7221**  |
 | Web Dataset  | 3134 | 3924 | 3343 | 4424 |
 | Mosaic ML  | 2898 | 5099 | 2809 | 5158 |
 
