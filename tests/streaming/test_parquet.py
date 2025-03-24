@@ -188,7 +188,6 @@ def test_stream_hf_parquet_dataset(monkeypatch, huggingface_hub_fs_mock, pq_data
         assert _ds["height"] == pq_data["height"][idx]
 
     # Test case 3: Streaming with passing item_loader
-    print("pre_load_chunk", pre_load_chunk, "low_memory", low_memory)
     ds = StreamingDataset(hf_url, item_loader=ParquetLoader(pre_load_chunk, low_memory))
     assert len(ds) == 25
     for i, _ds in enumerate(ds):
