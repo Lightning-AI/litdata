@@ -100,11 +100,19 @@ class StreamingDataset(IterableDataset):
 
         if input_dir.url is not None and input_dir.url.startswith("hf://"):
             if index_path is None:
-                # no index path provide, load from cache, or try indexing on the go.
+                # No index_path was provided. Attempt to load it from cache or generate it dynamically on the fly.
                 index_path = index_hf_dataset(input_dir.url)
                 cache_dir.path = index_path
                 input_dir.path = index_path
-            item_loader = ParquetLoader()
+
+            if item_loader is not None and not isinstance(item_loader, ParquetLoader):
+                raise ValueError(
+                    "Invalid item_loader for hf://datasets. "
+                    "The item_loader must be an instance of ParquetLoader. "
+                    "Please provide a valid ParquetLoader instance."
+                )
+
+            item_loader = item_loader or ParquetLoader()
 
         self.input_dir = input_dir
         self.cache_dir = cache_dir
@@ -548,9 +556,7 @@ class StreamingDataset(IterableDataset):
                     "The provided `item_loader` state doesn't match the current one. "
                     f"Found `{self.item_loader.state_dict()}` instead of `{state['item_loader']}`."
                 )
-            logger.warning(
-                f"Overriding state item_loader {state['item_loader']} " f"to {self.item_loader.state_dict()}."
-            )
+            logger.warning(f"Overriding state item_loader {state['item_loader']} to {self.item_loader.state_dict()}.")
             state["item_loader"] = self.item_loader.state_dict()
 
         if state["drop_last"] != self.drop_last:
