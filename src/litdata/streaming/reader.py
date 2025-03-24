@@ -137,9 +137,9 @@ class PrepareChunksThread(Thread):
             if _DEBUG:
                 print(f"Skip delete {chunk_filepath} by {self._rank or 0}, current lock count: {remaining_locks}")
             return
-        
+
         if _DEBUG:
-            with open(chunk_filepath+".tmb", "w+") as tombstone_file:
+            with open(chunk_filepath + ".tmb", "w+") as tombstone_file:
                 tombstone_file.write(f"Deleted {chunk_filepath} by {self._rank or 0}. Debug: {can_delete_chunk}")
 
         self._item_loader.delete(chunk_index, chunk_filepath)

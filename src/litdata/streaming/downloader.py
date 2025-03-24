@@ -172,7 +172,7 @@ class GCPDownloader(Downloader):
         ):
             if os.path.exists(local_filepath):
                 return
-            
+
             bucket_name = obj.netloc
             key = obj.path
             # Remove the leading "/":
