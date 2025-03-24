@@ -19,4 +19,5 @@ if __name__ == "__main__":
         output_dir="example_optimize_dataset",  # optimized data is stored here
         num_workers=4,  # The number of workers on the same machine
         chunk_size=50,  # number of items in each chunk (1000/50 = 20 chunks should be made)
+        mode="overwrite",  # if optimized dataset already exists in dir, overwrite it.
     )
