@@ -81,10 +81,10 @@ def test_parquet_index_write(
 
         for i, _ds in enumerate(ds):
             idx = i % 5
-            assert len(_ds) == 3
-            assert _ds[0] == pq_data["name"][idx]
-            assert _ds[1] == pq_data["weight"][idx]
-            assert _ds[2] == pq_data["height"][idx]
+            assert isinstance(_ds, dict)
+            assert _ds["name"] == pq_data["name"][idx]
+            assert _ds["weight"] == pq_data["weight"][idx]
+            assert _ds["height"] == pq_data["height"][idx]
 
 
 @pytest.mark.skipif(condition=sys.platform == "win32", reason="Fails on windows and test gets cancelled")
@@ -168,7 +168,9 @@ def test_get_parquet_indexer_cls(pq_url, cls, expectation, monkeypatch, fsspec_m
 @pytest.mark.usefixtures("clean_pq_index_cache")
 @patch("litdata.utilities.parquet._HF_HUB_AVAILABLE", True)
 @patch("litdata.streaming.downloader._HF_HUB_AVAILABLE", True)
-def test_stream_hf_parquet_dataset(monkeypatch, huggingface_hub_fs_mock, pq_data):
+@pytest.mark.parametrize(("pre_load_chunk"), [False, True])
+@pytest.mark.parametrize(("low_memory"), [False, True])
+def test_stream_hf_parquet_dataset(monkeypatch, huggingface_hub_fs_mock, pq_data, pre_load_chunk, low_memory):
     hf_url = "hf://datasets/some_org/some_repo/some_path"
 
     # Test case 1: Invalid item_loader
@@ -180,27 +182,17 @@ def test_stream_hf_parquet_dataset(monkeypatch, huggingface_hub_fs_mock, pq_data
     assert len(ds) == 25  # 5 datasets for 5 loops
     for i, _ds in enumerate(ds):
         idx = i % 5
-        assert len(_ds) == 3
-        assert _ds[0] == pq_data["name"][idx]
-        assert _ds[1] == pq_data["weight"][idx]
-        assert _ds[2] == pq_data["height"][idx]
+        assert isinstance(_ds, dict)
+        assert _ds["name"] == pq_data["name"][idx]
+        assert _ds["weight"] == pq_data["weight"][idx]
+        assert _ds["height"] == pq_data["height"][idx]
 
-    # Test case 3: Streaming with ParquetLoader as item_loader and low_memory=False
-    ds = StreamingDataset(hf_url, item_loader=ParquetLoader(low_memory=False))
+    # Test case 3: Streaming with passing item_loader
+    ds = StreamingDataset(hf_url, item_loader=ParquetLoader(pre_load_chunk, low_memory))
     assert len(ds) == 25
     for i, _ds in enumerate(ds):
         idx = i % 5
-        assert len(_ds) == 3
-        assert _ds[0] == pq_data["name"][idx]
-        assert _ds[1] == pq_data["weight"][idx]
-        assert _ds[2] == pq_data["height"][idx]
-
-    # Test case 4: Streaming with ParquetLoader and low_memory=True
-    ds = StreamingDataset(hf_url, item_loader=ParquetLoader(low_memory=True))
-    assert len(ds) == 25
-    for i, _ds in enumerate(ds):
-        idx = i % 5
-        assert len(_ds) == 3
-        assert _ds[0] == pq_data["name"][idx]
-        assert _ds[1] == pq_data["weight"][idx]
-        assert _ds[2] == pq_data["height"][idx]
+        assert isinstance(_ds, dict)
+        assert _ds["name"] == pq_data["name"][idx]
+        assert _ds["weight"] == pq_data["weight"][idx]
+        assert _ds["height"] == pq_data["height"][idx]

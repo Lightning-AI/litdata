@@ -5,4 +5,3 @@ numpy
 boto3
 requests
 tifffile
-s5cmd

@@ -674,7 +674,8 @@ class ParquetLoader(BaseItemLoader):
             del self._chunk_row_group_item_read_count[chunk_index][row_group_index]
 
         # Return the specific row from the dataframe
-        return row_group_df.row(row_index_within_group)  # type: ignore
+        # Note: The `named=True` argument is used to return the row as a dictionary
+        return row_group_df.row(row_index_within_group, named=True)  # type: ignore
 
     def _get_item(self, chunk_index: int, chunk_filepath: str, index: int) -> Any:
         """Retrieve a dataframe row from a parquet chunk by loading the entire chunk into memory.
@@ -695,7 +696,10 @@ class ParquetLoader(BaseItemLoader):
 
         if chunk_index not in self._df:
             self._df[chunk_index] = pl.scan_parquet(chunk_filepath, low_memory=True).collect()
-        return self._df[chunk_index].row(index)
+
+        # Retrieve the specific row from the dataframe
+        # Note: The `named=True` argument is used to return the row as a dictionary
+        return self._df[chunk_index].row(index, named=True)
 
     def delete(self, chunk_index: int, chunk_filepath: str) -> None:
         """Delete a chunk from the local filesystem."""
