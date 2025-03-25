@@ -22,36 +22,6 @@ from litdata.constants import _DEBUG
 root_logger = logging.getLogger("litdata")
 
 
-def setup_logging(logger: logging.Logger):
-    """Configures logging by adding handlers and formatting."""
-    if len(logger.handlers) > 0:  # Avoid duplicate handlers
-        return
-
-    LOG_FILE = os.getenv("LITDATA_LOG_FILE", f"litdata-{time.strftime('%Y-%m-%d-%H-%M-%S')}.log")
-    LOG_LEVEL = os.getenv("LITDATA_LOG_LEVEL", "INFO" if not _DEBUG else "DEBUG")
-
-    LOG_LEVEL = get_logger_level(LOG_LEVEL)
-
-    logger.setLevel(LOG_LEVEL)
-
-    # Console handler
-    console_handler = logging.StreamHandler(sys.stdout)
-    console_handler.setLevel(LOG_LEVEL)
-
-    # File handler
-    file_handler = logging.FileHandler(LOG_FILE)
-    file_handler.setLevel(LOG_LEVEL)
-
-    # Log format
-    formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-    console_handler.setFormatter(formatter)
-    file_handler.setFormatter(formatter)
-
-    # Attach handlers
-    logger.addHandler(console_handler)
-    logger.addHandler(file_handler)
-
-
 def get_logger_level(level: str) -> int:
     """Get the log level from the level string."""
     level = level.upper()
@@ -60,5 +30,45 @@ def get_logger_level(level: str) -> int:
     raise ValueError(f"Invalid log level: {level}. Valid levels: {list(logging._nameToLevel.keys())}.")
 
 
-# Apply handlers using the setup function
-setup_logging(root_logger)
+class LitDataLogger:
+    def __init__(self, name: str):
+        self.logger = logging.getLogger(name)
+        self.log_file, self.log_level = self.get_log_file_and_level()
+        self.setup_logger()
+
+    @staticmethod
+    def get_log_file_and_level():
+        LOG_FILE = os.getenv("LITDATA_LOG_FILE", f"litdata-{time.strftime('%Y-%m-%d-%H-%M-%S')}.log")
+        LOG_LEVEL = os.getenv("LITDATA_LOG_LEVEL", "INFO" if not _DEBUG else "DEBUG")
+
+        LOG_LEVEL = get_logger_level(LOG_LEVEL)
+
+        return LOG_FILE, LOG_LEVEL
+
+    def setup_logger(self):
+        """Configures logging by adding handlers and formatting."""
+        if len(self.logger.handlers) > 0:  # Avoid duplicate handlers
+            return
+
+        self.logger.setLevel(self.log_level)
+
+        # Console handler
+        console_handler = logging.StreamHandler(sys.stdout)
+        console_handler.setLevel(self.log_level)
+
+        # File handler
+        file_handler = logging.FileHandler(self.log_file)
+        file_handler.setLevel(self.log_level)
+
+        # Log format
+        formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+        console_handler.setFormatter(formatter)
+        file_handler.setFormatter(formatter)
+
+        # Attach handlers
+        self.logger.addHandler(console_handler)
+        self.logger.addHandler(file_handler)
+
+
+# Create the root logger for the library
+LitDataLogger("litdata")
