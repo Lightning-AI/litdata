@@ -85,6 +85,7 @@ celerybeat.pid
 *.sage.py
 
 # Environments
+*.log
 .env
 .venv
 env/
@@ -116,4 +117,6 @@ lightning_logs
 
 # status.json file
 status.json
-*.log
+
+# use the below name for your optimize dataset directory for examples
+example_optimize_dataset
