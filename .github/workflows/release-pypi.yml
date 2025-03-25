@@ -15,7 +15,7 @@ on: # Trigger the workflow on push or pull request, but only for the main branch
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
       - uses: actions/checkout@v4
