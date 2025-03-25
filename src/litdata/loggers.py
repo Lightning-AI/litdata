@@ -12,10 +12,57 @@
 # limitations under the License.
 
 import logging
+import os
+import sys
+import time
 
 from litdata.constants import _DEBUG
 
-logging.basicConfig(filename="trace.log", level=logging.DEBUG, format="%(message)s")
-logger = logging.getLogger(__name__)
+# Create the root logger for the library
+root_logger = logging.getLogger("litdata")
+print(f"root logger created with name: {root_logger.name}")
 
-debug_log = lambda msg: logger.debug(msg) if _DEBUG else None  # Inline-like
+
+def setup_logging(logger: logging.Logger):
+    """Configures logging by adding handlers and formatting."""
+    if len(logger.handlers) > 0:  # Avoid duplicate handlers
+        print(f"Logger {logger.name} already has handlers, skipping setup")
+        print(f"Handlers: {logger.handlers}")
+        return
+
+    LOG_FILE = os.getenv("LITDATA_LOG_FILE", f"litdata-{time.strftime('%Y-%m-%d-%H-%M-%S')}.log")
+    LOG_LEVEL = os.getenv("LITDATA_LOG_LEVEL", "INFO" if not _DEBUG else "DEBUG")
+
+    LOG_LEVEL = get_logger_level(LOG_LEVEL)
+
+    logger.setLevel(LOG_LEVEL)
+
+    # Console handler
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setLevel(LOG_LEVEL)
+
+    # File handler
+    file_handler = logging.FileHandler(LOG_FILE)
+    file_handler.setLevel(LOG_LEVEL)
+
+    # Log format
+    formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+    console_handler.setFormatter(formatter)
+    file_handler.setFormatter(formatter)
+
+    # Attach handlers
+    logger.addHandler(console_handler)
+    logger.addHandler(file_handler)
+    print(f"Setting up logging with name: {logger.name} and level: {LOG_LEVEL}")
+
+
+def get_logger_level(level: str) -> int:
+    """Get the log level from the level string."""
+    level = level.upper()
+    if level in logging._nameToLevel:
+        return logging._nameToLevel[level]
+    raise ValueError(f"Invalid log level: {level}. Valid levels: {list(logging._nameToLevel.keys())}.")
+
+
+# Apply handlers using the setup function
+setup_logging(root_logger)

@@ -116,3 +116,4 @@ lightning_logs
 
 # status.json file
 status.json
+*.log
