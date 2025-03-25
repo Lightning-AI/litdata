@@ -20,14 +20,11 @@ from litdata.constants import _DEBUG
 
 # Create the root logger for the library
 root_logger = logging.getLogger("litdata")
-print(f"root logger created with name: {root_logger.name}")
 
 
 def setup_logging(logger: logging.Logger):
     """Configures logging by adding handlers and formatting."""
     if len(logger.handlers) > 0:  # Avoid duplicate handlers
-        print(f"Logger {logger.name} already has handlers, skipping setup")
-        print(f"Handlers: {logger.handlers}")
         return
 
     LOG_FILE = os.getenv("LITDATA_LOG_FILE", f"litdata-{time.strftime('%Y-%m-%d-%H-%M-%S')}.log")
@@ -53,7 +50,6 @@ def setup_logging(logger: logging.Logger):
     # Attach handlers
     logger.addHandler(console_handler)
     logger.addHandler(file_handler)
-    print(f"Setting up logging with name: {logger.name} and level: {LOG_LEVEL}")
 
 
 def get_logger_level(level: str) -> int:
