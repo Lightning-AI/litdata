@@ -61,7 +61,11 @@ class LitDataLogger:
         file_handler.setLevel(self.log_level)
 
         # Log format
-        formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+        formatter = logging.Formatter(
+            "time:%(asctime)s; name:%(name)s; level:%(levelname)s; PID:%(process)d; TID:%(thread)d; %(message)s",
+            datefmt="%Y-%m-%d_%H:%M:%S",
+        )
+        # ENV - f"{WORLD_SIZE, GLOBAL_RANK, NNODES, LOCAL_RANK, NODE_RANK}"
         console_handler.setFormatter(formatter)
         file_handler.setFormatter(formatter)
 
@@ -70,5 +74,5 @@ class LitDataLogger:
         self.logger.addHandler(file_handler)
 
 
-# Create the root logger for the library
-LitDataLogger("litdata")
+def configure_logger():
+    LitDataLogger("litdata")
