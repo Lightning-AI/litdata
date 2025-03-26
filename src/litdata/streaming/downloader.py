@@ -12,6 +12,7 @@
 # limitations under the License.
 
 import contextlib
+import logging
 import os
 import shutil
 import subprocess
@@ -30,7 +31,10 @@ from litdata.constants import (
     _HF_HUB_AVAILABLE,
     _INDEX_FILENAME,
 )
+from litdata.loggers import downloading_log_template
 from litdata.streaming.client import S3Client
+
+logger = logging.getLogger("litdata.streaming.downloader")
 
 
 class Downloader(ABC):
@@ -43,6 +47,7 @@ class Downloader(ABC):
         self._storage_options = storage_options or {}
 
     def _increment_local_lock(self, chunkpath: str) -> None:
+        logger.debug(f"Incrementing local lock for {chunkpath}")
         countpath = chunkpath + ".cnt"
         with suppress(Timeout), FileLock(countpath + ".lock", timeout=1):
             try:
@@ -81,18 +86,14 @@ class S3Downloader(Downloader):
         if obj.scheme != "s3":
             raise ValueError(f"Expected obj.scheme to be `s3`, instead, got {obj.scheme} for remote={remote_filepath}")
 
-        if os.path.exists(local_filepath + ".lock"):
+        if os.path.exists(local_filepath + ".lock") or os.path.exists(local_filepath):
             return
 
-        if os.path.exists(local_filepath):
-            return
+        logger.debug(downloading_log_template(remote_filepath, local_filepath, True))
 
         with suppress(Timeout), FileLock(
             local_filepath + ".lock", timeout=1 if obj.path.endswith(_INDEX_FILENAME) else 0
         ):
-            if os.path.exists(local_filepath):
-                return
-
             if self._s5cmd_available and not _DISABLE_S5CMD:
                 env = None
                 if self._storage_options:
@@ -148,6 +149,7 @@ class S3Downloader(Downloader):
                         ExtraArgs=extra_args,
                         Config=TransferConfig(use_threads=False),
                     )
+        logger.debug(downloading_log_template(remote_filepath, local_filepath, False))
 
 
 class GCPDownloader(Downloader):
@@ -173,6 +175,7 @@ class GCPDownloader(Downloader):
         with suppress(Timeout), FileLock(
             local_filepath + ".lock", timeout=1 if obj.path.endswith(_INDEX_FILENAME) else 0
         ):
+            logger.debug(downloading_log_template(remote_filepath, local_filepath, True))
             bucket_name = obj.netloc
             key = obj.path
             # Remove the leading "/":
@@ -183,6 +186,7 @@ class GCPDownloader(Downloader):
             bucket = client.bucket(bucket_name)
             blob = bucket.blob(key)
             blob.download_to_filename(local_filepath)
+            logger.debug(downloading_log_template(remote_filepath, local_filepath, False))
 
 
 class AzureDownloader(Downloader):
@@ -213,11 +217,13 @@ class AzureDownloader(Downloader):
         with suppress(Timeout), FileLock(
             local_filepath + ".lock", timeout=1 if obj.path.endswith(_INDEX_FILENAME) else 0
         ):
+            logger.debug(downloading_log_template(remote_filepath, local_filepath, True))
             service = BlobServiceClient(**self._storage_options)
             blob_client = service.get_blob_client(container=obj.netloc, blob=obj.path.lstrip("/"))
             with open(local_filepath, "wb") as download_file:
                 blob_data = blob_client.download_blob()
                 blob_data.readinto(download_file)
+            logger.debug(downloading_log_template(remote_filepath, local_filepath, False))
 
 
 class LocalDownloader(Downloader):
@@ -269,7 +275,7 @@ class HFDownloader(Downloader):
         with suppress(Timeout), FileLock(local_filepath + ".lock", timeout=0), tempfile.TemporaryDirectory() as tmpdir:
             _, _, _, repo_org, repo_name, path = remote_filepath.split("/", 5)
             repo_id = f"{repo_org}/{repo_name}"
-
+            logger.debug(downloading_log_template(remote_filepath, local_filepath, True))
             downloaded_path = hf_hub_download(
                 repo_id,
                 path,
@@ -281,6 +287,7 @@ class HFDownloader(Downloader):
                 temp_file_path = local_filepath + ".tmp"
                 shutil.copyfile(downloaded_path, temp_file_path)
                 os.rename(temp_file_path, local_filepath)
+            logger.debug(downloading_log_template(remote_filepath, local_filepath, False))
 
 
 class LocalDownloaderWithCache(LocalDownloader):

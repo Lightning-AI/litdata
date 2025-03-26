@@ -76,3 +76,21 @@ class LitDataLogger:
 
 def configure_logger():
     LitDataLogger("litdata")
+
+
+def downloading_log_template(remote_filepath: str, local_filepath: str, is_starting: bool):
+    return (
+        f"task: downloading; remote_filepath: {remote_filepath}; local_filepath: {local_filepath};"
+        + f"phase: {'start' if is_starting else 'end'}"
+    )
+
+
+def deleting_log_template(filepath: str, is_starting: bool):
+    return f"task: deleting; filepath: {filepath};" + f"phase: {'start' if is_starting else 'end'}"
+
+
+def uploading_log_template(remote_filepath: str, local_filepath: str, is_starting: bool):
+    return (
+        f"task: uploading; remote_filepath: {remote_filepath}; local_filepath: {local_filepath};"
+        + f"phase: {'start' if is_starting else 'end'}"
+    )
