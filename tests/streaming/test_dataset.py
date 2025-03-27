@@ -150,9 +150,9 @@ def test_streaming_dataset_max_cache_dir(tmpdir, caplog):
         StreamingDataset(input_dir=str(tmpdir), max_cache_size="10GB")
         StreamingDataset(input_dir=str(tmpdir), max_cache_size="20GB")
     assert len(caplog.messages) == 4
-    assert all(
-        "The provided `max_cache_size` is less than 25GB." in record.message for record in caplog.records
-    ), "Expected warning about the `max_cache_size` being less than 25GB was not logged"
+    assert all("The provided `max_cache_size` is less than 25GB." in record.message for record in caplog.records), (
+        "Expected warning about the `max_cache_size` being less than 25GB was not logged"
+    )
 
 
 @pytest.mark.parametrize("drop_last", [False, True])
@@ -1486,7 +1486,6 @@ def test_is_last_index_for_chunked_index_with_dataset(tmpdir, shuffle):
     # Patch the read method directly in the BinaryReader class
     with patch("litdata.streaming.reader.BinaryReader.read", mock_read):
         dataset = StreamingDataset(str(tmpdir), shuffle=shuffle)
-        dataset.worker_env = _WorkerEnv(world_size=2, rank=0)
         assert len(dataset) == 50
 
         # Iterate through the dataset to trigger BinaryReader.read
