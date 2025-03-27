@@ -59,7 +59,8 @@ setup(
     author_email=about.__author_email__,
     url=about.__homepage__,
     download_url="https://github.com/Lightning-AI/litdata",
-    license=about.__license__,
+    license=about.__license__,  # Should be a license identifier
+    license_files=["LICENSE"],  # Path to your license file
     long_description=readme,
     packages=find_packages(where="src"),
     package_dir={"": "src"},
@@ -87,7 +88,6 @@ setup(
         "Topic :: Scientific/Engineering :: Artificial Intelligence",
         "Topic :: Scientific/Engineering :: Information Analysis",
         # Pick your license as you wish
-        "License :: OSI Approved :: Apache Software License",
         "Operating System :: OS Independent",
         # Specify the Python versions you support here. In particular, ensure
         # that you indicate whether you support Python 2, Python 3 or both.

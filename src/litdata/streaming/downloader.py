@@ -81,9 +81,6 @@ class S3Downloader(Downloader):
         if obj.scheme != "s3":
             raise ValueError(f"Expected obj.scheme to be `s3`, instead, got {obj.scheme} for remote={remote_filepath}")
 
-        if os.path.exists(local_filepath + ".lock"):
-            return
-
         if os.path.exists(local_filepath):
             return
 
@@ -173,6 +170,9 @@ class GCPDownloader(Downloader):
         with suppress(Timeout), FileLock(
             local_filepath + ".lock", timeout=1 if obj.path.endswith(_INDEX_FILENAME) else 0
         ):
+            if os.path.exists(local_filepath):
+                return
+
             bucket_name = obj.netloc
             key = obj.path
             # Remove the leading "/":
@@ -204,15 +204,15 @@ class AzureDownloader(Downloader):
                 f"Expected obj.scheme to be `azure`, instead, got {obj.scheme} for remote={remote_filepath}"
             )
 
-        if os.path.exists(local_filepath + ".lock"):
-            return
-
         if os.path.exists(local_filepath):
             return
 
         with suppress(Timeout), FileLock(
             local_filepath + ".lock", timeout=1 if obj.path.endswith(_INDEX_FILENAME) else 0
         ):
+            if os.path.exists(local_filepath):
+                return
+
             service = BlobServiceClient(**self._storage_options)
             blob_client = service.get_blob_client(container=obj.netloc, blob=obj.path.lstrip("/"))
             with open(local_filepath, "wb") as download_file:

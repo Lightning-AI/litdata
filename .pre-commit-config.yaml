@@ -44,6 +44,10 @@ repos:
     hooks:
       - id: codespell
         additional_dependencies: [tomli]
+        exclude: >
+          (?x)^(
+              .*\.ipynb
+          )$
         #args: ["--write-changes"] # uncomment if you want to get automatic fixing
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
