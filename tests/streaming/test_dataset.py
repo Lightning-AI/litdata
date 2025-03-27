@@ -20,6 +20,7 @@ import sys
 from time import sleep
 from typing import Any, Dict, Optional
 from unittest import mock
+from unittest.mock import patch
 
 import numpy as np
 import pytest
@@ -41,6 +42,7 @@ from litdata.streaming.dataset import (
     _replay_sampling,
 )
 from litdata.streaming.item_loader import TokensLoader
+from litdata.streaming.reader import BinaryReader
 from litdata.streaming.shuffle import FullShuffle, NoShuffle
 from litdata.utilities import dataset_utilities as dataset_utilities_module
 from litdata.utilities.dataset_utilities import load_index_file
@@ -148,9 +150,9 @@ def test_streaming_dataset_max_cache_dir(tmpdir, caplog):
         StreamingDataset(input_dir=str(tmpdir), max_cache_size="10GB")
         StreamingDataset(input_dir=str(tmpdir), max_cache_size="20GB")
     assert len(caplog.messages) == 4
-    assert all(
-        "The provided `max_cache_size` is less than 25GB." in record.message for record in caplog.records
-    ), "Expected warning about the `max_cache_size` being less than 25GB was not logged"
+    assert all("The provided `max_cache_size` is less than 25GB." in record.message for record in caplog.records), (
+        "Expected warning about the `max_cache_size` being less than 25GB was not logged"
+    )
 
 
 @pytest.mark.parametrize("drop_last", [False, True])
@@ -1459,3 +1461,48 @@ def test_dataset_with_mosaic_mds_data(tmpdir):
         assert len(batch["image"]) == 4
         assert list(batch["class"]) == [4 * i, 4 * i + 1, 4 * i + 2, 4 * i + 3]
         i += 1
+
+
+@pytest.mark.parametrize("shuffle", [True, False])
+def test_is_last_index_for_chunked_index_with_dataset(tmpdir, shuffle):
+    # Create a dataset with 50 items, 10 items per chunk
+    cache = Cache(str(tmpdir), chunk_size=10)
+    for i in range(50):
+        cache[i] = i
+    cache.done()
+    cache.merge()
+
+    # List to store all ChunkedIndex objects passed to BinaryReader.read
+    chunked_indexes = []
+
+    # Patch the BinaryReader.read method to track the indices
+    original_read = BinaryReader.read
+
+    # Create a mock function that will capture the indices but still call the original
+    def mock_read(self, index):
+        chunked_indexes.append(index)
+        return original_read(self, index)  # Call the original read method
+
+    # Patch the read method directly in the BinaryReader class
+    with patch("litdata.streaming.reader.BinaryReader.read", mock_read):
+        dataset = StreamingDataset(str(tmpdir), shuffle=shuffle)
+        dataset.worker_env = _WorkerEnv(world_size=2, rank=0)
+        assert len(dataset) == 50
+
+        # Iterate through the dataset to trigger BinaryReader.read
+        for _ in dataset:
+            pass
+
+    # Assertions
+    # Ensure BinaryReader.read was called 50 times (once for each item)
+    assert len(chunked_indexes) == 50, "Expected 50 calls to BinaryReader.read"
+
+    # first chunked index has the chunk_indexes from dataset worker
+    worker_chunks = chunked_indexes[0].chunk_indexes
+    assert worker_chunks == dataset.worker_chunks, "Expected chunk_indexes to match dataset.worker_chunks"
+
+    # Verify that exactly one index has is_last_index=True
+    indexes = [idx for idx in chunked_indexes if idx.is_last_index]
+    assert len(indexes) == 1, "Expected exactly one index with is_last_index=True"
+    assert indexes[0].is_last_index, "Expected is_last_index=True for the last item"
+    assert indexes[0].chunk_index == worker_chunks[-1], "Expected to match the last chunk"
