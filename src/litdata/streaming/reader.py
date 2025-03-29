@@ -369,11 +369,6 @@ class BinaryReader:
                 if index.chunk_indexes:
                     self._prepare_thread.download(index.chunk_indexes)
 
-            # If the chunk_index is new, request for it to be downloaded.
-            if index.chunk_index != self._last_chunk_index:
-                assert self._prepare_thread
-                self._prepare_thread.download([index.chunk_index])
-
             if self._last_chunk_index is None:
                 self._last_chunk_index = index.chunk_index
 
