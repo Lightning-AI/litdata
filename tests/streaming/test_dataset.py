@@ -1540,12 +1540,14 @@ def test_dataset_as_iterator_and_non_iterator(tmpdir, local, shuffle):
         assert data is not None
         if local and i < dataset_length - 1:
             # In iterator mode with local or remote data, _chunks_queued_for_download should be enabled
-            assert dataset.cache._reader._chunks_queued_for_download is True, \
-                "_chunks_queued_for_download should be enabled during iteration"
+            assert (
+                dataset.cache._reader._chunks_queued_for_download is True
+            ), "_chunks_queued_for_download should be enabled during iteration"
         else:
-            assert dataset.cache._reader._chunks_queued_for_download is False, \
-                "_chunks_queued_for_download should be disbaled when used as local dir withput `local:` prefix" \
+            assert dataset.cache._reader._chunks_queued_for_download is False, (
+                "_chunks_queued_for_download should be disbaled when used as local dir withput `local:` prefix"
                 " or when iteration is done"
+            )
     # After iteration, _chunks_queued_for_download should be reset
     assert dataset.cache._reader._chunks_queued_for_download is False
 
