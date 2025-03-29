@@ -299,6 +299,7 @@ class BinaryReader:
         self._prepare_thread: Optional[PrepareChunksThread] = None
         self._item_loader = item_loader or PyTreeLoader()
         self._last_chunk_index: Optional[int] = None
+        self._chunks_queued_for_download = False
         self._max_cache_size = int(os.getenv("MAX_CACHE_SIZE", max_cache_size or 0))
         self._storage_options = storage_options
         self._max_pre_download = max_pre_download
@@ -368,9 +369,12 @@ class BinaryReader:
                 self._prepare_thread.start()
                 if index.chunk_indexes:
                     self._prepare_thread.download(index.chunk_indexes)
+                    self._chunks_queued_for_download = True
 
-            # If the chunk_index is new, request for it to be downloaded.
-            if index.chunk_index != self._last_chunk_index:
+            # Only request individual chunk download if:
+            # 1. We haven't already queued all chunks for the download
+            # 2. We're processing a new chunk (different from the last one)
+            if not self._chunks_queued_for_download and index.chunk_index != self._last_chunk_index:
                 assert self._prepare_thread
                 self._prepare_thread.download([index.chunk_index])
 
@@ -417,6 +421,8 @@ class BinaryReader:
             self._prepare_thread.stop()
             self._prepare_thread = None
             self._item_loader.close(self._last_chunk_index)
+            self._last_chunk_index = None
+            self._chunks_queued_for_download = False
 
         return item
 
