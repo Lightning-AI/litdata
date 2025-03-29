@@ -1545,7 +1545,7 @@ def test_dataset_as_iterator_and_non_iterator(tmpdir, local, shuffle):
             ), "_chunks_queued_for_download should be enabled during iteration"
         else:
             assert dataset.cache._reader._chunks_queued_for_download is False, (
-                "_chunks_queued_for_download should be disbaled when used as local dir withput `local:` prefix"
+                "_chunks_queued_for_download should be disabled when used as local dir without `local:` prefix"
                 " or when iteration is done"
             )
     # After iteration, _chunks_queued_for_download should be reset
