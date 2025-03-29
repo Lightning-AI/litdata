@@ -372,7 +372,7 @@ class BinaryReader:
                     self._chunks_queued_for_download = True
 
             # Only request individual chunk download if:
-            # 1. We haven't already queued a bulk download via chunk_indexes
+            # 1. We haven't already queued all chunks for the download
             # 2. We're processing a new chunk (different from the last one)
             if not self._chunks_queued_for_download and index.chunk_index != self._last_chunk_index:
                 assert self._prepare_thread
