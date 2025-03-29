@@ -421,6 +421,8 @@ class BinaryReader:
             self._prepare_thread.stop()
             self._prepare_thread = None
             self._item_loader.close(self._last_chunk_index)
+            self._last_chunk_index = None
+            self._chunks_queued_for_download = False
 
         return item
 
