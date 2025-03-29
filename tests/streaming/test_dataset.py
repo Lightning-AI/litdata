@@ -1505,3 +1505,57 @@ def test_is_last_index_for_chunked_index_with_dataset(tmpdir, shuffle):
     assert len(indexes) == 1, "Expected exactly one index with is_last_index=True"
     assert indexes[0].is_last_index, "Expected is_last_index=True for the last item"
     assert indexes[0].chunk_index == worker_chunks[-1], "Expected to match the last chunk"
+
+
+@pytest.mark.parametrize("local", [True, False])
+@pytest.mark.parametrize("shuffle", [True, False])
+def test_dataset_as_iterator_and_non_iterator(tmpdir, local, shuffle):
+    """Test that _chunks_queued_for_download flag is correctly set and reset in reader.
+
+    This test verifies that:
+    1. When iterating, _chunks_queued_for_download is enabled during iteration but reset when done
+    2. When accessing by index, _chunks_queued_for_download is never enabled
+    """
+    # Create directories
+    cache_dir = os.path.join(tmpdir, "cache_dir")
+    data_dir = os.path.join(tmpdir, "data_dir")
+    os.makedirs(cache_dir)
+    os.makedirs(data_dir)
+
+    # Create a dataset with 50 items, 10 items per chunk
+    cache = Cache(str(data_dir), chunk_size=10)
+    for i in range(50):
+        cache[i] = i
+    cache.done()
+    cache.merge()
+
+    # Create dataset with appropriate configuration
+    input_dir = f"local:{data_dir}" if local else str(data_dir)
+    dataset = StreamingDataset(input_dir, cache_dir=str(cache_dir) if local else None, shuffle=shuffle)
+    dataset_length = len(dataset)
+    assert dataset_length == 50
+
+    # ACT & ASSERT - Test iterator mode
+    for i, data in enumerate(dataset):
+        assert data is not None
+        if local and i < dataset_length - 1:
+            # In iterator mode with local or remote data, _chunks_queued_for_download should be enabled
+            assert (
+                dataset.cache._reader._chunks_queued_for_download is True
+            ), "_chunks_queued_for_download should be enabled during iteration"
+        else:
+            assert dataset.cache._reader._chunks_queued_for_download is False, (
+                "_chunks_queued_for_download should be disabled when used as local dir without `local:` prefix"
+                " or when iteration is done"
+            )
+    # After iteration, _chunks_queued_for_download should be reset
+    assert dataset.cache._reader._chunks_queued_for_download is False
+
+    # ACT & ASSERT - Test indexed access mode
+    for i in range(dataset_length):
+        data = dataset[i]
+        assert data is not None
+        # In indexed access mode, _chunks_queued_for_download should never be enabled
+        assert dataset.cache._reader._chunks_queued_for_download is False
+
+    assert dataset.cache._reader._chunks_queued_for_download is False
