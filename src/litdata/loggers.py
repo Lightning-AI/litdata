@@ -15,6 +15,7 @@ import logging
 import os
 import sys
 import time
+from typing import Tuple
 
 from litdata.constants import _DEBUG
 from litdata.utilities.env import _DistributedEnv, _WorkerEnv
@@ -38,15 +39,15 @@ class LitDataLogger:
         self.setup_logger()
 
     @staticmethod
-    def get_log_file_and_level():
-        LOG_FILE = os.getenv("LITDATA_LOG_FILE")
+    def get_log_file_and_level() -> Tuple[str, int]:
+        LOG_FILE = os.getenv("LITDATA_LOG_FILE", f"litdata-{time.strftime('%Y-%m-%d-%H-%M')}.log")
         LOG_LEVEL = os.getenv("LITDATA_LOG_LEVEL", "INFO" if not _DEBUG else "DEBUG")
 
         LOG_LEVEL = get_logger_level(LOG_LEVEL)
 
         return LOG_FILE, LOG_LEVEL
 
-    def setup_logger(self):
+    def setup_logger(self) -> None:
         """Configures logging by adding handlers and formatting."""
         if len(self.logger.handlers) > 0:  # Avoid duplicate handlers
             return
@@ -74,12 +75,12 @@ class LitDataLogger:
         self.logger.addHandler(file_handler)
 
 
-def configure_logger():
+def configure_logger() -> None:
     os.environ["LITDATA_LOG_FILE"] = f"litdata-{time.strftime('%Y-%m-%d-%H-%M')}.log"
     LitDataLogger("litdata")
 
 
-def _get_log_msg(data: dict):
+def _get_log_msg(data: dict) -> str:
     log_msg = ""
 
     env_info_data = env_info()
@@ -90,7 +91,7 @@ def _get_log_msg(data: dict):
     return log_msg
 
 
-def env_info():
+def env_info() -> dict:
     dist_env = _DistributedEnv.detect()
     worker_env = _WorkerEnv.detect()  # will all threads read the same value if decorate this function with `@cache`
 
