@@ -23,6 +23,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 from filelock import FileLock, Timeout
 
 from litdata.constants import _DEBUG
+from litdata.loggers import _get_log_msg
 from litdata.streaming.config import ChunksConfig, Interval
 from litdata.streaming.item_loader import BaseItemLoader, ParquetLoader, PyTreeLoader, TokensLoader
 from litdata.streaming.sampler import ChunkedIndex
@@ -33,7 +34,7 @@ from litdata.utilities.env import _DistributedEnv, _WorkerEnv
 warnings.filterwarnings("ignore", message=".*The given buffer is not writable.*")
 
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("litdata.streaming.reader")
 
 
 _END_TOKEN = "END"  # noqa: S105
@@ -109,6 +110,7 @@ class PrepareChunksThread(Thread):
             if not os.path.exists(countpath):
                 return 0
             with open(countpath) as count_f:
+                logger.debug(_get_log_msg({"name": f"decrement_local_lock_for_ {chunk_filepath}", "ph": "B"}))
                 try:
                     curr_count = int(count_f.read().strip())
                 except Exception:
@@ -123,6 +125,7 @@ class PrepareChunksThread(Thread):
             else:
                 with open(countpath, "w+") as count_f:
                     count_f.write(str(curr_count))
+            logger.debug(_get_log_msg({"name": f"decrement_local_lock_for_ {chunk_filepath}", "ph": "E"}))
             return curr_count
         return 0
 
@@ -341,6 +344,9 @@ class BinaryReader:
         Prefetching should reduce the wait time to be the batch available.
 
         """
+        logger.debug(
+            _get_log_msg({"name": f"reader_reading_chunk_index_{index.chunk_index}_and_index_{index.index}", "ph": "B"})
+        )
         if not isinstance(index, ChunkedIndex):
             raise ValueError("The Reader.read(...) method expects a chunked Index.")
 
@@ -414,6 +420,9 @@ class BinaryReader:
             self._prepare_thread = None
             self._item_loader.close(self._last_chunk_index)
 
+        logger.debug(
+            _get_log_msg({"name": f"reader_reading_chunk_index_{index.chunk_index}_and_index_{index.index}", "ph": "E"})
+        )
         return item
 
     def get_length(self) -> int:

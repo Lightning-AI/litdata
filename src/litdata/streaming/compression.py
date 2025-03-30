@@ -11,12 +11,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
 from abc import ABC, abstractmethod
 from typing import Dict, TypeVar
 
 from litdata.constants import _ZSTD_AVAILABLE
+from litdata.loggers import _get_log_msg
 
 TCompressor = TypeVar("TCompressor", bound="Compressor")
+
+logger = logging.getLogger("litdata.streaming.compression")
 
 
 class Compressor(ABC):
@@ -58,7 +62,10 @@ class ZSTDCompressor(Compressor):
     def decompress(self, data: bytes) -> bytes:
         import zstd
 
-        return zstd.decompress(data)
+        logger.debug(_get_log_msg({"name": "Decompressing data", "ph": "B"}))
+        decompressed_data = zstd.decompress(data)
+        logger.debug(_get_log_msg({"name": "Decompressed data", "ph": "E"}))
+        return decompressed_data
 
     @classmethod
     def register(cls, compressors: Dict[str, "Compressor"]) -> None:

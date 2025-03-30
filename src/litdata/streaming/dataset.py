@@ -22,6 +22,7 @@ from torch.utils.data import IterableDataset
 from litdata import __version__
 from litdata.constants import _INDEX_FILENAME
 from litdata.helpers import _check_version_and_prompt_upgrade
+from litdata.loggers import _get_log_msg
 from litdata.streaming import Cache
 from litdata.streaming.item_loader import BaseItemLoader, ParquetLoader
 from litdata.streaming.resolver import Dir, _resolve_dir
@@ -38,7 +39,7 @@ from litdata.utilities.shuffle import (
     _map_node_worker_rank_to_chunk_indexes_to_not_delete,
 )
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("litdata.streaming.dataset")
 
 
 class StreamingDataset(IterableDataset):
@@ -254,6 +255,7 @@ class StreamingDataset(IterableDataset):
 
     def __iter__(self) -> "StreamingDataset":
         # When the StreamingDataset is used within map or optimize, let's refetch the distributed env.
+        logger.info("name: iterating_dataset; ph: B;")
         if os.getenv("DATA_OPTIMIZER_GLOBAL_RANK"):
             self.distributed_env = _DistributedEnv.detect()
 
@@ -379,13 +381,25 @@ class StreamingDataset(IterableDataset):
             _my_indices = list(range(start, stop, step))
             _my_cache_indices = [ChunkedIndex(*self.cache._get_chunk_index_from_index(idx)) for idx in _my_indices]
             return [self.cache[chnk_idx] for chnk_idx in _my_cache_indices]
-        return self.cache[index]
+        logger.debug(
+            _get_log_msg(
+                {"name": f"getitem_dataset_for_chunk_index_{index.chunk_index}_and_index_{index.index}", "ph": "B"}
+            )
+        )
+        item = self.cache[index]
+        logger.debug(
+            _get_log_msg(
+                {"name": f"getitem_dataset_for_chunk_index_{index.chunk_index}_and_index_{index.index}", "ph": "E"}
+            )
+        )
+        return item
 
     def __next__(self) -> Any:
         # Prevent to create more batch on a given process
         if self.global_index >= self.stop_length:
             self.current_epoch += 1
             self.reset_state_dict()
+            logger.info("name: iterating_dataset; ph: E;")
             raise StopIteration
 
         # Lazily re-populate the interval to reduce memory usage.

@@ -34,6 +34,7 @@ from torch.utils.data.dataloader import (
 from torch.utils.data.sampler import BatchSampler, Sampler
 
 from litdata.constants import _DEFAULT_CHUNK_BYTES, _VIZ_TRACKER_AVAILABLE
+from litdata.loggers import _get_log_msg
 from litdata.streaming import Cache
 from litdata.streaming.combined import (
     __NUM_SAMPLES_YIELDED_KEY__,
@@ -45,7 +46,7 @@ from litdata.streaming.sampler import CacheBatchSampler
 from litdata.utilities._pytree import tree_flatten
 from litdata.utilities.env import _DistributedEnv
 
-logger = logging.Logger(__name__)
+logger = logging.Logger("litdata.streaming.dataloader")
 
 
 def _equal_items(data_1: Any, data_2: Any) -> bool:
@@ -639,6 +640,7 @@ class StreamingDataLoader(DataLoader):
             self.dataset.reset_state_dict()
 
         self.dataset.set_epoch(self.current_epoch)
+        logger.debug(_get_log_msg({"name": "iterating_dataloader", "ph": "B"}))
 
         if isinstance(self.dataset, StreamingDataset):
             assert self.batch_size
@@ -661,7 +663,7 @@ class StreamingDataLoader(DataLoader):
                     yield batch[__SAMPLES_KEY__]
                 else:
                     yield batch
-
+        logger.debug(_get_log_msg({"name": "iterating_dataloader", "ph": "E"}))
         self.restore = False
 
     def __len__(self) -> int:
