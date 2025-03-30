@@ -431,7 +431,7 @@ class StreamingDataset(IterableDataset):
                 chunk_index=self.worker_chunks[self.chunk_index - 1],
                 # We provide the chunks indexes only one the first
                 chunk_indexes=None if self.has_triggered_download else self.worker_chunks[self.chunk_index - 1 :],
-                is_last_index=(self.chunk_index - 1) == len(self.worker_intervals) and len(self.current_indexes) == 1,
+                is_last_index=(self.chunk_index) == len(self.worker_intervals) and len(self.current_indexes) == 0,
             )
         )
 

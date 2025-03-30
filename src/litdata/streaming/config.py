@@ -121,7 +121,7 @@ class ChunksConfig:
     def skip_chunk_indexes_deletion(self, skip_chunk_indexes_deletion: List[int]) -> None:
         self._skip_chunk_indexes_deletion = skip_chunk_indexes_deletion
 
-    def download_chunk_from_index(self, chunk_index: int) -> None:
+    def download_chunk_from_index(self, chunk_index: int, skip_lock: bool = False) -> None:
         assert self._chunks is not None
         chunk_filename = self._chunks[chunk_index]["filename"]
 
@@ -129,7 +129,7 @@ class ChunksConfig:
 
         if os.path.exists(local_chunkpath):
             self.try_decompress(local_chunkpath)
-            if self._downloader is not None:
+            if self._downloader is not None and not skip_lock:
                 # We don't want to redownload the base, but we should mark
                 # it as having been requested by something
                 self._downloader._increment_local_lock(local_chunkpath.replace(f".{self._compressor_name}", ""))
@@ -139,7 +139,8 @@ class ChunksConfig:
         if self._downloader is None:
             return
 
-        self._downloader._increment_local_lock(local_chunkpath.replace(f".{self._compressor_name}", ""))
+        if not skip_lock:
+            self._downloader._increment_local_lock(local_chunkpath.replace(f".{self._compressor_name}", ""))
 
         self._downloader.download_chunk_from_index(chunk_index)
 
