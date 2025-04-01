@@ -1603,7 +1603,6 @@ def test_cache_get_clear_after_dataset_stream(tmpdir, shuffle):
     chunks = [f for f in cache_contents if ".bin" in f]
 
     assert len(chunks) == 0, (
-        f"Cache directory should be empty after streaming through the dataset.\n"
-        f"Shuffle: {shuffle}\n"
+        f"All of the chunks should have been cleared from the cache directory after streaming."
         f"Found {len(chunks)} chunk files: {chunks}"
     )
