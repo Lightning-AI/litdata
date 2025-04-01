@@ -223,6 +223,8 @@ class PrepareChunksThread(Thread):
             if self._pre_download_counter < self._max_pre_download:
                 chunk_index = _get_from_queue(self._to_download_queue)
                 if chunk_index == _END_TOKEN:
+                    if self._max_cache_size:
+                        self._maybe_delete_chunks()
                     self._has_exited = True
                     return
 
