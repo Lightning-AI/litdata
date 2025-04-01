@@ -418,6 +418,7 @@ class BinaryReader:
         if index.is_last_index and self._prepare_thread:
             # inform the thread it is time to stop
             self._prepare_thread._decrement_local_lock(index.chunk_index)
+            self._prepare_thread.delete([index.chunk_index])
             self._prepare_thread.stop()
             self._prepare_thread = None
             self._item_loader.close(self._last_chunk_index)
