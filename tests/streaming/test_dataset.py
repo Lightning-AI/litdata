@@ -1540,9 +1540,9 @@ def test_dataset_as_iterator_and_non_iterator(tmpdir, local, shuffle):
         assert data is not None
         if local and i < dataset_length - 1:
             # In iterator mode with local or remote data, _chunks_queued_for_download should be enabled
-            assert (
-                dataset.cache._reader._chunks_queued_for_download is True
-            ), "_chunks_queued_for_download should be enabled during iteration"
+            assert dataset.cache._reader._chunks_queued_for_download is True, (
+                "_chunks_queued_for_download should be enabled during iteration"
+            )
         else:
             assert dataset.cache._reader._chunks_queued_for_download is False, (
                 "_chunks_queued_for_download should be disabled when used as local dir without `local:` prefix"
@@ -1559,3 +1559,51 @@ def test_dataset_as_iterator_and_non_iterator(tmpdir, local, shuffle):
         assert dataset.cache._reader._chunks_queued_for_download is False
 
     assert dataset.cache._reader._chunks_queued_for_download is False
+
+
+@pytest.mark.parametrize("shuffle", [True, False])
+def test_cache_get_clear_after_dataset_stream(tmpdir, shuffle):
+    """Test that the cache directory is cleaned up after streaming through the dataset.
+
+    This test verifies that:
+    1. When streaming through a dataset with a limited cache size,
+       all temporary chunk files are properly removed after completion
+    2. This behavior is consistent regardless of shuffle settings
+    """
+    # ARRANGE
+    # Create directories for cache and data
+    cache_dir = os.path.join(tmpdir, "cache_dir")
+    data_dir = os.path.join(tmpdir, "data_dir")
+    os.makedirs(cache_dir)
+    os.makedirs(data_dir)
+
+    # Create a dataset with 500 items, 100 items per chunk
+    cache = Cache(str(data_dir), chunk_size=100)
+    for i in range(500):
+        cache[i] = i
+    cache.done()
+    cache.merge()
+
+    # Configure input directory based on local parameter
+    input_dir = f"local:{data_dir}"
+
+    # Create dataset with appropriate configuration and limited cache size
+    dataset = StreamingDataset(input_dir, cache_dir=str(cache_dir), shuffle=shuffle, max_cache_size=2000)
+    dataset_length = len(dataset)
+    assert dataset_length == 500
+
+    # ACT
+    # Stream through the entire dataset to trigger caching and cleanup
+    for data in dataset:
+        assert data is not None
+
+    # ASSERT
+    # Verify that the cache directory is empty after streaming is complete
+    cache_contents = os.listdir(dataset.cache.cache_dir)
+    chunks = [f for f in cache_contents if ".bin" in f]
+
+    assert len(chunks) == 0, (
+        f"Cache directory should be empty after streaming through the dataset.\n"
+        f"Shuffle: {shuffle}\n"
+        f"Found {len(chunks)} chunk files: {chunks}"
+    )
