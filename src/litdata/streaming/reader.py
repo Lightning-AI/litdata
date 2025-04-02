@@ -422,6 +422,8 @@ class BinaryReader:
             self._prepare_thread._decrement_local_lock(index.chunk_index)
             self._prepare_thread.delete([index.chunk_index])
             self._prepare_thread.stop()
+            if self._max_cache_size and self._prepare_thread.is_alive():
+                self._prepare_thread.join()
             self._prepare_thread = None
             self._item_loader.close(self._last_chunk_index)
             self._last_chunk_index = None
