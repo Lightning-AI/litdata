@@ -170,9 +170,11 @@ class PrepareChunksThread(Thread):
             self._to_delete_queue, timeout=_LONG_DEFAULT_TIMEOUT if reached_pre_download else _DEFAULT_TIMEOUT
         )
 
-        if chunk_index is not None:
-            # Store the current chunk index
-            self._chunks_index_to_be_deleted.append(chunk_index)
+        if chunk_index is None:
+            return
+
+        # Store the current chunk index
+        self._chunks_index_to_be_deleted.append(chunk_index)
 
         # Get the current cache size and decide whether we need to start cleanup. Otherwise, keep track of it
         while self._max_cache_size and self._chunks_index_to_be_deleted and self._can_delete_chunk():
