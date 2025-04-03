@@ -171,8 +171,6 @@ class PrepareChunksThread(Thread):
         )
 
         if chunk_index is not None:
-            self._pre_download_counter -= 1
-
             # Store the current chunk index
             self._chunks_index_to_be_deleted.append(chunk_index)
 
@@ -180,13 +178,13 @@ class PrepareChunksThread(Thread):
         while self._max_cache_size and self._chunks_index_to_be_deleted and self._can_delete_chunk():
             # Delete the oldest chunk
             self._apply_delete(self._chunks_index_to_be_deleted.pop(0))
-
+        # Decrement the pre-download counter
+        self._pre_download_counter -= 1
         return
 
     def _can_delete_chunk(self) -> bool:
         if self._delete_chunks_when_processed:
-            # TODO: check why it is >= self.max_pre_download - 1
-            return self._pre_download_counter >= 0
+            return self._pre_download_counter >= self._max_pre_download - 1
         return (
             self._max_cache_size is not None
             and _get_folder_size(self._config._cache_dir, self._config) >= self._max_cache_size
