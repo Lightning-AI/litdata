@@ -1561,6 +1561,7 @@ def test_dataset_as_iterator_and_non_iterator(tmpdir, local, shuffle):
     assert dataset.cache._reader._chunks_queued_for_download is False
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="Not tested on windows")
 @pytest.mark.parametrize("shuffle", [True, False])
 def test_cache_get_clear_after_dataset_stream(tmpdir, shuffle):
     """Test that the cache directory is cleaned up after streaming through the dataset.
