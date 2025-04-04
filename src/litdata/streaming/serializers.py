@@ -19,6 +19,7 @@ from abc import ABC, abstractmethod
 from collections import OrderedDict
 from contextlib import suppress
 from copy import deepcopy
+from itertools import chain
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
@@ -183,11 +184,11 @@ class JPEGArraySerializer(Serializer):
         # Store number of images as first 4 bytes
         n_images_bytes = np.uint32(len(item)).tobytes()
 
-        # Store all image sizes as uint32 array
-        image_sizes = np.array([len(elem) for elem in item], dtype=np.uint32).tobytes()
+        # Store all image sizes as uint32 array and convert to bytes
+        image_sizes_bytes = np.array([len(elem) for elem in item], dtype=np.uint32).tobytes()
 
         # Concatenate all data: n_images + sizes + image bytes
-        return b"".join([n_images_bytes, image_sizes] + item), None
+        return b"".join(chain([n_images_bytes, image_sizes_bytes], item)), None
 
     def deserialize(self, data: bytes) -> List[Any]:
         """Deserialize a bytes object back into a list of PIL.Image instances.
@@ -227,9 +228,17 @@ class JPEGArraySerializer(Serializer):
 
         # Calculate offsets for each image's data
         offsets = np.cumsum(np.concatenate(([image_bytes_offset], image_sizes)))
+        if len(offsets) != n_images + 1:
+            raise ValueError("Mismatch between number of images and offsets")
 
         # Extract and decode each image data
-        return [Image.open(io.BytesIO(data[offsets[i] : offsets[i + 1]])) for i in range(n_images)]
+        images = []
+        for i in range(n_images):
+            # Extract the image data using the offsets
+            image_data = data[offsets[i] : offsets[i + 1]]
+            # Convert the byte array to a PIL Image
+            images.append(Image.open(io.BytesIO(image_data)))
+        return images
 
     def can_serialize(self, item: Any) -> bool:
         """Check if the input is a list of bytearrays.
