@@ -582,6 +582,7 @@ def test_optimize_with_jpeg_array(tmpdir):
         assert all(img.size == expected_size for img in images)
 
     data_format = ds.cache._reader._item_loader._data_format
-    assert data_format == ["int", "jpeg_array"], (
-        f"Expected data format to be ['int', 'jpeg_array'], but got {data_format}"
-    )
+    assert data_format == [
+        "int",
+        "jpeg_array",
+    ], f"Expected data format to be ['int', 'jpeg_array'], but got {data_format}"
