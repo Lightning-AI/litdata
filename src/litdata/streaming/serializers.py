@@ -189,7 +189,7 @@ class JPEGArraySerializer(Serializer):
         # Concatenate all data: n_images + sizes + image bytes
         return b"".join([n_images_bytes, image_sizes] + item), None
 
-    def deserialize(self, data: bytes) -> list[Any]:
+    def deserialize(self, data: bytes) -> List[Any]:
         """Deserialize a bytes object back into a list of PIL.Image instances.
 
         Args:
@@ -228,7 +228,7 @@ class JPEGArraySerializer(Serializer):
         # Calculate offsets for each image's data
         offsets = np.cumsum(np.concatenate(([image_bytes_offset], image_sizes)))
 
-        # Extract and decode each image more efficiently
+        # Extract and decode each image data
         return [Image.open(io.BytesIO(data[offsets[i] : offsets[i + 1]])) for i in range(n_images)]
 
     def can_serialize(self, item: Any) -> bool:
