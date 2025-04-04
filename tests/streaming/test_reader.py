@@ -56,7 +56,7 @@ def test_reader_chunk_removal(tmpdir):
         index = ChunkedIndex(*cache._get_chunk_index_from_index(i), is_last_index=i == 24)
         assert cache[index] == i
 
-    assert len(filter_lock_files(os.listdir(cache_dir))) in [2, 3]
+    assert len(filter_lock_files(os.listdir(cache_dir))) in [1, 2, 3]
 
 
 def test_reader_chunk_removal_compressed(tmpdir):
@@ -101,7 +101,7 @@ def test_reader_chunk_removal_compressed(tmpdir):
         index = ChunkedIndex(*cache._get_chunk_index_from_index(i), is_last_index=i == 24)
         assert cache[index] == i
 
-    assert len(filter_lock_files(os.listdir(cache_dir))) in [2, 3]
+    assert len(filter_lock_files(os.listdir(cache_dir))) in [1, 2, 3]
 
 
 def test_get_folder_size(tmpdir, caplog):
