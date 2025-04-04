@@ -153,6 +153,96 @@ class JPEGSerializer(Serializer):
         return isinstance(item, JpegImageFile)
 
 
+class JPEGArraySerializer(Serializer):
+    """The JPEGArraySerializer serializes and deserializes a list of bytearrays representing individual images.
+
+    Format:
+        - number of images: first 4 bytes as a np.uint32
+        - sizes of image bytes: following 4 * n_images bytes as np.uint32
+        - images: concatenated JPEG bytes
+
+    # adapted from: JPEGArray : https://github.com/mosaicml/streaming/blob/main/streaming/base/format/mds/encodings.py
+    """
+
+    def serialize(self, item: list[bytearray]) -> Tuple[bytes, Optional[str]]:
+        """Serialize a list of image bytearrays into a single bytes object.
+
+        Args:
+            item: List of bytearrays, each representing an individual image.
+
+        Returns:
+            Tuple containing the serialized bytes and None for the format string.
+
+        Raises:
+            ValueError: If the input list is empty.
+        """
+        # Check if the list is empty
+        if not item:
+            raise ValueError("Expected a non-empty sequence of bytearrays, but received an empty list")
+
+        # Store number of images as first 4 bytes
+        n_images_bytes = np.uint32(len(item)).tobytes()
+
+        # Store all image sizes as uint32 array
+        image_sizes = np.array([len(elem) for elem in item], dtype=np.uint32).tobytes()
+
+        # Concatenate all data: n_images + sizes + image bytes
+        return b"".join([n_images_bytes, image_sizes] + item), None
+
+    def deserialize(self, data: bytes) -> list[Any]:
+        """Deserialize a bytes object back into a list of PIL.Image instances.
+
+        Args:
+            data: Bytes object containing serialized image data.
+
+        Returns:
+            List of PIL.Image instances.
+        """
+        if not _PIL_AVAILABLE:
+            raise ModuleNotFoundError("PIL is required. Run `pip install pillow`")
+        from PIL import Image
+
+        if len(data) < 4:
+            raise ValueError("Input data is too short to contain valid JPEG arrays")
+
+        # Extract number of images from the first 4 bytes
+        n_images = np.frombuffer(data[:4], dtype=np.uint32)[0]
+
+        # Ensure the number of images is positive
+        if n_images <= 0:
+            raise ValueError("Number of images must be positive")
+
+        # Check for invalid number of images (unreasonably large or negative when interpreted as signed)
+        if n_images > 2**31 - 1:
+            raise ValueError("Invalid number of images specified")
+
+        # Calculate the offset where image bytes start
+        image_bytes_offset = 4 + 4 * n_images
+
+        if len(data) < image_bytes_offset:
+            raise ValueError("Data is too short for the number of images specified")
+
+        # Extract the sizes of each image
+        image_sizes = np.frombuffer(data[4:image_bytes_offset], dtype=np.uint32)
+
+        # Calculate offsets for each image's data
+        offsets = np.cumsum(np.concatenate(([image_bytes_offset], image_sizes)))
+
+        # Extract and decode each image more efficiently
+        return [Image.open(io.BytesIO(data[offsets[i] : offsets[i + 1]])) for i in range(n_images)]
+
+    def can_serialize(self, item: Any) -> bool:
+        """Check if the input is a list of bytearrays.
+
+        Args:
+            item: Input to check.
+
+        Returns:
+            True if the input is a list of bytearrays, False otherwise.
+        """
+        return isinstance(item, list) and all(isinstance(elem, bytearray) for elem in item)
+
+
 class BytesSerializer(Serializer):
     """The BytesSerializer serialize and deserialize integer to and from bytes."""
 
@@ -456,6 +546,7 @@ _SERIALIZERS = OrderedDict(
         "file": FileSerializer(),
         "pil": PILSerializer(),
         "jpeg": JPEGSerializer(),
+        "jpeg_array": JPEGArraySerializer(),
         "bytes": BytesSerializer(),
         "no_header_numpy": NoHeaderNumpySerializer(),
         "numpy": NumpySerializer(),
