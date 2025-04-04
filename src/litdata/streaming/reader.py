@@ -197,7 +197,7 @@ class PrepareChunksThread(Thread):
         self._item_loader.pre_load_chunk(chunk_index, chunk_filepath)
 
     def _force_download(self) -> None:
-        chunk_index = _get_from_queue(self._force_download_queue, _DEFAULT_TIMEOUT)
+        chunk_index = _get_from_queue(self._force_download_queue)
         if chunk_index is not None:
             if _DEBUG:
                 chunk_filepath, _, _ = self._config[ChunkedIndex(index=-1, chunk_index=chunk_index)]
