@@ -19,7 +19,7 @@ from abc import ABC, abstractmethod
 from collections import OrderedDict
 from contextlib import suppress
 from copy import deepcopy
-from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import tifffile
@@ -164,7 +164,7 @@ class JPEGArraySerializer(Serializer):
     # adapted from: JPEGArray : https://github.com/mosaicml/streaming/blob/main/streaming/base/format/mds/encodings.py
     """
 
-    def serialize(self, item: list[bytearray]) -> Tuple[bytes, Optional[str]]:
+    def serialize(self, item: List[bytearray]) -> Tuple[bytes, Optional[str]]:
         """Serialize a list of image bytearrays into a single bytes object.
 
         Args:
