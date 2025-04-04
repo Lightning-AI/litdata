@@ -67,6 +67,7 @@ def test_serializers():
         "file",
         "pil",
         "jpeg",
+        "jpeg_array",
         "bytes",
         "no_header_numpy",
         "numpy",
@@ -221,13 +222,6 @@ def test_jpeg_array_serializer():
     # Verify all images using list comprehension
     expected_sizes = [(10, 10), (1000, 1000), (20, 30)]
     assert all(img.size == size for img, size in zip(deserialized_mixed, expected_sizes))
-
-
-def test_serializers_include_jpeg_array():
-    """Test that JPEGArraySerializer is included in the _SERIALIZERS dictionary."""
-    keys = list(_SERIALIZERS.keys())
-    assert "jpeg_array" in keys
-    assert keys.index("jpeg_array") > 0  # It should be registered
 
 
 @pytest.mark.flaky(reruns=3)
