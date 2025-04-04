@@ -682,10 +682,17 @@ def _is_namedtuple_instance(tree: Any) -> bool:
         return False
     return all(type(entry) == str for entry in fields)
 
+def _is_bytearray_list(tree: Any) -> bool:
+    """Check if the tree is a list of bytearrays."""
+    return isinstance(tree, list) and bool(tree) and all(isinstance(x, bytearray) for x in tree)
 
 def _get_node_type(tree: Any) -> Any:
     if _is_namedtuple_instance(tree):
         return namedtuple
+    
+    if _is_bytearray_list(tree):
+        return "bytearray_list"
+
     return type(tree)
 
 
