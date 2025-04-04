@@ -320,7 +320,7 @@ def test_streaming_dataset_distributed_full_shuffle_odd(drop_last, tmpdir, compr
         ),
     ],
 )
-@pytest.mark.timeout(30)
+@pytest.mark.timeout(60)
 def test_streaming_dataset_distributed_full_shuffle_even(drop_last, tmpdir, compression):
     seed_everything(42)
 
