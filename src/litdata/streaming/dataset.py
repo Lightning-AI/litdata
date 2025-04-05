@@ -255,7 +255,7 @@ class StreamingDataset(IterableDataset):
 
     def __iter__(self) -> "StreamingDataset":
         # When the StreamingDataset is used within map or optimize, let's refetch the distributed env.
-        logger.info("name: iterating_dataset; ph: B;")
+        logger.debug("name: iterating_dataset; ph: B;")
         if os.getenv("DATA_OPTIMIZER_GLOBAL_RANK"):
             self.distributed_env = _DistributedEnv.detect()
 
@@ -399,7 +399,7 @@ class StreamingDataset(IterableDataset):
         if self.global_index >= self.stop_length:
             self.current_epoch += 1
             self.reset_state_dict()
-            logger.info("name: iterating_dataset; ph: E;")
+            logger.debug("name: iterating_dataset; ph: E;")
             raise StopIteration
 
         # Lazily re-populate the interval to reduce memory usage.
