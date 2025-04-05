@@ -130,6 +130,7 @@ class PrepareChunksThread(Thread):
         """Inform the item loader of the chunk to delete."""
         # TODO: Fix the can_delete method
         can_delete_chunk = self._config.can_delete(chunk_index)
+        print(f"apply delete called -> {chunk_index} {can_delete_chunk=}; by {self._rank or 0}")
         chunk_filepath, _, _ = self._config[ChunkedIndex(index=-1, chunk_index=chunk_index)]
 
         remaining_locks = self._remaining_locks(chunk_filepath)
@@ -184,6 +185,12 @@ class PrepareChunksThread(Thread):
         return
 
     def _can_delete_chunk(self) -> bool:
+        print(
+            "can delete chunk called",
+            self._delete_chunks_when_processed,
+            self._pre_download_counter,
+            self._max_pre_download,
+        )
         if self._delete_chunks_when_processed:
             return self._pre_download_counter >= self._max_pre_download - 1
         return (
@@ -495,7 +502,7 @@ def _get_folder_size(path: str, config: ChunksConfig) -> int:
                     f"Ignoring '{filename}': "
                     "This file doesn't appear to be a valid chunk file and has been excluded from the size calculation."
                 )
-
+    print(f"Total size of files in '{path}': {size} bytes")
     return size
 
 

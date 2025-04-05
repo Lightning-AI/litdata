@@ -134,7 +134,7 @@ class CacheCollateFn:
 
 
 class _SingleProcessDataLoaderIterPatch(_SingleProcessDataLoaderIter):
-    """This is ç to inform the cache is done chunking."""
+    """This is to inform the cache is done chunking."""
 
     def _next_data(self) -> Any:
         try:
