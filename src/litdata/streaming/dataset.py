@@ -33,10 +33,6 @@ from litdata.utilities.encryption import Encryption
 from litdata.utilities.env import _DistributedEnv, _is_in_dataloader_worker, _WorkerEnv
 from litdata.utilities.format import _convert_bytes_to_int
 from litdata.utilities.hf_dataset import index_hf_dataset
-from litdata.utilities.shuffle import (
-    _find_chunks_per_workers_on_which_to_skip_deletion,
-    _map_node_worker_rank_to_chunk_indexes_to_not_delete,
-)
 
 logger = logging.getLogger(__name__)
 
@@ -253,6 +249,7 @@ class StreamingDataset(IterableDataset):
         return self.shuffler.get_len(self.distributed_env, self.num_workers, self.batch_size, self.current_epoch)
 
     def __iter__(self) -> "StreamingDataset":
+        print("jai maata di, chalo shuru ho jao")
         # When the StreamingDataset is used within map or optimize, let's refetch the distributed env.
         if os.getenv("DATA_OPTIMIZER_GLOBAL_RANK"):
             self.distributed_env = _DistributedEnv.detect()
@@ -285,28 +282,28 @@ class StreamingDataset(IterableDataset):
             # Find the chunks shared across all workers of the current node.
             # For each shared chunk, find the rank and worker to use the chunk last and prevent
             # premature deletion for the other workers.
-            node_size = self.distributed_env.world_size // self.distributed_env.num_nodes
-            first_rank_this_node = (self.distributed_env.global_rank // node_size) * node_size
-            num_workers_per_node = node_size * self.num_workers
-            worker_start = first_rank_this_node * num_workers_per_node
-            worker_end = worker_start + num_workers_per_node
-            local_rank = self.distributed_env.global_rank % node_size
+            # node_size = self.distributed_env.world_size // self.distributed_env.num_nodes
+            # first_rank_this_node = (self.distributed_env.global_rank // node_size) * node_size
+            # num_workers_per_node = node_size * self.num_workers
+            # worker_start = first_rank_this_node * num_workers_per_node
+            # worker_end = worker_start + num_workers_per_node
+            # local_rank = self.distributed_env.global_rank % node_size
 
-            chunks_indexes_skip_deletion = _find_chunks_per_workers_on_which_to_skip_deletion(
-                self.num_workers,
-                self.batch_size,
-                workers_chunks[worker_start:worker_end],
-                workers_intervals[worker_start:worker_end],
-            )
-            worker_node_rank_to_chunk_indexes = _map_node_worker_rank_to_chunk_indexes_to_not_delete(
-                chunks_indexes_skip_deletion
-            )
+            # chunks_indexes_skip_deletion = _find_chunks_per_workers_on_which_to_skip_deletion(
+            #     self.num_workers,
+            #     self.batch_size,
+            #     workers_chunks[worker_start:worker_end],
+            #     workers_intervals[worker_start:worker_end],
+            # )
+            # worker_node_rank_to_chunk_indexes = _map_node_worker_rank_to_chunk_indexes_to_not_delete(
+            #     chunks_indexes_skip_deletion
+            # )
 
-            worker_rank_local_node = local_rank * self.num_workers + self.worker_env.rank
-            if worker_rank_local_node in worker_node_rank_to_chunk_indexes:
-                self.cache._reader.config.skip_chunk_indexes_deletion = worker_node_rank_to_chunk_indexes[
-                    worker_rank_local_node
-                ]
+            # worker_rank_local_node = local_rank * self.num_workers + self.worker_env.rank
+            # if worker_rank_local_node in worker_node_rank_to_chunk_indexes:
+            #     self.cache._reader.config.skip_chunk_indexes_deletion = worker_node_rank_to_chunk_indexes[
+            #         worker_rank_local_node
+            #     ]
 
             self.num_chunks = len(self.worker_chunks)
             self.current_indexes = []
