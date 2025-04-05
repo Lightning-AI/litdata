@@ -60,6 +60,7 @@ class StreamingDataset(IterableDataset):
         max_pre_download: int = 2,
         index_path: Optional[str] = None,
         force_override_state_dict: bool = False,
+        fnmatch_pattern: str = None,
     ) -> None:
         """The streaming dataset can be used once your data have been optimised using the DatasetOptimiser class.
 
@@ -84,7 +85,7 @@ class StreamingDataset(IterableDataset):
                 If `index_path` is a directory, the function will look for `index.json` within it.
                 If `index_path` is a full file path, it will use that directly.
             force_override_state_dict: Boolean flag for allowing local arguments to override a loaded state dict.
-
+            fnmatch_pattern: Filename pattern to filter files in `input_dir`.
         """
         _check_version_and_prompt_upgrade(__version__)
 
@@ -119,7 +120,15 @@ class StreamingDataset(IterableDataset):
         self.subsampled_files: List[str] = []
         self.region_of_interest: List[Tuple[int, int]] = []
         self.subsampled_files, self.region_of_interest = subsample_streaming_dataset(
-            self.input_dir, self.cache_dir, item_loader, subsample, shuffle, seed, storage_options, index_path
+            self.input_dir,
+            self.cache_dir,
+            item_loader,
+            subsample,
+            shuffle,
+            seed,
+            storage_options,
+            index_path,
+            fnmatch_pattern,
         )
 
         self.item_loader = item_loader

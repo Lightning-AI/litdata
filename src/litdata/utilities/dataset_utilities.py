@@ -24,6 +24,7 @@ def subsample_streaming_dataset(
     seed: int = 42,
     storage_options: Optional[Dict] = {},
     index_path: Optional[str] = None,
+    fnmatch_pattern: str = None,
 ) -> Tuple[List[str], List[Tuple[int, int]]]:
     """Subsample streaming dataset.
 
@@ -74,6 +75,11 @@ def subsample_streaming_dataset(
             f"The provided dataset `{input_dir.path}` doesn't contain any {_INDEX_FILENAME} file."
             "\n HINT: Did you successfully optimize a dataset to the provided `input_dir`?"
         )
+
+    if fnmatch_pattern is not None:
+        from fnmatch import fnmatch
+
+        original_chunks = [chunk for chunk in original_chunks if fnmatch(chunk["filename"], fnmatch_pattern)]
 
     assert len(original_chunks) > 0, f"No chunks found in the `{input_dir}/index.json` file"
 
