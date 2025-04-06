@@ -379,6 +379,7 @@ class StreamingDataset(IterableDataset):
         return self.cache[index]
 
     def __next__(self) -> Any:
+        print(f"next called in dataset, global_index: {self.global_index}, index: {self.index}")
         # Prevent to create more batch on a given process
         if self.global_index >= self.stop_length:
             self.current_epoch += 1
