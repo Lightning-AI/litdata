@@ -25,15 +25,17 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 import numpy as np
 import tifffile
 import torch
-from lightning_utilities.core.imports import RequirementCache
 
-from litdata.constants import _NUMPY_DTYPES_MAPPING, _TORCH_DTYPES_MAPPING
+from litdata.constants import (
+    _AV_AVAILABLE,
+    _NUMPY_DTYPES_MAPPING,
+    _PIL_AVAILABLE,
+    _TORCH_DTYPES_MAPPING,
+    _TORCH_VISION_AVAILABLE,
+)
 
 if TYPE_CHECKING:
     from PIL.JpegImagePlugin import JpegImageFile
-_PIL_AVAILABLE = RequirementCache("PIL")
-_TORCH_VISION_AVAILABLE = RequirementCache("torchvision")
-_AV_AVAILABLE = RequirementCache("av")
 
 
 class Serializer(ABC):
@@ -155,56 +157,30 @@ class JPEGSerializer(Serializer):
 
 
 class JPEGArraySerializer(Serializer):
-    """The JPEGArraySerializer serializes and deserializes a list of bytearrays representing individual images.
+    """The JPEGArraySerializer serializes and deserializes lists of JPEG images to and from bytes."""
 
-    Format:
-        - number of images: first 4 bytes as a np.uint32
-        - sizes of image bytes: following 4 * n_images bytes as np.uint32
-        - images: concatenated JPEG bytes
-
-    # adapted from: JPEGArray : https://github.com/mosaicml/streaming/blob/main/streaming/base/format/mds/encodings.py
-    """
-
-    def serialize(self, item: List[bytearray]) -> Tuple[bytes, Optional[str]]:
-        """Serialize a list of image bytearrays into a single bytes object.
-
-        Args:
-            item: List of bytearrays, each representing an individual image.
-
-        Returns:
-            Tuple containing the serialized bytes and None for the format string.
-
-        Raises:
-            ValueError: If the input list is empty.
-        """
-        # Check if the list is empty
-        if not item:
-            raise ValueError("Expected a non-empty sequence of bytearrays, but received an empty list")
-
+    def serialize(self, item: Any) -> Tuple[bytes, Optional[str]]:
         # Store number of images as first 4 bytes
         n_images_bytes = np.uint32(len(item)).tobytes()
 
+        # create a instance of JPEGSerializer
+        if not hasattr(self, "_jpeg_serializer"):
+            self._jpeg_serializer = JPEGSerializer()
+
+        # convert each image to bytes and store in a list
+        image_bytes = []
+        for image in item:
+            image_bytes.append(self._jpeg_serializer.serialize(image)[0])
+
         # Store all image sizes as uint32 array and convert to bytes
-        image_sizes_bytes = np.array([len(elem) for elem in item], dtype=np.uint32).tobytes()
+        image_sizes_bytes = np.array([len(elem) for elem in image_bytes], dtype=np.uint32).tobytes()
 
         # Concatenate all data: n_images + sizes + image bytes
-        return b"".join(chain([n_images_bytes, image_sizes_bytes], item)), None
+        return b"".join(chain([n_images_bytes, image_sizes_bytes], image_bytes)), None
 
-    def deserialize(self, data: bytes) -> List[Any]:
-        """Deserialize a bytes object back into a list of PIL.Image instances.
-
-        Args:
-            data: Bytes object containing serialized image data.
-
-        Returns:
-            List of PIL.Image instances.
-        """
-        if not _PIL_AVAILABLE:
-            raise ModuleNotFoundError("PIL is required. Run `pip install pillow`")
-        from PIL import Image
-
+    def deserialize(self, data: bytes) -> List[Union["JpegImageFile", torch.Tensor]]:
         if len(data) < 4:
-            raise ValueError("Input data is too short to contain valid JPEG arrays")
+            raise ValueError("Input data is too short to contain valid list of images")
 
         # Extract number of images from the first 4 bytes
         n_images = np.frombuffer(data[:4], dtype=np.uint32)[0]
@@ -212,10 +188,6 @@ class JPEGArraySerializer(Serializer):
         # Ensure the number of images is positive
         if n_images <= 0:
             raise ValueError("Number of images must be positive")
-
-        # Check for invalid number of images (unreasonably large or negative when interpreted as signed)
-        if n_images > 2**31 - 1:
-            raise ValueError("Invalid number of images specified")
 
         # Calculate the offset where image bytes start
         image_bytes_offset = 4 + 4 * n_images
@@ -228,28 +200,29 @@ class JPEGArraySerializer(Serializer):
 
         # Calculate offsets for each image's data
         offsets = np.cumsum(np.concatenate(([image_bytes_offset], image_sizes)))
+
         if len(offsets) != n_images + 1:
             raise ValueError("Mismatch between number of images and offsets")
+
+        if not hasattr(self, "_jpeg_serializer"):
+            self._jpeg_serializer = JPEGSerializer()
 
         # Extract and decode each image data
         images = []
         for i in range(n_images):
             # Extract the image data using the offsets
             image_data = data[offsets[i] : offsets[i + 1]]
-            # Convert the byte array to a PIL Image
-            images.append(Image.open(io.BytesIO(image_data)))
+            # Convert the byte array to a jpeg image or tensor
+            images.append(self._jpeg_serializer.deserialize(image_data))
         return images
 
     def can_serialize(self, item: Any) -> bool:
-        """Check if the input is a list of bytearrays.
+        """Check if the item is a list of JPEG images."""
+        if not _PIL_AVAILABLE:
+            return False
+        from PIL.JpegImagePlugin import JpegImageFile
 
-        Args:
-            item: Input to check.
-
-        Returns:
-            True if the input is a list of bytearrays, False otherwise.
-        """
-        return isinstance(item, list) and all(isinstance(elem, bytearray) for elem in item)
+        return isinstance(item, (List, Tuple)) and all(isinstance(elem, JpegImageFile) for elem in item)
 
 
 class BytesSerializer(Serializer):
