@@ -222,7 +222,7 @@ class JPEGArraySerializer(Serializer):
             return False
         from PIL.JpegImagePlugin import JpegImageFile
 
-        return isinstance(item, (List, Tuple)) and all(isinstance(elem, JpegImageFile) for elem in item)
+        return isinstance(item, (list, tuple)) and all(isinstance(elem, JpegImageFile) for elem in item)
 
 
 class BytesSerializer(Serializer):
