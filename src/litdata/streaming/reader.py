@@ -185,12 +185,12 @@ class PrepareChunksThread(Thread):
         return
 
     def _can_delete_chunk(self) -> bool:
-        print(
-            "can delete chunk called",
-            self._delete_chunks_when_processed,
-            self._pre_download_counter,
-            self._max_pre_download,
-        )
+        # print(
+        #     "can delete chunk called",
+        #     self._delete_chunks_when_processed,
+        #     self._pre_download_counter,
+        #     self._max_pre_download,
+        # )
         if self._delete_chunks_when_processed:
             return self._pre_download_counter >= self._max_pre_download - 1
         return (

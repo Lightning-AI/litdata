@@ -150,13 +150,15 @@ class StreamingDataset(IterableDataset):
 
         self.cache: Optional[Cache] = None
         self.worker_env: Optional[_WorkerEnv] = None
-        self.worker_chunks: List[int] = []
-        self.worker_intervals: List[List[int]] = []
-        self.current_indexes: List[int] = []
-        self.chunk_index = 0
-        self.num_chunks: Optional[int] = None
-        self.global_index = 0
-        self.index = 0
+        self.worker_chunks: List[int] = []  # chunk indexes on which the current worker will work
+        self.worker_intervals: List[List[int]] = []  # chunk index intervals for the current worker
+        self.upcoming_indexes: List[int] = []  # contains list of upcoming indexes to be processed
+        self.worker_chunks_index = 0  # which index of the array `self.worker_chunks` we are currently working on
+        self.num_chunks: Optional[int] = None  # total number of chunks that the current worker will work on
+        self.global_index = 0  # total number of samples processed by the current worker up until now
+
+        # number of samples processed by the current worker in the current chunk
+        self.consumed_sample_count_in_curr_chunk = 0
         self.has_triggered_download = False
         self.min_items_per_replica: Optional[int] = None
         self.current_epoch = 1
@@ -249,7 +251,6 @@ class StreamingDataset(IterableDataset):
         return self.shuffler.get_len(self.distributed_env, self.num_workers, self.batch_size, self.current_epoch)
 
     def __iter__(self) -> "StreamingDataset":
-        print("jai maata di, chalo shuru ho jao")
         # When the StreamingDataset is used within map or optimize, let's refetch the distributed env.
         if os.getenv("DATA_OPTIMIZER_GLOBAL_RANK"):
             self.distributed_env = _DistributedEnv.detect()
@@ -306,10 +307,10 @@ class StreamingDataset(IterableDataset):
             #     ]
 
             self.num_chunks = len(self.worker_chunks)
-            self.current_indexes = []
-            self.chunk_index = 0
+            self.upcoming_indexes = []
+            self.worker_chunks_index = 0
             self.global_index = 0
-            self.index = 0
+            self.consumed_sample_count_in_curr_chunk = 0
 
         self.has_triggered_download = False
         self.last_time = time()
@@ -344,25 +345,25 @@ class StreamingDataset(IterableDataset):
         worker_local_rank = self.worker_env.rank
 
         self.num_chunks = len(workers_intervals[worker_rank])
-        self.chunk_index = chunks_index[worker_local_rank]
+        self.worker_chunks_index = chunks_index[worker_local_rank]
         self.worker_chunks = workers_chunks[worker_rank]
         self.worker_intervals = workers_intervals[worker_rank]
 
         # replay the indexes for the current chunks
-        interval = self.worker_intervals[self.chunk_index]
+        interval = self.worker_intervals[self.worker_chunks_index]
         current_indexes = np.arange(interval[1], interval[2])
 
         # re-shuffle the indexes
-        current_indexes = self.shuffler(current_indexes, self.num_chunks, self.current_epoch, self.chunk_index)
+        current_indexes = self.shuffler(current_indexes, self.num_chunks, self.current_epoch, self.worker_chunks_index)
 
         # skip any indexes already consumed
         current_indexes = current_indexes[indexes[worker_local_rank] :]
-        self.current_indexes = current_indexes
+        self.upcoming_indexes = current_indexes
 
         self.global_index = indexes[worker_local_rank]
 
         # bump the chunk_index
-        self.chunk_index += 1
+        self.worker_chunks_index += 1
 
     def __getitem__(self, index: Union[ChunkedIndex, int]) -> Any:
         if self.cache is None:
@@ -379,50 +380,58 @@ class StreamingDataset(IterableDataset):
         return self.cache[index]
 
     def __next__(self) -> Any:
-        print(f"next called in dataset, global_index: {self.global_index}, index: {self.index}")
         # Prevent to create more batch on a given process
         if self.global_index >= self.stop_length:
+            # global_index: total number of samples processed by the current worker across all chunks
+            # stop_length: max number of samples that the current worker will process
+            # if they are equal, means, worker has processed all the chunks
+            print("dame tu cosita aha ah ah ah")
             self.current_epoch += 1
             self.reset_state_dict()
             raise StopIteration
 
         # Lazily re-populate the interval to reduce memory usage.
-        if len(self.current_indexes) == 0:
-            if self.chunk_index == self.num_chunks:
-                self.current_epoch += 1
-                self.reset_state_dict()
-                raise StopIteration
+        if len(self.upcoming_indexes) == 0:
+            # if upcoming_indexes is empty, means we have processed all the indexes in the current chunk
+            # we need to move to the next chunk
+            # we don't need to account for `what if it's the last chunk`
+            # bcoz in that case, `self.global_index >= self.stop_length` will be true (check above)
 
-            # reset index
-            self.index = 0
+            # reset consumed_sample_count_in_curr_chunk as we are moving to the next chunk
+            self.consumed_sample_count_in_curr_chunk = 0
 
-            interval = self.worker_intervals[self.chunk_index]
+            interval = self.worker_intervals[self.worker_chunks_index]
             current_indexes = np.arange(interval[1], interval[2])
 
             assert self.shuffler is not None
             assert self.num_chunks is not None
-            self.current_indexes = self.shuffler(current_indexes, self.num_chunks, self.current_epoch, self.chunk_index)
+            self.upcoming_indexes = self.shuffler(
+                current_indexes, self.num_chunks, self.current_epoch, self.worker_chunks_index
+            )
 
-            self.chunk_index += 1
+            self.worker_chunks_index += 1
 
         # Get the first index
-        index = self.current_indexes.pop(0)
+        index = self.upcoming_indexes.pop(0)
 
         # Call the `__getitem__` method.
         data = self.__getitem__(
             ChunkedIndex(
                 index=index,
-                chunk_index=self.worker_chunks[self.chunk_index - 1],
+                chunk_index=self.worker_chunks[self.worker_chunks_index - 1],
                 # We provide the chunks indexes only one the first
-                chunk_indexes=None if self.has_triggered_download else self.worker_chunks[self.chunk_index - 1 :],
-                is_last_index=(self.chunk_index) == len(self.worker_intervals) and len(self.current_indexes) == 0,
+                chunk_indexes=None
+                if self.has_triggered_download
+                else self.worker_chunks[self.worker_chunks_index - 1 :],
+                is_last_index=(self.worker_chunks_index) == len(self.worker_intervals)
+                and len(self.upcoming_indexes) == 0,
             )
         )
 
         self.has_triggered_download = True
         self.global_index += 1
-        self.index += 1
-
+        self.consumed_sample_count_in_curr_chunk += 1
+        print(f"data: {data}")
         return data
 
     def state_dict(self, num_samples_yielded: int, num_workers: int, batch_size: int) -> Dict[str, Any]:
