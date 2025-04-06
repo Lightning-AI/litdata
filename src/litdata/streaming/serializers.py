@@ -128,11 +128,20 @@ class JPEGSerializer(Serializer):
 
     def deserialize(self, data: bytes) -> torch.Tensor:  # type: ignore
         from torchvision.io import decode_jpeg
+        from torchvision.transforms.functional import pil_to_tensor
 
         array = torch.frombuffer(data, dtype=torch.uint8)
         # Note: Some datasets like Imagenet contains some PNG images with JPEG extension, so we fallback to PIL
         with suppress(RuntimeError):
             return decode_jpeg(array)
+
+        # Fallback to PIL
+        if not _PIL_AVAILABLE:
+            raise ModuleNotFoundError("PIL is required. Run `pip install pillow`")
+        from PIL import Image
+
+        img = Image.open(io.BytesIO(data))
+        return pil_to_tensor(img)
 
     def can_serialize(self, item: Any) -> bool:
         if not _PIL_AVAILABLE:
