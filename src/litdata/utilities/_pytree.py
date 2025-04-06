@@ -688,7 +688,7 @@ def _is_jpeg_array(tree: Any) -> bool:
     """Check if the tree is a list of jpeg images."""
     if not _PIL_AVAILABLE:
             return False
-    
+
     from PIL.JpegImagePlugin import JpegImageFile
     return isinstance(tree, (List,Tuple)) and bool(tree) and all(isinstance(x, JpegImageFile) for x in tree)
 
