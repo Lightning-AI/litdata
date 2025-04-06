@@ -153,7 +153,10 @@ class StreamingDataset(IterableDataset):
         self.worker_chunks: List[int] = []  # chunk indexes on which the current worker will work
         self.worker_intervals: List[List[int]] = []  # chunk index intervals for the current worker
         self.upcoming_indexes: List[int] = []  # contains list of upcoming indexes to be processed
-        self.worker_chunks_index = 0  # which index of the array `self.worker_chunks` we are currently working on
+
+        # which index of the array `self.worker_chunks` will we work on after this chunk is completely consumed
+        self.worker_next_chunks_index = 0
+
         self.num_chunks: Optional[int] = None  # total number of chunks that the current worker will work on
         self.global_index = 0  # total number of samples processed by the current worker up until now
 
@@ -308,7 +311,7 @@ class StreamingDataset(IterableDataset):
 
             self.num_chunks = len(self.worker_chunks)
             self.upcoming_indexes = []
-            self.worker_chunks_index = 0
+            self.worker_next_chunks_index = 0
             self.global_index = 0
             self.consumed_sample_count_in_curr_chunk = 0
 
@@ -345,16 +348,18 @@ class StreamingDataset(IterableDataset):
         worker_local_rank = self.worker_env.rank
 
         self.num_chunks = len(workers_intervals[worker_rank])
-        self.worker_chunks_index = chunks_index[worker_local_rank]
+        self.worker_next_chunks_index = chunks_index[worker_local_rank]
         self.worker_chunks = workers_chunks[worker_rank]
         self.worker_intervals = workers_intervals[worker_rank]
 
         # replay the indexes for the current chunks
-        interval = self.worker_intervals[self.worker_chunks_index]
+        interval = self.worker_intervals[self.worker_next_chunks_index]
         current_indexes = np.arange(interval[1], interval[2])
 
         # re-shuffle the indexes
-        current_indexes = self.shuffler(current_indexes, self.num_chunks, self.current_epoch, self.worker_chunks_index)
+        current_indexes = self.shuffler(
+            current_indexes, self.num_chunks, self.current_epoch, self.worker_next_chunks_index
+        )
 
         # skip any indexes already consumed
         current_indexes = current_indexes[indexes[worker_local_rank] :]
@@ -363,7 +368,7 @@ class StreamingDataset(IterableDataset):
         self.global_index = indexes[worker_local_rank]
 
         # bump the chunk_index
-        self.worker_chunks_index += 1
+        self.worker_next_chunks_index += 1
 
     def __getitem__(self, index: Union[ChunkedIndex, int]) -> Any:
         if self.cache is None:
@@ -380,7 +385,7 @@ class StreamingDataset(IterableDataset):
         return self.cache[index]
 
     def __next__(self) -> Any:
-        # Prevent to create more batch on a given process
+        # check if we have reached the end of the dataset (i.e., all the chunks have been processed)
         if self.global_index >= self.stop_length:
             # global_index: total number of samples processed by the current worker across all chunks
             # stop_length: max number of samples that the current worker will process
@@ -392,24 +397,31 @@ class StreamingDataset(IterableDataset):
 
         # Lazily re-populate the interval to reduce memory usage.
         if len(self.upcoming_indexes) == 0:
-            # if upcoming_indexes is empty, means we have processed all the indexes in the current chunk
-            # we need to move to the next chunk
+            # if upcoming_indexes is empty, means either:
+            #   - it's the start, or,
+            #   - we have processed all the indexes in the current chunk
+            #
+            # we need to move to the next chunk (or first chunk if it's the start)
             # we don't need to account for `what if it's the last chunk`
             # bcoz in that case, `self.global_index >= self.stop_length` will be true (check above)
+            if self.worker_next_chunks_index >= self.num_chunks:
+                raise ValueError("should not have happened!")
 
-            # reset consumed_sample_count_in_curr_chunk as we are moving to the next chunk
+            # reset consumed_sample_count_in_curr_chunk as we are switching to a new chunk
             self.consumed_sample_count_in_curr_chunk = 0
 
-            interval = self.worker_intervals[self.worker_chunks_index]
+            # `next_worker_chunks_index` is the index of the chunk that we will be working on now
+            interval = self.worker_intervals[self.worker_next_chunks_index]
+
             current_indexes = np.arange(interval[1], interval[2])
 
             assert self.shuffler is not None
             assert self.num_chunks is not None
             self.upcoming_indexes = self.shuffler(
-                current_indexes, self.num_chunks, self.current_epoch, self.worker_chunks_index
+                current_indexes, self.num_chunks, self.current_epoch, self.worker_next_chunks_index
             )
 
-            self.worker_chunks_index += 1
+            self.worker_next_chunks_index += 1  # bump the chunk_index
 
         # Get the first index
         index = self.upcoming_indexes.pop(0)
@@ -418,19 +430,19 @@ class StreamingDataset(IterableDataset):
         data = self.__getitem__(
             ChunkedIndex(
                 index=index,
-                chunk_index=self.worker_chunks[self.worker_chunks_index - 1],
+                chunk_index=self.worker_chunks[self.worker_next_chunks_index - 1],
                 # We provide the chunks indexes only one the first
                 chunk_indexes=None
                 if self.has_triggered_download
-                else self.worker_chunks[self.worker_chunks_index - 1 :],
-                is_last_index=(self.worker_chunks_index) == len(self.worker_intervals)
+                else self.worker_chunks[self.worker_next_chunks_index - 1 :],
+                is_last_index=(self.worker_next_chunks_index) == len(self.worker_intervals)
                 and len(self.upcoming_indexes) == 0,
             )
         )
 
         self.has_triggered_download = True
-        self.global_index += 1
-        self.consumed_sample_count_in_curr_chunk += 1
+        self.global_index += 1  # total number of samples processed by the current worker
+        self.consumed_sample_count_in_curr_chunk += 1  # number of samples processed in the current chunk
         print(f"data: {data}")
         return data
 
