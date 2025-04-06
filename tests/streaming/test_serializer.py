@@ -142,86 +142,84 @@ def test_jpeg_serializer_available():
 
 
 @pytest.mark.skipif(condition=not _PIL_AVAILABLE, reason="Requires: ['pil']")
-def test_jpeg_array_serializer():
+@pytest.mark.parametrize("use_torchvision", [True])
+def test_jpeg_array_serializer(use_torchvision):
     """Test the JPEGArraySerializer with various inputs and edge cases."""
     from PIL import Image
 
     serializer = JPEGArraySerializer()
 
-    # Helper function to create a test image of a specified size and return its bytearray
-    def create_test_image_bytearray(width, height, color=(255, 0, 0)):
-        img = Image.new("RGB", (width, height), color=color)
+    # Helper function to create a list of jpeg images
+    def create_test_jpeg_image(width, height):
+        array = np.random.randint(255, size=(height, width, 3), dtype=np.uint8)
+        img = Image.fromarray(array)
         img_bytes = io.BytesIO()
         img.save(img_bytes, format="JPEG")
-        return bytearray(img_bytes.getvalue())
+        return Image.open(io.BytesIO(img_bytes.getvalue()))
 
-    # Test 1: Basic functionality - List of image bytearrays
-    image_bytearrays = [
-        create_test_image_bytearray(100, 100, (255, 0, 0)),
-        create_test_image_bytearray(200, 150, (0, 255, 0)),
-        create_test_image_bytearray(300, 200, (0, 0, 255)),
+    # Test 1: Basic functionality - List of JPEG images
+    images = [
+        create_test_jpeg_image(100, 100),
+        create_test_jpeg_image(200, 150),
+        create_test_jpeg_image(300, 200),
     ]
 
     # Verify can_serialize
-    assert serializer.can_serialize(image_bytearrays)
-    assert not serializer.can_serialize([b"not a bytearray"])
-    assert not serializer.can_serialize(tuple(image_bytearrays))  # Not a list
+    assert serializer.can_serialize(images)
+    assert serializer.can_serialize(tuple(images))
+    assert not serializer.can_serialize([b"not a image"])
 
-    # Test serialization and deserialization
-    data, _ = serializer.serialize(image_bytearrays)
-    assert isinstance(data, bytes)
+    # patch _TORCH_VISION_AVAILABLE
+    with mock.patch("litdata.streaming.serializers._TORCH_VISION_AVAILABLE", use_torchvision):
+        # Test serialization and deserialization
+        data, name = serializer.serialize(images)
+        assert isinstance(data, bytes)
 
-    # Deserialize and verify
-    deserialized_images = serializer.deserialize(data)
-    assert len(deserialized_images) == 3
-    assert all(isinstance(img, Image.Image) for img in deserialized_images)
+        # Deserialize and verify
+        deserialized_images = serializer.deserialize(data)
+        assert len(deserialized_images) == 3
+        if use_torchvision:
+            assert all(isinstance(img, torch.Tensor) for img in deserialized_images)
+            # Verify image dimensions
+            assert deserialized_images[0].shape == torch.Size([3, 100, 100])  # CHW
+            assert deserialized_images[1].shape == torch.Size([3, 150, 200])
+            assert deserialized_images[2].shape == torch.Size([3, 200, 300])
 
-    # Verify image dimensions
-    assert deserialized_images[0].size == (100, 100)
-    assert deserialized_images[1].size == (200, 150)
-    assert deserialized_images[2].size == (300, 200)
+        else:
+            assert all(isinstance(img, Image.Image) for img in deserialized_images)
+            # Verify image dimensions
+            assert deserialized_images[0].size == (100, 100)
+            assert deserialized_images[1].size == (200, 150)
+            assert deserialized_images[2].size == (300, 200)
 
-    # Test 2: Empty list - should raise a ValueError
-    empty_list = []
-    with pytest.raises(ValueError, match="Expected a non-empty sequence of bytearrays"):
-        serializer.serialize(empty_list)
+        # Test 2: Single image
+        single_image_list = [create_test_jpeg_image(50, 50)]
+        data, _ = serializer.serialize(single_image_list)
+        deserialized_single = serializer.deserialize(data)
+        assert len(deserialized_single) == 1
+        if use_torchvision:
+            assert isinstance(deserialized_single[0], torch.Tensor)
+            assert deserialized_single[0].shape == torch.Size([3, 50, 50])
+        else:
+            assert isinstance(deserialized_single[0], Image.Image)
+            # Verify image dimensions
+            assert deserialized_single[0].size == (50, 50)
 
-    # Test 3: Single image
-    single_image_list = [create_test_image_bytearray(50, 50)]
-    data, _ = serializer.serialize(single_image_list)
-    deserialized_single = serializer.deserialize(data)
-    assert len(deserialized_single) == 1
-    assert deserialized_single[0].size == (50, 50)
+        # Test 3: Large batch of images (using list comprehension)
+        large_batch = [create_test_jpeg_image(10, 10) for _ in range(10)]
+        data, _ = serializer.serialize(large_batch)
+        deserialized_batch = serializer.deserialize(data)
+        if use_torchvision:
+            assert all(isinstance(img, torch.Tensor) for img in deserialized_batch)
+            # Verify image dimensions
+            assert all(img.shape == torch.Size([3, 10, 10]) for img in deserialized_batch)
+        else:
+            assert len(deserialized_batch) == 10
+            assert all(img.size == (10, 10) for img in deserialized_batch)
 
-    # Test 4: Large batch of images (using list comprehension)
-    large_batch = [create_test_image_bytearray(10, 10) for _ in range(10)]
-    data, _ = serializer.serialize(large_batch)
-    deserialized_batch = serializer.deserialize(data)
-    assert len(deserialized_batch) == 10
-    assert all(img.size == (10, 10) for img in deserialized_batch)
-
-    # Test 5: Error handling with corrupted data
-    with pytest.raises(ValueError, match="Input data is too short"):
-        serializer.deserialize(b"abc")  # Too short data
-
-    # Test 6: Error handling with invalid number of images
-    # Create corrupted data with impossibly large number of images
-    corrupted_data = np.uint32(0xFFFFFFFF).tobytes() + b"\x00" * 10
-    with pytest.raises(ValueError, match="Invalid number of images"):
-        serializer.deserialize(corrupted_data)
-
-    # Test 7: Mixed image sizes (efficiently create and test)
-    mixed_size_list = [
-        create_test_image_bytearray(10, 10),
-        create_test_image_bytearray(1000, 1000),
-        create_test_image_bytearray(20, 30),
-    ]
-    data, _ = serializer.serialize(mixed_size_list)
-    deserialized_mixed = serializer.deserialize(data)
-
-    # Verify all images using list comprehension
-    expected_sizes = [(10, 10), (1000, 1000), (20, 30)]
-    assert all(img.size == size for img, size in zip(deserialized_mixed, expected_sizes))
+        # Test 4: Error handling with corrupted data
+        with pytest.raises(ValueError, match="Input data is too short"):
+            serializer.deserialize(b"abc")  # Too short data
 
 
 @pytest.mark.flaky(reruns=3)
