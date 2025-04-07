@@ -156,7 +156,7 @@ class PrepareChunksThread(Thread):
         #     with open(chunk_filepath + ".tmb", "w+") as tombstone_file:
         #         tombstone_file.write(f"Deleted {chunk_filepath} by {self._rank or 0}. Debug: {can_delete_chunk}")
 
-        self._item_loader.safe_delete(chunk_index, chunk_filepath, self._rank)
+        self._item_loader.safe_delete(chunk_index, chunk_filepath)
 
         # if _DEBUG:
         #     print(f"Deleted {chunk_filepath} by {self._rank or 0}. Debug: {can_delete_chunk}")
@@ -287,7 +287,7 @@ class PrepareChunksThread(Thread):
                 #     return
 
                 if chunk_index is not None:
-                    self._config.download_chunk_from_index(chunk_index, self._rank)
+                    self._config.download_chunk_from_index(chunk_index)
 
                     # Preload item if possible to gain some time but only
                     # if this is one of the pre-downloaded chunk

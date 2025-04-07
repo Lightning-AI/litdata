@@ -115,7 +115,6 @@ class BaseItemLoader(ABC):
         """Decrement the file count and delete the chunk file if the count reaches 0."""
         if os.path.exists(chunk_filepath + ".cnt"):
             curr_count = decrement_file_count(chunk_filepath)
-
             if curr_count == 0:
                 self.delete(chunk_index, chunk_filepath)
         else:
