@@ -473,7 +473,7 @@ def optimize(
             num_workers = 1
 
         num_workers = num_workers or _get_default_num_workers()
-        state_dict = {rank: 0 for rank in range(num_workers)}
+        state_dict = dict.fromkeys(range(num_workers), 0)
 
         existing_index_file_content = (
             read_index_file_content(_output_dir, storage_options) if mode == "append" else None
