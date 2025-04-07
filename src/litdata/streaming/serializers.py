@@ -30,7 +30,6 @@ from litdata.constants import (
     _NUMPY_DTYPES_MAPPING,
     _PIL_AVAILABLE,
     _TORCH_DTYPES_MAPPING,
-    _TORCH_VISION_AVAILABLE,
 )
 
 
