@@ -39,7 +39,6 @@ def seed_everything(random_seed):
 
 
 _PIL_AVAILABLE = RequirementCache("PIL")
-_TORCH_VISION_AVAILABLE = RequirementCache("torchvision")
 _LIGHTNING_AVAILABLE = RequirementCache("lightning")
 
 
@@ -139,9 +138,7 @@ def _cache_for_image_dataset(num_workers, tmpdir, fabric=None):
         pass
 
 
-@pytest.mark.skipif(
-    condition=not _PIL_AVAILABLE or not _TORCH_VISION_AVAILABLE, reason="Requires: ['pil', 'torchvision']"
-)
+@pytest.mark.skipif(condition=not _PIL_AVAILABLE, reason="Requires: 'pil'")
 @pytest.mark.parametrize("num_workers", [0])
 def test_cache_for_image_dataset(num_workers, tmpdir):
     cache_dir = os.path.join(tmpdir, "cache")
@@ -155,8 +152,8 @@ def _fabric_cache_for_image_dataset(fabric, num_workers, tmpdir):
 
 
 @pytest.mark.skipif(
-    condition=not _PIL_AVAILABLE or not _TORCH_VISION_AVAILABLE or sys.platform == "win32" or not _LIGHTNING_AVAILABLE,
-    reason="Requires: ['pil', 'torchvision']",
+    condition=not _PIL_AVAILABLE or sys.platform == "win32" or not _LIGHTNING_AVAILABLE,
+    reason="Requires: 'pil'",
 )
 @pytest.mark.parametrize("num_workers", [2])
 def test_cache_for_image_dataset_distributed(num_workers, tmpdir):

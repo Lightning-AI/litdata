@@ -29,7 +29,6 @@ from litdata.streaming.serializers import (
     _NUMPY_DTYPES_MAPPING,
     _SERIALIZERS,
     _TORCH_DTYPES_MAPPING,
-    _TORCH_VISION_AVAILABLE,
     BooleanSerializer,
     IntegerSerializer,
     JPEGSerializer,
@@ -215,9 +214,7 @@ def test_assert_no_header_numpy_serializer():
     np.testing.assert_equal(t, new_t)
 
 
-@pytest.mark.skipif(
-    condition=not _TORCH_VISION_AVAILABLE or not _AV_AVAILABLE, reason="Requires: ['torchvision', 'av']"
-)
+@pytest.mark.skipif(condition=not _AV_AVAILABLE, reason="Requires: 'av'")
 def test_wav_deserialization(tmpdir):
     from torch.hub import download_url_to_file
 
