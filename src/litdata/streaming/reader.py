@@ -101,7 +101,6 @@ class PrepareChunksThread(Thread):
     def delete(self, chunk_indexes: List[int]) -> None:
         """Receive the list of the chunk indices to delete for the current epoch."""
         for chunk_index in chunk_indexes:
-            print(f"⚡️ {self._rank=} asked to delete chunk {chunk_index=}")
             self._to_delete_queue.put(chunk_index)
 
     # def _remaining_locks(self, chunkpath: str) -> int:
@@ -178,29 +177,19 @@ class PrepareChunksThread(Thread):
             #     self._apply_delete(chnk_idx)
             # read from delete queue until None is received and delete the chunks
             total_waiting_time = 0
-            print(f"{self._rank=} stopping prepare_chunks_thread")
-            while True:
+            while not self._delete_queue_received_none:  # parallelly it can be set true by thread's run method
                 try:
                     chunk_index = self._to_delete_queue.get(timeout=_DEFAULT_TIMEOUT)
                     if chunk_index is None:
-                        print(f"{self._rank=} received the none. bye bye")
+                        self._delete_queue_received_none = True
                         break
                     self._apply_delete(chunk_index)
                     total_waiting_time = 0
                 except Empty:
                     total_waiting_time += _DEFAULT_TIMEOUT
-                    if total_waiting_time > _LONG_DEFAULT_TIMEOUT * 6:  # wait for 30 seconds
+                    if total_waiting_time > _LONG_DEFAULT_TIMEOUT * 2:  # wait for 10 seconds
                         print("Timeout waiting for delete queue to be empty (None)")
                         break
-
-        # extra cleanup
-        # if self._delete_chunks_when_processed:
-        #     # clear the cache directory (except the index.json file)
-        #     for root, _, files in os.walk(self._parent_cache_dir):
-        #         for file in files:
-        #             if file != _INDEX_FILENAME:
-        #                 with contextlib.suppress(FileNotFoundError):
-        #                     os.remove(os.path.join(root, file))
         self.force_stop()
 
     def force_stop(self) -> None:
@@ -225,7 +214,6 @@ class PrepareChunksThread(Thread):
 
                 if chunk_index_to_be_deleted is None:
                     self._delete_queue_received_none = True
-                    print(f"Received the none. bye bye {self._rank=}")
                     return
                     # self._pre_download_counter -= 1
 
@@ -237,7 +225,6 @@ class PrepareChunksThread(Thread):
                 self._apply_delete(chunk_index_to_be_deleted)
             except Empty:
                 # Timeout waiting for delete queue to be empty
-                # print(f"Timeout waiting for delete queue to be empty (None)")
                 break
             except Exception as e:
                 raise RuntimeError(f"Error while deleting chunks: {e}") from e
@@ -509,10 +496,9 @@ class BinaryReader:
             # inform the thread it is time to stop
             # self._prepare_thread._decrement_local_lock(index.chunk_index)
             self._item_loader.close(self._last_chunk_index)
-            print(f"😈 {self._rank=} it's last index of this chunk, sent it deleting: {index.chunk_index}")
-            self._prepare_thread.delete([index.chunk_index])  # send this chunk for deletion
-            self._prepare_thread._to_delete_queue.put(None)  # signal the end of the queue
+            self._prepare_thread.delete([index.chunk_index, None])  # send this chunk for deletion
             self._prepare_thread.stop()
+            self._prepare_thread.join()
             self._prepare_thread = None
             self._last_chunk_index = None
             self._chunks_queued_for_download = False
@@ -588,7 +574,6 @@ def _get_folder_size(path: str, config: ChunksConfig) -> int:
                     f"Ignoring '{filename}': "
                     "This file doesn't appear to be a valid chunk file and has been excluded from the size calculation."
                 )
-    print(f"Total size of files in '{path}': {size} bytes")
     return size
 
 

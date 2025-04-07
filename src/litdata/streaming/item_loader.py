@@ -111,10 +111,10 @@ class BaseItemLoader(ABC):
     def delete(self, chunk_index: int, chunk_filepath: str) -> None:
         """Delete a chunk from the local filesystem."""
 
-    def safe_delete(self, chunk_index: int, chunk_filepath: str, rank: int) -> None:
+    def safe_delete(self, chunk_index: int, chunk_filepath: str) -> None:
         """Decrement the file count and delete the chunk file if the count reaches 0."""
         if os.path.exists(chunk_filepath + ".cnt"):
-            curr_count = decrement_file_count(chunk_filepath, rank)
+            curr_count = decrement_file_count(chunk_filepath)
 
             if curr_count == 0:
                 self.delete(chunk_index, chunk_filepath)
@@ -687,7 +687,6 @@ class ParquetLoader(BaseItemLoader):
 
         # Return the specific row from the dataframe
         # Note: The `named=True` argument is used to return the row as a dictionary
-        # type: ignore
         return row_group_df.row(row_index_within_group, named=True)
 
     def _get_item(self, chunk_index: int, chunk_filepath: str, index: int) -> Any:

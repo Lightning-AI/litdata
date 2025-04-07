@@ -252,6 +252,7 @@ class _MultiProcessingDataLoaderIterPatch(_MultiProcessingDataLoaderIter):
             raise e
 
 
+#! TODO: This class is not being used anywhere.
 class CacheDataLoader(DataLoader):
     __doc__ = DataLoader.__doc__
 

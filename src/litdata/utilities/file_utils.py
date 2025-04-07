@@ -16,7 +16,7 @@ from contextlib import suppress
 from filelock import FileLock, Timeout
 
 
-def increment_file_count(file_path: str, rank: int = 0) -> int:
+def increment_file_count(file_path: str) -> int:
     """Increment the file count in the index file."""
     countpath = file_path + ".cnt"
     with suppress(Timeout), FileLock(countpath + ".lock", timeout=1):
@@ -29,11 +29,10 @@ def increment_file_count(file_path: str, rank: int = 0) -> int:
         with open(countpath, "w+") as count_f:
             count_f.write(str(curr_count))
 
-    print(f"✅ {rank=} Incremented file count for {file_path} to => {curr_count}")
     return curr_count
 
 
-def decrement_file_count(file_path: str, rank: int = 0) -> int:
+def decrement_file_count(file_path: str) -> int:
     """Decrement the file count in the index file."""
     countpath = file_path + ".cnt"
 
@@ -42,17 +41,15 @@ def decrement_file_count(file_path: str, rank: int = 0) -> int:
             with open(countpath) as count_f:
                 curr_count = int(count_f.read().strip())
         except Exception as e:
-            raise ValueError(f"{rank=} Count file not found when trying to decrement_file_count: {countpath}.") from e
+            raise ValueError(f"Count file not found when trying to decrement_file_count: {countpath}.") from e
         curr_count -= 1
 
         if curr_count <= 0:
             # remove the count file if it reaches zero
             with suppress(FileNotFoundError):
                 os.remove(countpath)
-                print(f"❌ {rank=} Decremented file count for {file_path} to => {curr_count}")
             return 0
         with open(countpath, "w+") as count_f:
             count_f.write(str(curr_count))
 
-    print(f"❌ {rank=} Decremented file count for {file_path} to => {curr_count}")
     return curr_count

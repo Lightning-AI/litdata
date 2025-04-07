@@ -81,8 +81,10 @@ class _DistributedEnv:
 
     def __repr__(self) -> str:
         return (
-            f"{self.__class__.__name__}(world_size: {self.world_size}, global_rank: {self.global_rank},"
-            + f" num_nodes: {self.num_nodes})"
+            f"{self.__class__.__name__}("
+            f"world_size={self.world_size}, "
+            f"global_rank={self.global_rank}, "
+            f"num_nodes={self.num_nodes})"
         )
 
     def __str__(self) -> str:

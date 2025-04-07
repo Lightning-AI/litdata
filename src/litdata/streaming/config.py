@@ -118,7 +118,7 @@ class ChunksConfig:
     def skip_chunk_indexes_deletion(self, skip_chunk_indexes_deletion: List[int]) -> None:
         self._skip_chunk_indexes_deletion = skip_chunk_indexes_deletion
 
-    def download_chunk_from_index(self, chunk_index: int, rank: int = 0) -> None:
+    def download_chunk_from_index(self, chunk_index: int) -> None:
         assert self._chunks is not None
         chunk_filename = self._chunks[chunk_index]["filename"]
 
@@ -129,7 +129,7 @@ class ChunksConfig:
             if self._downloader is not None and self._remote_dir.startswith(_SUPPORTED_DOWNLOADERS):
                 # We don't want to redownload the base, but we should mark
                 # it as having been requested by something
-                count = increment_file_count(local_chunkpath.replace(f".{self._compressor_name}", ""), rank)
+                count = increment_file_count(local_chunkpath.replace(f".{self._compressor_name}", ""))
                 if count == 1:
                     # weird, shouldn't happen
                     # but if it does, we should start downloading the file
@@ -140,11 +140,11 @@ class ChunksConfig:
         if (self._downloader is None) or (not self._remote_dir.startswith(_SUPPORTED_DOWNLOADERS)):
             return
 
-        curr_count = increment_file_count(local_chunkpath.replace(f".{self._compressor_name}", ""), rank)
+        curr_count = increment_file_count(local_chunkpath.replace(f".{self._compressor_name}", ""))
 
         if curr_count == 1:
             # this is the first time we are downloading this file
-            # so we should download it
+            # so we should actually download it
             self._downloader.download_chunk_from_index(chunk_index)
             self.try_decompress(local_chunkpath)
 
