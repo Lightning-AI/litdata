@@ -19,8 +19,7 @@ from abc import ABC, abstractmethod
 from collections import OrderedDict
 from contextlib import suppress
 from copy import deepcopy
-from itertools import chain
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, Optional, Tuple
 
 import numpy as np
 import tifffile
@@ -33,9 +32,6 @@ from litdata.constants import (
     _TORCH_DTYPES_MAPPING,
     _TORCH_VISION_AVAILABLE,
 )
-
-if TYPE_CHECKING:
-    from PIL.JpegImagePlugin import JpegImageFile
 
 
 class Serializer(ABC):
@@ -132,20 +128,22 @@ class JPEGSerializer(Serializer):
 
         raise TypeError(f"The provided item should be of type `JpegImageFile`. Found {item}.")
 
-    def deserialize(self, data: bytes) -> Union["JpegImageFile", torch.Tensor]:
-        if _TORCH_VISION_AVAILABLE:
-            from torchvision.io import decode_jpeg
-            from torchvision.transforms.functional import pil_to_tensor
+    def deserialize(self, data: bytes) -> torch.Tensor:
+        from torchvision.io import decode_jpeg
+        from torchvision.transforms.functional import pil_to_tensor
 
-            array = torch.frombuffer(data, dtype=torch.uint8)
-            # Note: Some datasets like Imagenet contains some PNG images with JPEG extension, so we fallback to PIL
-            with suppress(RuntimeError):
-                return decode_jpeg(array)
+        array = torch.frombuffer(data, dtype=torch.uint8)
+        # Note: Some datasets like Imagenet contains some PNG images with JPEG extension, so we fallback to PIL
+        with suppress(RuntimeError):
+            return decode_jpeg(array)
 
-        img = PILSerializer.deserialize(data)
-        if _TORCH_VISION_AVAILABLE:
-            img = pil_to_tensor(img)
-        return img
+        # Fallback to PIL
+        if not _PIL_AVAILABLE:
+            raise ModuleNotFoundError("PIL is required. Run `pip install pillow`")
+        from PIL import Image
+
+        img = Image.open(io.BytesIO(data))
+        return pil_to_tensor(img)
 
     def can_serialize(self, item: Any) -> bool:
         if not _PIL_AVAILABLE:
@@ -178,7 +176,7 @@ class JPEGArraySerializer(Serializer):
         # Concatenate all data: n_images + sizes + image bytes
         return b"".join(chain([n_images_bytes, image_sizes_bytes], image_bytes)), None
 
-    def deserialize(self, data: bytes) -> List[Union["JpegImageFile", torch.Tensor]]:
+    def deserialize(self, data: bytes) -> List[torch.Tensor]:
         if len(data) < 4:
             raise ValueError("Input data is too short to contain valid list of images")
 
@@ -399,9 +397,6 @@ class VideoSerializer(Serializer):
             return f.read(), f"video:{file_extension}"
 
     def deserialize(self, data: bytes) -> Any:
-        if not _TORCH_VISION_AVAILABLE:
-            raise ModuleNotFoundError("torchvision is required. Run `pip install torchvision`")
-
         if not _AV_AVAILABLE:
             raise ModuleNotFoundError("av is required. Run `pip install av`")
 
