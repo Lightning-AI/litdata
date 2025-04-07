@@ -210,7 +210,7 @@ class JPEGArraySerializer(Serializer):
         for i in range(n_images):
             # Extract the image data using the offsets
             image_data = data[offsets[i] : offsets[i + 1]]
-            # Convert the byte array to a jpeg image or tensor
+            # Convert the image data to a tensor
             images.append(self._jpeg_serializer.deserialize(image_data))
         return images
 
