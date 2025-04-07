@@ -273,8 +273,12 @@ class StreamingDataset(IterableDataset):
         )
 
         worker_rank = self.distributed_env.global_rank * self.worker_env.world_size + self.worker_env.rank
+        if worker_rank == 0:
+            print(f"workers_chunks: {workers_chunks}\nworkers_intervals: {workers_intervals}")
         self.worker_chunks = workers_chunks[worker_rank]
         self.worker_intervals = workers_intervals[worker_rank]
+
+        print("-" * 50 + "\n" + f"{worker_rank=}; {self.worker_chunks=}; {self.worker_intervals=}\n" + "-" * 50)
 
         # The max number of samples to return from `__next__` (in worker)
         self.stop_length = sum(interval[2] - interval[1] for interval in self.worker_intervals)
@@ -317,6 +321,7 @@ class StreamingDataset(IterableDataset):
 
         self.has_triggered_download = False
         self.last_time = time()
+        self.cache._reader.prepare_downloader_thread(self.worker_chunks)
 
         return self
 
@@ -435,15 +440,13 @@ class StreamingDataset(IterableDataset):
                 chunk_indexes=None
                 if self.has_triggered_download
                 else self.worker_chunks[self.worker_next_chunks_index - 1 :],
-                is_last_index=(self.worker_next_chunks_index) == len(self.worker_intervals)
-                and len(self.upcoming_indexes) == 0,
+                is_last_index=(self.worker_next_chunks_index) == self.num_chunks and len(self.upcoming_indexes) == 0,
             )
         )
 
         self.has_triggered_download = True
         self.global_index += 1  # total number of samples processed by the current worker
         self.consumed_sample_count_in_curr_chunk += 1  # number of samples processed in the current chunk
-        print(f"data: {data}")
         return data
 
     def state_dict(self, num_samples_yielded: int, num_workers: int, batch_size: int) -> Dict[str, Any]:
