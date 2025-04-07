@@ -19,7 +19,8 @@ from abc import ABC, abstractmethod
 from collections import OrderedDict
 from contextlib import suppress
 from copy import deepcopy
-from typing import Any, Dict, Optional, Tuple
+from itertools import chain
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 import tifffile
