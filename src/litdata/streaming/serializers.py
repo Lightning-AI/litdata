@@ -126,7 +126,7 @@ class JPEGSerializer(Serializer):
 
         raise TypeError(f"The provided item should be of type `JpegImageFile`. Found {item}.")
 
-    def deserialize(self, data: bytes) -> torch.Tensor:  # type: ignore
+    def deserialize(self, data: bytes) -> torch.Tensor:
         from torchvision.io import decode_jpeg
         from torchvision.transforms.functional import pil_to_tensor
 
