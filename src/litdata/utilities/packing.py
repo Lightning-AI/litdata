@@ -18,6 +18,20 @@ from typing import Any, Dict, List, Tuple
 def _pack_greedily(items: List[Any], weights: List[int], num_bins: int) -> Tuple[Dict[int, List[Any]], Dict[int, int]]:
     """Greedily pack items with given weights into bins such that the total weight of each bin is roughly equally
     distributed among all bins.
+
+    Returns:
+        bin_contents: A dictionary mapping bin IDs to lists of items.
+        bin_weights: A dictionary mapping bin IDs to the total weight of items in each bin.
+
+    Example:
+        >>> bin_contents, bin_weights = _pack_greedily(
+                items=["A", "B", "C", "D", "E", "F", "G", "H", "I"],
+                weights=[4, 1, 2, 5, 8, 7, 3, 6, 9],
+                num_bins=3,
+            )
+        >>> assert bin_contents == {0: ["I", "A", "G"], 1: ["E", "D", "C"], 2: ["F", "H", "B"]}
+        >>> assert bin_weights == {0: 16, 1: 15, 2: 14}
+
     """
     if len(items) != len(weights):
         raise ValueError(f"Items and weights must have the same length, got {len(items)} and {len(weights)}.")

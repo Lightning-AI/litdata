@@ -206,8 +206,34 @@ class BinaryWriter:
             sizes.append(serializer.size if hasattr(serializer, "size") else len(serialized_item))
 
     def _create_chunk(self, filename: str, on_done: bool = False) -> bytes:
-        """Create a binary chunk from all the binarized items."""
-        items = []
+        """Creates a binary chunk file from serialized items."""
+        # The chunk's binary format is structured as follows:
+
+        # +------------+---------------+-------------+
+        # | num_items  | offset_array  | item_data   |
+        # +------------+---------------+-------------+
+        # | uint32     | uint32[N+1]   | bytes       |
+        # | 4 bytes    | 4*(N+1) bytes | variable    |
+        # +------------+---------------+-------------+
+
+        # Where:
+        # - num_items: Number of items in the chunk (N)
+        # - offset_array: Array of N+1 offsets indicating where each item begins/ends
+        # - item_data: Concatenated binary data of all items
+
+        # Example:
+        #     For a chunk with 3 items of sizes [10, 20, 15] bytes:
+        #     - num_items = 3 (4 bytes)
+        #     - offset_array = [start, start+10, start+30, start+45]
+        #       where start = 4 + (4 * 4) = 20 bytes (header size)
+        #     - item_data = concatenated bytes of all items
+
+        # This format allows direct access to any item by reading its offset
+        #   from `offset_array[i]` to `offset_array[i+1]`.
+        # Then, read bytes from `offset_start` to `offset_end` to get the item bytes.
+        # Now, item_loader can use these raw bytes to deserialize the item.
+
+        items: List[Item] = []
 
         if on_done:
             indices = sorted(self._serialized_items.keys())
@@ -228,19 +254,22 @@ class BinaryWriter:
                 f" Found {self._pretty_serialized_items()} with boundaries: {self._min_index}, {self._max_index}."
             )
 
-        num_items = np.uint32(len(items))
-        sizes = list(map(len, items))
-        offsets = np.array([0] + sizes).cumsum().astype(np.uint32)
+        num_items = np.uint32(len(items))  # total number of items in the chunk
+        sizes = list(map(len, items))  # list of sizes (length of bytes) of each item
+        offsets = np.array([0] + sizes).cumsum().astype(np.uint32)  # let's say: [0, 10, 30, 45]
+
+        # add the number of bytes taken to store (num_items and offsets). Let's say 60: offsets -> [60, 70, 90, 105]
         offsets += len(num_items.tobytes()) + len(offsets.tobytes())
         sample_data = b"".join([item.data for item in items])
-        data = num_items.tobytes() + offsets.tobytes() + sample_data
 
-        current_chunk_bytes = sum([item.bytes for item in items])
+        # combine all bytes data which will be written to the chunk file
+        data = num_items.tobytes() + offsets.tobytes() + sample_data
 
         # Whether to encrypt the data at the chunk level
         if self._encryption and self._encryption.level == EncryptionLevel.CHUNK:
             data = self._encryption.encrypt(data)
-            current_chunk_bytes = len(data)
+
+        current_chunk_bytes = len(data)
 
         if self._chunk_bytes and current_chunk_bytes > self._chunk_bytes:
             warnings.warn(
@@ -537,30 +566,27 @@ def index_parquet_dataset(
     pq_dir_url: str,
     cache_dir: Optional[str] = None,
     storage_options: Optional[Dict] = {},
-    remove_after_indexing: bool = True,
     num_workers: int = 4,
 ) -> None:
     """Index a Parquet dataset from a specified URL.
 
-    This function scans all `.parquet` files in the specified directory URL, extracts metadata
-    such as file size, chunk size, and data types, and indexes them. Optionally, the files
-    can be removed after indexing.
+
+    This function scans the metadata of all `.parquet` files in the specified directory URL, extracts metadata
+    such as file size, chunk size, and data types, and indexes them. The index is saved as a JSON file in the
+    specified cache directory.
 
     Args:
         pq_dir_url (str): URL of the directory containing the Parquet files.
         cache_dir (Optional[str]): Local cache directory for storing temporary files.
             For HF dataset, index.json file will be stored here.
         storage_options (Optional[Dict]): Additional storage options for accessing the Parquet files.
-        remove_after_indexing (bool): Whether to remove files after indexing (default is True).
-        num_workers (int): Number of workers to download files and index them.
+        num_workers (int): Number of workers to download metadata of Parquet files and index them.
 
     Raises:
         ModuleNotFoundError: If the required `polars` module is not installed.
     """
     if not _POLARS_AVAILABLE:
         raise ModuleNotFoundError("Please, run: `pip install polars`")
-
-    import polars as pl
 
     pq_chunks_info = []
     config: Dict[str, Any] = {
@@ -573,27 +599,25 @@ def index_parquet_dataset(
         "item_loader": ParquetLoader.__name__,
     }
 
-    pq_dir_class = get_parquet_indexer_cls(pq_dir_url, cache_dir, storage_options, remove_after_indexing, num_workers)
+    pq_dir_class = get_parquet_indexer_cls(pq_dir_url, cache_dir, storage_options, num_workers)
+
     if _TQDM_AVAILABLE:
         from tqdm.auto import tqdm as _tqdm
 
         pbar = _tqdm(
-            desc="Progress",
+            desc="Indexing progress",
             total=len(pq_dir_class.files),
             smoothing=0,
-            position=-1,
             mininterval=1,
             leave=True,
             dynamic_ncols=True,
             unit="step",
         )
-    # iterate the directory and for all files ending in `.parquet` index them
-    for file_name, file_path in pq_dir_class:
-        file_size = os.path.getsize(file_path)
-        pq_polars = pl.scan_parquet(file_path)
-        chunk_dtypes = pq_polars.collect_schema().dtypes()
-        chunk_dtypes = [str(dt) for dt in chunk_dtypes]
-        chunk_size = pq_polars.select(pl.count()).collect().item()
+
+    results = {}
+    # iterate through the directory and index each file ending with ".parquet"
+    for file_metadata, order in pq_dir_class:
+        chunk_dtypes = file_metadata["data_types"]
 
         if len(config["data_format"]) != 0 and config["data_format"] != chunk_dtypes:
             raise Exception(
@@ -602,14 +626,18 @@ def index_parquet_dataset(
             )
         config["data_format"] = chunk_dtypes
         chunk_info = {
-            "chunk_bytes": file_size,
-            "chunk_size": chunk_size,
-            "filename": file_name,
+            "chunk_bytes": file_metadata["file_size"],
+            "chunk_size": file_metadata["num_rows"],
+            "filename": file_metadata["file_name"],
             "dim": None,
         }
-        pq_chunks_info.append(chunk_info)
+        results[order] = chunk_info
         if _TQDM_AVAILABLE:
             pbar.update(1)
 
+    for i in sorted(results.keys()):
+        pq_chunks_info.append(results[i])
+
+    del results
     print(flush=True)  # to prevent truncated printing when using concurrent threads/processes
     pq_dir_class.write_index(pq_chunks_info, config)

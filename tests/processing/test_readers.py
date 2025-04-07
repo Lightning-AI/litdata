@@ -4,7 +4,8 @@ import sys
 import pytest
 
 from litdata import map
-from litdata.processing.readers import _PYARROW_AVAILABLE, BaseReader, ParquetReader
+from litdata.constants import _PYARROW_AVAILABLE
+from litdata.processing.readers import BaseReader, ParquetReader
 
 
 class DummyReader(BaseReader):

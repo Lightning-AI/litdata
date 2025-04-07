@@ -24,6 +24,7 @@ _DEFAULT_CHUNK_BYTES = 1 << 26  # 64M B
 _DEFAULT_FAST_DEV_RUN_ITEMS = 10
 _DEFAULT_CACHE_DIR = os.path.join(Path.home(), ".lightning", "chunks")
 _DEFAULT_LIGHTNING_CACHE_DIR = os.path.join("/cache", "chunks")
+_SUPPORTED_PROVIDERS = ("s3", "gs")  # cloud providers supported by litdata for uploading (optimize, map, merge, etc)
 
 # This is required for full pytree serialization / deserialization support
 _TORCH_GREATER_EQUAL_2_1_0 = RequirementCache("torch>=2.1.0")
@@ -38,11 +39,13 @@ _AZURE_STORAGE_AVAILABLE = RequirementCache("azure.storage.blob")
 _TQDM_AVAILABLE = RequirementCache("tqdm")
 _LIGHTNING_SDK_AVAILABLE = RequirementCache("lightning_sdk")
 _HF_HUB_AVAILABLE = RequirementCache("huggingface_hub")
+_PYARROW_AVAILABLE = RequirementCache("pyarrow")
 _POLARS_AVAILABLE = RequirementCache("polars>1.0.0")
-_DEBUG = bool(int(os.getenv("DEBUG", "1")))
+_DEBUG = bool(int(os.getenv("DEBUG_LITDATA", "0")))
 
 _MAX_WAIT_TIME = int(os.getenv("MAX_WAIT_TIME", "120"))
 _FORCE_DOWNLOAD_TIME = int(os.getenv("FORCE_DOWNLOAD_TIME", "30"))
+_DISABLE_S5CMD = bool(int(os.getenv("DISABLE_S5CMD", "0")))
 
 # DON'T CHANGE ORDER
 _TORCH_DTYPES_MAPPING = {

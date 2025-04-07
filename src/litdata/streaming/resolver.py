@@ -20,13 +20,11 @@ from contextlib import suppress
 from dataclasses import dataclass
 from pathlib import Path
 from time import sleep
-from typing import TYPE_CHECKING, Any, Literal, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, Literal, Optional, Union
 from urllib import parse
 
-import boto3
-import botocore
-
-from litdata.constants import _LIGHTNING_SDK_AVAILABLE
+from litdata.constants import _LIGHTNING_SDK_AVAILABLE, _SUPPORTED_PROVIDERS
+from litdata.streaming.fs_provider import _get_fs_provider, not_supported_provider
 
 if TYPE_CHECKING:
     from lightning_sdk import Machine
@@ -231,7 +229,9 @@ def _resolve_datasets(dir_path: str) -> Dir:
     )
 
 
-def _assert_dir_is_empty(output_dir: Dir, append: bool = False, overwrite: bool = False) -> None:
+def _assert_dir_is_empty(
+    output_dir: Dir, append: bool = False, overwrite: bool = False, storage_options: Dict[str, Any] = {}
+) -> None:
     if not isinstance(output_dir, Dir):
         raise ValueError("The provided output_dir isn't a `Dir` Object.")
 
@@ -240,20 +240,16 @@ def _assert_dir_is_empty(output_dir: Dir, append: bool = False, overwrite: bool 
 
     obj = parse.urlparse(output_dir.url)
 
-    if obj.scheme != "s3":
-        raise ValueError(f"The provided folder should start with s3://. Found {output_dir.url}.")
+    if obj.scheme not in _SUPPORTED_PROVIDERS:
+        not_supported_provider(output_dir.url)
 
-    s3 = boto3.client("s3")
+    fs_provider = _get_fs_provider(output_dir.url, storage_options)
 
-    objects = s3.list_objects_v2(
-        Bucket=obj.netloc,
-        Delimiter="/",
-        Prefix=obj.path.lstrip("/").rstrip("/") + "/",
-    )
+    is_empty = fs_provider.is_empty(output_dir.url)
 
-    # We aren't alloweing to add more data
+    # We aren't allowing to add more data
     # TODO: Add support for `append` and `overwrite`.
-    if objects["KeyCount"] > 0:
+    if not is_empty:
         raise RuntimeError(
             f"The provided output_dir `{output_dir.path}` already contains data and datasets are meant to be immutable."
             "\n HINT: Did you consider changing the `output_dir` with your own versioning as a suffix?"
@@ -261,7 +257,10 @@ def _assert_dir_is_empty(output_dir: Dir, append: bool = False, overwrite: bool 
 
 
 def _assert_dir_has_index_file(
-    output_dir: Dir, mode: Optional[Literal["append", "overwrite"]] = None, use_checkpoint: bool = False
+    output_dir: Dir,
+    mode: Optional[Literal["append", "overwrite"]] = None,
+    use_checkpoint: bool = False,
+    storage_options: Dict[str, Any] = {},
 ) -> None:
     if mode is not None and mode not in ["append", "overwrite"]:
         raise ValueError(f"The provided `mode` should be either `append` or `overwrite`. Found {mode}.")
@@ -305,28 +304,24 @@ def _assert_dir_has_index_file(
 
     obj = parse.urlparse(output_dir.url)
 
-    if obj.scheme != "s3":
-        raise ValueError(f"The provided folder should start with s3://. Found {output_dir.url}.")
+    if obj.scheme not in _SUPPORTED_PROVIDERS:
+        not_supported_provider(output_dir.url)
 
-    s3 = boto3.client("s3")
+    fs_provider = _get_fs_provider(output_dir.url, storage_options)
 
-    prefix = obj.path.lstrip("/").rstrip("/") + "/"
+    prefix = output_dir.url.rstrip("/") + "/"
 
-    objects = s3.list_objects_v2(
-        Bucket=obj.netloc,
-        Delimiter="/",
-        Prefix=prefix,
-    )
+    is_empty = fs_provider.is_empty(output_dir.url)
 
     # No files are found in this folder
-    if objects["KeyCount"] == 0:
+    if is_empty:
         return
 
     # Check the index file exists
     try:
-        s3.head_object(Bucket=obj.netloc, Key=os.path.join(prefix, "index.json"))
+        fs_provider.exists(os.path.join(prefix, "index.json"))
         has_index_file = True
-    except botocore.exceptions.ClientError:
+    except Exception:
         has_index_file = False
 
     if has_index_file and mode is None:
@@ -336,13 +331,9 @@ def _assert_dir_has_index_file(
             "\n HINT: If you want to append/overwrite to the existing dataset, use `mode='append | overwrite'`."
         )
 
-    # Delete all the files (including the index file in overwrite mode)
-    bucket_name = obj.netloc
-    s3 = boto3.resource("s3")
-
+    # delete all the files (including the index file in overwrite mode)
     if mode == "overwrite" or (mode is None and not use_checkpoint):
-        for obj in s3.Bucket(bucket_name).objects.filter(Prefix=prefix):
-            s3.Object(bucket_name, obj.key).delete()
+        fs_provider.delete_file_or_directory(output_dir.url)
 
 
 def _get_lightning_cloud_url() -> str:

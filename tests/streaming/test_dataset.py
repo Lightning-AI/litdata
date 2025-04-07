@@ -12,6 +12,7 @@
 # limitations under the License.
 
 import json
+import logging
 import os
 import random
 import shutil
@@ -19,6 +20,7 @@ import sys
 from time import sleep
 from typing import Any, Dict, Optional
 from unittest import mock
+from unittest.mock import patch
 
 import numpy as np
 import pytest
@@ -40,6 +42,7 @@ from litdata.streaming.dataset import (
     _replay_sampling,
 )
 from litdata.streaming.item_loader import TokensLoader
+from litdata.streaming.reader import BinaryReader
 from litdata.streaming.shuffle import FullShuffle, NoShuffle
 from litdata.utilities import dataset_utilities as dataset_utilities_module
 from litdata.utilities.dataset_utilities import load_index_file
@@ -117,6 +120,39 @@ def test_streaming_dataset_max_pre_download(tmpdir):
     for i in range(60):
         assert dataset[i] == i
     assert dataset.cache._reader._max_pre_download == 10
+
+
+@pytest.mark.timeout(30)
+def test_streaming_dataset_max_cache_dir(tmpdir, caplog):
+    seed_everything(42)
+
+    cache = Cache(str(tmpdir), chunk_size=10)
+    for i in range(60):
+        cache[i] = i
+    cache.done()
+    cache.merge()
+
+    dataset = StreamingDataset(input_dir=str(tmpdir))
+    assert len(dataset) == 60
+    for i in range(60):
+        assert dataset[i] == i
+
+    with caplog.at_level(logging.WARNING):
+        StreamingDataset(input_dir=str(tmpdir), max_cache_size="25GB")
+        StreamingDataset(input_dir=str(tmpdir), max_cache_size="30GB")
+        StreamingDataset(input_dir=str(tmpdir), max_cache_size="50GB")
+        StreamingDataset(input_dir=str(tmpdir), max_cache_size="100GB")
+    assert len(caplog.messages) == 0
+
+    with caplog.at_level(logging.WARNING):
+        StreamingDataset(input_dir=str(tmpdir), max_cache_size="500MB")
+        StreamingDataset(input_dir=str(tmpdir), max_cache_size="1GB")
+        StreamingDataset(input_dir=str(tmpdir), max_cache_size="10GB")
+        StreamingDataset(input_dir=str(tmpdir), max_cache_size="20GB")
+    assert len(caplog.messages) == 4
+    assert all(
+        "The provided `max_cache_size` is less than 25GB." in record.message for record in caplog.records
+    ), "Expected warning about the `max_cache_size` being less than 25GB was not logged"
 
 
 @pytest.mark.parametrize("drop_last", [False, True])
@@ -606,6 +642,33 @@ def test_dataset_for_text_tokens_multiple_workers(tmpdir):
     assert result == expected
 
 
+@pytest.mark.timeout(60)
+def test_dataset_for_text_tokens_with_large_block_size_multiple_workers(tmpdir):
+    # test to reproduce ERROR: Unexpected segmentation fault encountered in worker
+    seed_everything(42)
+
+    block_size = 2048 + 1
+    cache = Cache(input_dir=str(tmpdir), chunk_bytes="64MB", item_loader=TokensLoader(block_size))
+
+    for i in range(5000):
+        text_ids = torch.randint(low=0, high=127, size=(8192,))
+        cache[i] = text_ids
+
+    cache.done()
+    cache.merge()
+
+    dataset = StreamingDataset(
+        input_dir=str(tmpdir),
+        item_loader=TokensLoader(block_size=2049),
+        shuffle=True,
+        drop_last=True,
+    )
+    dataloader = StreamingDataLoader(dataset, batch_size=8, num_workers=4, shuffle=True, drop_last=True)
+
+    for _ in dataloader:
+        pass
+
+
 def test_dataset_for_text_tokens_distributed_num_workers(tmpdir):
     seed_everything(42)
 
@@ -709,11 +772,15 @@ def test_dataset_for_text_tokens_distributed_num_workers_end_to_end(tmpdir, monk
 
     # L = 20, world size 2, num workers 2
     # L / (2 * 2) = 5 items per worker
-    # drop last -> 4 items per worker
-    # batch size = 2 -> 2 batches per worker -> len(dataloader) = 4
-    assert len(dataloader) == 4
+    #
+    # `utilities::shuffle::_associate_chunks_and_intervals_to_workers`
+    #       -> will associate 4 items to one worker and 6 items to other worker
+    #
+    # drop last -> no effect as each worker has complete batches (though one will produce 1 extra batch)
+    # one worker will yield 2 batches, other will yield 3 batches => len(dataloader) = 5
+    assert len(dataloader) == 5
 
-    expected = [[0, 10], [40, 50], [20, 30], [60, 70]]
+    expected = [[0, 10], [60, 70], [20, 30], [80, 90], [40, 50]]
     returned = []
     for batch in dataloader:
         returned.append(batch[:, 0].tolist())
@@ -726,9 +793,9 @@ def test_dataset_for_text_tokens_distributed_num_workers_end_to_end(tmpdir, monk
     dataloader = StreamingDataLoader(dataset, batch_size=2, shuffle=False, num_workers=2)
     assert dataset.drop_last  # in distributed setting, this is forced automatically
 
-    assert len(dataloader) == 4
+    assert len(dataloader) == 5
 
-    expected = [[80, 90], [120, 130], [100, 110], [140, 150]]
+    expected = [[100, 110], [160, 170], [120, 130], [180, 190], [140, 150]]
     returned = []
     for batch in dataloader:
         returned.append(batch[:, 0].tolist())
@@ -745,7 +812,7 @@ def test_s3_streaming_dataset(monkeypatch):
 
     downloader.download_file = fn
 
-    monkeypatch.setattr(dataset_utilities_module, "get_downloader_cls", mock.MagicMock(return_value=downloader))
+    monkeypatch.setattr(dataset_utilities_module, "get_downloader", mock.MagicMock(return_value=downloader))
 
     dataset = StreamingDataset(input_dir="s3://pl-flash-data/optimized_tiny_imagenet")
     assert dataset.input_dir.url == "s3://pl-flash-data/optimized_tiny_imagenet"
@@ -992,7 +1059,7 @@ def test_dataset_valid_state(tmpdir, monkeypatch):
     downloader.download_file = fn
 
     monkeypatch.setattr(resolver_module, "_resolve_datasets", mock_resolve_dataset)
-    monkeypatch.setattr(dataset_utilities_module, "get_downloader_cls", mock.MagicMock(return_value=downloader))
+    monkeypatch.setattr(dataset_utilities_module, "get_downloader", mock.MagicMock(return_value=downloader))
 
     data_dir = os.path.join(tmpdir, "data")
     cache_dir = os.path.join(tmpdir, "cache_dir")
@@ -1102,6 +1169,111 @@ def test_dataset_valid_state(tmpdir, monkeypatch):
         dataset._validate_state_dict()
 
 
+@pytest.mark.timeout(60)
+@pytest.mark.skipif(sys.platform == "win32", reason="Not tested on windows and MacOs")
+def test_dataset_valid_state_override(tmpdir, monkeypatch):
+    seed_everything(42)
+
+    index_json_content: Optional[Dict[str, Any]] = None
+
+    def mock_resolve_dataset(dir_path: str) -> Dir:
+        return Dir(
+            path=dir_path,
+            url=os.path.join(
+                "s3://dummy_bucket/projects/project_id/datasets/",
+                *dir_path.split("/")[3:],
+            ),
+        )
+
+    downloader = mock.MagicMock()
+
+    def fn(remote_chunkpath: str, local_chunkpath: str):
+        assert index_json_content is not None
+        with open(local_chunkpath, "w") as f:
+            json.dump(index_json_content, f)
+
+    downloader.download_file = fn
+
+    monkeypatch.setattr(resolver_module, "_resolve_datasets", mock_resolve_dataset)
+    monkeypatch.setattr(dataset_utilities_module, "get_downloader", mock.MagicMock(return_value=downloader))
+
+    data_dir = os.path.join(tmpdir, "data")
+    cache_dir = os.path.join(tmpdir, "cache_dir")
+
+    os.makedirs(data_dir)
+    os.makedirs(cache_dir)
+
+    block_size = 20
+    cache = Cache(input_dir=str(data_dir), chunk_size=40, item_loader=TokensLoader(block_size))
+
+    counter = 0
+    for i in range(100):
+        text_ids = torch.arange(counter, counter + 20).to(torch.int)
+        cache[i] = text_ids
+        counter += 20
+
+    cache.done()
+    cache.merge()
+
+    index_json_content = load_index_file(data_dir)
+
+    dataset = EmulateS3StreamingDataset(
+        input_dir=Dir(cache_dir, data_dir),
+        item_loader=TokensLoader(block_size),
+        shuffle=False,
+        drop_last=False,
+        force_override_state_dict=True,
+    )
+    dataloader = DataLoader(dataset, num_workers=1, batch_size=2)
+    dataloader_iter = iter(dataloader)
+    next(dataloader_iter)
+
+    sleep(1)
+
+    state_dict = dataset.state_dict(0, 1, 2)
+
+    dataset.load_state_dict(state_dict)
+    dataset.worker_env = _WorkerEnv(world_size=1, rank=0)
+    dataset.cache = cache
+
+    dataset._validate_state_dict()
+
+    state_dict["drop_last"] = True
+    dataset.load_state_dict(state_dict)
+    dataset._validate_state_dict()
+    assert state_dict["drop_last"] is False, "drop_last not overridden"
+
+    state_dict["item_loader"] = {}
+    dataset.load_state_dict(state_dict)
+    dataset._validate_state_dict()
+    assert state_dict["item_loader"] == {"block_size": 20}, "item_loader not overridden"
+
+    state_dict["seed"] = 12
+    dataset.load_state_dict(state_dict)
+    dataset._validate_state_dict()
+    assert state_dict["seed"] == 42, "seed not overridden"
+
+    state_dict["input_dir_url"] = "toto"
+    dataset.load_state_dict(state_dict)
+    dataset._validate_state_dict()
+    assert state_dict["input_dir_url"] == data_dir, "input_dir_url not overridden"
+
+    state_dict["input_dir_path"] = "toto"
+    dataset.load_state_dict(state_dict)
+    dataset._validate_state_dict()
+    assert state_dict["input_dir_path"] == cache_dir, "input_dir_path not overridden"
+
+    state_dict["num_workers"] = "8"
+    dataset.load_state_dict(state_dict)
+    dataset._validate_state_dict()
+    assert state_dict["num_workers"] == 1, "num_workers not overridden"
+
+    state_dict["shuffle"] = True
+    dataset.load_state_dict(state_dict)
+    dataset._validate_state_dict()
+    assert state_dict["shuffle"] is False, "shuffle not overridden"
+
+
 def test_replay_sampling():
     assert _replay_sampling(27, 8, 2) == {0: 16, 1: 11}  # {0: 8 + 8, 1: 8 + 3}
     assert _replay_sampling(27, 7, 2) == {0: 14, 1: 13}  # {0: 7 + 7, 1: 7 + 6}
@@ -1166,7 +1338,7 @@ def test_dataset_distributed_drop_last(tmpdir, monkeypatch, compression):
     dataset = StreamingDataset(str(tmpdir), drop_last=False)
     assert not dataset.drop_last
 
-    warn_msg = logger_mock.warn._mock_mock_calls[0].args[0]
+    warn_msg = logger_mock.warning._mock_mock_calls[0].args[0]
     expected_warn_msg = (
         "You're operating within a distributed environment and have disabled the `drop_last` option."
         " Please note that this configuration may lead to training interruptions"
@@ -1289,3 +1461,101 @@ def test_dataset_with_mosaic_mds_data(tmpdir):
         assert len(batch["image"]) == 4
         assert list(batch["class"]) == [4 * i, 4 * i + 1, 4 * i + 2, 4 * i + 3]
         i += 1
+
+
+@pytest.mark.parametrize("shuffle", [True, False])
+def test_is_last_index_for_chunked_index_with_dataset(tmpdir, shuffle):
+    # Create a dataset with 50 items, 10 items per chunk
+    cache = Cache(str(tmpdir), chunk_size=10)
+    for i in range(50):
+        cache[i] = i
+    cache.done()
+    cache.merge()
+
+    # List to store all ChunkedIndex objects passed to BinaryReader.read
+    chunked_indexes = []
+
+    # Patch the BinaryReader.read method to track the indices
+    original_read = BinaryReader.read
+
+    # Create a mock function that will capture the indices but still call the original
+    def mock_read(self, index):
+        chunked_indexes.append(index)
+        return original_read(self, index)  # Call the original read method
+
+    # Patch the read method directly in the BinaryReader class
+    with patch("litdata.streaming.reader.BinaryReader.read", mock_read):
+        dataset = StreamingDataset(str(tmpdir), shuffle=shuffle)
+        assert len(dataset) == 50
+
+        # Iterate through the dataset to trigger BinaryReader.read
+        for _ in dataset:
+            pass
+
+    # Assertions
+    # Ensure BinaryReader.read was called 50 times (once for each item)
+    assert len(chunked_indexes) == 50, "Expected 50 calls to BinaryReader.read"
+
+    # first chunked index has the chunk_indexes from dataset worker
+    worker_chunks = chunked_indexes[0].chunk_indexes
+    assert worker_chunks == dataset.worker_chunks, "Expected chunk_indexes to match dataset.worker_chunks"
+
+    # Verify that exactly one index has is_last_index=True
+    indexes = [idx for idx in chunked_indexes if idx.is_last_index]
+    assert len(indexes) == 1, "Expected exactly one index with is_last_index=True"
+    assert indexes[0].is_last_index, "Expected is_last_index=True for the last item"
+    assert indexes[0].chunk_index == worker_chunks[-1], "Expected to match the last chunk"
+
+
+@pytest.mark.parametrize("local", [True, False])
+@pytest.mark.parametrize("shuffle", [True, False])
+def test_dataset_as_iterator_and_non_iterator(tmpdir, local, shuffle):
+    """Test that _chunks_queued_for_download flag is correctly set and reset in reader.
+
+    This test verifies that:
+    1. When iterating, _chunks_queued_for_download is enabled during iteration but reset when done
+    2. When accessing by index, _chunks_queued_for_download is never enabled
+    """
+    # Create directories
+    cache_dir = os.path.join(tmpdir, "cache_dir")
+    data_dir = os.path.join(tmpdir, "data_dir")
+    os.makedirs(cache_dir)
+    os.makedirs(data_dir)
+
+    # Create a dataset with 50 items, 10 items per chunk
+    cache = Cache(str(data_dir), chunk_size=10)
+    for i in range(50):
+        cache[i] = i
+    cache.done()
+    cache.merge()
+
+    # Create dataset with appropriate configuration
+    input_dir = f"local:{data_dir}" if local else str(data_dir)
+    dataset = StreamingDataset(input_dir, cache_dir=str(cache_dir) if local else None, shuffle=shuffle)
+    dataset_length = len(dataset)
+    assert dataset_length == 50
+
+    # ACT & ASSERT - Test iterator mode
+    for i, data in enumerate(dataset):
+        assert data is not None
+        if local and i < dataset_length - 1:
+            # In iterator mode with local or remote data, _chunks_queued_for_download should be enabled
+            assert (
+                dataset.cache._reader._chunks_queued_for_download is True
+            ), "_chunks_queued_for_download should be enabled during iteration"
+        else:
+            assert dataset.cache._reader._chunks_queued_for_download is False, (
+                "_chunks_queued_for_download should be disabled when used as local dir without `local:` prefix"
+                " or when iteration is done"
+            )
+    # After iteration, _chunks_queued_for_download should be reset
+    assert dataset.cache._reader._chunks_queued_for_download is False
+
+    # ACT & ASSERT - Test indexed access mode
+    for i in range(dataset_length):
+        data = dataset[i]
+        assert data is not None
+        # In indexed access mode, _chunks_queued_for_download should never be enabled
+        assert dataset.cache._reader._chunks_queued_for_download is False
+
+    assert dataset.cache._reader._chunks_queued_for_download is False

@@ -32,8 +32,6 @@ from time import sleep, time
 from typing import Any, Dict, List, Optional, Tuple, TypeVar, Union
 from urllib import parse
 
-import boto3
-import botocore
 import numpy as np
 import torch
 
@@ -42,14 +40,15 @@ from litdata.constants import (
     _ENABLE_STATUS,
     _INDEX_FILENAME,
     _IS_IN_STUDIO,
+    _SUPPORTED_PROVIDERS,
     _TQDM_AVAILABLE,
 )
 from litdata.processing.readers import BaseReader, StreamingDataLoaderReader
-from litdata.processing.utilities import _create_dataset, download_directory_from_S3, remove_uuid_from_filename
+from litdata.processing.utilities import _create_dataset, remove_uuid_from_filename
 from litdata.streaming import Cache
 from litdata.streaming.cache import Dir
-from litdata.streaming.client import S3Client
 from litdata.streaming.dataloader import StreamingDataLoader
+from litdata.streaming.fs_provider import _get_fs_provider, not_supported_provider
 from litdata.streaming.item_loader import BaseItemLoader
 from litdata.streaming.resolver import _resolve_dir
 from litdata.utilities._pytree import tree_flatten, tree_unflatten, treespec_loads
@@ -92,23 +91,22 @@ def _get_cache_data_dir(name: Optional[str] = None) -> str:
     """Returns the cache data directory used by the DataProcessor workers to download the files."""
     cache_dir = os.getenv("DATA_OPTIMIZER_DATA_CACHE_FOLDER", f"{_get_default_cache()}/data")
     if name is None:
-        return os.path.join(cache_dir)
+        return cache_dir
     return os.path.join(cache_dir, name.lstrip("/"))
 
 
-def _wait_for_file_to_exist(s3: S3Client, obj: parse.ParseResult, sleep_time: int = 2) -> Any:
-    """This function check."""
-    while True:
-        try:
-            return s3.client.head_object(Bucket=obj.netloc, Key=obj.path.lstrip("/"))
-        except botocore.exceptions.ClientError as e:
-            if "the HeadObject operation: Not Found" in str(e):
-                sleep(sleep_time)
-            else:
-                raise e
+def _wait_for_file_to_exist(remote_filepath: str, sleep_time: int = 2, storage_options: Dict[str, Any] = {}) -> Any:
+    """Wait until the file exists."""
+    file_exists = False
+    fs_provider = _get_fs_provider(remote_filepath, storage_options)
+    while not file_exists:
+        file_exists = fs_provider.exists(remote_filepath)
+        if not file_exists:
+            sleep(sleep_time)
 
 
 def _wait_for_disk_usage_higher_than_threshold(input_dir: str, threshold_in_gb: int = 25, sleep_time: int = 3) -> None:
+    """Wait until the specified directory has more free disk space than the threshold."""
     usage = shutil.disk_usage(input_dir)
 
     while (usage.free / 1000 / 1000 / 1000) <= threshold_in_gb:
@@ -118,9 +116,16 @@ def _wait_for_disk_usage_higher_than_threshold(input_dir: str, threshold_in_gb: 
     return
 
 
-def _download_data_target(input_dir: Dir, cache_dir: str, queue_in: Queue, queue_out: Queue) -> None:
+#
+# `_download_data_target` function accepts two queues:
+# 1. `queue_in`: A queue that receives the (index, paths) from where the data is to be downloaded.
+# 2. `queue_out`: A queue that sends the index after the files have been downloaded and ready to be used.
+#
+def _download_data_target(
+    input_dir: Dir, cache_dir: str, queue_in: Queue, queue_out: Queue, storage_options: Dict[str, Any] = {}
+) -> None:
     """Download data from a remote directory to a cache directory to optimise reading."""
-    s3 = S3Client()
+    fs_provider = None
 
     while True:
         # 2. Fetch from the queue
@@ -156,13 +161,12 @@ def _download_data_target(input_dir: Dir, cache_dir: str, queue_in: Queue, queue
 
                 obj = parse.urlparse(path)
 
-                if obj.scheme == "s3":
+                if obj.scheme in _SUPPORTED_PROVIDERS:
                     dirpath = os.path.dirname(local_path)
-
                     os.makedirs(dirpath, exist_ok=True)
-
-                    with open(local_path, "wb") as f:
-                        s3.client.download_fileobj(obj.netloc, obj.path.lstrip("/"), f)
+                    if fs_provider is None:
+                        fs_provider = _get_fs_provider(input_dir.url, storage_options)
+                    fs_provider.download_file(path, local_path)
 
                 elif os.path.isfile(path):
                     if not path.startswith("/teamspace/studios/this_studio"):
@@ -175,6 +179,9 @@ def _download_data_target(input_dir: Dir, cache_dir: str, queue_in: Queue, queue
         queue_out.put(index)
 
 
+#
+# `_remove_target` function accepts a queue that receives the paths to delete files from the cache directory.
+#
 def _remove_target(input_dir: Dir, cache_dir: str, queue_in: Queue) -> None:
     """Delete files from the cache directory to minimise disk space."""
     while True:
@@ -210,12 +217,20 @@ def keep_path(path: str) -> bool:
     return all(p not in path for p in paths)
 
 
-def _upload_fn(upload_queue: Queue, remove_queue: Queue, cache_dir: str, output_dir: Dir) -> None:
+#
+# `_upload_fn` accepts two queues:
+# 1. `upload_queue`: A queue that receives the local file paths ready to be uploaded.
+# 2. `remove_queue`: After uploading, the file is sent to the remove queue,
+#                    so it can be deleted from the cache directory.
+#
+def _upload_fn(
+    upload_queue: Queue, remove_queue: Queue, cache_dir: str, output_dir: Dir, storage_options: Dict[str, Any] = {}
+) -> None:
     """Upload optimised chunks from a local to remote dataset directory."""
     obj = parse.urlparse(output_dir.url if output_dir.url else output_dir.path)
 
-    if obj.scheme == "s3":
-        s3 = S3Client()
+    if obj.scheme in _SUPPORTED_PROVIDERS:
+        fs_provider = _get_fs_provider(output_dir.url, storage_options)
 
     while True:
         data: Optional[Union[str, Tuple[str, str]]] = upload_queue.get()
@@ -235,9 +250,9 @@ def _upload_fn(upload_queue: Queue, remove_queue: Queue, cache_dir: str, output_
         if not local_filepath.startswith(cache_dir):
             local_filepath = os.path.join(cache_dir, local_filepath)
 
-        if obj.scheme == "s3":
+        if obj.scheme in _SUPPORTED_PROVIDERS:
             try:
-                output_filepath = str(obj.path).lstrip("/")
+                output_filepath = output_dir.url
 
                 if local_filepath.__contains__(".checkpoints"):
                     output_filepath = os.path.join(output_filepath, ".checkpoints")
@@ -248,9 +263,8 @@ def _upload_fn(upload_queue: Queue, remove_queue: Queue, cache_dir: str, output_
 
                 output_filepath = remove_uuid_from_filename(output_filepath)  # remove unique id from checkpoints
 
-                s3.client.upload_file(
+                fs_provider.upload_file(
                     local_filepath,
-                    obj.netloc,
                     output_filepath,
                 )
             except Exception as e:
@@ -280,6 +294,11 @@ def _upload_fn(upload_queue: Queue, remove_queue: Queue, cache_dir: str, output_
 
 
 def _map_items_to_workers_sequentially(num_workers: int, user_items: List[Any]) -> List[List[Any]]:
+    """Map the items to the workers sequentially.
+
+    >>> workers_user_items = _map_items_to_workers_sequentially(2, list(range(5)))
+    >>> assert workers_user_items == [[0, 1], [2, 3, 4]]
+    """
     num_nodes = _get_num_nodes()
     world_size = num_nodes * num_workers
     num_items_per_worker = len(user_items) // world_size
@@ -318,7 +337,11 @@ def _map_items_to_workers_weighted(
     weights: Optional[List[int]] = None,
     file_size: bool = True,
 ) -> List[List[Any]]:
-    # Associate the items to the workers based on number of nodes and node rank.
+    """Map the items to the workers based on the weights.
+
+    >>> workers_user_items = _map_items_to_workers_weighted(2, list(range(5)), weights=[1, 2, 3, 4, 5])
+    >>> assert workers_user_items == [[1, 4, 0], [3, 2]]
+    """
     weights = [1] * len(user_items) if weights is None else weights
     num_nodes = _get_num_nodes()
     node_rank = _get_node_rank()
@@ -340,6 +363,7 @@ def _map_items_to_workers_weighted(
 
 
 def _get_num_bytes(item: Any, base_path: str) -> int:
+    """For the given item (PyTree), flatten it and return the total size in bytes of all file paths."""
     flattened_item, _ = tree_flatten(item)
 
     num_bytes = 0
@@ -408,6 +432,22 @@ class FakeQueue:
 
 
 class BaseWorker:
+    """BaseWorker handles data processing using either map or optimize recipes.
+
+    The worker follows this processing pipeline:
+    1. Receives input data from ready_to_process_queue (structured via data_recipe.prepare_structure)
+    2. If a reader is configured, reads and prepares data using data_recipe.prepare_item
+    3. Processes data through either:
+       - handle_data_chunk_recipe for optimization tasks (LambdaDataChunkRecipe)
+       - handle_data_transform_recipe for mapping tasks (LambdaMapRecipe)
+    4. Manages data lifecycle:
+       - Uploads processed results
+       - Optionally cleans up source data
+
+    This class serves as the core processing unit in distributed data processing pipelines,
+    supporting both data transformation and optimization workflows.
+    """
+
     def __init__(
         self,
         worker_index: int,
@@ -429,6 +469,7 @@ class BaseWorker:
         checkpoint_chunks_info: Optional[List[Dict[str, Any]]] = None,
         checkpoint_next_index: Optional[int] = None,
         item_loader: Optional[BaseItemLoader] = None,
+        storage_options: Dict[str, Any] = {},
     ) -> None:
         """The BaseWorker is responsible to process the user data."""
         self.worker_index = worker_index
@@ -463,6 +504,7 @@ class BaseWorker:
         self.use_checkpoint: bool = use_checkpoint
         self.checkpoint_chunks_info: Optional[List[Dict[str, Any]]] = checkpoint_chunks_info
         self.checkpoint_next_index: Optional[int] = checkpoint_next_index
+        self.storage_options = storage_options
 
     def run(self) -> None:
         try:
@@ -496,6 +538,12 @@ class BaseWorker:
             self.remover.join()
 
     def _loop(self) -> None:
+        """The main loop of the worker.
+
+        It will get the item index from the `ready_to_process_queue`,
+        and send it to the `handle_data_chunk_recipe` or `handle_data_transform_recipe` depending on the recipe type.
+        finally, it will upload and remove the data depending on the recipe type.
+        """
         num_downloader_finished = 0
 
         while True:
@@ -653,6 +701,7 @@ class BaseWorker:
                     self.cache_data_dir,
                     to_download_queue,
                     self.ready_to_process_queue,
+                    self.storage_options,
                 ),
             )
             p.start()
@@ -692,6 +741,7 @@ class BaseWorker:
                     self.remove_queue,
                     self.cache_chunks_dir,
                     self.output_dir,
+                    self.storage_options,
                 ),
             )
             p.start()
@@ -699,6 +749,9 @@ class BaseWorker:
             self.to_upload_queues.append(to_upload_queue)
 
     def _handle_data_chunk_recipe(self, index: int) -> None:
+        """Used by `optimize fn` to run the user provided fn on each item of the input data,
+        and save (write) the output in the cache.
+        """
         try:
             current_item = self.items[index] if self.reader is None else self.reader.read(self.items[index])
             item_data_or_generator = self.data_recipe.prepare_item(current_item)
@@ -719,6 +772,10 @@ class BaseWorker:
             raise RuntimeError(f"Failed processing {self.items[index]=}; {index=}") from e
 
     def _handle_data_chunk_recipe_end(self) -> None:
+        """Called when the `optimize fn` is done.
+
+        It will save the cache to disk, and upload the chunks to the output directory.
+        """
         chunks_filepaths = self.cache.done()
 
         if chunks_filepaths and len(self.to_upload_queues):
@@ -731,6 +788,10 @@ class BaseWorker:
             self._try_upload(checkpoint_filepath)
 
     def _handle_data_transform_recipe(self, index: int) -> None:
+        """Used by map fn to run the user provided fn on each item of the input data.
+
+        It should not return anything and write directly to the output directory.
+        """
         # Don't use a context manager to avoid deleting files that are being uploaded.
         output_dir = tempfile.mkdtemp()
         item = self.items[index] if self.reader is None else self.reader.read(self.items[index])
@@ -771,16 +832,33 @@ T = TypeVar("T")
 
 
 class DataRecipe:
+    """Base class for all data recipes.
+
+    It is responsible for preparing the `structure of the data (inputs)`
+    and the `item (what is returned by the user fn)`.
+    """
+
     @abstractmethod
     def prepare_structure(self, input_dir: Optional[str]) -> List[T]:
+        """Prepare the structure of the data.
+
+        This is the structure of the data that will be used by the worker. (inputs)
+        """
         pass
 
     @abstractmethod
     def prepare_item(self, *args: Any, **kwargs: Any) -> Any:
+        """Prepare the item.
+
+        This is the item that will be returned by the user `fn(input)`.
+        For `optimize fn`, it will be saved in the cache.
+        For `map fn`, it should return none, and should write directly to the output directory.
+        """
         pass
 
-    def __init__(self) -> None:
+    def __init__(self, storage_options: Dict[str, Any] = {}) -> None:
         self._name: Optional[str] = None
+        self.storage_options = storage_options
 
     def _done(self, size: int, delete_cached_files: bool, output_dir: Dir) -> _Result:
         return _Result(size=size)
@@ -793,13 +871,14 @@ class DataChunkRecipe(DataRecipe):
         chunk_bytes: Optional[Union[int, str]] = None,
         compression: Optional[str] = None,
         encryption: Optional[Encryption] = None,
+        storage_options: Dict[str, Any] = {},
     ):
-        super().__init__()
+        super().__init__(storage_options)
         if chunk_size is not None and chunk_bytes is not None:
             raise ValueError("Either one of the `chunk_size` or the `chunk_bytes` need to be provided.")
 
         self.chunk_size = chunk_size
-        self.chunk_bytes = 1 << 26 if chunk_size is None and chunk_bytes is None else chunk_bytes
+        self.chunk_bytes = 1 << 26 if chunk_size is None and chunk_bytes is None else chunk_bytes  # 1<<26 = 64 MB
         self.compression = compression
         self.encryption = encryption
 
@@ -868,10 +947,11 @@ class DataChunkRecipe(DataRecipe):
         else:
             local_filepath = os.path.join(cache_dir, _INDEX_FILENAME)
 
-        if obj.scheme == "s3":
-            s3 = S3Client()
-            s3.client.upload_file(
-                local_filepath, obj.netloc, os.path.join(str(obj.path).lstrip("/"), os.path.basename(local_filepath))
+        if obj.scheme in _SUPPORTED_PROVIDERS:
+            fs_provider = _get_fs_provider(output_dir.url, self.storage_options)
+            fs_provider.upload_file(
+                local_filepath,
+                os.path.join(output_dir.url, os.path.basename(local_filepath)),
             )
         elif output_dir.path and os.path.isdir(output_dir.path):
             shutil.copyfile(local_filepath, os.path.join(output_dir.path, os.path.basename(local_filepath)))
@@ -889,11 +969,10 @@ class DataChunkRecipe(DataRecipe):
                 assert output_dir_path
                 remote_filepath = os.path.join(output_dir_path, f"{node_rank}-{_INDEX_FILENAME}")
                 node_index_filepath = os.path.join(cache_dir, os.path.basename(remote_filepath))
-                if obj.scheme == "s3":
-                    obj = parse.urlparse(remote_filepath)
-                    _wait_for_file_to_exist(s3, obj)
-                    with open(node_index_filepath, "wb") as f:
-                        s3.client.download_fileobj(obj.netloc, obj.path.lstrip("/"), f)
+                if obj.scheme in _SUPPORTED_PROVIDERS:
+                    _wait_for_file_to_exist(remote_filepath, storage_options=self.storage_options)
+                    fs_provider = _get_fs_provider(remote_filepath, self.storage_options)
+                    fs_provider.download_file(remote_filepath, node_index_filepath)
                 elif output_dir.path and os.path.isdir(output_dir.path):
                     shutil.copyfile(remote_filepath, node_index_filepath)
 
@@ -934,6 +1013,7 @@ class DataProcessor:
         use_checkpoint: bool = False,
         item_loader: Optional[BaseItemLoader] = None,
         start_method: Optional[str] = None,
+        storage_options: Dict[str, Any] = {},
     ):
         """Provides an efficient way to process data across multiple machine into chunks to make training faster.
 
@@ -958,6 +1038,7 @@ class DataProcessor:
                     the format in which the data is stored and optimized for loading.
             start_method: The start method used by python multiprocessing package. Default to spawn unless running
                 inside an interactive shell like Ipython.
+            storage_options: Storage options for the cloud provider.
 
         """
         # spawn doesn't work in IPython
@@ -992,6 +1073,7 @@ class DataProcessor:
         self.checkpoint_chunks_info: Optional[List[List[Dict[str, Any]]]] = None
         self.checkpoint_next_index: Optional[List[int]] = None
         self.item_loader = item_loader
+        self.storage_options = storage_options
 
         self.state_dict = state_dict or {rank: 0 for rank in range(self.num_workers)}
 
@@ -1059,6 +1141,7 @@ class DataProcessor:
 
         if self.use_checkpoint:
             if hasattr(data_recipe, "is_generator") and data_recipe.is_generator:
+                #! TODO: Add checkpointing feature support for generators.
                 # Checkpoint feature is not supported for generators for now.
                 raise ValueError("Checkpoint feature is not supported for generators, yet.")
             # get the last checkpoint details
@@ -1215,6 +1298,7 @@ class DataProcessor:
                 self.checkpoint_chunks_info[worker_idx] if self.checkpoint_chunks_info else None,
                 self.checkpoint_next_index[worker_idx] if self.checkpoint_next_index else None,
                 self.item_loader,
+                self.storage_options,
             )
             worker.start()
             workers.append(worker)
@@ -1265,22 +1349,14 @@ class DataProcessor:
             return
 
         obj = parse.urlparse(self.output_dir.url)
+        if obj.scheme not in _SUPPORTED_PROVIDERS:
+            not_supported_provider(self.output_dir.url)
 
-        if obj.scheme != "s3":
-            raise ValueError(f"The provided folder should start with s3://. Found {self.output_dir.path}.")
-
-        s3 = boto3.client("s3")
-
-        prefix = obj.path.lstrip("/").rstrip("/") + "/"
-
-        # Delete all the files (including the index file in overwrite mode)
-        bucket_name = obj.netloc
-        s3 = boto3.resource("s3")
-
+        prefix = self.output_dir.url.rstrip("/") + "/"
         checkpoint_prefix = os.path.join(prefix, ".checkpoints")
 
-        for obj in s3.Bucket(bucket_name).objects.filter(Prefix=checkpoint_prefix):
-            s3.Object(bucket_name, obj.key).delete()
+        fs_provider = _get_fs_provider(self.output_dir.url, self.storage_options)
+        fs_provider.delete_file_or_directory(checkpoint_prefix)
 
     def _save_current_config(self, workers_user_items: List[List[Any]]) -> None:
         if not self.use_checkpoint:
@@ -1306,23 +1382,20 @@ class DataProcessor:
 
             obj = parse.urlparse(self.output_dir.url)
 
-            if obj.scheme != "s3":
-                raise ValueError(f"The provided folder should start with s3://. Found {self.output_dir.path}.")
+            if obj.scheme not in _SUPPORTED_PROVIDERS:
+                not_supported_provider(self.output_dir.url)
 
-            # TODO: Add support for all cloud providers
+            fs_provider = _get_fs_provider(self.output_dir.url, self.storage_options)
 
-            s3 = S3Client()
+            prefix = self.output_dir.url.rstrip("/") + "/" + ".checkpoints/"
 
-            prefix = obj.path.lstrip("/").rstrip("/") + "/" + ".checkpoints/"
-
-            # write config.json file to temp directory and upload it to s3
+            # write config.json file to temp directory and upload it to the cloud provider
             with tempfile.TemporaryDirectory() as temp_dir:
                 temp_file_name = os.path.join(temp_dir, "config.json")
                 with open(temp_file_name, "w") as f:
                     json.dump(config, f)
-                s3.client.upload_file(
+                fs_provider.upload_file(
                     temp_file_name,
-                    obj.netloc,
                     os.path.join(prefix, "config.json"),
                 )
         except Exception as e:
@@ -1374,19 +1447,17 @@ class DataProcessor:
 
         obj = parse.urlparse(self.output_dir.url)
 
-        if obj.scheme != "s3":
-            raise ValueError(f"The provided folder should start with s3://. Found {self.output_dir.path}.")
+        if obj.scheme not in _SUPPORTED_PROVIDERS:
+            not_supported_provider(self.output_dir.url)
 
-        # TODO: Add support for all cloud providers
-
-        prefix = obj.path.lstrip("/").rstrip("/") + "/" + ".checkpoints/"
+        prefix = self.output_dir.url.rstrip("/") + "/" + ".checkpoints/"
 
         # Delete all the files (including the index file in overwrite mode)
-        bucket_name = obj.netloc
 
         # download all the checkpoint files in tempdir and read them
         with tempfile.TemporaryDirectory() as temp_dir:
-            saved_file_dir = download_directory_from_S3(bucket_name, prefix, temp_dir)
+            fs_provider = _get_fs_provider(self.output_dir.url, self.storage_options)
+            saved_file_dir = fs_provider.download_directory(prefix, temp_dir)
 
             if not os.path.exists(os.path.join(saved_file_dir, "config.json")):
                 # if the config.json file doesn't exist, we don't have any checkpoint saved

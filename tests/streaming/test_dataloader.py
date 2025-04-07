@@ -92,7 +92,7 @@ def test_streaming_dataloader():
 
     assert dataloader.state_dict() == {
         "dataset": {"0": {"counter": 10}, "1": {"counter": 9}},
-        "current_epoch": 0,
+        "current_epoch": 1,
         "latest_worker_idx": 0,
         "num_samples_yielded": {0: [10, 9]},
     }
@@ -241,7 +241,8 @@ def test_dataloader_with_loading_states(tmpdir):
     for _ in dataloader:
         assert dataloader.current_epoch == 1, "Current epoch should be 1"
         count += 1
-    assert count == 15, "There should be at least 15 batches remaining in the first epoch"
+    # we consumed 11 batches (batch_idx==10) before.
+    assert count == 14, "There should be at least 14 batches remaining in the first epoch"
     assert not dataloader.restore
 
     # Verify batches in the second epoch
@@ -290,7 +291,8 @@ def test_dataloader_states_with_persistent_workers(tmpdir):
     for _ in dataloader:
         assert dataloader.current_epoch == 1, "Current epoch should be 1"
         count += 1
-    assert count == 15, "There should be at least 15 batches remaining in the first epoch"
+    # batch_idx==10 means we consumed 11 batches before.
+    assert count == 14, "There should be at least 14 batches remaining in the first epoch"
     assert not dataloader.restore
 
     # Verify batches in the second epoch

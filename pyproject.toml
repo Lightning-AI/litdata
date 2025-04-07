@@ -12,23 +12,91 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-[metadata]
-name = "litdata"
-author = "Lightning-AI et al."
-url = "https://github.com/Lightning-AI/lit-data"
-
 [build-system]
 requires = [
-    "setuptools",
-    "wheel",
+  "setuptools",
+  "wheel",
 ]
 
-[tool.docformatter]
-recursive = true
-# this need to be shorter as some docstings are r"""...
-wrap-summaries = 119
-wrap-descriptions = 120
-blank = true
+[tool.ruff]
+target-version = "py38"
+line-length = 120
+# Exclude a variety of commonly ignored directories.
+exclude = [
+  ".git",
+  "docs",
+  "src/litdata/utilities/_pytree.py",
+]
+# Enable Pyflakes `E` and `F` codes by default.
+lint.select = [
+  "E",
+  "F",      # see: https://pypi.org/project/pyflakes
+  "RUF018", # see: https://docs.astral.sh/ruff/rules/assignment-in-assert
+  "S",      # see: https://pypi.org/project/flake8-bandit
+  "UP",     # see: pyupgrade
+  "W",      # see: https://pypi.org/project/pycodestyle
+]
+lint.extend-select = [
+  "C4",     # see: https://pypi.org/project/flake8-comprehensions
+  "D",
+  "I",      # see: isort
+  "NPY201", # see: https://docs.astral.sh/ruff/rules/numpy2-deprecation
+  "PT",     # see: https://pypi.org/project/flake8-pytest-style
+  "RET",    # see: https://pypi.org/project/flake8-return
+  "RUF100", # yesqa
+  "SIM",    # see: https://pypi.org/project/flake8-simplify
+]
+lint.ignore = [
+  "E731", # Do not assign a lambda expression, use a def
+  "S101", # todo: Use of `assert` detected
+]
+lint.per-file-ignores."examples/**" = [
+  "D100",
+  "D101",
+  "D102",
+  "D103",
+  "D104",
+  "D105",
+  "D107", # Missing docstring in public module, class, method, function, package
+  "D205", # todo: 1 blank line required between summary line and description
+  "D401",
+  "D404", # First line should be in imperative mood; try rephrasing
+  "S311", # Standard pseudo-random generators are not suitable for cryptographic purposes
+]
+lint.per-file-ignores."setup.py" = [ "D100", "SIM115" ]
+lint.per-file-ignores."src/**" = [
+  "D100", # Missing docstring in public module
+  "D101", # todo: Missing docstring in public class
+  "D102", # todo: Missing docstring in public method
+  "D103", # todo: Missing docstring in public function
+  "D104", # Missing docstring in public package
+  "D105", # todo: Missing docstring in magic method
+  "D107", # todo: Missing docstring in __init__
+  "D205", # todo: 1 blank line required between summary line and description
+  "D401",
+  "D404", # todo: First line should be in imperative mood; try rephrasing
+  "S310", # todo: Audit URL open for permitted schemes. Allowing use of `file:` or custom schemes is often unexpected.
+  "S602", # todo: `subprocess` call with `shell=True` identified, security issue
+  "S605", # todo: Starting a process with a shell: seems safe, but may be changed in the future; consider rewriting without `shell`
+  "S607", # todo: Starting a process with a partial executable path
+]
+lint.per-file-ignores."tests/**" = [
+  "D100",
+  "D101",
+  "D102",
+  "D103",
+  "D104",
+  "D105",
+  "D107", # Missing docstring in public module, class, method, function, package
+  "D401",
+  "D404", # First line should be in imperative mood; try rephrasing
+  "S105",
+  "S106", # todo: Possible hardcoded password: ...
+]
+# Unlike Flake8, default to a complexity level of 10.
+lint.mccabe.max-complexity = 10
+# Use Google-style docstrings.
+lint.pydocstyle.convention = "google"
 
 [tool.codespell]
 # Todo: enable also python files in a next step
@@ -40,83 +108,64 @@ quiet-level = 3
 #  https://github.com/codespell-project/codespell/issues/2243#issuecomment-1732019960
 ignore-words-list = "cancelation"
 
+[tool.docformatter]
+recursive = true
+# this need to be shorter as some docstings are r"""...
+wrap-summaries = 119
+wrap-descriptions = 120
+blank = true
 
-[tool.ruff]
-line-length = 120
-target-version = "py38"
-# Exclude a variety of commonly ignored directories.
-exclude = [
-    ".git",
-    "docs",
-    "src/litdata/utilities/_pytree.py",
+[tool.pytest.ini_options]
+testpaths = [
+  "tests",
 ]
-# Enable Pyflakes `E` and `F` codes by default.
-lint.select = [
-    "E", "W",  # see: https://pypi.org/project/pycodestyle
-    "F",  # see: https://pypi.org/project/pyflakes
-    "S",  # see: https://pypi.org/project/flake8-bandit
-    "RUF018",  # see: https://docs.astral.sh/ruff/rules/assignment-in-assert
-    "UP", # see: pyupgrade
+norecursedirs = [
+  ".git",
+  ".github",
+  "dist",
+  "build",
+  "docs",
 ]
-lint.extend-select = [
-    "D",
-    "I",  # see: isort
-    "C4",  # see: https://pypi.org/project/flake8-comprehensions
-    "SIM",  # see: https://pypi.org/project/flake8-simplify
-    "RET",  # see: https://pypi.org/project/flake8-return
-    "PT",  # see: https://pypi.org/project/flake8-pytest-style
-    "NPY201",  # see: https://docs.astral.sh/ruff/rules/numpy2-deprecation
-    "RUF100",  # yesqa
+addopts = [
+  "--strict-markers",
+  "--doctest-modules",
+  "--color=yes",
+  "--disable-pytest-warnings",
+  "--ignore=legacy/checkpoints",
 ]
-lint.ignore = [
-    "E731",  # Do not assign a lambda expression, use a def
-    "S101",  # todo: Use of `assert` detected
+markers = [
+  "cloud: Run the cloud tests for example",
 ]
-# Unlike Flake8, default to a complexity level of 10.
-lint.mccabe.max-complexity = 10
-# Use Google-style docstrings.
-lint.pydocstyle.convention = "google"
+filterwarnings = [
+  "error::FutureWarning",
+]
+xfail_strict = true
+junit_duration_report = "call"
 
-[tool.ruff.lint.per-file-ignores]
-"setup.py" = ["D100", "SIM115"]
-"examples/**" = [
-    "D100", "D101", "D102", "D103", "D104", "D105", "D107",  # Missing docstring in public module, class, method, function, package
-    "D205",  # todo: 1 blank line required between summary line and description
-    "D401", "D404",  # First line should be in imperative mood; try rephrasing
-    "S311",  # Standard pseudo-random generators are not suitable for cryptographic purposes
+[tool.coverage.report]
+exclude_lines = [
+  "pragma: no cover",
+  "warnings",
+  "pass",
+  "rank_zero_warn",
+  "raise NotImplementedError",
 ]
-"src/**" = [
-    "D100",  # Missing docstring in public module
-    "D101",  # todo: Missing docstring in public class
-    "D102",  # todo: Missing docstring in public method
-    "D103",  # todo: Missing docstring in public function
-    "D104",  # Missing docstring in public package
-    "D105",  # todo: Missing docstring in magic method
-    "D107",  # todo: Missing docstring in __init__
-    "D205",  # todo: 1 blank line required between summary line and description
-    "D401", "D404",  # todo: First line should be in imperative mood; try rephrasing
-    "S602",  # todo: `subprocess` call with `shell=True` identified, security issue
-    "S605",  # todo: Starting a process with a shell: seems safe, but may be changed in the future; consider rewriting without `shell`
-    "S607",  # todo: Starting a process with a partial executable path
-    "S310",  # todo: Audit URL open for permitted schemes. Allowing use of `file:` or custom schemes is often unexpected.
-]
-"tests/**" = [
-    "D100", "D101", "D102", "D103", "D104", "D105", "D107",  # Missing docstring in public module, class, method, function, package
-    "D401", "D404",  # First line should be in imperative mood; try rephrasing
-    "S105", "S106",  # todo: Possible hardcoded password: ...
-]
-
-
 
 [tool.mypy]
 files = [
-    "src",
+  "src",
 ]
 # This section is for folders with "-" as they are not valid python modules
 exclude = [
-    "src/litdata/utilities/_pytree.py",
-    "src/litdata/streaming/item_loader.py",
-    "src/litdata/utilities/breakpoint.py",
+  "src/litdata/utilities/_pytree.py",
+  "src/litdata/streaming/item_loader.py",
+  "src/litdata/utilities/breakpoint.py",
+  "src/litdata/utilities/subsample.py",
+  "src/litdata/streaming/sampler.py",
+  "src/litdata/streaming/shuffle.py",
+  "src/litdata/imports.py",
+  "src/litdata/imports.py",
+  "src/litdata/processing/data_processor.py",
 ]
 install_types = "True"
 non_interactive = "True"
@@ -140,41 +189,3 @@ warn_no_return = "False"
 module = [
 ]
 ignore_errors = "True"
-
-
-[tool.coverage.report]
-exclude_lines = [
-    "pragma: no cover",
-    "warnings",
-    "pass",
-    "rank_zero_warn",
-    "raise NotImplementedError",
-]
-
-
-[tool.pytest.ini_options]
-testpaths = [
-    "tests",
-]
-norecursedirs = [
-    ".git",
-    ".github",
-    "dist",
-    "build",
-    "docs",
-]
-addopts = [
-    "--strict-markers",
-    "--doctest-modules",
-    "--color=yes",
-    "--disable-pytest-warnings",
-    "--ignore=legacy/checkpoints",
-]
-markers = [
-    "cloud: Run the cloud tests for example",
-]
-filterwarnings = [
-    "error::FutureWarning",
-]
-xfail_strict = true
-junit_duration_report = "call"

@@ -44,6 +44,10 @@ repos:
     hooks:
       - id: codespell
         additional_dependencies: [tomli]
+        exclude: >
+          (?x)^(
+              .*\.ipynb
+          )$
         #args: ["--write-changes"] # uncomment if you want to get automatic fixing
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
@@ -71,3 +75,13 @@ repos:
         files: \.(json|yml|yaml|toml)
         # https://prettier.io/docs/en/options.html#print-width
         args: ["--print-width=120"]
+
+  - repo: https://github.com/tox-dev/pyproject-fmt
+    rev: v2.5.0
+    hooks:
+      - id: pyproject-fmt
+        additional_dependencies: [tox]
+  - repo: https://github.com/abravalheri/validate-pyproject
+    rev: v0.23
+    hooks:
+      - id: validate-pyproject

@@ -11,8 +11,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
 import os
-from logging import Logger
 from time import time
 from typing import Any, Dict, List, Optional, Tuple, Union
 
@@ -20,12 +20,9 @@ import numpy as np
 from torch.utils.data import IterableDataset
 
 from litdata import __version__
-from litdata.constants import (
-    _INDEX_FILENAME,
-)
+from litdata.constants import _INDEX_FILENAME
 from litdata.helpers import _check_version_and_prompt_upgrade
 from litdata.streaming import Cache
-from litdata.streaming.downloader import get_downloader_cls  # noqa: F401
 from litdata.streaming.item_loader import BaseItemLoader, ParquetLoader
 from litdata.streaming.resolver import Dir, _resolve_dir
 from litdata.streaming.sampler import ChunkedIndex
@@ -34,13 +31,14 @@ from litdata.streaming.shuffle import FullShuffle, NoShuffle, Shuffle
 from litdata.utilities.dataset_utilities import _should_replace_path, _try_create_cache_dir, subsample_streaming_dataset
 from litdata.utilities.encryption import Encryption
 from litdata.utilities.env import _DistributedEnv, _is_in_dataloader_worker, _WorkerEnv
+from litdata.utilities.format import _convert_bytes_to_int
 from litdata.utilities.hf_dataset import index_hf_dataset
 from litdata.utilities.shuffle import (
     _find_chunks_per_workers_on_which_to_skip_deletion,
     _map_node_worker_rank_to_chunk_indexes_to_not_delete,
 )
 
-logger = Logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class StreamingDataset(IterableDataset):
@@ -61,6 +59,7 @@ class StreamingDataset(IterableDataset):
         storage_options: Optional[Dict] = {},
         max_pre_download: int = 2,
         index_path: Optional[str] = None,
+        force_override_state_dict: bool = False,
     ) -> None:
         """The streaming dataset can be used once your data have been optimised using the DatasetOptimiser class.
 
@@ -84,6 +83,7 @@ class StreamingDataset(IterableDataset):
             index_path: Path to `index.json` for the Parquet dataset.
                 If `index_path` is a directory, the function will look for `index.json` within it.
                 If `index_path` is a full file path, it will use that directly.
+            force_override_state_dict: Boolean flag for allowing local arguments to override a loaded state dict.
 
         """
         _check_version_and_prompt_upgrade(__version__)
@@ -100,11 +100,19 @@ class StreamingDataset(IterableDataset):
 
         if input_dir.url is not None and input_dir.url.startswith("hf://"):
             if index_path is None:
-                # no index path provide, load from cache, or try indexing on the go.
+                # No index_path was provided. Attempt to load it from cache or generate it dynamically on the fly.
                 index_path = index_hf_dataset(input_dir.url)
                 cache_dir.path = index_path
                 input_dir.path = index_path
-            item_loader = ParquetLoader()
+
+            if item_loader is not None and not isinstance(item_loader, ParquetLoader):
+                raise ValueError(
+                    "Invalid item_loader for hf://datasets. "
+                    "The item_loader must be an instance of ParquetLoader. "
+                    "Please provide a valid ParquetLoader instance."
+                )
+
+            item_loader = item_loader or ParquetLoader()
 
         self.input_dir = input_dir
         self.cache_dir = cache_dir
@@ -120,7 +128,7 @@ class StreamingDataset(IterableDataset):
 
         if self.distributed_env.world_size > 1:
             if drop_last is False:
-                logger.warn(
+                logger.warning(
                     "You're operating within a distributed environment and have disabled the `drop_last` option. "
                     "Please note that this configuration may lead to training interruptions if your system depends "
                     "on distributed collectives."
@@ -132,6 +140,17 @@ class StreamingDataset(IterableDataset):
 
         self.seed = seed
         self.max_cache_size = max_cache_size
+
+        max_cache_size_in_bytes = int(
+            _convert_bytes_to_int(max_cache_size) if isinstance(max_cache_size, str) else max_cache_size,
+        )
+        min_cache_size_in_bytes = _convert_bytes_to_int("25GB")
+        if max_cache_size_in_bytes < min_cache_size_in_bytes:
+            logger.warning(
+                "The provided `max_cache_size` is less than 25GB. "
+                "This may lead to performance issues during the training process. "
+                "Consider increasing the `max_cache_size` to at least 25GB to avoid potential performance degradation."
+            )
 
         self.cache: Optional[Cache] = None
         self.worker_env: Optional[_WorkerEnv] = None
@@ -149,6 +168,7 @@ class StreamingDataset(IterableDataset):
         self.shuffler: Optional[Shuffle] = None
         self.serializers = serializers
         self._state_dict: Optional[Dict[str, Any]] = None
+        self._force_override_state_dict = force_override_state_dict
         # Has slightly different meaning in the context of the dataset
         # We consider `num_workers = 0` from `torch.utils.DataLoader` still as 1 worker (the main process)
         self.num_workers: int = 1
@@ -397,7 +417,7 @@ class StreamingDataset(IterableDataset):
                 chunk_index=self.worker_chunks[self.chunk_index - 1],
                 # We provide the chunks indexes only one the first
                 chunk_indexes=None if self.has_triggered_download else self.worker_chunks[self.chunk_index - 1 :],
-                is_last_index=(self.chunk_index - 1) == len(self.worker_intervals) and len(self.current_indexes) == 1,
+                is_last_index=(self.chunk_index) == len(self.worker_intervals) and len(self.current_indexes) == 0,
             )
         )
 
@@ -441,21 +461,38 @@ class StreamingDataset(IterableDataset):
         self._state_dict = None
 
     def _validate_state_dict(self) -> None:
+        if self._force_override_state_dict:
+            logger.warning(
+                "Using state dict override, may lead to unexpected behavior if you're not certain what you're doing."
+            )
+
         assert self._state_dict
         assert self.worker_env
         assert self.cache
 
         state: Dict[str, Any] = self._state_dict
         if state["shuffle"] != self.shuffle:
-            raise ValueError(
-                "The provided `shuffle` state doesn't match the current one. "
-                f"Found `{self.shuffle}` instead of `{state['shuffle']}`."
+            if not self._force_override_state_dict:
+                raise ValueError(
+                    "The provided `shuffle` state doesn't match the current one. "
+                    f"Found `{self.shuffle}` instead of `{state['shuffle']}`."
+                )
+            state["shuffle"] = self.shuffle
+            logger.warning(
+                f"Overriding state shuffle {state['shuffle']} to {self.shuffle}, "
+                "this may lead to repeated or skipped datapoints within an episode."
             )
 
         if state["num_workers"] != self.worker_env.world_size:
-            raise ValueError(
-                "The provided `num_workers` state doesn't match the current one. "
-                f"Found `{self.worker_env.world_size}` instead of `{state['num_workers']}`."
+            if not self._force_override_state_dict:
+                raise ValueError(
+                    "The provided `num_workers` state doesn't match the current one. "
+                    f"Found `{self.worker_env.world_size}` instead of `{state['num_workers']}`."
+                )
+            state["num_workers"] = self.worker_env.world_size
+            logger.warning(
+                f"Overriding num workers {state['num_workers']} to {self.worker_env.world_size}. "
+                "This may lead to repeated or skipped datapoints within an episode due to different shuffles."
             )
 
         # Note: We need to check whether the path has been resolved to its associated cache.
@@ -466,39 +503,70 @@ class StreamingDataset(IterableDataset):
                 cache_dir=state.get("cache_dir_path"),
             )
             if cache_path != self.input_dir.path:
+                if not self._force_override_state_dict:
+                    raise ValueError(
+                        "The provided `input_dir` path state doesn't match the current one. "
+                        f"Found `{self.input_dir.path}` instead of `{cache_path}`."
+                    )
+                state["input_dir_path"] = self.input_dir.path
+                logger.warning(
+                    f"Overriding state input_dir_path {state['input_dir_path']} to {self.input_dir.path}, "
+                    "this may lead to entirely different data loading."
+                )
+
+        elif state["input_dir_path"] != self.input_dir.path:
+            if not self._force_override_state_dict:
                 raise ValueError(
                     "The provided `input_dir` path state doesn't match the current one. "
-                    f"Found `{self.input_dir.path}` instead of `{cache_path}`."
+                    f"Found `{self.input_dir.path}` instead of `{state['input_dir_path']}`."
                 )
-        elif state["input_dir_path"] != self.input_dir.path:
-            raise ValueError(
-                "The provided `input_dir` path state doesn't match the current one. "
-                f"Found `{self.input_dir.path}` instead of `{state['input_dir_path']}`."
+            state["input_dir_path"] = self.input_dir.path
+            logger.warning(
+                f"Overriding state input_dir_path {state['input_dir_path']} to {self.input_dir.path}, "
+                "this may lead to entirely different data loading."
             )
 
         if state["input_dir_url"] != self.input_dir.url:
-            raise ValueError(
-                "The provided `input_dir` URL state doesn't match the current one. "
-                f"Found `{self.input_dir.url}` instead of `{state['input_dir_url']}`."
+            if not self._force_override_state_dict:
+                raise ValueError(
+                    "The provided `input_dir` URL state doesn't match the current one. "
+                    f"Found `{self.input_dir.url}` instead of `{state['input_dir_url']}`."
+                )
+            state["input_dir_url"] = self.input_dir.url
+            logger.warning(
+                f"Overriding state input_dir_url {state['input_dir_url']} to {self.input_dir.url}, "
+                "this may lead to entirely different data loading."
             )
 
         if state["seed"] != self.seed:
-            raise ValueError(
-                "The provided `seed` state doesn't match the current one. "
-                f"Found `{self.seed}` instead of `{state['seed']}`."
+            if not self._force_override_state_dict:
+                raise ValueError(
+                    "The provided `seed` state doesn't match the current one. "
+                    f"Found `{self.seed}` instead of `{state['seed']}`."
+                )
+            state["seed"] = self.seed
+            logger.warning(
+                f"Overriding state seed {state['seed']} to {self.seed}, "
+                "this may lead to repeated or skipped datapoints within an episode."
             )
 
         if self.item_loader and state["item_loader"] != self.item_loader.state_dict():
-            raise ValueError(
-                "The provided `item_loader` state doesn't match the current one. "
-                f"Found `{self.item_loader.state_dict()}` instead of `{state['item_loader']}`."
-            )
+            if not self._force_override_state_dict:
+                raise ValueError(
+                    "The provided `item_loader` state doesn't match the current one. "
+                    f"Found `{self.item_loader.state_dict()}` instead of `{state['item_loader']}`."
+                )
+            logger.warning(f"Overriding state item_loader {state['item_loader']} to {self.item_loader.state_dict()}.")
+            state["item_loader"] = self.item_loader.state_dict()
 
         if state["drop_last"] != self.drop_last:
-            raise ValueError(
-                "The provided `drop_last` state doesn't match the current one. "
-                f"Found `{self.drop_last}` instead of `{state['drop_last']}`."
-            )
+            if not self._force_override_state_dict:
+                raise ValueError(
+                    "The provided `drop_last` state doesn't match the current one. "
+                    f"Found `{self.drop_last}` instead of `{state['drop_last']}`."
+                )
+            state["drop_last"] = self.drop_last
+            logger.warning(f"Overriding state drop_last {state['drop_last']} to {self.drop_last}.")
 
         if state["num_samples_yielded"] > len(self):
             raise ValueError(

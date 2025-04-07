@@ -21,13 +21,12 @@ from subprocess import DEVNULL, Popen
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 from urllib import parse
 
-import boto3
-import botocore
-
-from litdata.constants import _INDEX_FILENAME, _IS_IN_STUDIO
+from litdata.constants import _INDEX_FILENAME, _IS_IN_STUDIO, _SUPPORTED_PROVIDERS
 from litdata.streaming.cache import Dir
+from litdata.streaming.fs_provider import _get_fs_provider, not_supported_provider
 
 
+#! TODO: Not sure what this function is used for.
 def _create_dataset(
     input_dir: Optional[str],
     storage_dir: str,
@@ -42,7 +41,13 @@ def _create_dataset(
     name: Optional[str] = None,
     version: Optional[int] = None,
 ) -> None:
-    """Create a dataset with metadata information about its source and destination."""
+    """Create a dataset with metadata information about its source and destination using the Lightning SDK.
+
+    This function will be called only when:
+        - you're on last node (num_nodes == node_rank + 1)
+        - `output_dir.url` and `output_dir.path` are defined
+        - You're using Lightning Studio
+    """
     project_id = os.getenv("LIGHTNING_CLOUD_PROJECT_ID", None)
     cluster_id = os.getenv("LIGHTNING_CLUSTER_ID", None)
     user_id = os.getenv("LIGHTNING_USER_ID", None)
@@ -94,6 +99,7 @@ def get_worker_rank() -> Optional[str]:
     return os.getenv("DATA_OPTIMIZER_GLOBAL_RANK")
 
 
+#! TODO: Do we still need this? It is not used anywhere.
 def catch(func: Callable) -> Callable:
     def _wrapper(*args: Any, **kwargs: Any) -> Tuple[Any, Optional[Exception]]:
         try:
@@ -126,6 +132,10 @@ def make_request(
 
 @contextmanager
 def optimize_dns_context(enable: bool) -> Any:
+    """Optimize the DNS resolution for the Lightning Studio machine.
+
+    This speeds up the DNS resolution for the current machine as it reduces the number of DNS requests.
+    """
     optimize_dns(enable)
     try:
         yield
@@ -153,6 +163,13 @@ def optimize_dns(enable: bool) -> None:
 
 
 def _optimize_dns(enable: bool) -> None:
+    """Optimize the DNS resolution for the Lightning Studio machine.
+
+    When enable=True: Switches to using localhost (127.0.0.1) as the DNS server, which typically means using a
+        `local DNS cache`.
+    When enable=False: It switches back to using systemd-resolved (127.0.0.53), which is the default DNS resolver
+        in many modern Linux distro.
+    """
     with open("/etc/resolv.conf") as f:
         lines = f.readlines()
 
@@ -183,7 +200,7 @@ def _get_work_dir() -> str:
     return f"s3://{bucket_name}/projects/{project_id}/lightningapps/{app_id}/artifacts/{work_id}/content/"
 
 
-def read_index_file_content(output_dir: Dir) -> Optional[Dict[str, Any]]:
+def read_index_file_content(output_dir: Dir, storage_options: Dict[str, Any] = {}) -> Optional[Dict[str, Any]]:
     """Read the index file content."""
     if not isinstance(output_dir, Dir):
         raise ValueError("The provided output_dir should be a Dir object.")
@@ -198,30 +215,29 @@ def read_index_file_content(output_dir: Dir) -> Optional[Dict[str, Any]]:
             return json.load(f)
 
     else:
-        # download the index file from s3, and read it
+        # download the index file from the cloud provider, and read it
         obj = parse.urlparse(output_dir.url)
 
-        if obj.scheme != "s3":
-            raise ValueError(f"The provided folder should start with s3://. Found {output_dir.path}.")
+        if obj.scheme not in _SUPPORTED_PROVIDERS:
+            not_supported_provider(output_dir.url)
 
-        # TODO: Add support for all cloud providers
-        s3 = boto3.client("s3")
+        fs_provider = _get_fs_provider(output_dir.url, storage_options)
 
-        prefix = obj.path.lstrip("/").rstrip("/") + "/"
+        prefix = output_dir.url.rstrip("/") + "/"
 
         # Check the index file exists
         try:
             # Create a temporary file
             with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as temp_file:
                 temp_file_name = temp_file.name
-                s3.download_file(obj.netloc, os.path.join(prefix, _INDEX_FILENAME), temp_file_name)
+                fs_provider.download_file(os.path.join(prefix, _INDEX_FILENAME), temp_file_name)
             # Read data from the temporary file
             with open(temp_file_name) as temp_file:
                 data = json.load(temp_file)
             # Delete the temporary file
             os.remove(temp_file_name)
             return data
-        except botocore.exceptions.ClientError:
+        except Exception:
             return None
 
 
@@ -256,21 +272,3 @@ def remove_uuid_from_filename(filepath: str) -> str:
 
     # uuid is of 32 characters, '.json' is 5 characters and '-' is 1 character
     return filepath[:-38] + ".json"
-
-
-def download_directory_from_S3(bucket_name: str, remote_directory_name: str, local_directory_name: str) -> str:
-    s3_resource = boto3.resource("s3")
-    bucket = s3_resource.Bucket(bucket_name)
-
-    saved_file_dir = "."
-
-    for obj in bucket.objects.filter(Prefix=remote_directory_name):
-        local_filename = os.path.join(local_directory_name, obj.key)
-
-        if not os.path.exists(os.path.dirname(local_filename)):
-            os.makedirs(os.path.dirname(local_filename))
-        with open(local_filename, "wb") as f:
-            s3_resource.meta.client.download_fileobj(bucket_name, obj.key, f)
-            saved_file_dir = os.path.dirname(local_filename)
-
-    return saved_file_dir

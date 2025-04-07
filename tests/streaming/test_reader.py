@@ -1,8 +1,7 @@
+import logging
 import os
 import shutil
 from time import sleep
-
-import numpy as np
 
 from litdata.streaming import reader
 from litdata.streaming.cache import Cache
@@ -18,7 +17,8 @@ def test_reader_chunk_removal(tmpdir):
     cache_dir = os.path.join(tmpdir, "cache_dir")
     remote_dir = os.path.join(tmpdir, "remote_dir")
     os.makedirs(cache_dir, exist_ok=True)
-    cache = Cache(input_dir=Dir(path=cache_dir, url=remote_dir), chunk_size=2, max_cache_size=28020)
+    # we don't care about the max cache size here (so very large number)
+    cache = Cache(input_dir=Dir(path=cache_dir, url=remote_dir), chunk_size=2, max_cache_size=28020, compression="zstd")
 
     for i in range(25):
         cache[i] = i
@@ -27,7 +27,9 @@ def test_reader_chunk_removal(tmpdir):
     cache.merge()
 
     shutil.copytree(cache_dir, remote_dir)
+
     shutil.rmtree(cache_dir)
+
     os.makedirs(cache_dir, exist_ok=True)
 
     for i in range(25):
@@ -37,12 +39,19 @@ def test_reader_chunk_removal(tmpdir):
     assert len(filter_lock_files(os.listdir(cache_dir))) == 14
     assert len(get_lock_files(os.listdir(cache_dir))) == 0
 
-    cache = Cache(input_dir=Dir(path=cache_dir, url=remote_dir), chunk_size=2, max_cache_size=2800)
+    # Let's test if cache actually respects the max cache size
+    # each chunk is 40 bytes if it has 2 items
+    # a chunk with only 1 item is 24 bytes (values determined by checking actual chunk sizes)
+    cache = Cache(input_dir=Dir(path=cache_dir, url=remote_dir), chunk_size=2, max_cache_size=90)
 
     shutil.rmtree(cache_dir)
+
     os.makedirs(cache_dir, exist_ok=True)
 
     for i in range(25):
+        # we expect at max 3 files to be present (2 chunks and 1 index file)
+        # why 2 chunks? Bcoz max cache size is 90 bytes and each chunk is 40 bytes or 24 bytes (1 item)
+        # So any additional chunk will go over the max cache size
         assert len(filter_lock_files(os.listdir(cache_dir))) <= 3
         index = ChunkedIndex(*cache._get_chunk_index_from_index(i), is_last_index=i == 24)
         assert cache[index] == i
@@ -54,6 +63,7 @@ def test_reader_chunk_removal_compressed(tmpdir):
     cache_dir = os.path.join(tmpdir, "cache_dir")
     remote_dir = os.path.join(tmpdir, "remote_dir")
     os.makedirs(cache_dir, exist_ok=True)
+    # we don't care about the max cache size here (so very large number)
     cache = Cache(input_dir=Dir(path=cache_dir, url=remote_dir), chunk_size=2, max_cache_size=28020, compression="zstd")
 
     for i in range(25):
@@ -63,7 +73,9 @@ def test_reader_chunk_removal_compressed(tmpdir):
     cache.merge()
 
     shutil.copytree(cache_dir, remote_dir)
+
     shutil.rmtree(cache_dir)
+
     os.makedirs(cache_dir, exist_ok=True)
 
     for i in range(25):
@@ -72,13 +84,19 @@ def test_reader_chunk_removal_compressed(tmpdir):
 
     assert len(filter_lock_files(os.listdir(cache_dir))) == 14
     assert len(get_lock_files(os.listdir(cache_dir))) == 0
-
-    cache = Cache(input_dir=Dir(path=cache_dir, url=remote_dir), chunk_size=2, max_cache_size=2800, compression="zstd")
+    # Let's test if cache actually respects the max cache size
+    # each chunk is 40 bytes if it has 2 items
+    # a chunk with only 1 item is 24 bytes (values determined by checking actual chunk sizes)
+    cache = Cache(input_dir=Dir(path=cache_dir, url=remote_dir), chunk_size=2, max_cache_size=90, compression="zstd")
 
     shutil.rmtree(cache_dir)
+
     os.makedirs(cache_dir, exist_ok=True)
 
     for i in range(25):
+        # we expect at max 3 files to be present (2 chunks and 1 index file)
+        # why 2 chunks? Bcoz max cache size is 90 bytes and each chunk is 40 bytes or 24 bytes (1 item)
+        # So any additional chunk will go over the max cache size
         assert len(filter_lock_files(os.listdir(cache_dir))) <= 3
         index = ChunkedIndex(*cache._get_chunk_index_from_index(i), is_last_index=i == 24)
         assert cache[index] == i
@@ -86,13 +104,47 @@ def test_reader_chunk_removal_compressed(tmpdir):
     assert len(filter_lock_files(os.listdir(cache_dir))) in [2, 3]
 
 
-def test_get_folder_size(tmpdir):
-    array = np.zeros((10, 10))
+def test_get_folder_size(tmpdir, caplog):
+    cache_dir = os.path.join(tmpdir, "cache_dir")
+    cache = Cache(cache_dir, chunk_size=10)
+    for i in range(100):
+        cache[i] = i
 
-    np.save(os.path.join(tmpdir, "array_1.npy"), array)
-    np.save(os.path.join(tmpdir, "array_2.npy"), array)
+    cache.done()
+    cache.merge()
 
-    assert _get_folder_size(tmpdir) == 928 * 2
+    config = cache._reader._try_load_config()
+
+    with caplog.at_level(logging.WARNING):
+        cache_size = _get_folder_size(cache_dir, config)
+
+    actual_cache_size = 0
+    for file_name in filter_lock_files(os.listdir(cache_dir)):
+        if file_name in config.filename_to_size_map:
+            actual_cache_size += os.path.getsize(os.path.join(cache_dir, file_name))
+
+    assert cache_size == actual_cache_size
+    assert len(caplog.messages) == 0
+
+    # add some extra files to the cache directory
+    file_names = ["sample.txt", "sample.bin", "sample.bin.tmp", "sample.bin.ABCD", "sample.binEFGH"]
+    for file_name in file_names:
+        with open(os.path.join(cache_dir, file_name), "w") as f:
+            f.write("sample")
+        if file_name != "sample.txt":
+            actual_cache_size += os.path.getsize(os.path.join(cache_dir, file_name))
+
+    with caplog.at_level(logging.WARNING):
+        cache_size = _get_folder_size(cache_dir, config)
+
+    assert cache_size == actual_cache_size
+    assert len(caplog.messages) == 1
+
+    # Assert that a warning was logged
+    assert any(
+        "Ignoring 'sample.txt': This file doesn't appear to be a valid chunk file" in record.message
+        for record in caplog.records
+    ), "Expected warning about an invalid chunk file was not logged"
 
 
 def test_prepare_chunks_thread_eviction(tmpdir, monkeypatch):

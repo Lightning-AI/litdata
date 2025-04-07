@@ -16,15 +16,32 @@ import os
 from abc import ABC, abstractmethod
 from typing import Any, List
 
-from lightning_utilities.core.imports import RequirementCache
-
+from litdata.constants import _PYARROW_AVAILABLE
 from litdata.streaming.dataloader import StreamingDataLoader
 from litdata.utilities.format import _get_tqdm_iterator_if_available
 
-_PYARROW_AVAILABLE = RequirementCache("pyarrow")
-
 
 class BaseReader(ABC):
+    """The `BaseReader` interface defines how to read and preprocess data
+    from various sources (files, directories, databases, etc.)
+    for use with the `map` and `optimize` operations.
+
+    Key concepts:
+    - Reader.read(item): Processes a single item and returns data in a format expected by the mapping function (fn)
+    - Reader.remap_items(items, num_workers): Optimizes data distribution by potentially resharding items
+      (e.g., splitting large items or batching small ones) based on the processing requirements
+
+    Implementation examples:
+    - ParquetReader: Handles Parquet file reading with configurable chunk sizes
+    - StreamingDataLoaderReader: Wraps a StreamingDataLoader for iterative data access
+
+    Have a look at `tests/processing/test_readers.py::test_parquet_reader`.
+    - fn `map_parquet` expects a dataframe object.
+    - inputs are parquet files.
+    - => `ParquetReader` will read the parquet files (passed as `inputs`) and return a dataframe object
+      (which is passed to `map_parquet`).
+    """
+
     def get_num_nodes(self) -> int:
         return int(os.getenv("DATA_OPTIMIZER_NUM_NODES", 1))
 
@@ -59,6 +76,7 @@ class ParquetReader(BaseReader):
         return df.count_rows()
 
     def read(self, filepath: str) -> Any:
+        """Read the parquet file and return a parquet file object."""
         import pyarrow as pa
         import pyarrow.parquet as pq
 
@@ -75,6 +93,11 @@ class ParquetReader(BaseReader):
         return self.parquet_file
 
     def remap_items(self, filepaths: List[str], _: int) -> List[str]:
+        """Reshard the parquet files for optimized processing.
+
+        If a parquet file contains more number of rows than a specified `num_rows`,
+        it will be split into multiple files for faster processing.
+        """
         import pyarrow.parquet as pq
 
         print("Starting resharding the parquet files for optimized processing.")
@@ -117,9 +140,13 @@ class StreamingDataLoaderReader(BaseReader):
         self.dataloader_iter: Any = None
 
     def read(self, _: int) -> Any:
+        """Read the next item from the dataloader."""
         if self.dataloader_iter is None:
             self.dataloader_iter = iter(self.dataloader)
         return next(self.dataloader_iter)
 
     def remap_items(self, dataloader: StreamingDataLoader, _: int) -> List[Any]:
+        """Remap the items from the dataloader. But here, we don't do anything.
+        No splitting or batching is done here. As streaming dataloader is already optimized for this.
+        """
         return list(range(len(dataloader)))

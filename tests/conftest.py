@@ -9,7 +9,9 @@ from unittest.mock import Mock
 import pytest
 import torch.distributed
 
+from litdata import CombinedStreamingDataset, StreamingDataset
 from litdata.constants import _POLARS_AVAILABLE
+from litdata.streaming.cache import Cache
 from litdata.streaming.reader import PrepareChunksThread
 
 
@@ -41,6 +43,22 @@ def mosaic_mds_index_data():
         ],
         "version": 2,
     }
+
+
+@pytest.fixture
+def combined_dataset(tmpdir_factory):
+    tmpdir = tmpdir_factory.mktemp("data")
+    datasets = [str(tmpdir.join(f"dataset_{i}")) for i in range(2)]
+    for dataset in datasets:
+        cache = Cache(input_dir=dataset, chunk_bytes="64MB")
+        for i in range(50):
+            cache[i] = i
+        cache.done()
+        cache.merge()
+
+    dataset_1 = StreamingDataset(datasets[0], shuffle=True)
+    dataset_2 = StreamingDataset(datasets[1], shuffle=True)
+    return CombinedStreamingDataset(datasets=[dataset_1, dataset_2])
 
 
 @pytest.fixture
@@ -163,7 +181,17 @@ def clean_pq_index_cache():
 
 
 @pytest.fixture
-def huggingface_hub_mock(monkeypatch, write_pq_data, tmp_path):
+def huggingface_hub_mock(monkeypatch):
+    huggingface_hub = ModuleType("huggingface_hub")
+    monkeypatch.setitem(sys.modules, "huggingface_hub", huggingface_hub)
+    hf_hub_download = ModuleType("hf_hub_download")
+    monkeypatch.setitem(sys.modules, "huggingface_hub.hf_hub_download", hf_hub_download)
+    huggingface_hub.hf_hub_download = hf_hub_download
+    return huggingface_hub
+
+
+@pytest.fixture
+def huggingface_hub_fs_mock(monkeypatch, write_pq_data, tmp_path):
     huggingface_hub = ModuleType("huggingface_hub")
     hf_file_system = ModuleType("hf_file_system")
 
@@ -178,10 +206,25 @@ def huggingface_hub_mock(monkeypatch, write_pq_data, tmp_path):
         assert os.path.exists(file_path), "file hf is trying to access, doesn't exist."
         return open(file_path, mode)
 
+    def mock_ls(*args, **kwargs):
+        files = sorted(os.listdir(os.path.join(tmp_path, "pq-dataset")))
+        return [
+            {
+                "type": "file",
+                "name": file_name,
+                "size": os.path.getsize(os.path.join(tmp_path, "pq-dataset", file_name)),
+            }
+            for file_name in files
+        ]
+
+    def mock_hf_hub_download(repo_id, filename, cache_dir, repo_type, **kwargs):
+        return os.path.join(tmp_path, "pq-dataset", os.path.basename(filename))
+
     hf_fs_mock = Mock()
-    hf_fs_mock.ls = Mock(side_effect=lambda *args, **kwargs: os.listdir(os.path.join(tmp_path, "pq-dataset")))
+    hf_fs_mock.ls = Mock(side_effect=mock_ls)
     hf_fs_mock.open = Mock(side_effect=mock_open)
     huggingface_hub.HfFileSystem = Mock(return_value=hf_fs_mock)
+    huggingface_hub.hf_hub_download = Mock(side_effect=mock_hf_hub_download)
 
     return huggingface_hub
 
@@ -199,7 +242,13 @@ def fsspec_pq_mock(monkeypatch, write_pq_data, tmp_path, fsspec_mock):
     def mock_fsspec_ls(*args, **kwargs):
         file_list = []
         for file_name in os.listdir(os.path.join(tmp_path, "pq-dataset")):
-            file_list.append({"type": "file", "name": file_name})
+            file_list.append(
+                {
+                    "type": "file",
+                    "name": file_name,
+                    "size": os.path.getsize(os.path.join(tmp_path, "pq-dataset", file_name)),
+                }
+            )
         return file_list
 
     fs_mock = Mock()

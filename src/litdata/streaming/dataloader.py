@@ -362,14 +362,27 @@ class CacheDataLoader(DataLoader):
         return _MultiProcessingDataLoaderIterPatch(self)
 
 
-def _wrapper(fetcher: Any, func: Callable, tracer: Any, profile: int, profile_dir: str) -> Callable:
+def _wrapper(fetcher: Any, func: Callable, tracer: Any, profile: int, profile_dir: str, skip_batches: int) -> Callable:
     counter = 0
 
     def wrap(*args: Any, **kwargs: Any) -> Any:
         nonlocal counter
+        nonlocal tracer
+
+        if skip_batches > 0 and skip_batches == counter and tracer is None:
+            from viztracer import VizTracer
+
+            output_file = os.path.join(profile_dir, "result.json")
+
+            if os.path.exists(output_file):
+                os.remove(output_file)
+
+            tracer = VizTracer(output_file=output_file, verbose=0)
+            tracer.start()
+
         result = func(*args, **kwargs)
 
-        if tracer.enable and counter == profile:
+        if tracer is not None and tracer.enable and counter == (profile + skip_batches):
             tracer.stop()
             tracer.save()
             print(
@@ -387,8 +400,9 @@ def _wrapper(fetcher: Any, func: Callable, tracer: Any, profile: int, profile_di
 class _ProfileWorkerLoop:
     """Wrap the PyTorch DataLoader WorkerLoop to add profiling."""
 
-    def __init__(self, profile: Union[int, bool], profile_dir: Optional[str] = None):
+    def __init__(self, profile: Union[int, bool], skip_batches: int, profile_dir: Optional[str] = None):
         self._profile = profile
+        self._skip_batches = skip_batches
         self._profile_dir = profile_dir if profile_dir else os.getcwd()
 
     def __call__(
@@ -410,7 +424,9 @@ class _ProfileWorkerLoop:
         from torch.utils.data._utils import worker
         from viztracer import VizTracer
 
-        if worker_id == 0:
+        tracer = None
+
+        if worker_id == 0 and self._skip_batches == 0:
             output_file = os.path.join(self._profile_dir, "result.json")
 
             if os.path.exists(output_file):
@@ -429,7 +445,9 @@ class _ProfileWorkerLoop:
             fetcher = create_fetcher(*args, **kwargs)
 
             if worker_id == 0 and isinstance(self._profile, int):
-                fetcher.fetch = _wrapper(fetcher, fetcher.fetch, tracer, self._profile, self._profile_dir)
+                fetcher.fetch = _wrapper(
+                    fetcher, fetcher.fetch, tracer, self._profile, self._profile_dir, self._skip_batches
+                )
             return fetcher
 
         _DatasetKind.create_fetcher = create_fetcher_fn  # type: ignore
@@ -450,7 +468,7 @@ class _ProfileWorkerLoop:
             **kwargs,
         )
 
-        if worker_id == 0 and isinstance(self._profile, bool):
+        if tracer is not None and worker_id == 0 and isinstance(self._profile, bool):
             tracer.stop()
             tracer.save()
 
@@ -470,7 +488,9 @@ class _StreamingMultiProcessingDataLoaderIter(_MultiProcessingDataLoaderIter):
         if self._loader._profile_batches and distributed_env.global_rank == 0 and _VIZ_TRACKER_AVAILABLE:
             from torch.utils.data._utils import worker
 
-            worker._worker_loop = _ProfileWorkerLoop(self._loader._profile_batches, self._loader._profile_dir)
+            worker._worker_loop = _ProfileWorkerLoop(
+                self._loader._profile_batches, self._loader._profile_skip_batches, self._loader._profile_dir
+            )
 
         super().__init__(loader)
 
@@ -574,6 +594,7 @@ class StreamingDataLoader(DataLoader):
             maintain the workers `Dataset` instances alive. (default: ``False``)
         pin_memory_device (str, optional): the device to :attr:`pin_memory` to if ``pin_memory`` is
             ``True``.
+        profile_skip_batches (int): How many batches to skip before recording
         profile_batches (int, bool, optional): Whether to record data loading profile and generate a result.json file.
         profile_dir (int, bool,  optional): Where to store the recorded trace when profile_batches is enabled.
 
@@ -588,6 +609,7 @@ class StreamingDataLoader(DataLoader):
         batch_size: int = 1,
         num_workers: int = 0,
         profile_batches: Union[bool, int] = False,
+        profile_skip_batches: int = 0,
         profile_dir: Optional[str] = None,
         prefetch_factor: Optional[int] = None,
         shuffle: Optional[bool] = None,
@@ -629,6 +651,7 @@ class StreamingDataLoader(DataLoader):
         self.batch_size = batch_size
         self.num_workers = num_workers
         self._profile_batches = profile_batches
+        self._profile_skip_batches = profile_skip_batches
         self._profile_dir = profile_dir
         self._num_samples_yielded_streaming = 0
         self._num_samples_yielded_combined: Dict[int, List[Any]] = {}
@@ -643,7 +666,7 @@ class StreamingDataLoader(DataLoader):
             *args,
             batch_size=batch_size,
             num_workers=num_workers,
-            prefetch_factor=(10 if num_workers > 0 else None) if prefetch_factor is None else prefetch_factor,
+            prefetch_factor=(2 if num_workers > 0 else None) if prefetch_factor is None else prefetch_factor,
             collate_fn=collate_fn,
             **kwargs,
         )  # type: ignore
@@ -707,14 +730,16 @@ class StreamingDataLoader(DataLoader):
                 "latest_worker_idx": self._latest_worker_idx,
             }
 
-        num_samples_yieled = [0 for _ in range(len(list(self._num_samples_yielded_combined.values())[0]))]
+        # initialize a list to track the number of samples yielded for each dataset
+        num_samples_yieled = [0 for _ in range(len(self.dataset._datasets))]
+
         for worker_idx in self._num_samples_yielded_combined:
             for dataset_idx, samples_yieled in enumerate(self._num_samples_yielded_combined[worker_idx]):
                 num_samples_yieled[dataset_idx] += samples_yieled
 
         return {
             "dataset": self.dataset.state_dict(self.num_workers, self.batch_size, num_samples_yieled),
-            "current_epoch": self.current_epoch if self.restore else self.current_epoch - 1,
+            "current_epoch": self.current_epoch,
             "latest_worker_idx": self._latest_worker_idx,
             "num_samples_yielded": deepcopy(self._num_samples_yielded_combined),
         }
@@ -749,16 +774,27 @@ class StreamingDataLoader(DataLoader):
             self.dataset._set_use_streaming_dataloader(True)
             self.dataset.load_state_dict(obj)
 
-            # Inform that the dataloader is resuming.
-            # TODO: Check if the number of samples yielded is less than the length of the dataset.
-            # Also, len is not available for CombinedStreamingDataset in case of provided weights.
-            self.restore = True
+            total_samples_yielded = sum([sum(samples) for samples in self._num_samples_yielded_combined.values()])
+
+            # Check if we need to restore for the case without weights.
+            if (
+                self.dataset._iterate_over_all
+                and total_samples_yielded > 0
+                and total_samples_yielded < len(self.dataset)  # type: ignore
+            ):
+                self.restore = True
+
+            # Check if we need to restore for the case with weights.
+            # Note: `len` is not available for CombinedStreamingDataset in case of provided weights.
+            # TODO: handle the case with weights.
+            if not self.dataset._iterate_over_all:
+                self.restore = True
 
         elif isinstance(self.dataset, StreamingDataset):
             self.dataset.load_state_dict(obj["dataset"])
 
             # Inform that the dataloader is resuming.
-            if self._num_samples_yielded_streaming < len(self.dataset):
+            if self._num_samples_yielded_streaming > 0 and self._num_samples_yielded_streaming < len(self.dataset):
                 self.restore = True
         else:
             raise RuntimeError("The provided dataset should be a `StreamingDataset` or a `CombinedStreamingDataset`.")

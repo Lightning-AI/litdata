@@ -12,10 +12,10 @@
 # limitations under the License.
 
 import contextlib
+import logging
 import os
 import warnings
 from contextlib import suppress
-from logging import Logger
 from queue import Empty, Queue
 from threading import Event, Thread
 from typing import Any, Dict, List, Optional, Tuple, Union
@@ -24,7 +24,7 @@ from filelock import FileLock, Timeout
 
 from litdata.constants import _DEBUG
 from litdata.streaming.config import ChunksConfig, Interval
-from litdata.streaming.item_loader import BaseItemLoader, PyTreeLoader, TokensLoader
+from litdata.streaming.item_loader import BaseItemLoader, ParquetLoader, PyTreeLoader, TokensLoader
 from litdata.streaming.sampler import ChunkedIndex
 from litdata.streaming.serializers import Serializer, _get_serializers
 from litdata.utilities.encryption import Encryption
@@ -33,7 +33,7 @@ from litdata.utilities.env import _DistributedEnv, _WorkerEnv
 warnings.filterwarnings("ignore", message=".*The given buffer is not writable.*")
 
 
-logger = Logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 _END_TOKEN = "END"  # noqa: S105
@@ -138,6 +138,10 @@ class PrepareChunksThread(Thread):
                 print(f"Skip delete {chunk_filepath} by {self._rank or 0}, current lock count: {remaining_locks}")
             return
 
+        if _DEBUG:
+            with open(chunk_filepath + ".tmb", "w+") as tombstone_file:
+                tombstone_file.write(f"Deleted {chunk_filepath} by {self._rank or 0}. Debug: {can_delete_chunk}")
+
         self._item_loader.delete(chunk_index, chunk_filepath)
 
         if _DEBUG:
@@ -182,7 +186,10 @@ class PrepareChunksThread(Thread):
     def _can_delete_chunk(self) -> bool:
         if self._delete_chunks_when_processed:
             return self._pre_download_counter >= self._max_pre_download - 1
-        return self._max_cache_size is not None and _get_folder_size(self._parent_cache_dir) >= self._max_cache_size
+        return (
+            self._max_cache_size is not None
+            and _get_folder_size(self._config._cache_dir, self._config) >= self._max_cache_size
+        )
 
     def _pre_load_chunk(self, chunk_index: int) -> None:
         chunk_filepath, _, _ = self._config[ChunkedIndex(index=-1, chunk_index=chunk_index)]
@@ -195,7 +202,7 @@ class PrepareChunksThread(Thread):
                 chunk_filepath, _, _ = self._config[ChunkedIndex(index=-1, chunk_index=chunk_index)]
                 print(f"Requested force download for {chunk_filepath} by {self._rank}")
 
-            self._config.download_chunk_from_index(chunk_index)
+            self._config.download_chunk_from_index(chunk_index, skip_lock=True)
 
             # Preload item if possible to gain some time but only
             # if this is one of the pre-downloaded chunk
@@ -234,6 +241,11 @@ class PrepareChunksThread(Thread):
                 self._maybe_delete_chunks()
 
 
+# The BinaryReader operates as the inverse of the data optimization process:
+# 1. Loads raw bytes from chunks based on specific indices
+# 2. Uses deserializers to convert bytes back into Python objects
+# 3. Reconstructs the original data structure with the data_spec from index.json and using `tree_unflatten function`
+# 4. Supports features like compression, encryption, and distributed reading
 class BinaryReader:
     def __init__(
         self,
@@ -287,6 +299,7 @@ class BinaryReader:
         self._prepare_thread: Optional[PrepareChunksThread] = None
         self._item_loader = item_loader or PyTreeLoader()
         self._last_chunk_index: Optional[int] = None
+        self._chunks_queued_for_download = False
         self._max_cache_size = int(os.getenv("MAX_CACHE_SIZE", max_cache_size or 0))
         self._storage_options = storage_options
         self._max_pre_download = max_pre_download
@@ -356,9 +369,12 @@ class BinaryReader:
                 self._prepare_thread.start()
                 if index.chunk_indexes:
                     self._prepare_thread.download(index.chunk_indexes)
+                    self._chunks_queued_for_download = True
 
-            # If the chunk_index is new, request for it to be downloaded.
-            if index.chunk_index != self._last_chunk_index:
+            # Only request individual chunk download if:
+            # 1. We haven't already queued all chunks for the download
+            # 2. We're processing a new chunk (different from the last one)
+            if not self._chunks_queued_for_download and index.chunk_index != self._last_chunk_index:
                 assert self._prepare_thread
                 self._prepare_thread.download([index.chunk_index])
 
@@ -393,7 +409,7 @@ class BinaryReader:
 
         if index.chunk_index != self._last_chunk_index:
             # Close the memory-mapped file for the last chunk index
-            if isinstance(self._item_loader, TokensLoader) and self._last_chunk_index is not None:
+            if isinstance(self._item_loader, (TokensLoader, ParquetLoader)) and self._last_chunk_index is not None:
                 self._item_loader.close(self._last_chunk_index)
 
             # track the new chunk index as the latest one
@@ -404,6 +420,9 @@ class BinaryReader:
             self._prepare_thread._decrement_local_lock(index.chunk_index)
             self._prepare_thread.stop()
             self._prepare_thread = None
+            self._item_loader.close(self._last_chunk_index)
+            self._last_chunk_index = None
+            self._chunks_queued_for_download = False
 
         return item
 
@@ -432,17 +451,51 @@ class BinaryReader:
             self._prepare_thread = None
 
 
-def _get_folder_size(path: str) -> int:
-    """Collect the size of each files within a folder.
+def _get_folder_size(path: str, config: ChunksConfig) -> int:
+    """Calculate the total size of files in a directory based on specific rules.
 
-    This method is robust to file deletion races
+    This method is robust to file deletion races.
+
+    Args:
+        path (str): Directory path to scan.
+        config (ChunksConfig): Configuration object containing filename_to_size_map.
+
+    Returns:
+        int: Total size of valid files in bytes.
 
     """
     size = 0
-    for dirpath, _, filenames in os.walk(str(path)):
-        for filename in filenames:
-            with contextlib.suppress(FileNotFoundError):
-                size += os.stat(os.path.join(dirpath, filename)).st_size
+    ignored_extensions = (".cnt", ".lock", ".json", ".zstd.bin")
+
+    # os.scan_dir is more efficient than os.listdir
+    with os.scandir(path) as dir_entries:
+        for entry in dir_entries:
+            # skip directories and symlinks
+            if not entry.is_file(follow_symlinks=False):
+                continue
+
+            filename = entry.name
+
+            # use size from config if available
+            if filename in config.filename_to_size_map:
+                size += config.filename_to_size_map[filename]
+
+            # silently ignore specified extensions
+            elif filename.endswith(ignored_extensions):
+                continue
+
+            # handle temporary files containing '.bin'
+            elif ".bin" in filename:
+                with contextlib.suppress(FileNotFoundError):
+                    size += entry.stat(follow_symlinks=False).st_size
+
+            # warn about unrecognized files
+            else:
+                logger.warning(
+                    f"Ignoring '{filename}': "
+                    "This file doesn't appear to be a valid chunk file and has been excluded from the size calculation."
+                )
+
     return size
 
 

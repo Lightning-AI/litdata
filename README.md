@@ -216,6 +216,7 @@ Additionally, you can inject client connection settings for [S3](https://boto3.a
 ```python
 from litdata import StreamingDataset
 
+# boto3 compatible storage options for a custom S3-compatible endpoint
 storage_options = {
     "endpoint_url": "your_endpoint_url",
     "aws_access_key_id": "your_access_key_id",
@@ -223,7 +224,20 @@ storage_options = {
 }
 
 dataset = StreamingDataset('s3://my-bucket/my-data', storage_options=storage_options)
+
+# s5cmd compatible storage options for a custom S3-compatible endpoint
+# Note: If s5cmd is installed, it will be used by default for S3 operations. If you prefer not to use s5cmd, you can disable it by setting the environment variable: `DISABLE_S5CMD=1`
+storage_options = {
+    "AWS_ACCESS_KEY_ID": "your_access_key_id",
+    "AWS_SECRET_ACCESS_KEY": "your_secret_access_key",
+    "S3_ENDPOINT_URL": "your_endpoint_url",  # Required only for custom endpoints
+}
+
+
+dataset = StreamingDataset('s3://my-bucket/my-data', storage_options=storage_options)
 ```
+
+Alternative: Using `s5cmd` for S3 Operations
 
 
 Also, you can specify a custom cache directory when initializing your dataset. This is useful when you want to store the cache in a specific location.
@@ -250,15 +264,35 @@ https://github.com/user-attachments/assets/3ba9e2ef-bf6b-41fc-a578-e4b4113a0e72
 
 </details>
 
+**Prerequisites:**
+
+Install the required dependencies to stream Hugging Face datasets:
+```sh
+pip install "litdata[extra]" huggingface_hub
+
+# Optional: To speed up downloads on high-bandwidth networks
+pip install hf_tansfer
+export HF_HUB_ENABLE_HF_TRANSFER=1
+```
+
+**Stream Hugging Face dataset:**
+
 ```python
 import litdata as ld
 
-hf_uri = "hf://datasets/leonardPKU/clevr_cogen_a_train/data"
+# Define the Hugging Face dataset URI
+hf_dataset_uri = "hf://datasets/leonardPKU/clevr_cogen_a_train/data"
 
-ds = ld.StreamingDataset(hf_uri)
+# Create a streaming dataset
+dataset = ld.StreamingDataset(hf_dataset_uri)
 
-for _ds in ds:
-    print(f"{_ds[1]}; {_ds[2]}")
+# Print the first sample
+print("Sample", dataset[0])
+
+# Stream the dataset using StreamingDataLoader
+dataloader = ld.StreamingDataLoader(dataset, batch_size=4)
+for sample in dataloader:
+    pass 
 ```
 
 You don’t need to worry about indexing the dataset or any other setup. **LitData** will **handle all the necessary steps automatically** and `cache` the `index.json` file, so you won't have to index it again.
@@ -274,12 +308,12 @@ If the Hugging Face dataset hasn't been indexed yet, you can index it first usin
 ```python
 import litdata as ld
 
-hf_uri = "hf://datasets/leonardPKU/clevr_cogen_a_train/data"
+hf_dataset_uri = "hf://datasets/leonardPKU/clevr_cogen_a_train/data"
 
-ld.index_hf_dataset(hf_uri)
+ld.index_hf_dataset(hf_dataset_uri)
 ```
 
-- Indexing the Hugging Face dataset ahead of time will make streaming faster, as it avoids the need for real-time indexing during streaming.
+- Indexing the Hugging Face dataset ahead of time will make streaming abit faster, as it avoids the need for real-time indexing during streaming.
 
 - To use `HF gated dataset`, ensure the `HF_TOKEN` environment variable is set.
 
@@ -296,9 +330,9 @@ For full control over the cache path(`where index.json file will be stored`) and
 ```python
 import litdata as ld
 
-hf_uri = "hf://datasets/open-thoughts/OpenThoughts-114k/data"
+hf_dataset_uri = "hf://datasets/open-thoughts/OpenThoughts-114k/data"
 
-ld.index_parquet_dataset(hf_uri, "hf-index-dir")
+ld.index_parquet_dataset(hf_dataset_uri, "hf-index-dir")
 ```
 
 2. To stream HF datasets now, pass the `HF dataset URI`, the path where the `index.json` file is stored, and `ParquetLoader` as the `item_loader` to the **`StreamingDataset`**:
@@ -307,18 +341,18 @@ ld.index_parquet_dataset(hf_uri, "hf-index-dir")
 import litdata as ld
 from litdata.streaming.item_loader import ParquetLoader
 
-hf_uri = "hf://datasets/open-thoughts/OpenThoughts-114k/data"
+hf_dataset_uri = "hf://datasets/open-thoughts/OpenThoughts-114k/data"
 
-ds = ld.StreamingDataset(hf_uri, item_loader=ParquetLoader(), index_path="hf-index-dir")
+dataset = ld.StreamingDataset(hf_dataset_uri, item_loader=ParquetLoader(), index_path="hf-index-dir")
 
-for _ds in ds:
-    print(f"{_ds[0]}; {_ds[1]}\n")
+for batch in ld.StreamingDataLoader(dataset, batch_size=4):
+  pass
 ```
 
 &nbsp;
 
 ### LitData `Optimize` v/s `Parquet`
-
+<!-- TODO: Update benchmark -->
 Below is the benchmark for the `Imagenet dataset (155 GB)`, demonstrating that **`optimizing the dataset using LitData is faster and results in smaller output size compared to raw Parquet files`**.
 
 | **Operation**                    | **Size (GB)** | **Time (seconds)** | **Throughput (images/sec)** |
@@ -366,18 +400,36 @@ for batch in val_dataloader:
 
 &nbsp;
 
-The StreamingDataset supports reading optimized datasets from common cloud providers. 
+The `StreamingDataset` provides support for reading optimized datasets from common cloud storage providers like AWS S3, Google Cloud Storage (GCS), and Azure Blob Storage. Below are examples of how to use StreamingDataset with each cloud provider.
 
 ```python
 import os
 import litdata as ld
 
-# Read data from AWS S3
+# Read data from AWS S3 using s5cmd
+# Note: If s5cmd is installed, it will be used by default for S3 operations. If you prefer not to use s5cmd, you can disable it by setting the environment variable: `DISABLE_S5CMD=1`
 aws_storage_options={
     "AWS_ACCESS_KEY_ID": os.environ['AWS_ACCESS_KEY_ID'],
     "AWS_SECRET_ACCESS_KEY": os.environ['AWS_SECRET_ACCESS_KEY'],
+    "S3_ENDPOINT_URL": os.environ['AWS_ENDPOINT_URL'],  # Required only for custom endpoints
 }
 dataset = ld.StreamingDataset("s3://my-bucket/my-data", storage_options=aws_storage_options)
+
+# Read Data from AWS S3 with Unsigned Request using s5cmd
+aws_storage_options={
+  "AWS_NO_SIGN_REQUEST": "Yes" # Required for unsigned requests
+  "S3_ENDPOINT_URL": os.environ['AWS_ENDPOINT_URL'],  # Required only for custom endpoints
+}
+dataset = ld.StreamingDataset("s3://my-bucket/my-data", storage_options=aws_storage_options)
+
+# Read data from AWS S3 using boto3
+os.environ["DISABLE_S5CMD"] = "1"
+aws_storage_options={
+    "aws_access_key_id": os.environ['AWS_ACCESS_KEY_ID'],
+    "aws_secret_access_key": os.environ['AWS_SECRET_ACCESS_KEY'],
+}
+dataset = ld.StreamingDataset("s3://my-bucket/my-data", storage_options=aws_storage_options)
+
 
 # Read data from GCS
 gcp_storage_options={
@@ -739,35 +791,59 @@ The `overwrite` mode will delete the existing data and start from fresh.
   <summary> ✅ Stream parquet datasets</summary>
 &nbsp;
 
-You can stream Parquet datasets directly without the need to convert them into the LitData optimized binary format.
+Stream Parquet datasets directly with LitData—no need to convert them into LitData’s optimized binary format! If your dataset is already in Parquet format, you can efficiently index and stream it using `StreamingDataset` and `StreamingDataLoader`.
 
-If your dataset is already in Parquet format, you can index and use it with StreamingDataset and DataLoader for efficient streaming.
+**Assumption:**
 
-Assumption:
 Your dataset directory contains one or more Parquet files.
 
-- **Index Parquet dataset**:
+**Prerequisites:**
+
+Install the required dependencies to stream Parquet datasets from cloud storage like **Amazon S3** or **Google Cloud Storage**:
+
+```bash
+# For Amazon S3
+pip install "litdata[extra]" s3fs
+
+# For Google Cloud Storage
+pip install "litdata[extra]" gcsfs
+```
+
+**Index Your Dataset**: 
+
+Index your Parquet dataset to create an index file that LitData can use to stream the dataset.
 
 ```python
 import litdata as ld
 
-pq_data_uri = "gs://deep-litdata-parquet/my-parquet-data"
+# Point to your data stored in the cloud
+pq_dataset_uri = "s3://my-bucket/my-parquet-data"  # or "gs://my-bucket/my-parquet-data"
 
-ld.index_parquet_dataset(pq_data_uri)
+ld.index_parquet_dataset(pq_dataset_uri)
 ```
 
-- **Stream the dataset with `StreamingDataset` and `ParquetLoader`**
+**Stream the Dataset**
 
-When using a Streaming Dataset, ensure you use `ParquetLoader`:
+Use `StreamingDataset` with `ParquetLoader` to load and stream the dataset efficiently:
+
 
 ```python
 import litdata as ld
 from litdata.streaming.item_loader import ParquetLoader
 
-ds = ld.StreamingDataset('gs://deep-litdata-parquet/my-parquet-data', item_loader = ParquetLoader())
+# Specify your dataset location in the cloud
+pq_dataset_uri = "s3://my-bucket/my-parquet-data"  # or "gs://my-bucket/my-parquet-data"
 
-for _ds in ds:
-    print(f"{_ds=}")
+# Set up the streaming dataset
+dataset = ld.StreamingDataset(pq_dataset_uri, item_loader=ParquetLoader())
+
+# print the first sample
+print("Sample", dataset[0])
+
+# Stream the dataset using StreamingDataLoader
+dataloader = ld.StreamingDataLoader(dataset, batch_size=4)
+for sample in dataloader:
+    pass
 ```
 
 </details>
@@ -1120,7 +1196,7 @@ Speed to stream Imagenet 1.2M from AWS S3:
 
 | Framework | Images / sec  1st Epoch (float32)  | Images / sec   2nd Epoch (float32) | Images / sec 1st Epoch (torch16) | Images / sec 2nd Epoch (torch16) |
 |---|---|---|---|---|
-| LitData | **5800** | **6589**  | **6282**  | **7221**  |
+| LitData | **5839** | **6692**  | **6282**  | **7221**  |
 | Web Dataset  | 3134 | 3924 | 3343 | 4424 |
 | Mosaic ML  | 2898 | 5099 | 2809 | 5158 |
 

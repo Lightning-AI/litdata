@@ -251,6 +251,27 @@ def test_writer_unordered_indexes(tmpdir):
     assert data["chunks"][2]["chunk_size"] == 2
 
 
+def test_chunk_bytes_consistency(tmpdir):
+    cache_dir = os.path.join(tmpdir, "chunks")
+    os.makedirs(cache_dir, exist_ok=True)
+
+    binary_writer = BinaryWriter(cache_dir, chunk_size=5)
+
+    for i in range(100):
+        binary_writer[i] = i
+
+    binary_writer.done()
+    binary_writer.merge()
+
+    with open(os.path.join(cache_dir, "index.json")) as f:
+        config_data = json.load(f)
+
+    for chunk in config_data["chunks"]:
+        chunk_file = os.path.join(cache_dir, chunk["filename"])
+        chunk_size = os.path.getsize(chunk_file)
+        assert chunk_size == chunk["chunk_bytes"]
+
+
 def test_writer_save_checkpoint(tmpdir):
     cache_dir = os.path.join(tmpdir, "chunks")
     os.makedirs(cache_dir, exist_ok=True)

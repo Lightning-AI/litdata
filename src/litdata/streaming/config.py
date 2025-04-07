@@ -17,7 +17,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from litdata.constants import _INDEX_FILENAME
 from litdata.streaming.compression import _COMPRESSORS, Compressor
-from litdata.streaming.downloader import get_downloader_cls
+from litdata.streaming.downloader import get_downloader
 from litdata.streaming.item_loader import BaseItemLoader, Interval, PyTreeLoader, TokensLoader
 from litdata.streaming.sampler import ChunkedIndex
 from litdata.streaming.serializers import Serializer
@@ -80,7 +80,7 @@ class ChunksConfig:
         self._downloader = None
 
         if remote_dir:
-            self._downloader = get_downloader_cls(remote_dir, cache_dir, self._chunks, self._storage_options)
+            self._downloader = get_downloader(remote_dir, cache_dir, self._chunks, self._storage_options)
 
         self._compressor_name = self._config["compression"]
         self._compressor: Optional[Compressor] = None
@@ -98,6 +98,11 @@ class ChunksConfig:
 
         self._skip_chunk_indexes_deletion: Optional[List[int]] = None
         self.zero_based_roi: Optional[List[Tuple[int, int]]] = None
+        self.filename_to_size_map: Dict[str, int] = {}
+        for cnk in _original_chunks:
+            # since files downloaded while reading will be decompressed, we need to store the name without compression
+            filename_without_compression = cnk["filename"].replace(f".{self._compressor_name}", "")
+            self.filename_to_size_map[filename_without_compression] = cnk["chunk_bytes"]
 
     def can_delete(self, chunk_index: int) -> bool:
         if self._skip_chunk_indexes_deletion is None:
@@ -112,7 +117,7 @@ class ChunksConfig:
     def skip_chunk_indexes_deletion(self, skip_chunk_indexes_deletion: List[int]) -> None:
         self._skip_chunk_indexes_deletion = skip_chunk_indexes_deletion
 
-    def download_chunk_from_index(self, chunk_index: int) -> None:
+    def download_chunk_from_index(self, chunk_index: int, skip_lock: bool = False) -> None:
         assert self._chunks is not None
         chunk_filename = self._chunks[chunk_index]["filename"]
 
@@ -120,7 +125,7 @@ class ChunksConfig:
 
         if os.path.exists(local_chunkpath):
             self.try_decompress(local_chunkpath)
-            if self._downloader is not None:
+            if self._downloader is not None and not skip_lock:
                 # We don't want to redownload the base, but we should mark
                 # it as having been requested by something
                 self._downloader._increment_local_lock(local_chunkpath.replace(f".{self._compressor_name}", ""))
@@ -130,7 +135,8 @@ class ChunksConfig:
         if self._downloader is None:
             return
 
-        self._downloader._increment_local_lock(local_chunkpath.replace(f".{self._compressor_name}", ""))
+        if not skip_lock:
+            self._downloader._increment_local_lock(local_chunkpath.replace(f".{self._compressor_name}", ""))
 
         self._downloader.download_chunk_from_index(chunk_index)
 
@@ -237,9 +243,6 @@ class ChunksConfig:
 
         filesize_bytes = chunk["chunk_bytes"]
 
-        if self._config and self._config.get("encryption") is None and (not local_chunkpath.endswith(".parquet")):
-            filesize_bytes += (1 + chunk["chunk_size"]) * 4
-
         return local_chunkpath, begin, filesize_bytes
 
     def _get_chunk_index_from_filename(self, chunk_filename: str) -> int:
@@ -272,7 +275,7 @@ class ChunksConfig:
                         f"This should not have happened. No index.json file found in cache: {cache_index_filepath}"
                     )
             else:
-                downloader = get_downloader_cls(remote_dir, cache_dir, [], storage_options)
+                downloader = get_downloader(remote_dir, cache_dir, [], storage_options)
                 downloader.download_file(os.path.join(remote_dir, _INDEX_FILENAME), cache_index_filepath)
 
         if not os.path.exists(cache_index_filepath):
