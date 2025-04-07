@@ -183,12 +183,13 @@ class PrepareChunksThread(Thread):
                 try:
                     chunk_index = self._to_delete_queue.get(timeout=_DEFAULT_TIMEOUT)
                     if chunk_index is None:
+                        print(f"{self._rank=} received the none. bye bye")
                         break
                     self._apply_delete(chunk_index)
                     total_waiting_time = 0
                 except Empty:
                     total_waiting_time += _DEFAULT_TIMEOUT
-                    if total_waiting_time > _LONG_DEFAULT_TIMEOUT:
+                    if total_waiting_time > _LONG_DEFAULT_TIMEOUT * 6:  # wait for 30 seconds
                         print("Timeout waiting for delete queue to be empty (None)")
                         break
 
@@ -216,12 +217,15 @@ class PrepareChunksThread(Thread):
         #     return
 
         # we have already pre-downloaded some chunks, we just need to wait for them to be processed.
+        if self._delete_queue_received_none:
+            return
         while True:
             try:
-                chunk_index_to_be_deleted = _get_from_queue(self._to_delete_queue, timeout=_DEFAULT_TIMEOUT)
+                chunk_index_to_be_deleted = self._to_delete_queue.get(timeout=_DEFAULT_TIMEOUT)
 
                 if chunk_index_to_be_deleted is None:
                     self._delete_queue_received_none = True
+                    print(f"Received the none. bye bye {self._rank=}")
                     return
                     # self._pre_download_counter -= 1
 
@@ -505,7 +509,7 @@ class BinaryReader:
             # inform the thread it is time to stop
             # self._prepare_thread._decrement_local_lock(index.chunk_index)
             self._item_loader.close(self._last_chunk_index)
-            print(f"😈 it's last index of this chunk, sent it deleting: {index.chunk_index}")
+            print(f"😈 {self._rank=} it's last index of this chunk, sent it deleting: {index.chunk_index}")
             self._prepare_thread.delete([index.chunk_index])  # send this chunk for deletion
             self._prepare_thread._to_delete_queue.put(None)  # signal the end of the queue
             self._prepare_thread.stop()
