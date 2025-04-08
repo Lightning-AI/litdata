@@ -24,7 +24,7 @@ def subsample_streaming_dataset(
     seed: int = 42,
     storage_options: Optional[Dict] = {},
     index_path: Optional[str] = None,
-    fnmatch_pattern: str = None,
+    fnmatch_pattern: Optional[str] = None,
 ) -> Tuple[List[str], List[Tuple[int, int]]]:
     """Subsample streaming dataset.
 
