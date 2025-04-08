@@ -264,5 +264,5 @@ def _get_fs_provider(remote_filepath: str, storage_options: Optional[Dict[str, A
 
 def not_supported_provider(remote_filepath: str) -> bool:
     raise ValueError(
-        f"URL should start with one of {[el + '://' for el in _SUPPORTED_PROVIDERS]}." f"Found {remote_filepath}."
+        f"URL should start with one of {[el + '://' for el in _SUPPORTED_PROVIDERS]}.Found {remote_filepath}."
     )

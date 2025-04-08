@@ -150,9 +150,9 @@ def test_streaming_dataset_max_cache_dir(tmpdir, caplog):
         StreamingDataset(input_dir=str(tmpdir), max_cache_size="10GB")
         StreamingDataset(input_dir=str(tmpdir), max_cache_size="20GB")
     assert len(caplog.messages) == 4
-    assert all(
-        "The provided `max_cache_size` is less than 25GB." in record.message for record in caplog.records
-    ), "Expected warning about the `max_cache_size` being less than 25GB was not logged"
+    assert all("The provided `max_cache_size` is less than 25GB." in record.message for record in caplog.records), (
+        "Expected warning about the `max_cache_size` being less than 25GB was not logged"
+    )
 
 
 @pytest.mark.parametrize("drop_last", [False, True])
@@ -1540,9 +1540,9 @@ def test_dataset_as_iterator_and_non_iterator(tmpdir, local, shuffle):
         assert data is not None
         if local and i < dataset_length - 1:
             # In iterator mode with local or remote data, _chunks_queued_for_download should be enabled
-            assert (
-                dataset.cache._reader._chunks_queued_for_download is True
-            ), "_chunks_queued_for_download should be enabled during iteration"
+            assert dataset.cache._reader._chunks_queued_for_download is True, (
+                "_chunks_queued_for_download should be enabled during iteration"
+            )
         else:
             assert dataset.cache._reader._chunks_queued_for_download is False, (
                 "_chunks_queued_for_download should be disabled when used as local dir without `local:` prefix"
