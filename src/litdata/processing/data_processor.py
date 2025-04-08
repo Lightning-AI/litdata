@@ -1075,7 +1075,7 @@ class DataProcessor:
         self.item_loader = item_loader
         self.storage_options = storage_options
 
-        self.state_dict = state_dict or {rank: 0 for rank in range(self.num_workers)}
+        self.state_dict = state_dict or dict.fromkeys(range(self.num_workers), 0)
 
         if self.reader is not None and self.weights is not None:
             raise ValueError("Either the reader or the weights needs to be defined.")
