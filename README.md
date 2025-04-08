@@ -271,7 +271,7 @@ Install the required dependencies to stream Hugging Face datasets:
 pip install "litdata[extra]" huggingface_hub
 
 # Optional: To speed up downloads on high-bandwidth networks
-pip install hf_tansfer
+pip install hf_transfer
 export HF_HUB_ENABLE_HF_TRANSFER=1
 ```
 
