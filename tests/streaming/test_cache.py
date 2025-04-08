@@ -228,7 +228,7 @@ def test_cache_with_auto_wrapping(tmpdir):
     os.makedirs(os.path.join(tmpdir, "cache_2"), exist_ok=True)
     dataset = RandomDatasetAtRuntime(64, 64)
     dataloader = CacheDataLoader(dataset, cache_dir=os.path.join(tmpdir, "cache_2"), chunk_bytes=2 << 12)
-    with pytest.raises(ValueError, match="Your dataset items aren't deterministic"):  # noqa: PT012
+    with pytest.raises(ValueError, match="Your dataset items aren't deterministic"):
         for _ in dataloader:
             pass
 

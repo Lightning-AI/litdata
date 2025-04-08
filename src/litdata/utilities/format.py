@@ -32,7 +32,7 @@ def _convert_bytes_to_int(bytes_str: str) -> int:
             except ValueError:
                 raise ValueError(
                     f"Unsupported value/suffix {bytes_str}. Supported suffix are "
-                    f'{["b"] + list(_FORMAT_TO_RATIO.keys())}.'
+                    f"{['b'] + list(_FORMAT_TO_RATIO.keys())}."
                 )
     raise ValueError(f"The supported units are {_FORMAT_TO_RATIO.keys()}")
 
