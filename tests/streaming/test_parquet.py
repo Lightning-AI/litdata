@@ -3,6 +3,7 @@ import json
 import os
 import sys
 from contextlib import nullcontext
+from fnmatch import fnmatch
 from types import ModuleType
 from unittest.mock import Mock, patch
 
@@ -196,3 +197,24 @@ def test_stream_hf_parquet_dataset(monkeypatch, huggingface_hub_fs_mock, pq_data
         assert _ds["name"] == pq_data["name"][idx]
         assert _ds["weight"] == pq_data["weight"][idx]
         assert _ds["height"] == pq_data["height"][idx]
+
+
+@pytest.mark.usefixtures("clean_pq_index_cache")
+@patch("litdata.utilities.parquet._HF_HUB_AVAILABLE", True)
+@patch("litdata.streaming.downloader._HF_HUB_AVAILABLE", True)
+@pytest.mark.parametrize(
+    ("hf_url", "length", "context"),
+    [
+        ("hf://datasets/some_org/some_repo/some_path/*.parquet", 25, nullcontext()),
+        ("hf://datasets/some_org/some_repo/some_path/tmp-?.parquet", 25, nullcontext()),
+        ("hf://datasets/some_org/some_repo/some_path/tmp-[012].parquet", 15, nullcontext()),
+        ("hf://datasets/some_org/some_repo/some_path/tmp-0.parquet", 5, nullcontext()),
+        ("hf://datasets/some_org/some_repo/some_path/foo.parquet", 0, pytest.raises(AssertionError, match="No chunks")),
+    ]
+)
+def test_input_dir_wildcard(monkeypatch, huggingface_hub_fs_mock, hf_url, length, context):
+    with context:
+        ds = StreamingDataset(hf_url)
+        pattern = os.path.basename(hf_url)
+        assert all(fnmatch(fn, pattern) for fn in ds.subsampled_files)
+        assert len(ds) == length  # 5 datasets for 5 loops
