@@ -695,7 +695,6 @@ class StreamingDataLoader(DataLoader):
             assert self.batch_size
 
             for batch in super().__iter__():
-                print("Fetched a batch ...")
                 self._latest_worker_idx = next(self._worker_idx_iter)  # type: ignore
                 if isinstance(batch, dict) and __NUM_SAMPLES_YIELDED_KEY__ in batch:
                     self._num_samples_yielded_combined[self._latest_worker_idx] = [
