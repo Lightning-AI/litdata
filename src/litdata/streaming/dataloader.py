@@ -46,7 +46,7 @@ from litdata.streaming.sampler import CacheBatchSampler
 from litdata.utilities._pytree import tree_flatten
 from litdata.utilities.env import _DistributedEnv
 
-logger = logging.Logger("litdata.streaming.dataloader")
+logger = logging.getLogger("litdata.streaming.dataloader")
 
 
 def _equal_items(data_1: Any, data_2: Any) -> bool:
