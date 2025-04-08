@@ -25,7 +25,7 @@ class _DistributedEnv:
         world_size: The number of total distributed training processes
         global_rank: The rank of the current process within this pool of training processes
         num_nodes: The number of nodes used for distributed training
-            (e.g. the number of GPUs per node * the number of nodes = world_size)
+            (e.g. the number of GPUs(devices) per node * the number of nodes = world_size)
 
     """
 
@@ -83,12 +83,10 @@ class _DistributedEnv:
 
     def __repr__(self) -> str:
         return (
-            f"{self.__class__.__name__}"
-            + "("
-            + f"world_size: {self.world_size}, "
-            + f"global_rank: {self.global_rank}, "
-            + f"num_nodes: {self.num_nodes}"
-            + ")"
+            f"{self.__class__.__name__}("
+            f"world_size={self.world_size}, "
+            f"global_rank={self.global_rank}, "
+            f"num_nodes={self.num_nodes})"
         )
 
     def __str__(self) -> str:

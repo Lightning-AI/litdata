@@ -32,7 +32,7 @@ from litdata.constants import (
     _PYARROW_AVAILABLE,
     _TORCH_DTYPES_MAPPING,
 )
-from litdata.loggers import _get_log_msg
+from litdata.loggers import ChromeTraceColors, _get_log_msg
 from litdata.streaming.serializers import Serializer
 from litdata.utilities._pytree import PyTree, tree_unflatten
 from litdata.utilities.encryption import Encryption, EncryptionLevel
@@ -303,10 +303,26 @@ class PyTreeLoader(BaseItemLoader):
             self._open_handle = None
 
     def delete(self, chunk_index: int, chunk_filepath: str) -> None:
-        logger.debug(_get_log_msg({"name": f"delete_chunk_for_chunk_index_{chunk_index}", "ph": "B"}))
+        logger.debug(
+            _get_log_msg(
+                {
+                    "name": f"delete_chunk_for_chunk_index_{chunk_index}",
+                    "ph": "B",
+                    "cname": ChromeTraceColors.bright_red,
+                }
+            )
+        )
         if os.path.exists(chunk_filepath):
             os.remove(chunk_filepath)
-        logger.debug(_get_log_msg({"name": f"delete_chunk_for_chunk_index_{chunk_index}", "ph": "E"}))
+        logger.debug(
+            _get_log_msg(
+                {
+                    "name": f"delete_chunk_for_chunk_index_{chunk_index}",
+                    "ph": "E",
+                    "cname": ChromeTraceColors.bright_red,
+                }
+            )
+        )
 
     def _validate_encryption(self, encryption: Optional[Encryption]) -> None:
         """Validate the encryption object."""
@@ -502,7 +518,15 @@ class TokensLoader(BaseItemLoader):
         return data
 
     def delete(self, chunk_index: int, chunk_filepath: str) -> None:
-        logger.debug(_get_log_msg({"name": f"delete_chunk_for_chunk_index_{chunk_index}", "ph": "B"}))
+        logger.debug(
+            _get_log_msg(
+                {
+                    "name": f"delete_chunk_for_chunk_index_{chunk_index}",
+                    "ph": "B",
+                    "cname": ChromeTraceColors.bright_red,
+                }
+            )
+        )
         if os.path.exists(chunk_filepath):
             if chunk_index in self._buffers:
                 del self._buffers[chunk_index]
@@ -512,7 +536,15 @@ class TokensLoader(BaseItemLoader):
                 del self._mmaps[chunk_index]
                 del self._counter[chunk_index]
             os.remove(chunk_filepath)
-        logger.debug(_get_log_msg({"name": f"delete_chunk_for_chunk_index_{chunk_index}", "ph": "E"}))
+        logger.debug(
+            _get_log_msg(
+                {
+                    "name": f"delete_chunk_for_chunk_index_{chunk_index}",
+                    "ph": "E",
+                    "cname": ChromeTraceColors.bright_red,
+                }
+            )
+        )
 
     def close(self, chunk_index: int) -> None:
         """Release the memory-mapped file for a specific chunk index."""
@@ -733,7 +765,15 @@ class ParquetLoader(BaseItemLoader):
 
     def delete(self, chunk_index: int, chunk_filepath: str) -> None:
         """Delete a chunk from the local filesystem."""
-        logger.debug(_get_log_msg({"name": f"delete_chunk_for_chunk_index_{chunk_index}", "ph": "B"}))
+        logger.debug(
+            _get_log_msg(
+                {
+                    "name": f"delete_chunk_for_chunk_index_{chunk_index}",
+                    "ph": "B",
+                    "cname": ChromeTraceColors.bright_red,
+                }
+            )
+        )
         if chunk_index in self._df:
             del self._df[chunk_index]
         if chunk_index in self._chunk_row_groups:
@@ -743,7 +783,15 @@ class ParquetLoader(BaseItemLoader):
             del self._chunk_row_group_item_read_count[chunk_index]
         if os.path.exists(chunk_filepath):
             os.remove(chunk_filepath)
-        logger.debug(_get_log_msg({"name": f"delete_chunk_for_chunk_index_{chunk_index}", "ph": "E"}))
+        logger.debug(
+            _get_log_msg(
+                {
+                    "name": f"delete_chunk_for_chunk_index_{chunk_index}",
+                    "ph": "E",
+                    "cname": ChromeTraceColors.bright_red,
+                }
+            )
+        )
 
     def close(self, chunk_index: int) -> None:
         """Release the memory-mapped file for a specific chunk index."""

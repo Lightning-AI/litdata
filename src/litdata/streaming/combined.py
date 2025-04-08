@@ -18,7 +18,7 @@ from typing import Any, Dict, Iterator, List, Optional, Sequence
 
 from torch.utils.data import IterableDataset
 
-from litdata.loggers import _get_log_msg
+from litdata.loggers import ChromeTraceColors, _get_log_msg
 from litdata.streaming.dataset import StreamingDataset
 from litdata.utilities.env import _WorkerEnv
 
@@ -238,7 +238,9 @@ class _CombinedDatasetIterator(Iterator):
 
         self._use_streaming_dataloader = use_streaming_dataloader
         self._is_done = False
-        logger.debug(_get_log_msg({"name": "iterating_combined_dataset", "ph": "B"}))
+        logger.debug(
+            _get_log_msg({"name": "iterating_combined_dataset", "ph": "B", "cname": ChromeTraceColors.light_blue})
+        )
 
     def __next__(self) -> Any:
         if self._iterate_over_all:
@@ -254,7 +256,11 @@ class _CombinedDatasetIterator(Iterator):
                     if len(indexes_left) == 1:
                         self._dataset_indexes = list(range(len(self._datasets)))
                         self._weights = deepcopy(self._original_weights)
-                        logger.debug(_get_log_msg({"name": "iterating_combined_dataset", "ph": "E"}))
+                        logger.debug(
+                            _get_log_msg(
+                                {"name": "iterating_combined_dataset", "ph": "E", "cname": ChromeTraceColors.light_blue}
+                            )
+                        )
                         raise e
 
                     self._dataset_indexes[dataset_index] = None

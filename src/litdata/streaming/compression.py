@@ -16,7 +16,7 @@ from abc import ABC, abstractmethod
 from typing import Dict, TypeVar
 
 from litdata.constants import _ZSTD_AVAILABLE
-from litdata.loggers import _get_log_msg
+from litdata.loggers import ChromeTraceColors, _get_log_msg
 
 TCompressor = TypeVar("TCompressor", bound="Compressor")
 
@@ -62,9 +62,9 @@ class ZSTDCompressor(Compressor):
     def decompress(self, data: bytes) -> bytes:
         import zstd
 
-        logger.debug(_get_log_msg({"name": "Decompressing data", "ph": "B"}))
+        logger.debug(_get_log_msg({"name": "Decompressing data", "ph": "B", "cname": ChromeTraceColors.mustard_yellow}))
         decompressed_data = zstd.decompress(data)
-        logger.debug(_get_log_msg({"name": "Decompressed data", "ph": "E"}))
+        logger.debug(_get_log_msg({"name": "Decompressed data", "ph": "E", "cname": ChromeTraceColors.mustard_yellow}))
         return decompressed_data
 
     @classmethod

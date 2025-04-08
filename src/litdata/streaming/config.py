@@ -17,7 +17,7 @@ from collections import defaultdict
 from typing import Any, Dict, List, Optional, Tuple
 
 from litdata.constants import _INDEX_FILENAME
-from litdata.loggers import _get_log_msg
+from litdata.loggers import ChromeTraceColors, _get_log_msg
 from litdata.streaming.compression import _COMPRESSORS, Compressor
 from litdata.streaming.downloader import get_downloader
 from litdata.streaming.item_loader import BaseItemLoader, Interval, PyTreeLoader, TokensLoader
@@ -236,7 +236,13 @@ class ChunksConfig:
     def __getitem__(self, index: ChunkedIndex) -> Tuple[str, int, int]:
         """Find the associated chunk metadata."""
         logger.debug(
-            _get_log_msg({"name": f"get_item_for_chunk_index_{index.chunk_index}_and_index_{index.index}", "ph": "B"})
+            _get_log_msg(
+                {
+                    "name": f"get_item_for_chunk_index_{index.chunk_index}_and_index_{index.index}",
+                    "ph": "B",
+                    "cname": ChromeTraceColors.light_green,
+                }
+            )
         )
         assert self._chunks is not None
         chunk = self._chunks[index.chunk_index]
@@ -251,7 +257,13 @@ class ChunksConfig:
         filesize_bytes = chunk["chunk_bytes"]
 
         logger.debug(
-            _get_log_msg({"name": f"get_item_for_chunk_index_{index.chunk_index}_and_index_{index.index}", "ph": "E"})
+            _get_log_msg(
+                {
+                    "name": f"get_item_for_chunk_index_{index.chunk_index}_and_index_{index.index}",
+                    "ph": "E",
+                    "cname": ChromeTraceColors.light_green,
+                }
+            )
         )
 
         return local_chunkpath, begin, filesize_bytes

@@ -17,7 +17,7 @@ import sys
 import time
 from typing import Tuple
 
-from litdata.constants import _DEBUG
+from litdata.constants import _DEBUG, _PRINT_DEBUG_LOGS
 from litdata.utilities.env import _DistributedEnv, _WorkerEnv
 
 # Create the root logger for the library
@@ -71,7 +71,8 @@ class LitDataLogger:
         file_handler.setFormatter(formatter)
 
         # Attach handlers
-        self.logger.addHandler(console_handler)
+        if _PRINT_DEBUG_LOGS:
+            self.logger.addHandler(console_handler)
         self.logger.addHandler(file_handler)
 
 
@@ -82,6 +83,11 @@ def configure_logger() -> None:
 
 def _get_log_msg(data: dict) -> str:
     log_msg = ""
+
+    if "name" not in data or "ph" not in data or "cname" not in data:
+        raise ValueError(
+            f"Missing required keys in data dictionary. Required keys: 'name', 'ph', 'cname'. Received: {data}"
+        )
 
     env_info_data = env_info()
     data.update(env_info_data)
@@ -109,33 +115,33 @@ def env_info() -> dict:
 
 # # ------
 
+
 # thread_state_iowait: {r: 182, g: 125, b: 143},
 # thread_state_running: {r: 126, g: 200, b: 148},
 # thread_state_runnable: {r: 133, g: 160, b: 210},
 # ....
-chrome_trace_colors = {
-    "pink": "thread_state_iowait",
-    "green": "thread_state_running",
-    "light_blue": "thread_state_runnable",
-    "light_gray": "thread_state_sleeping",
-    "brown": "thread_state_unknown",
-    "blue": "memory_dump",
-    "gray": "generic_work",
-    "dark_green": "good",
-    "orange": "bad",
-    "red": "terrible",
-    "black": "black",
-    "bright_blue": "rail_response",
-    "bright_red": "rail_animate",
-    "orange_yellow": "rail_idle",
-    "teal": "rail_load",
-    "dark_blue": "used_memory_column",
-    "light_sky_blue": "older_used_memory_column",
-    "medium_gray": "tracing_memory_column",
-    "pale_yellow": "cq_build_running",
-    "light_green": "cq_build_passed",
-    "light_red": "cq_build_failed",
-    "mustard_yellow": "cq_build_attempt_running",
-    "neon_green": "cq_build_attempt_passed",
-    "dark_red": "cq_build_attempt_failed",
-}
+class ChromeTraceColors:
+    pink = "thread_state_iowait"
+    green = "thread_state_running"
+    light_blue = "thread_state_runnable"
+    light_gray = "thread_state_sleeping"
+    brown = "thread_state_unknown"
+    blue = "memory_dump"
+    gray = "generic_work"
+    dark_green = "good"
+    orange = "bad"
+    red = "terrible"
+    black = "black"
+    bright_blue = "rail_response"
+    bright_red = "rail_animate"
+    orange_yellow = "rail_idle"
+    teal = "rail_load"
+    dark_blue = "used_memory_column"
+    light_sky_blue = "older_used_memory_column"
+    medium_gray = "tracing_memory_column"
+    pale_yellow = "cq_build_running"
+    light_green = "cq_build_passed"
+    light_red = "cq_build_failed"
+    mustard_yellow = "cq_build_attempt_running"
+    neon_green = "cq_build_attempt_passed"
+    dark_red = "cq_build_attempt_failed"
