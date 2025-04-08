@@ -64,7 +64,8 @@ class StreamingDataset(IterableDataset):
         """The streaming dataset can be used once your data have been optimised using the DatasetOptimiser class.
 
         Args:
-            input_dir: Path to the folder where the input data is stored.
+            input_dir: Path to the folder where the input data is stored. Supports paths ending with `.parquet`
+                with wildcards in the basename to stream specific Parquet files.
             cache_dir: Path to the folder where the cache data is stored. If not provided, the cache will be stored
                 in the default cache directory.
             item_loader: The logic to load an item from a chunk.
@@ -84,7 +85,6 @@ class StreamingDataset(IterableDataset):
                 If `index_path` is a directory, the function will look for `index.json` within it.
                 If `index_path` is a full file path, it will use that directly.
             force_override_state_dict: Boolean flag for allowing local arguments to override a loaded state dict.
-
         """
         _check_version_and_prompt_upgrade(__version__)
 
@@ -94,6 +94,10 @@ class StreamingDataset(IterableDataset):
 
         if not isinstance(subsample, float) or subsample <= 0.0:
             raise ValueError("subsample must be a float with value greater than 0.")
+
+        fnmatch_pattern = None
+        if isinstance(input_dir, str) and input_dir.endswith(".parquet"):
+            input_dir, fnmatch_pattern = os.path.split(input_dir)
 
         input_dir = _resolve_dir(input_dir)
         cache_dir = _resolve_dir(cache_dir)
@@ -119,7 +123,15 @@ class StreamingDataset(IterableDataset):
         self.subsampled_files: List[str] = []
         self.region_of_interest: List[Tuple[int, int]] = []
         self.subsampled_files, self.region_of_interest = subsample_streaming_dataset(
-            self.input_dir, self.cache_dir, item_loader, subsample, shuffle, seed, storage_options, index_path
+            self.input_dir,
+            self.cache_dir,
+            item_loader,
+            subsample,
+            shuffle,
+            seed,
+            storage_options,
+            index_path,
+            fnmatch_pattern,
         )
 
         self.item_loader = item_loader
