@@ -15,7 +15,7 @@ import logging
 import os
 import sys
 import time
-from functools import cache
+from functools import lru_cache
 from typing import Tuple
 
 from litdata.constants import _DEBUG, _PRINT_DEBUG_LOGS
@@ -96,7 +96,7 @@ def _get_log_msg(data: dict) -> str:
     return log_msg
 
 
-@cache
+@lru_cache(maxsize=1)
 def env_info() -> dict:
     dist_env = _DistributedEnv.detect()
     worker_env = _WorkerEnv.detect()  # will all threads read the same value if decorate this function with `@cache`
