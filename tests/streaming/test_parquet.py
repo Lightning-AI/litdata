@@ -210,7 +210,7 @@ def test_stream_hf_parquet_dataset(monkeypatch, huggingface_hub_fs_mock, pq_data
         ("hf://datasets/some_org/some_repo/some_path/tmp-[012].parquet", 15, nullcontext()),
         ("hf://datasets/some_org/some_repo/some_path/tmp-0.parquet", 5, nullcontext()),
         ("hf://datasets/some_org/some_repo/some_path/foo.parquet", 0, pytest.raises(AssertionError, match="No chunks")),
-    ]
+    ],
 )
 def test_input_dir_wildcard(monkeypatch, huggingface_hub_fs_mock, hf_url, length, context):
     with context:
