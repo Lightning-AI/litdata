@@ -40,12 +40,12 @@ class LitDataLogger:
 
     @staticmethod
     def get_log_file_and_level() -> Tuple[str, int]:
-        LOG_FILE = os.getenv("LITDATA_LOG_FILE", "litdata_debug.log")
-        LOG_LEVEL = os.getenv("LITDATA_LOG_LEVEL", "INFO" if not _DEBUG else "DEBUG")
+        log_file = os.getenv("LITDATA_LOG_FILE", "litdata_debug.log")
+        log_lvl = os.getenv("LITDATA_LOG_LEVEL", "INFO" if not _DEBUG else "DEBUG")
 
-        LOG_LEVEL = get_logger_level(LOG_LEVEL)
+        log_lvl = get_logger_level(log_lvl)
 
-        return LOG_FILE, LOG_LEVEL
+        return log_file, log_lvl
 
     def setup_logger(self) -> None:
         """Configures logging by adding handlers and formatting."""
