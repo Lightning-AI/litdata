@@ -111,11 +111,11 @@ class BaseItemLoader(ABC):
     def delete(self, chunk_index: int, chunk_filepath: str) -> None:
         """Delete a chunk from the local filesystem."""
 
-    def safe_delete(self, chunk_index: int, chunk_filepath: str) -> None:
+    def safe_delete(self, chunk_index: int, chunk_filepath: str, delete_original_file: bool = False) -> None:
         """Decrement the file count and delete the chunk file if the count reaches 0."""
         if os.path.exists(chunk_filepath + ".cnt"):
             curr_count = decrement_file_count(chunk_filepath)
-            if curr_count == 0:
+            if curr_count == 0 and delete_original_file:
                 self.delete(chunk_index, chunk_filepath)
         else:
             self.delete(chunk_index, chunk_filepath)

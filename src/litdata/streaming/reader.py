@@ -80,7 +80,7 @@ class PrepareChunksThread(Thread):
         # Check whether a dataset slice fits on the node
         num_bytes_per_nodes = self._config.num_bytes // self._distributed_env.num_nodes
         self._delete_chunks_when_processed = num_bytes_per_nodes > max_cache_size if max_cache_size else False
-
+        # print(f"reader: {self._delete_chunks_when_processed=}")
         # if self._delete_chunks_when_processed:
         #     print(f"clearing cache dir {self._parent_cache_dir} because the dataset is too large to fit in memory")
         #     # means we can't keep all chunks in the cache directory, so we should clear it to minimize the size
@@ -156,7 +156,9 @@ class PrepareChunksThread(Thread):
         #     with open(chunk_filepath + ".tmb", "w+") as tombstone_file:
         #         tombstone_file.write(f"Deleted {chunk_filepath} by {self._rank or 0}. Debug: {can_delete_chunk}")
 
-        self._item_loader.safe_delete(chunk_index, chunk_filepath)
+        self._item_loader.safe_delete(
+            chunk_index, chunk_filepath, delete_original_file=self._delete_chunks_when_processed
+        )
 
         # if _DEBUG:
         #     print(f"Deleted {chunk_filepath} by {self._rank or 0}. Debug: {can_delete_chunk}")
@@ -278,7 +280,7 @@ class PrepareChunksThread(Thread):
 
             self._force_download()
 
-            if self._can_download_chunk():
+            if self._can_download_chunk() and (self.current_downloading_chunk_index < len(self._chunks_order) - 1):
                 self.current_downloading_chunk_index += 1
                 # chunk_index = _get_from_queue(self._to_download_queue)
                 chunk_index = self._chunks_order[self.current_downloading_chunk_index]
@@ -296,7 +298,6 @@ class PrepareChunksThread(Thread):
 
                     # Avoid downloading too many chunks in advance at the risk of over using the disk space
                     # self._pre_download_counter += 1
-
             self._maybe_delete_chunks()
 
 
