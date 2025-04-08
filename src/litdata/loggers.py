@@ -84,10 +84,8 @@ def configure_logger() -> None:
 def _get_log_msg(data: dict) -> str:
     log_msg = ""
 
-    if "name" not in data or "ph" not in data or "cname" not in data:
-        raise ValueError(
-            f"Missing required keys in data dictionary. Required keys: 'name', 'ph', 'cname'. Received: {data}"
-        )
+    if "name" not in data or "ph" not in data:
+        raise ValueError(f"Missing required keys in data dictionary. Required keys: 'name', 'ph'. Received: {data}")
 
     env_info_data = env_info()
     data.update(env_info_data)
