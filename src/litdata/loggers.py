@@ -14,7 +14,6 @@
 import logging
 import os
 import sys
-import time
 from functools import lru_cache
 from typing import Tuple
 
@@ -41,7 +40,7 @@ class LitDataLogger:
 
     @staticmethod
     def get_log_file_and_level() -> Tuple[str, int]:
-        LOG_FILE = os.getenv("LITDATA_LOG_FILE", f"litdata-{time.strftime('%Y-%m-%d-%H-%M')}.log")
+        LOG_FILE = os.getenv("LITDATA_LOG_FILE", "litdata_debug.log")
         LOG_LEVEL = os.getenv("LITDATA_LOG_LEVEL", "INFO" if not _DEBUG else "DEBUG")
 
         LOG_LEVEL = get_logger_level(LOG_LEVEL)
@@ -78,7 +77,7 @@ class LitDataLogger:
 
 
 def configure_logger() -> None:
-    os.environ["LITDATA_LOG_FILE"] = f"litdata-{time.strftime('%Y-%m-%d-%H-%M')}.log"
+    os.environ["LITDATA_LOG_FILE"] = "litdata_debug.log"
     LitDataLogger("litdata")
 
 
