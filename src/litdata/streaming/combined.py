@@ -178,7 +178,6 @@ class CombinedStreamingDataset(IterableDataset):
             self.batching_method,
             self._iterate_over_all,
         )
-        print(f"Creating new iterator: {id(self._iterator)}")
         return self._iterator
 
     def state_dict(
