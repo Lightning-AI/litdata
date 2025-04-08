@@ -40,7 +40,7 @@ def _pack_greedily(items: List[Any], weights: List[int], num_bins: int) -> Tuple
 
     sorted_items_and_weights = sorted(zip(items, weights), key=lambda x: x[1], reverse=True)
     bin_contents = defaultdict(list)
-    bin_weights = {i: 0 for i in range(num_bins)}
+    bin_weights = dict.fromkeys(range(num_bins), 0)
 
     for item, weight in sorted_items_and_weights:
         min_bin_id = min(bin_weights, key=(lambda x: bin_weights[x]), default=0)
