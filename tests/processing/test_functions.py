@@ -511,11 +511,11 @@ def test_optimize_race_condition(tmpdir):
     ]
 
     for i, url in enumerate(urls):
-        print(f"downloading {i+1} file")
+        print(f"downloading {i + 1} file")
         with requests.get(url, stream=True, timeout=10) as r:
             r.raise_for_status()  # Raise an exception for bad status codes
 
-            with open(f"{tmpdir}/custom_texts/book{i+1}.txt", "wb") as f:
+            with open(f"{tmpdir}/custom_texts/book{i + 1}.txt", "wb") as f:
                 for chunk in r.iter_content(chunk_size=8192):
                     f.write(chunk)
 

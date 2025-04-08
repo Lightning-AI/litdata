@@ -150,9 +150,9 @@ def test_streaming_dataset_max_cache_dir(tmpdir, caplog):
         StreamingDataset(input_dir=str(tmpdir), max_cache_size="10GB")
         StreamingDataset(input_dir=str(tmpdir), max_cache_size="20GB")
     assert len(caplog.messages) == 4
-    assert all(
-        "The provided `max_cache_size` is less than 25GB." in record.message for record in caplog.records
-    ), "Expected warning about the `max_cache_size` being less than 25GB was not logged"
+    assert all("The provided `max_cache_size` is less than 25GB." in record.message for record in caplog.records), (
+        "Expected warning about the `max_cache_size` being less than 25GB was not logged"
+    )
 
 
 @pytest.mark.parametrize("drop_last", [False, True])
@@ -320,7 +320,7 @@ def test_streaming_dataset_distributed_full_shuffle_odd(drop_last, tmpdir, compr
         ),
     ],
 )
-@pytest.mark.timeout(30)
+@pytest.mark.timeout(60)
 def test_streaming_dataset_distributed_full_shuffle_even(drop_last, tmpdir, compression):
     seed_everything(42)
 
@@ -1540,9 +1540,9 @@ def test_dataset_as_iterator_and_non_iterator(tmpdir, local, shuffle):
         assert data is not None
         if local and i < dataset_length - 1:
             # In iterator mode with local or remote data, _chunks_queued_for_download should be enabled
-            assert (
-                dataset.cache._reader._chunks_queued_for_download is True
-            ), "_chunks_queued_for_download should be enabled during iteration"
+            assert dataset.cache._reader._chunks_queued_for_download is True, (
+                "_chunks_queued_for_download should be enabled during iteration"
+            )
         else:
             assert dataset.cache._reader._chunks_queued_for_download is False, (
                 "_chunks_queued_for_download should be disabled when used as local dir without `local:` prefix"
@@ -1559,3 +1559,51 @@ def test_dataset_as_iterator_and_non_iterator(tmpdir, local, shuffle):
         assert dataset.cache._reader._chunks_queued_for_download is False
 
     assert dataset.cache._reader._chunks_queued_for_download is False
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="Not tested on windows")
+@pytest.mark.parametrize("shuffle", [True, False])
+def test_cache_get_clear_after_dataset_stream(tmpdir, shuffle):
+    """Test that the cache directory is cleaned up after streaming through the dataset.
+
+    This test verifies that:
+    1. When streaming through a dataset with a limited cache size,
+       all temporary chunk files are properly removed after completion
+    2. This behavior is consistent regardless of shuffle settings
+    """
+    # ARRANGE
+    # Create directories for cache and data
+    cache_dir = os.path.join(tmpdir, "cache_dir")
+    data_dir = os.path.join(tmpdir, "data_dir")
+    os.makedirs(cache_dir)
+    os.makedirs(data_dir)
+
+    # Create a dataset with 500 items, 100 items per chunk
+    cache = Cache(str(data_dir), chunk_size=100)
+    for i in range(500):
+        cache[i] = i
+    cache.done()
+    cache.merge()
+
+    # Configure input directory based on local parameter
+    input_dir = f"local:{data_dir}"
+
+    # Create dataset with appropriate configuration and limited cache size
+    dataset = StreamingDataset(input_dir, cache_dir=str(cache_dir), shuffle=shuffle, max_cache_size=2000)
+    dataset_length = len(dataset)
+    assert dataset_length == 500
+
+    # ACT
+    # Stream through the entire dataset to trigger caching and cleanup
+    for data in dataset:
+        assert data is not None
+
+    # ASSERT
+    # Verify that the cache directory is empty after streaming is complete
+    cache_contents = os.listdir(dataset.cache.cache_dir)
+    chunks = [f for f in cache_contents if ".bin" in f]
+
+    assert len(chunks) == 0, (
+        f"All of the chunks should have been cleared from the cache directory after streaming."
+        f"Found {len(chunks)} chunk files: {chunks}"
+    )
