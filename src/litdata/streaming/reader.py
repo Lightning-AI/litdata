@@ -173,17 +173,18 @@ class PrepareChunksThread(Thread):
             self._to_delete_queue, timeout=_LONG_DEFAULT_TIMEOUT if reached_pre_download else _DEFAULT_TIMEOUT
         )
 
-        if chunk_index is not None:
-            self._pre_download_counter -= 1
+        if chunk_index is None:
+            return
 
-            # Store the current chunk index
-            self._chunks_index_to_be_deleted.append(chunk_index)
+        # Store the current chunk index
+        self._chunks_index_to_be_deleted.append(chunk_index)
 
         # Get the current cache size and decide whether we need to start cleanup. Otherwise, keep track of it
         while self._max_cache_size and self._chunks_index_to_be_deleted and self._can_delete_chunk():
             # Delete the oldest chunk
             self._apply_delete(self._chunks_index_to_be_deleted.pop(0))
-
+        # Decrement the pre-download counter
+        self._pre_download_counter -= 1
         return
 
     def _can_delete_chunk(self) -> bool:
@@ -226,6 +227,8 @@ class PrepareChunksThread(Thread):
             if self._pre_download_counter < self._max_pre_download:
                 chunk_index = _get_from_queue(self._to_download_queue)
                 if chunk_index == _END_TOKEN:
+                    if self._max_cache_size:
+                        self._maybe_delete_chunks()
                     self._has_exited = True
                     return
 
@@ -424,7 +427,10 @@ class BinaryReader:
         if index.is_last_index and self._prepare_thread:
             # inform the thread it is time to stop
             self._prepare_thread._decrement_local_lock(index.chunk_index)
+            self._prepare_thread.delete([index.chunk_index])
             self._prepare_thread.stop()
+            if self._max_cache_size and self._prepare_thread.is_alive():
+                self._prepare_thread.join()
             self._prepare_thread = None
             self._item_loader.close(self._last_chunk_index)
             self._last_chunk_index = None
