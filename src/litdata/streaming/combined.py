@@ -239,7 +239,7 @@ class _CombinedDatasetIterator(Iterator):
         self._use_streaming_dataloader = use_streaming_dataloader
         self._is_done = False
         logger.debug(
-            _get_log_msg({"name": "iterating_combined_dataset", "ph": "B", "cname": ChromeTraceColors.light_blue})
+            _get_log_msg({"name": "iterating_combined_dataset", "ph": "B", "cname": ChromeTraceColors.LIGHT_BLUE})
         )
 
     def __next__(self) -> Any:
@@ -258,7 +258,7 @@ class _CombinedDatasetIterator(Iterator):
                         self._weights = deepcopy(self._original_weights)
                         logger.debug(
                             _get_log_msg(
-                                {"name": "iterating_combined_dataset", "ph": "E", "cname": ChromeTraceColors.light_blue}
+                                {"name": "iterating_combined_dataset", "ph": "E", "cname": ChromeTraceColors.LIGHT_BLUE}
                             )
                         )
                         raise e

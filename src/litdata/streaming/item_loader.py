@@ -308,7 +308,7 @@ class PyTreeLoader(BaseItemLoader):
                 {
                     "name": f"delete_chunk_for_chunk_index_{chunk_index}",
                     "ph": "B",
-                    "cname": ChromeTraceColors.bright_red,
+                    "cname": ChromeTraceColors.BRIGHT_RED,
                 }
             )
         )
@@ -319,7 +319,7 @@ class PyTreeLoader(BaseItemLoader):
                 {
                     "name": f"delete_chunk_for_chunk_index_{chunk_index}",
                     "ph": "E",
-                    "cname": ChromeTraceColors.bright_red,
+                    "cname": ChromeTraceColors.BRIGHT_RED,
                 }
             )
         )
@@ -523,7 +523,7 @@ class TokensLoader(BaseItemLoader):
                 {
                     "name": f"delete_chunk_for_chunk_index_{chunk_index}",
                     "ph": "B",
-                    "cname": ChromeTraceColors.bright_red,
+                    "cname": ChromeTraceColors.BRIGHT_RED,
                 }
             )
         )
@@ -541,7 +541,7 @@ class TokensLoader(BaseItemLoader):
                 {
                     "name": f"delete_chunk_for_chunk_index_{chunk_index}",
                     "ph": "E",
-                    "cname": ChromeTraceColors.bright_red,
+                    "cname": ChromeTraceColors.BRIGHT_RED,
                 }
             )
         )
@@ -770,7 +770,7 @@ class ParquetLoader(BaseItemLoader):
                 {
                     "name": f"delete_chunk_for_chunk_index_{chunk_index}",
                     "ph": "B",
-                    "cname": ChromeTraceColors.bright_red,
+                    "cname": ChromeTraceColors.BRIGHT_RED,
                 }
             )
         )
@@ -788,7 +788,7 @@ class ParquetLoader(BaseItemLoader):
                 {
                     "name": f"delete_chunk_for_chunk_index_{chunk_index}",
                     "ph": "E",
-                    "cname": ChromeTraceColors.bright_red,
+                    "cname": ChromeTraceColors.BRIGHT_RED,
                 }
             )
         )

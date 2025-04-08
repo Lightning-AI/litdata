@@ -15,6 +15,7 @@ import logging
 import os
 import sys
 import time
+from functools import cache
 from typing import Tuple
 
 from litdata.constants import _DEBUG, _PRINT_DEBUG_LOGS
@@ -95,6 +96,7 @@ def _get_log_msg(data: dict) -> str:
     return log_msg
 
 
+@cache
 def env_info() -> dict:
     dist_env = _DistributedEnv.detect()
     worker_env = _WorkerEnv.detect()  # will all threads read the same value if decorate this function with `@cache`
@@ -119,27 +121,27 @@ def env_info() -> dict:
 # thread_state_runnable: {r: 133, g: 160, b: 210},
 # ....
 class ChromeTraceColors:
-    pink = "thread_state_iowait"
-    green = "thread_state_running"
-    light_blue = "thread_state_runnable"
-    light_gray = "thread_state_sleeping"
-    brown = "thread_state_unknown"
-    blue = "memory_dump"
-    gray = "generic_work"
-    dark_green = "good"
-    orange = "bad"
-    red = "terrible"
-    black = "black"
-    bright_blue = "rail_response"
-    bright_red = "rail_animate"
-    orange_yellow = "rail_idle"
-    teal = "rail_load"
-    dark_blue = "used_memory_column"
-    light_sky_blue = "older_used_memory_column"
-    medium_gray = "tracing_memory_column"
-    pale_yellow = "cq_build_running"
-    light_green = "cq_build_passed"
-    light_red = "cq_build_failed"
-    mustard_yellow = "cq_build_attempt_running"
-    neon_green = "cq_build_attempt_passed"
-    dark_red = "cq_build_attempt_failed"
+    PINK = "thread_state_iowait"
+    GREEN = "thread_state_running"
+    LIGHT_BLUE = "thread_state_runnable"
+    LIGHT_GRAY = "thread_state_sleeping"
+    BROWN = "thread_state_unknown"
+    BLUE = "memory_dump"
+    GRAY = "generic_work"
+    DARK_GREEN = "good"
+    ORANGE = "bad"
+    RED = "terrible"
+    BLACK = "black"
+    BRIGHT_BLUE = "rail_response"
+    BRIGHT_RED = "rail_animate"
+    ORANGE_YELLOW = "rail_idle"
+    TEAL = "rail_load"
+    DARK_BLUE = "used_memory_column"
+    LIGHT_SKY_BLUE = "older_used_memory_column"
+    MEDIUM_GRAY = "tracing_memory_column"
+    PALE_YELLOW = "cq_build_running"
+    LIGHT_GREEN = "cq_build_passed"
+    LIGHT_RED = "cq_build_failed"
+    MUSTARD_YELLOW = "cq_build_attempt_running"
+    NEON_GREEN = "cq_build_attempt_passed"
+    DARK_RED = "cq_build_attempt_failed"

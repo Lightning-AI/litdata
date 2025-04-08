@@ -240,7 +240,7 @@ class ChunksConfig:
                 {
                     "name": f"get_item_for_chunk_index_{index.chunk_index}_and_index_{index.index}",
                     "ph": "B",
-                    "cname": ChromeTraceColors.light_green,
+                    "cname": ChromeTraceColors.LIGHT_GREEN,
                 }
             )
         )
@@ -261,7 +261,7 @@ class ChunksConfig:
                 {
                     "name": f"get_item_for_chunk_index_{index.chunk_index}_and_index_{index.index}",
                     "ph": "E",
-                    "cname": ChromeTraceColors.light_green,
+                    "cname": ChromeTraceColors.LIGHT_GREEN,
                 }
             )
         )
