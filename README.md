@@ -1308,6 +1308,28 @@ LitData is a community project accepting contributions -  Let's make the world's
 💬 [Get help on Discord](https://discord.com/invite/XncpTy7DSt)    
 📋 [License: Apache 2.0](https://github.com/Lightning-AI/litdata/blob/main/LICENSE)
 
+
+----
+
+## Citation
+
+```
+@misc{litdata2023,
+  author       = {Thomas Chaton and Lightning AI},
+  title        = {LitData: Transform datasets at scale. Optimize datasets for fast AI model training.},
+  year         = {2023},
+  howpublished = {\url{https://github.com/Lightning-AI/litdata}},
+  note         = {Accessed: 2025-04-09}
+}
+```
+
+----
+
+## Papers with LitData
+
+* [Towards Interpretable Protein Structure
+Prediction with Sparse Autoencoders](https://arxiv.org/pdf/2503.08764) (Nithin Parsan, David J. Yang and John J. Yang)
+
 ----
 
 # Governance
