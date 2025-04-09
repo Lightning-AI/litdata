@@ -92,6 +92,8 @@ from typing import (
     OrderedDict as GenericOrderedDict,
 )
 
+from litdata.constants import _PIL_AVAILABLE
+
 __all__ = [
     "PyTree",
     "Context",
@@ -682,10 +684,21 @@ def _is_namedtuple_instance(tree: Any) -> bool:
         return False
     return all(type(entry) == str for entry in fields)
 
+def _is_jpeg_array(tree: Any) -> bool:
+    """Check if the tree is a list of jpeg images."""
+    if not _PIL_AVAILABLE:
+            return False
+
+    from PIL.JpegImagePlugin import JpegImageFile
+    return isinstance(tree, (List,Tuple)) and bool(tree) and all(isinstance(x, JpegImageFile) for x in tree)
 
 def _get_node_type(tree: Any) -> Any:
     if _is_namedtuple_instance(tree):
         return namedtuple
+
+    if _is_jpeg_array(tree):
+        return "jpeg_array"
+
     return type(tree)
 
 

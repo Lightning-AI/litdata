@@ -1,4 +1,5 @@
 import glob
+import io
 import os
 import random
 import shutil
@@ -10,6 +11,7 @@ import cryptography
 import numpy as np
 import pytest
 import requests
+import torch
 from PIL import Image
 
 from litdata import StreamingDataset, merge_datasets, optimize, walk
@@ -527,3 +529,57 @@ def test_optimize_race_condition(tmpdir):
         num_workers=1,
         chunk_bytes="50MB",
     )
+
+
+def create_test_images(num_images=3, width=64, height=64):
+    """Create a list JPEG images."""
+    image_list = []
+
+    for i in range(num_images):
+        img = Image.new("RGB", (width, height))
+        img_bytes = io.BytesIO()
+        img.save(img_bytes, format="JPEG")
+        image_list.append(Image.open(io.BytesIO(img_bytes.getvalue())))
+    return image_list
+
+
+def process_with_jpeg_array(index):
+    """Return a dict with an index and list of image bytearrays."""
+    width = height = 32 + (index * 8)
+    images = create_test_images(3, width, height)
+    return {"index": index, "images": images}
+
+
+def test_optimize_with_jpeg_array(tmpdir):
+    """Test optimizing data containing lists of bytearrays which should use the jpeg_array serializer."""
+    output_dir = str(tmpdir)
+    # Run the optimization
+    optimize(
+        fn=process_with_jpeg_array,
+        inputs=list(range(5)),
+        num_workers=1,
+        output_dir=output_dir,
+        chunk_bytes="10MB",
+    )
+
+    # Load as streaming dataset
+    ds = StreamingDataset(output_dir)
+
+    # Verify data length
+    assert len(ds) == 5
+
+    # Check images are properly deserialized
+    for i in range(5):
+        item = ds[i]
+        assert item["index"] == i
+
+        # Check images
+        images = item["images"]
+        assert len(images) == 3
+        assert all(isinstance(img, (Image.Image, torch.Tensor)) for img in images)
+
+    data_format = ds.cache._reader._item_loader._data_format
+    assert data_format == [
+        "int",
+        "jpeg_array",
+    ], f"Expected data format to be ['int', 'jpeg_array'], but got {data_format}"
