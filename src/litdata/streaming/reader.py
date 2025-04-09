@@ -430,7 +430,13 @@ class BinaryReader:
             self._prepare_thread.delete([index.chunk_index])
             self._prepare_thread.stop()
             if self._max_cache_size and self._prepare_thread.is_alive():
-                self._prepare_thread.join()
+                try:
+                    self._prepare_thread.join(timeout=_LONG_DEFAULT_TIMEOUT)
+                except Timeout:
+                    logger.warning(
+                        "The prepare chunks thread didn't exit properly. "
+                        "This can happen if the chunk files are too large."
+                    )
             self._prepare_thread = None
             self._item_loader.close(self._last_chunk_index)
             self._last_chunk_index = None
