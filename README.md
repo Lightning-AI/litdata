@@ -1328,7 +1328,7 @@ LitData is a community project accepting contributions -  Let's make the world's
 ## Papers with LitData
 
 * [Towards Interpretable Protein Structure
-Prediction with Sparse Autoencoders](https://arxiv.org/pdf/2503.08764) (Nithin Parsan, David J. Yang and John J. Yang)
+Prediction with Sparse Autoencoders](https://arxiv.org/pdf/2503.08764) | [Github](https://github.com/johnyang101/reticular-sae) | (Nithin Parsan, David J. Yang and John J. Yang)
 
 ----
 
