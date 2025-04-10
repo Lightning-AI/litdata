@@ -46,6 +46,7 @@ _TORCH_VISION_AVAILABLE = RequirementCache("torchvision")
 _AV_AVAILABLE = RequirementCache("av")
 
 _DEBUG = bool(int(os.getenv("DEBUG_LITDATA", "0")))
+_PRINT_DEBUG_LOGS = bool(int(os.getenv("PRINT_DEBUG_LOGS", "0")))
 
 _MAX_WAIT_TIME = int(os.getenv("MAX_WAIT_TIME", "120"))
 _FORCE_DOWNLOAD_TIME = int(os.getenv("FORCE_DOWNLOAD_TIME", "30"))
