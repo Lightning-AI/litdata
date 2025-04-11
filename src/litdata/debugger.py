@@ -34,29 +34,18 @@ def get_logger_level(level: str) -> int:
 
 
 class TimeWindowFilter(logging.Filter):
-    def __init__(self, start_time=None, end_time=None):
-        """Filter log records based on a time window.
-        This filter allows you to specify a start and end time for logging.
-        If the current time is within this window, the log record is allowed.
-        Otherwise, it is filtered out.
-        This is useful for controlling when logs are written, especially in
-        long-running processes or tests.
+    """Filter log records based on a time window."""
 
-
-        Args:
-            start_time: Start logging after these seconds (default: immediately)
-            end_time: Stop logging after these seconds (default: never).
-        """
+    def __init__(self, start_time: int = None, end_time: int = None):
         super().__init__()
         self.start = datetime.now()
-        self.start_time = timedelta(seconds=start_time) if start_time is not None else timedelta(seconds=0)
-        self.end_time = timedelta(seconds=end_time) if end_time is not None else None
+        self.start_time = timedelta(seconds=start_time) if start_time else timedelta(seconds=0)
+        self.end_time = timedelta(seconds=end_time) if end_time else None
 
-    def filter(self, record):
+    def filter(self, record: logging.LogRecord) -> bool:
         now = datetime.now()
         elapsed = now - self.start
-
-        if self.end_time is not None:
+        if self.end_time:
             return self.start_time <= elapsed <= self.end_time
         return elapsed >= self.start_time
 
