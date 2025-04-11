@@ -1172,8 +1172,7 @@ if __name__ == "__main__":
 
 1. Generate Debug Log:
 
-    - Run the following command to generate a debug log file from your Python program. This command will execute main.py with a debug mode enabled to produce detailed logging:
-    - This process will create a log file containing detailed debug information.
+    - Run your Python program and it'll create a log file containing detailed debug information.
 
     ```bash
       python main.py
@@ -1195,8 +1194,8 @@ if __name__ == "__main__":
 
 3. Convert Debug Log to trace JSON:
 
-    - Use litracer to convert the generated log file into a JSON file suitable for visualization. This command uses 100 workers for conversion:
-    
+    - Use litracer to convert the generated log file into a trace JSON file. This command uses 100 workers for conversion:
+
     ```bash
       litracer litdata_debug.log -o litdata_trace.json -w 100
     ```
@@ -1207,7 +1206,7 @@ if __name__ == "__main__":
 
 - Key Points:
 
-    - For very large trace.json files (> 2GB), refer to the [Perfetto documentation](https://perfetto.dev/docs/visualization/large-traces) for using native accelerators.
+    - For very large trace.json files (`> 2GB`), refer to the [Perfetto documentation](https://perfetto.dev/docs/visualization/large-traces) for using native accelerators.
     - If you are trying to connect Perfetto to the RPC server, it is recommended to use Chrome over Brave, as it has been observed that Perfetto in Brave does not autodetect the RPC server.
 
 </details>
