@@ -34,7 +34,7 @@ from torch.utils.data.dataloader import (
 from torch.utils.data.sampler import BatchSampler, Sampler
 
 from litdata.constants import _DEFAULT_CHUNK_BYTES, _VIZ_TRACKER_AVAILABLE
-from litdata.loggers import _get_log_msg
+from litdata.debugger import _get_log_msg
 from litdata.streaming import Cache
 from litdata.streaming.combined import (
     __NUM_SAMPLES_YIELDED_KEY__,

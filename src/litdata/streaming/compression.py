@@ -16,7 +16,7 @@ from abc import ABC, abstractmethod
 from typing import Dict, TypeVar
 
 from litdata.constants import _ZSTD_AVAILABLE
-from litdata.loggers import ChromeTraceColors, _get_log_msg
+from litdata.debugger import ChromeTraceColors, _get_log_msg
 
 TCompressor = TypeVar("TCompressor", bound="Compressor")
 

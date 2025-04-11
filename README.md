@@ -1155,9 +1155,9 @@ LitData comes with built-in logging and profiling capabilities to help you debug
 
 ```python
 import litdata as ld
-from litdata.loggers import configure_logger
+from litdata.debugger import enable_tracer
 
-configure_logger() # call the configure_logger function that sets up your trace logger
+enable_tracer()
 
 if __name__ == "__main__":
     dataset = ld.StreamingDataset("s3://my-bucket/my-data", shuffle=True)
@@ -1167,35 +1167,48 @@ if __name__ == "__main__":
         print(batch)  # Replace with your data processing logic
 ```
 
-- Now run your script with `DEBUG_LITDATA=1` to enable logging of debug information.
+1. Generate Debug Log:
+
+    - Run the following command to generate a debug log file from your Python program. This command will execute main.py with a debug mode enabled to produce detailed logging:
+    - This process will create a log file containing detailed debug information.
 
 ```bash
-DEBUG_LITDATA=1 python main.py
+python main.py
 ```
 
-- It will generate a `log` file containing all the debug information of when the data was loaded, how long it took, and other useful information.
-- But, log file can be very large, so we will use a CLI tool to convert `debug log` file to `litdata_trace.json` file that can be visualized in `chrome://tracing` or `ui.perfetto.dev`.
+2. Install Litracer:
 
-- Install `litracer`: visit [litracer github](https://github.com/deependujha/litracer) and follow the instructions to install it.
-- Easiest way to install is to have `go` installed.
+    - Option 1: Using Go (recommended)
+        - Install Go on your system.
+        - Run the following command to install Litracer:
 
-```bash
-go install github.com/deependujha/litracer@latest
-```
+        ```bash
+        go install github.com/deependujha/litracer@latest
+        ```
 
-- Else, you can also download & install binary for your system. Please refer to [releases of LitRacer](https://github.com/deependujha/litracer/releases).
+    - Option 2: Download Binary
+        - Visit the [LitRacer GitHub Releases](https://github.com/deependujha/litracer/releases) page.
+        - Download the appropriate binary for your operating system and follow the installation instructions.
 
-- Then run the following command to convert the `log` file to `litdata_trace.json` file with 100 workers.
+3. Convert Debug Log to trace JSON:
 
-```bash
-litracer litdata_debug.log -o litdata_trace.json -w 100
-```
+    - Use litracer to convert the generated log file into a JSON file suitable for visualization. This command uses 100 workers for conversion:
+    
+    ```bash
+    litracer litdata_debug.log -o litdata_trace.json -w 100
+    ```
 
-- Open [ui.perfetto.dev](https://ui.perfetto.dev/) and load the `litdata_trace.json` file to visualize the trace.
-- You can also run `SQL` queries on the trace to analyze the data streaming process.
-- If your generated trace.json file is `> 2GB`, then, refer [here](https://perfetto.dev/docs/visualization/large-traces) for using native accelerator.
-- If you're trying to connect perfetto to rpc server, prefer `chrome` over `brave`. It has been observed that `perfetto in brave` doesn't autodetects rpc server.
+4. Visualize the trace:
+
+    - Use either `chrome://tracing` in the Chrome browser or `ui.perfetto.dev` to view the `litdata_trace.json` file for in-depth performance insights. You can also use `SQL queries` to analyze the logs.
+
+- Key Points:
+
+    - For very large trace.json files (> 2GB), refer to the [Perfetto documentation](https://perfetto.dev/docs/visualization/large-traces) for using native accelerators.
+    - If you are trying to connect Perfetto to the RPC server, it is recommended to use Chrome over Brave, as it has been observed that Perfetto in Brave does not autodetect the RPC server.
+
 </details>
+
 &nbsp;
 
 

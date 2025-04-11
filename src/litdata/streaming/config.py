@@ -17,7 +17,7 @@ from collections import defaultdict
 from typing import Any, Dict, List, Optional, Tuple
 
 from litdata.constants import _INDEX_FILENAME
-from litdata.loggers import ChromeTraceColors, _get_log_msg
+from litdata.debugger import ChromeTraceColors, _get_log_msg
 from litdata.streaming.compression import _COMPRESSORS, Compressor
 from litdata.streaming.downloader import get_downloader
 from litdata.streaming.item_loader import BaseItemLoader, Interval, PyTreeLoader, TokensLoader
