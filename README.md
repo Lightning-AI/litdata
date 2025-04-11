@@ -1159,7 +1159,7 @@ LitData comes with built-in logging and profiling capabilities to help you debug
 import litdata as ld
 from litdata.debugger import enable_tracer
 
-# WARNING: Remove existing trace `litdata_trace.json` file if it exists before re-tracing
+# WARNING: Remove existing trace `litdata_debug.log` file if it exists before re-tracing
 enable_tracer()
 
 if __name__ == "__main__":
