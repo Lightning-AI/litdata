@@ -37,10 +37,13 @@ class TimeWindowFilter(logging.Filter):
     """Filter log records based on a time window."""
 
     def __init__(self, start_time: int = None, end_time: int = None):
+        """Initialize the filter with start and end time in seconds."""
         super().__init__()
         self.start = datetime.now()
         self.start_time = timedelta(seconds=start_time) if start_time else timedelta(seconds=0)
         self.end_time = timedelta(seconds=end_time) if end_time else None
+        if self.end_time and self.start_time > self.end_time:
+            raise ValueError("Start time must be less than or equal to end time.")
 
     def filter(self, record: logging.LogRecord) -> bool:
         now = datetime.now()
