@@ -1151,6 +1151,8 @@ This allows the data to remain secure while maintaining flexibility in the encry
 
 LitData comes with built-in logging and profiling capabilities to help you debug and profile your data streaming workloads.
 
+<img width="1439" alt="431247797-0e955e71-2f9a-4aad-b7c1-a8218fed2e2e" src="https://github.com/user-attachments/assets/4e40676c-ba0b-49af-acac-975977173669" />
+
 - e.g., with LitData Streaming
 
 ```python
@@ -1176,7 +1178,7 @@ if __name__ == "__main__":
 python main.py
 ```
 
-2. Install Litracer:
+2. Install [Litracer](https://github.com/deependujha/litracer/):
 
     - Option 1: Using Go (recommended)
         - Install Go on your system.
