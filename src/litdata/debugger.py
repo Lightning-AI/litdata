@@ -14,6 +14,7 @@
 import logging
 import os
 import sys
+from datetime import datetime, timedelta
 from functools import lru_cache
 from typing import Tuple
 
@@ -30,6 +31,34 @@ def get_logger_level(level: str) -> int:
     if level in logging._nameToLevel:
         return logging._nameToLevel[level]
     raise ValueError(f"Invalid log level: {level}. Valid levels: {list(logging._nameToLevel.keys())}.")
+
+
+class TimeWindowFilter(logging.Filter):
+    def __init__(self, start_time=None, end_time=None):
+        """Filter log records based on a time window.
+        This filter allows you to specify a start and end time for logging.
+        If the current time is within this window, the log record is allowed.
+        Otherwise, it is filtered out.
+        This is useful for controlling when logs are written, especially in
+        long-running processes or tests.
+
+
+        Args:
+            start_time: Start logging after these seconds (default: immediately)
+            end_time: Stop logging after these seconds (default: never).
+        """
+        super().__init__()
+        self.start = datetime.now()
+        self.start_time = timedelta(seconds=start_time) if start_time is not None else timedelta(seconds=0)
+        self.end_time = timedelta(seconds=end_time) if end_time is not None else None
+
+    def filter(self, record):
+        now = datetime.now()
+        elapsed = now - self.start
+
+        if self.end_time is not None:
+            return self.start_time <= elapsed <= self.end_time
+        return elapsed >= self.start_time
 
 
 class LitDataLogger:
@@ -74,6 +103,19 @@ class LitDataLogger:
         if _PRINT_DEBUG_LOGS:
             self.logger.addHandler(console_handler)
         self.logger.addHandler(file_handler)
+
+        # Add filter to limit log messages
+        # to only those that are within the time window
+        start_time = os.getenv("LITDATA_LOG_START_TIME", None)
+        end_time = os.getenv("LITDATA_LOG_END_TIME", None)
+        if start_time or end_time:
+            start_time = int(start_time) if start_time else None
+            end_time = int(end_time) if end_time else None
+            time_filter = TimeWindowFilter(start_time, end_time)
+            self.logger.addFilter(time_filter)
+
+        # TODO: test if this works
+        # TODO: refactor env vars
 
 
 def enable_tracer() -> None:
