@@ -1195,7 +1195,7 @@ litracer litdata_debug.log -o litdata_trace.json -w 100
 - You can also run `SQL` queries on the trace to analyze the data streaming process.
 - If your generated trace.json file is `> 2GB`, then, refer [here](https://perfetto.dev/docs/visualization/large-traces) for using native accelerator.
 - If you're trying to connect perfetto to rpc server, prefer `chrome` over `brave`. It has been observed that `perfetto in brave` doesn't autodetects rpc server.
-
+</details>
 &nbsp;
 
 
