@@ -1203,6 +1203,7 @@ if __name__ == "__main__":
 4. Visualize the trace:
 
     - Use either `chrome://tracing` in the Chrome browser or `ui.perfetto.dev` to view the `litdata_trace.json` file for in-depth performance insights. You can also use `SQL queries` to analyze the logs.
+    - `Perfetto` is recommended over `chrome://tracing` for visualization & analyzing.
 
 - Key Points:
 
