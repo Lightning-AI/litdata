@@ -21,8 +21,8 @@ from torch.utils.data import IterableDataset
 
 from litdata import __version__
 from litdata.constants import _INDEX_FILENAME
+from litdata.debugger import _get_log_msg
 from litdata.helpers import _check_version_and_prompt_upgrade
-from litdata.loggers import _get_log_msg
 from litdata.streaming import Cache
 from litdata.streaming.item_loader import BaseItemLoader, ParquetLoader
 from litdata.streaming.resolver import Dir, _resolve_dir

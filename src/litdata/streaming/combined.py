@@ -18,7 +18,7 @@ from typing import Any, Dict, Iterator, List, Optional, Sequence
 
 from torch.utils.data import IterableDataset
 
-from litdata.loggers import ChromeTraceColors, _get_log_msg
+from litdata.debugger import ChromeTraceColors, _get_log_msg
 from litdata.streaming.dataset import StreamingDataset
 from litdata.utilities.env import _WorkerEnv
 

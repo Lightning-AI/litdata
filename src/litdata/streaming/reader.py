@@ -23,7 +23,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 from filelock import FileLock, Timeout
 
 from litdata.constants import _DEBUG
-from litdata.loggers import _get_log_msg
+from litdata.debugger import _get_log_msg
 from litdata.streaming.config import ChunksConfig, Interval
 from litdata.streaming.item_loader import BaseItemLoader, ParquetLoader, PyTreeLoader, TokensLoader
 from litdata.streaming.sampler import ChunkedIndex

@@ -31,7 +31,7 @@ from litdata.constants import (
     _HF_HUB_AVAILABLE,
     _INDEX_FILENAME,
 )
-from litdata.loggers import _get_log_msg
+from litdata.debugger import _get_log_msg
 from litdata.streaming.client import S3Client
 
 logger = logging.getLogger("litdata.streaming.downloader")

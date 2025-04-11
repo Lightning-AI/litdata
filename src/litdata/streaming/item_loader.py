@@ -32,7 +32,7 @@ from litdata.constants import (
     _PYARROW_AVAILABLE,
     _TORCH_DTYPES_MAPPING,
 )
-from litdata.loggers import ChromeTraceColors, _get_log_msg
+from litdata.debugger import ChromeTraceColors, _get_log_msg
 from litdata.streaming.serializers import Serializer
 from litdata.utilities._pytree import PyTree, tree_unflatten
 from litdata.utilities.encryption import Encryption, EncryptionLevel
