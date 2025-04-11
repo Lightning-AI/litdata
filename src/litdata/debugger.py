@@ -93,18 +93,12 @@ class LitDataLogger:
             self.logger.addHandler(console_handler)
         self.logger.addHandler(file_handler)
 
-        # Add filter to limit log messages
-        # to only those that are within the time window
-        start_time = os.getenv("LITDATA_LOG_START_TIME", None)
-        end_time = os.getenv("LITDATA_LOG_END_TIME", None)
+        # Time window filter
+        start_time = int(os.getenv("LITDATA_LOG_START_TIME", 0))
+        end_time = os.getenv("LITDATA_LOG_END_TIME")
+        end_time = int(end_time) if end_time else None
         if start_time or end_time:
-            start_time = int(start_time) if start_time else None
-            end_time = int(end_time) if end_time else None
-            time_filter = TimeWindowFilter(start_time, end_time)
-            self.logger.addFilter(time_filter)
-
-        # TODO: test if this works
-        # TODO: refactor env vars
+            self.logger.addFilter(TimeWindowFilter(start_time, end_time))
 
 
 def enable_tracer() -> None:
@@ -151,6 +145,8 @@ def env_info() -> dict:
 # thread_state_runnable: {r: 133, g: 160, b: 210},
 # ....
 class ChromeTraceColors:
+    """Predefined Chrome tracing colors."""
+
     PINK = "thread_state_iowait"
     GREEN = "thread_state_running"
     LIGHT_BLUE = "thread_state_runnable"
