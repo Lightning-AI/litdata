@@ -1146,6 +1146,57 @@ This allows the data to remain secure while maintaining flexibility in the encry
 
 &nbsp;
 
+<details>
+  <summary> ✅ Debug & Profile with logs & Litracer</summary>
+
+&nbsp;
+
+LitData comes with built-in logging and profiling capabilities to help you debug and profile your data streaming workloads.
+
+- e.g., with LitData Streaming
+
+```python
+import litdata as ld
+from litdata.loggers import configure_logger
+
+configure_logger() # call the configure_logger function that sets up your trace logger
+
+if __name__ == "__main__":
+    dataset = ld.StreamingDataset("s3://my-bucket/my-data", shuffle=True)
+    dataloader = ld.StreamingDataLoader(dataset, batch_size=64)
+
+    for batch in dataloader:
+        process(batch)  # Replace with your data processing logic
+```
+
+- Now run your script with `DEBUG_LITDATA=1` to enable logging of debug information.
+
+```bash
+DEBUG_LITDATA=1 python main.py
+```
+
+- It will generate a `log` file containing all the debug information of when the data was loaded, how long it took, and other useful information.
+- But, log file can be very large, so we will use a CLI tool to convert `debug log` file to `litdata_trace.json` file that can be visualized in `chrome://tracing` or `ui.perfetto.dev`.
+
+- Install `litracer`: visit [litracer github](https://github.com/deependujha/litracer) and follow the instructions to install it.
+- Easiest way to install is to have `go` installed.
+
+```bash
+go install github.com/deependujha/litracer@latest
+```
+
+- Then run the following command to convert the `log` file to `litdata_trace.json` file.
+
+```bash
+litracer litdata_debug.log -o litdata_trace.json
+```
+
+- Open [ui.perfetto.dev](https://ui.perfetto.dev/) and load the `litdata_trace.json` file to visualize the trace.
+- You can also run `SQL` queries on the trace to analyze the data streaming process.
+
+&nbsp;
+
+
 ## Features for transforming datasets
 
 <details>
