@@ -75,33 +75,32 @@ class LitDataLogger:
 
         self.logger.setLevel(self.log_level)
 
-        # Console handler
-        console_handler = logging.StreamHandler(sys.stdout)
-        console_handler.setLevel(self.log_level)
-
-        # File handler
-        file_handler = logging.FileHandler(self.log_file)
-        file_handler.setLevel(self.log_level)
-
         # Log format
         formatter = logging.Formatter(
             "ts:%(created)s; logger_name:%(name)s; level:%(levelname)s; PID:%(process)d; TID:%(thread)d; %(message)s"
         )
         # ENV - f"{WORLD_SIZE, GLOBAL_RANK, NNODES, LOCAL_RANK, NODE_RANK}"
-        console_handler.setFormatter(formatter)
-        file_handler.setFormatter(formatter)
-
-        # Attach handlers
-        if _PRINT_DEBUG_LOGS:
-            self.logger.addHandler(console_handler)
-        self.logger.addHandler(file_handler)
 
         # Time window filter
         start_time = int(os.getenv("LITDATA_LOG_START_TIME", 0))
         end_time = os.getenv("LITDATA_LOG_END_TIME")
         end_time = int(end_time) if end_time else None
-        if start_time or end_time:
-            self.logger.addFilter(TimeWindowFilter(start_time, end_time))
+        time_window_filter = TimeWindowFilter(start_time, end_time)
+
+        # Console handler
+        if _PRINT_DEBUG_LOGS:
+            console_handler = logging.StreamHandler(sys.stdout)
+            console_handler.setLevel(self.log_level)
+            console_handler.setFormatter(formatter)
+            console_handler.addFilter(time_window_filter)
+            self.logger.addHandler(console_handler)
+
+        # File handler
+        file_handler = logging.FileHandler(self.log_file)
+        file_handler.setLevel(self.log_level)
+        file_handler.setFormatter(formatter)
+        file_handler.addFilter(time_window_filter)
+        self.logger.addHandler(file_handler)
 
 
 def enable_tracer() -> None:
