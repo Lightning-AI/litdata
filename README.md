@@ -1144,10 +1144,8 @@ class CustomEncryption(Encryption):
 This allows the data to remain secure while maintaining flexibility in the encryption method.
 </details>
 
-&nbsp;
-
 <details>
-  <summary> ✅ Debug & Profile with logs & Litracer</summary>
+  <summary> ✅ Debug & Profile LitData with logs & Litracer</summary>
 
 &nbsp;
 
@@ -1166,7 +1164,7 @@ if __name__ == "__main__":
     dataloader = ld.StreamingDataLoader(dataset, batch_size=64)
 
     for batch in dataloader:
-        process(batch)  # Replace with your data processing logic
+        print(batch)  # Replace with your data processing logic
 ```
 
 - Now run your script with `DEBUG_LITDATA=1` to enable logging of debug information.
@@ -1185,14 +1183,18 @@ DEBUG_LITDATA=1 python main.py
 go install github.com/deependujha/litracer@latest
 ```
 
-- Then run the following command to convert the `log` file to `litdata_trace.json` file.
+- Else, you can also download & install binary for your system. Please refer to [releases of LitRacer](https://github.com/deependujha/litracer/releases).
+
+- Then run the following command to convert the `log` file to `litdata_trace.json` file with 100 workers.
 
 ```bash
-litracer litdata_debug.log -o litdata_trace.json
+litracer litdata_debug.log -o litdata_trace.json -w 100
 ```
 
 - Open [ui.perfetto.dev](https://ui.perfetto.dev/) and load the `litdata_trace.json` file to visualize the trace.
 - You can also run `SQL` queries on the trace to analyze the data streaming process.
+- If your generated trace.json file is `> 2GB`, then, refer [here](https://perfetto.dev/docs/visualization/large-traces) for using native accelerator.
+- If you're trying to connect perfetto to rpc server, prefer `chrome` over `brave`. It has been observed that `perfetto in brave` doesn't autodetects rpc server.
 
 &nbsp;
 
