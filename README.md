@@ -1277,6 +1277,13 @@ Speed to stream Imagenet 1.2M from AWS S3:
 - To align with other benchmarks, we measured the streaming speed (`images per second`) loaded from [AWS S3](https://aws.amazon.com/s3/) for several frameworks.
 
 </details>
+&nbsp;
+
+Speed to stream Imagenet 1.2M from other cloud storage providers:
+
+| Storage Provider | Framework | Images / sec 1st Epoch (float32) | Images / sec 2nd Epoch (float32) |
+|---|---|---|---|
+| Cloudflare R2 | LitData | **5335** | **5630** |
 
 &nbsp;
 
