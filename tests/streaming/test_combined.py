@@ -306,7 +306,7 @@ def test_combined_dataset_with_per_stream_batching(tmpdir, batch_size, num_worke
     dataloader = StreamingDataLoader(dataset, batch_size=batch_size, num_workers=num_workers, drop_last=True)
 
     for batch in dataloader:
-        # asset batch contains elements from only one dataset
+        # Ensure that the batch contains items exclusively from a single dataset
         assert all(x in range(0, 10) for x in batch) or all(x in range(10, 20) for x in batch), (
             f"Batch should contain elements from only one dataset but got {batch}"
         )
