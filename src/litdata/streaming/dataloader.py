@@ -595,7 +595,6 @@ class StreamingDataLoader(DataLoader):
         dataset.set_batch_size(batch_size)
         dataset.set_num_workers(num_workers)
 
-
         shuffle = None
 
         if profile_batches and not _VIZ_TRACKER_AVAILABLE:
