@@ -619,7 +619,6 @@ class StreamingDataLoader(DataLoader):
         self._worker_idx_iter: Optional[Any] = None
         self._latest_worker_idx = 0
         self.restore = False
-
         super().__init__(
             dataset,
             *args,
@@ -650,10 +649,9 @@ class StreamingDataLoader(DataLoader):
                 self._num_samples_yielded_streaming += self.batch_size
                 yield batch
         else:
-            # Assume, this is a CombinedStreamingDataset.
             self.dataset._set_use_streaming_dataloader(True)
             assert self.batch_size
-
+            # TODO: Inject a custom collate function to avoid collating the __NUM_SAMPLES_YIELDED__ key
             for batch in super().__iter__():
                 self._latest_worker_idx = next(self._worker_idx_iter)  # type: ignore
                 if isinstance(batch, dict) and __NUM_SAMPLES_YIELDED_KEY__ in batch:
@@ -661,6 +659,7 @@ class StreamingDataLoader(DataLoader):
                         sample[-1].item() if self.batch_size > 1 else sample.item()
                         for sample in batch[__NUM_SAMPLES_YIELDED_KEY__]
                     ]
+
                     yield batch[__SAMPLES_KEY__]
                 else:
                     yield batch
