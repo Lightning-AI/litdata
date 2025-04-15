@@ -27,6 +27,8 @@ __SAMPLES_KEY__ = "__SAMPLES__"
 
 logger = logging.getLogger("litdata.streaming.combined")
 
+BatchingMethod = Literal["stratified", "per_stream"]
+
 
 class CombinedStreamingDataset(IterableDataset):
     """Enables to stream data from multiple StreamingDataset with the sampling ratio of
@@ -90,7 +92,7 @@ class CombinedStreamingDataset(IterableDataset):
         self._current_epoch = 0
         self.num_workers = 1
         self.batch_size = 1
-        self.batching_method = "stratified"
+        self._batching_method: BatchingMethod = "stratified"
 
     def get_len(self, num_workers: int, batch_size: int) -> Optional[int]:
         self.num_workers = num_workers
@@ -132,13 +134,19 @@ class CombinedStreamingDataset(IterableDataset):
         for dataset in self._datasets:
             dataset.set_batch_size(batch_size)
 
-    def set_batching_method(self, batching_method: Literal["stratified", "per_stream"]) -> None:
-        """Set the current batching method to the datasets.
-        When batching_method is "stratified" (default), batches consist of samples from all datasets.
-        When batching_method is "per_stream" batches consist of samples from one dataset,
-        which is selected at random.
+    def set_batching_method(self, batching_method: BatchingMethod) -> None:
+        """Set how batches are constructed from the combined datasets.
+
+        Args:
+            batching_method: Determines how samples are grouped into batches.
+                - "stratified" (default): Each batch will include samples from all datasets, mixed together.
+                - "per_stream": Each batch will contain samples from only one dataset, which is chosen at random
+                for each batch.
+
+        This method allows you to control whether your batches are a mix of all datasets or come from a single
+        dataset at a time.
         """
-        self.batching_method = batching_method
+        self._batching_method = batching_method
 
     def set_num_workers(self, num_workers: int) -> None:
         """Set the current number of workers to the datasets."""

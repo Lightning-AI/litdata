@@ -39,6 +39,7 @@ from litdata.streaming import Cache
 from litdata.streaming.combined import (
     __NUM_SAMPLES_YIELDED_KEY__,
     __SAMPLES_KEY__,
+    BatchingMethod,
     CombinedStreamingDataset,
 )
 from litdata.streaming.dataset import StreamingDataset
@@ -616,7 +617,7 @@ class StreamingDataLoader(DataLoader):
         shuffle: Optional[bool] = None,
         drop_last: Optional[bool] = None,
         collate_fn: Optional[Callable] = None,
-        batching_method: Literal["stratified", "per_stream"] = "stratified",
+        batching_method: BatchingMethod = "stratified",
         **kwargs: Any,
     ) -> None:  # pyright: ignore
         if not isinstance(dataset, (StreamingDataset, CombinedStreamingDataset)):
