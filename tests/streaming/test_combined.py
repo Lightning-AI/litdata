@@ -287,6 +287,31 @@ def test_combined_dataset():
     assert torch.equal(next(dataloader_iter), torch.Tensor([0, 1]))
 
 
+@pytest.mark.parametrize("batch_size", [2, 4])
+@pytest.mark.parametrize("num_workers", [1, 2])
+def test_combined_dataset_with_per_stream_batching(tmpdir, batch_size, num_workers):
+    num_of_datasets = 2
+    dataset_ranges = [(0, 10), (10, 20)]
+    dataset_paths = [str(tmpdir.join(f"dataset_{i}")) for i in range(num_of_datasets)]
+    for dataset_path, (start, end) in zip(dataset_paths, dataset_ranges):
+        os.makedirs(dataset_path)
+        cache = Cache(input_dir=dataset_path, chunk_size=2)
+        for i in range(start, end):
+            cache[i] = i
+        cache.done()
+        cache.merge()
+
+    datasets = [StreamingDataset(input_dir=str(dataset_path)) for dataset_path in dataset_paths]
+    dataset = CombinedStreamingDataset(datasets=datasets, seed=12345, batching_method="per_stream")
+    dataloader = StreamingDataLoader(dataset, batch_size=batch_size, num_workers=num_workers, drop_last=True)
+
+    for batch in dataloader:
+        # asset batch contains elements from only one dataset
+        assert all(x in range(0, 10) for x in batch) or all(x in range(10, 20) for x in batch), (
+            f"Batch should contain elements from only one dataset but got {batch}"
+        )
+
+
 @pytest.mark.parametrize("batch_size", [1, 2])
 def test_combined_dataset_with_dataloader_and_one_worker(batch_size):
     dataset1 = SimpleDataset(0, 10)
