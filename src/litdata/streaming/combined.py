@@ -68,7 +68,6 @@ class CombinedStreamingDataset(IterableDataset):
             batching_method (str, optional): When batching_method is set to "stratified" (default),
                 batches will include samples from all datasets. On the other hand, when batching_method is "per_stream",
                 batches will consist of samples from a single dataset,  which is selected randomly.
-                Note: This parameter is only relevant when using CombinedStreamingDataset.
             force_override_state_dict: Boolean flag for allowing local arguments to override a loaded state dict.
 
         """
