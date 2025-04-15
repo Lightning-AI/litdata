@@ -566,10 +566,10 @@ class StreamingDataLoader(DataLoader):
         collate_fn (Callable, optional): merges a list of samples to form a
             mini-batch of Tensor(s).  Used when using batched loading from a
             map-style dataset.
-        batching_method (str, optional): When batching_method is "stratified" (default),
-            batches consist of samples from all datasets. When batching_method is "per_stream",
-            batches consist of samples from one dataset, which is selected at random. Note that this
-            parameter is only applicable to CombinedStreamingDataset.
+        batching_method (str, optional): When batching_method is set to "stratified" (default),
+            batches will include samples from all datasets. On the other hand, when batching_method is "per_stream",
+            batches will consist of samples from a single dataset,  which is selected randomly.
+            Note: This parameter is only relevant when using CombinedStreamingDataset.
         pin_memory (bool, optional): If ``True``, the data loader will copy Tensors
             into device/CUDA pinned memory before returning them.  If your data elements
             are a custom type, or your :attr:`collate_fn` returns a batch that is a custom type,
