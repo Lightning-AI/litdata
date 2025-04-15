@@ -12,6 +12,7 @@
 # limitations under the License.
 
 import contextlib
+import logging
 import os
 import shutil
 import subprocess
@@ -30,7 +31,10 @@ from litdata.constants import (
     _HF_HUB_AVAILABLE,
     _INDEX_FILENAME,
 )
+from litdata.debugger import _get_log_msg
 from litdata.streaming.client import S3Client
+
+logger = logging.getLogger("litdata.streaming.downloader")
 
 
 class Downloader(ABC):
@@ -43,6 +47,7 @@ class Downloader(ABC):
         self._storage_options = storage_options or {}
 
     def _increment_local_lock(self, chunkpath: str) -> None:
+        logger.debug(_get_log_msg({"name": f"increment_local_lock_for_{chunkpath}", "ph": "B"}))
         countpath = chunkpath + ".cnt"
         with suppress(Timeout), FileLock(countpath + ".lock", timeout=1):
             try:
@@ -53,13 +58,18 @@ class Downloader(ABC):
             curr_count += 1
             with open(countpath, "w+") as count_f:
                 count_f.write(str(curr_count))
+        logger.debug(_get_log_msg({"name": f"increment_local_lock_for_{chunkpath}", "ph": "E"}))
 
     def download_chunk_from_index(self, chunk_index: int) -> None:
+        logger.debug(_get_log_msg({"name": f"download_chunk_from_index_{chunk_index}", "ph": "B"}))
+
         chunk_filename = self._chunks[chunk_index]["filename"]
         local_chunkpath = os.path.join(self._cache_dir, chunk_filename)
         remote_chunkpath = os.path.join(self._remote_dir, chunk_filename)
 
         self.download_file(remote_chunkpath, local_chunkpath)
+
+        logger.debug(_get_log_msg({"name": f"download_chunk_from_index_{chunk_index}", "ph": "E"}))
 
     def download_file(self, remote_chunkpath: str, local_chunkpath: str) -> None:
         pass
@@ -87,9 +97,6 @@ class S3Downloader(Downloader):
         with suppress(Timeout), FileLock(
             local_filepath + ".lock", timeout=1 if obj.path.endswith(_INDEX_FILENAME) else 0
         ):
-            if os.path.exists(local_filepath):
-                return
-
             if self._s5cmd_available and not _DISABLE_S5CMD:
                 env = None
                 if self._storage_options:
@@ -269,7 +276,6 @@ class HFDownloader(Downloader):
         with suppress(Timeout), FileLock(local_filepath + ".lock", timeout=0), tempfile.TemporaryDirectory() as tmpdir:
             _, _, _, repo_org, repo_name, path = remote_filepath.split("/", 5)
             repo_id = f"{repo_org}/{repo_name}"
-
             downloaded_path = hf_hub_download(
                 repo_id,
                 path,

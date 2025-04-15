@@ -4,6 +4,7 @@ import math
 import os
 import shutil
 import tempfile
+import time
 from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
@@ -24,6 +25,7 @@ def subsample_streaming_dataset(
     seed: int = 42,
     storage_options: Optional[Dict] = {},
     index_path: Optional[str] = None,
+    fnmatch_pattern: Optional[str] = None,
 ) -> Tuple[List[str], List[Tuple[int, int]]]:
     """Subsample streaming dataset.
 
@@ -62,6 +64,8 @@ def subsample_streaming_dataset(
             downloader = get_downloader(input_dir.url, input_dir.path, [], storage_options)
             downloader.download_file(os.path.join(input_dir.url, _INDEX_FILENAME), cache_index_filepath)
 
+    time.sleep(0.5)  # Give some time for the file to be available
+
     if not os.path.exists(input_dir.path):
         raise FileNotFoundError(f"The provided dataset path `{input_dir.path}` does not exist.")
 
@@ -74,6 +78,11 @@ def subsample_streaming_dataset(
             f"The provided dataset `{input_dir.path}` doesn't contain any {_INDEX_FILENAME} file."
             "\n HINT: Did you successfully optimize a dataset to the provided `input_dir`?"
         )
+
+    if fnmatch_pattern is not None:
+        from fnmatch import fnmatch
+
+        original_chunks = [chunk for chunk in original_chunks if fnmatch(chunk["filename"], fnmatch_pattern)]
 
     assert len(original_chunks) > 0, f"No chunks found in the `{input_dir}/index.json` file"
 

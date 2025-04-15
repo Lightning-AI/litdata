@@ -32,13 +32,14 @@ from litdata.constants import (
     _PYARROW_AVAILABLE,
     _TORCH_DTYPES_MAPPING,
 )
+from litdata.debugger import ChromeTraceColors, _get_log_msg
 from litdata.streaming.serializers import Serializer
 from litdata.utilities._pytree import PyTree, tree_unflatten
 from litdata.utilities.encryption import Encryption, EncryptionLevel
 
 Interval = namedtuple("Interval", ["chunk_start", "roi_start_idx", "roi_end_idx", "chunk_end"])
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("litdata.streaming.item_loader")
 
 
 class BaseItemLoader(ABC):
@@ -172,6 +173,9 @@ class PyTreeLoader(BaseItemLoader):
         #       => 3 * 4 = 12          # each takes 4 bytes
         #       => offset = 12
         #
+        logger.debug(
+            _get_log_msg({"name": f"load_item_from_chunk_for_chunk_index_{chunk_index}_and_index_{index}", "ph": "B"})
+        )
         offset = (1 + (index - begin) if index >= begin else index + 1) * 4
 
         if chunk_filepath != self._chunk_filepath:
@@ -206,9 +210,15 @@ class PyTreeLoader(BaseItemLoader):
 
         # check for mosaic mds format
         if "format" in self._config and self._config["format"] == "mds":
-            return self.mds_deserialize(data, chunk_index)
+            item_data = self.mds_deserialize(data, chunk_index)
+        else:
+            item_data = self.deserialize(data)
 
-        return self.deserialize(data)
+        logger.debug(
+            _get_log_msg({"name": f"load_item_from_chunk_for_chunk_index_{chunk_index}_and_index_{index}", "ph": "E"})
+        )
+
+        return item_data
 
     def _load_encrypted_data(
         self, chunk_filepath: str, chunk_index: int, offset: int, encryption: Optional[Encryption]
@@ -293,8 +303,26 @@ class PyTreeLoader(BaseItemLoader):
             self._open_handle = None
 
     def delete(self, chunk_index: int, chunk_filepath: str) -> None:
+        logger.debug(
+            _get_log_msg(
+                {
+                    "name": f"delete_chunk_for_chunk_index_{chunk_index}",
+                    "ph": "B",
+                    "cname": ChromeTraceColors.BRIGHT_RED,
+                }
+            )
+        )
         if os.path.exists(chunk_filepath):
             os.remove(chunk_filepath)
+        logger.debug(
+            _get_log_msg(
+                {
+                    "name": f"delete_chunk_for_chunk_index_{chunk_index}",
+                    "ph": "E",
+                    "cname": ChromeTraceColors.BRIGHT_RED,
+                }
+            )
+        )
 
     def _validate_encryption(self, encryption: Optional[Encryption]) -> None:
         """Validate the encryption object."""
@@ -440,6 +468,10 @@ class TokensLoader(BaseItemLoader):
         if chunk_filepath in self._chunk_filepaths and not os.path.isfile(chunk_filepath):
             del self._chunk_filepaths[chunk_filepath]
 
+        logger.debug(
+            _get_log_msg({"name": f"load_item_from_chunk_for_chunk_index_{chunk_index}_and_index_{index}", "ph": "B"})
+        )
+
         if chunk_filepath not in self._chunk_filepaths:
             exists = os.path.exists(chunk_filepath) and os.stat(chunk_filepath).st_size > filesize_bytes
 
@@ -479,9 +511,22 @@ class TokensLoader(BaseItemLoader):
         else:
             # count: number of tokens to read from buffer => `self._block_size`
             data = np.frombuffer(buffer, dtype=self._dtype, count=self._block_size, offset=offset)  # type: ignore
+
+        logger.debug(
+            _get_log_msg({"name": f"load_item_from_chunk_for_chunk_index_{chunk_index}_and_index_{index}", "ph": "E"})
+        )
         return data
 
     def delete(self, chunk_index: int, chunk_filepath: str) -> None:
+        logger.debug(
+            _get_log_msg(
+                {
+                    "name": f"delete_chunk_for_chunk_index_{chunk_index}",
+                    "ph": "B",
+                    "cname": ChromeTraceColors.BRIGHT_RED,
+                }
+            )
+        )
         if os.path.exists(chunk_filepath):
             if chunk_index in self._buffers:
                 del self._buffers[chunk_index]
@@ -491,6 +536,15 @@ class TokensLoader(BaseItemLoader):
                 del self._mmaps[chunk_index]
                 del self._counter[chunk_index]
             os.remove(chunk_filepath)
+        logger.debug(
+            _get_log_msg(
+                {
+                    "name": f"delete_chunk_for_chunk_index_{chunk_index}",
+                    "ph": "E",
+                    "cname": ChromeTraceColors.BRIGHT_RED,
+                }
+            )
+        )
 
     def close(self, chunk_index: int) -> None:
         """Release the memory-mapped file for a specific chunk index."""
@@ -604,6 +658,9 @@ class ParquetLoader(BaseItemLoader):
         if chunk_filepath in self._chunk_filepaths and not os.path.isfile(chunk_filepath):
             del self._chunk_filepaths[chunk_filepath]
 
+        logger.debug(
+            _get_log_msg({"name": f"load_item_from_chunk_for_chunk_index_{chunk_index}_and_index_{index}", "ph": "B"})
+        )
         if chunk_filepath not in self._chunk_filepaths:
             exists = os.path.exists(chunk_filepath) and os.stat(chunk_filepath).st_size >= filesize_bytes
 
@@ -616,9 +673,14 @@ class ParquetLoader(BaseItemLoader):
         # relative index of the desired row within the chunk.
         relative_index = index - begin
         if self._low_memory:
-            return self._get_item_with_low_memory(chunk_index, chunk_filepath, relative_index)
+            item_data = self._get_item_with_low_memory(chunk_index, chunk_filepath, relative_index)
+        else:
+            item_data = self._get_item(chunk_index, chunk_filepath, relative_index)
 
-        return self._get_item(chunk_index, chunk_filepath, relative_index)
+        logger.debug(
+            _get_log_msg({"name": f"load_item_from_chunk_for_chunk_index_{chunk_index}_and_index_{index}", "ph": "E"})
+        )
+        return item_data
 
     def _get_item_with_low_memory(self, chunk_index: int, chunk_filepath: str, row_index: int) -> Any:
         """Retrieve a dataframe row from a parquet chunk in low memory mode.
@@ -703,6 +765,15 @@ class ParquetLoader(BaseItemLoader):
 
     def delete(self, chunk_index: int, chunk_filepath: str) -> None:
         """Delete a chunk from the local filesystem."""
+        logger.debug(
+            _get_log_msg(
+                {
+                    "name": f"delete_chunk_for_chunk_index_{chunk_index}",
+                    "ph": "B",
+                    "cname": ChromeTraceColors.BRIGHT_RED,
+                }
+            )
+        )
         if chunk_index in self._df:
             del self._df[chunk_index]
         if chunk_index in self._chunk_row_groups:
@@ -712,6 +783,15 @@ class ParquetLoader(BaseItemLoader):
             del self._chunk_row_group_item_read_count[chunk_index]
         if os.path.exists(chunk_filepath):
             os.remove(chunk_filepath)
+        logger.debug(
+            _get_log_msg(
+                {
+                    "name": f"delete_chunk_for_chunk_index_{chunk_index}",
+                    "ph": "E",
+                    "cname": ChromeTraceColors.BRIGHT_RED,
+                }
+            )
+        )
 
     def close(self, chunk_index: int) -> None:
         """Release the memory-mapped file for a specific chunk index."""
