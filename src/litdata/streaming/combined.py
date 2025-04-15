@@ -54,7 +54,7 @@ class CombinedStreamingDataset(IterableDataset):
         seed: int = 42,
         weights: Optional[Sequence[float]] = None,
         iterate_over_all: bool = True,
-        batching_method: BatchingMethodType = BatchingMethod.STRATIFIED,
+        batching_method: BatchingMethodType = "stratified",
         force_override_state_dict: bool = False,
     ) -> None:
         """Enable to stream data from multiple StreamingDataset with the sampling ratio of your choice.
@@ -293,10 +293,10 @@ class _CombinedDatasetIterator(Iterator):
         return self._get_sample(self._get_dataset_index())
 
     def _get_dataset_index(self) -> int:
-        if self._batching_method == "stratified":
+        if self._batching_method == BatchingMethod.STRATIFIED:
             # For every sample, randomly select a dataset (weighted)
             dataset_idx = self._set_new_dataset_index()
-        elif self._batching_method == "per_stream":
+        elif self._batching_method == BatchingMethod.PER_STREAM:
             # For each batch, pick a dataset and stick with it for the whole batch
             # You need to track how many samples have been yielded in the current batch
             if not hasattr(self, "_samples_yielded_in_batch"):
@@ -312,7 +312,7 @@ class _CombinedDatasetIterator(Iterator):
             raise ValueError(f"Invalid batching method: {self._batching_method}")
         return dataset_idx
 
-    def _set_new_dataset_index(self):
+    def _set_new_dataset_index(self) -> int:
         # randomly select a dataset index
         indexes = [index for index in self._dataset_indexes if index is not None]
         weights = [w for w in self._weights if w is not None]
