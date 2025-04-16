@@ -258,6 +258,13 @@ class _CombinedDatasetIterator(Iterator):
 
         self._use_streaming_dataloader = use_streaming_dataloader
         self._is_done = False
+
+        # Used to track the number of samples yielded in the current batch
+        # and the current dataset index
+        # This is used only when batching_method is set to "per_stream"
+        self._samples_yielded_in_batch = 0
+        self._cur_dataset_index = -1
+
         logger.debug(
             _get_log_msg({"name": "iterating_combined_dataset", "ph": "B", "cname": ChromeTraceColors.LIGHT_BLUE})
         )
@@ -297,11 +304,6 @@ class _CombinedDatasetIterator(Iterator):
             dataset_idx = self._set_new_dataset_index()
         elif self._batching_method == BatchingMethod.PER_STREAM:
             # For each batch, pick a dataset and stick with it for the whole batch
-            # You need to track how many samples have been yielded in the current batch
-            if not hasattr(self, "_samples_yielded_in_batch"):
-                self._samples_yielded_in_batch = 0
-            if not hasattr(self, "_cur_dataset_index"):
-                self._cur_dataset_index = -1
             if self._cur_dataset_index == -1 or self._samples_yielded_in_batch >= self._batch_size:
                 self._cur_dataset_index = self._set_new_dataset_index()
                 self._samples_yielded_in_batch = 0
