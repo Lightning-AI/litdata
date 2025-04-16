@@ -14,7 +14,7 @@
 import logging
 import random
 from copy import deepcopy
-from typing import Any, Dict, Iterator, List, Optional, Sequence
+from typing import Any, Dict, Iterator, List, Literal, Optional, Sequence
 
 from torch.utils.data import IterableDataset
 
@@ -26,6 +26,14 @@ __NUM_SAMPLES_YIELDED_KEY__ = "__NUM_SAMPLES_YIELDED__"
 __SAMPLES_KEY__ = "__SAMPLES__"
 
 logger = logging.getLogger("litdata.streaming.combined")
+
+
+class BatchingMethod:
+    STRATIFIED = "stratified"
+    PER_STREAM = "per_stream"
+
+
+BatchingMethodType = Literal["stratified", "per_stream"]
 
 
 class CombinedStreamingDataset(IterableDataset):
@@ -46,6 +54,7 @@ class CombinedStreamingDataset(IterableDataset):
         seed: int = 42,
         weights: Optional[Sequence[float]] = None,
         iterate_over_all: bool = True,
+        batching_method: BatchingMethodType = "stratified",
         force_override_state_dict: bool = False,
     ) -> None:
         """Enable to stream data from multiple StreamingDataset with the sampling ratio of your choice.
@@ -56,7 +65,11 @@ class CombinedStreamingDataset(IterableDataset):
             weights: The sampling ratio for the datasets
             iterate_over_all: When iterate_over_all is True, the combined dataset iterates over all the datasets.
                 Otherwise, it stops as soon as one raises a StopIteration.
+            batching_method (str, optional): When batching_method is set to "stratified" (default),
+                batches will include samples from all datasets. On the other hand, when batching_method is "per_stream",
+                batches will consist of samples from a single dataset,  which is selected randomly.
             force_override_state_dict: Boolean flag for allowing local arguments to override a loaded state dict.
+
         """
         self._check_datasets(datasets)
 
@@ -90,6 +103,7 @@ class CombinedStreamingDataset(IterableDataset):
         self._current_epoch = 0
         self.num_workers = 1
         self.batch_size = 1
+        self._batching_method: BatchingMethodType = batching_method
 
     def get_len(self, num_workers: int, batch_size: int) -> Optional[int]:
         self.num_workers = num_workers
@@ -170,6 +184,8 @@ class CombinedStreamingDataset(IterableDataset):
             self._weights,
             self._use_streaming_dataloader,
             num_samples_yielded,
+            self.batch_size,
+            self._batching_method,
             self._iterate_over_all,
         )
         return self._iterator
@@ -217,6 +233,8 @@ class _CombinedDatasetIterator(Iterator):
         weights: Sequence[Optional[float]],
         use_streaming_dataloader: bool,
         num_samples_yielded: Any,
+        batch_size: int,
+        batching_method: BatchingMethodType,
         iterate_over_all: bool = False,
     ) -> None:
         self._datasets = datasets
@@ -227,6 +245,8 @@ class _CombinedDatasetIterator(Iterator):
         self._weights = deepcopy(weights)
         self._rng = random.Random(seed)  # noqa: S311
         self._iterate_over_all = iterate_over_all
+        self._batching_method = batching_method
+        self._batch_size = batch_size
         self._is_done = False
 
         if num_samples_yielded is not None:
@@ -238,6 +258,13 @@ class _CombinedDatasetIterator(Iterator):
 
         self._use_streaming_dataloader = use_streaming_dataloader
         self._is_done = False
+
+        # Used to track the number of samples yielded in the current batch
+        # and the current dataset index
+        # This is used only when batching_method is set to "per_stream"
+        self._samples_yielded_in_batch = 0
+        self._cur_dataset_index = -1
+
         logger.debug(
             _get_log_msg({"name": "iterating_combined_dataset", "ph": "B", "cname": ChromeTraceColors.LIGHT_BLUE})
         )
@@ -272,6 +299,21 @@ class _CombinedDatasetIterator(Iterator):
         return self._get_sample(self._get_dataset_index())
 
     def _get_dataset_index(self) -> int:
+        if self._batching_method == BatchingMethod.STRATIFIED:
+            # For every sample, randomly select a dataset (weighted)
+            dataset_idx = self._set_new_dataset_index()
+        elif self._batching_method == BatchingMethod.PER_STREAM:
+            # For each batch, pick a dataset and stick with it for the whole batch
+            if self._cur_dataset_index == -1 or self._samples_yielded_in_batch >= self._batch_size:
+                self._cur_dataset_index = self._set_new_dataset_index()
+                self._samples_yielded_in_batch = 0
+            dataset_idx = self._cur_dataset_index
+            self._samples_yielded_in_batch += 1
+        else:
+            raise ValueError(f"Invalid batching method: {self._batching_method}")
+        return dataset_idx
+
+    def _set_new_dataset_index(self) -> int:
         # randomly select a dataset index
         indexes = [index for index in self._dataset_indexes if index is not None]
         weights = [w for w in self._weights if w is not None]
