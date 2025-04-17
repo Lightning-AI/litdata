@@ -384,7 +384,6 @@ class StreamingDataset(IterableDataset):
         self.upcoming_indexes = current_indexes
 
         self.global_index = indexes[worker_local_rank]
-        print(f"Worker {worker_local_rank} has {self.global_index} samples to process")
 
         # bump the chunk_index
         self.worker_next_chunk_index += 1
