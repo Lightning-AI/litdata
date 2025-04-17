@@ -537,7 +537,8 @@ class BaseWorker:
         while True:
             try:
                 index = self.ready_to_process_queue.get()
-            except Empty:
+                print(f"Worker {str(_get_node_rank() * self.num_workers + self.worker_index)} is processing {index}")
+            except Exception:
                 index = None
 
             if index is None:
@@ -1207,7 +1208,7 @@ class DataProcessor:
                 pbar.update(new_total - current_total)
 
             current_total = new_total
-            if current_total == num_items:
+            if current_total == num_items or workers_user_items_queue.empty():
                 # make sure all processes are terminated
                 for w in self.workers:
                     if w.is_alive():
@@ -1227,7 +1228,6 @@ class DataProcessor:
                 except Empty:
                     continue
 
-        workers_user_items_queue.join()
         if _TQDM_AVAILABLE:
             pbar.close()
 
