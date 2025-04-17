@@ -293,73 +293,62 @@ def _upload_fn(
             remove_queue.put([local_filepath])
 
 
-def _map_items_to_workers_sequentially(num_workers: int, user_items: List[Any]) -> List[List[Any]]:
-    """Map the items to the workers sequentially.
+def _map_items_to_node_sequentially(user_items: List[Any]) -> List[Any]:
+    """Map the items to the nodes sequentially, and return the items for current node.
 
-    >>> workers_user_items = _map_items_to_workers_sequentially(2, list(range(5)))
-    >>> assert workers_user_items == [[0, 1], [2, 3, 4]]
+    - with 1 node:
+    >>> workers_user_items = _map_items_to_node_sequentially(2, list(range(5)))
+    >>> assert workers_user_items == [0,1,2,3,4]
+
+    - with 2 node:
+    >>> workers_user_items = _map_items_to_node_sequentially(2, list(range(5)))
+    >>> assert workers_user_items == [0,1] # for node 0
+    >>> assert workers_user_items == [2,3,4] # for node 1
     """
+    node_rank = _get_node_rank()
     num_nodes = _get_num_nodes()
-    world_size = num_nodes * num_workers
-    num_items_per_worker = len(user_items) // world_size
 
-    num_items_per_worker: List[int] = [num_items_per_worker for _ in range(world_size)]
-    reminder = len(user_items) % world_size
+    num_items_per_node = len(user_items) // num_nodes
 
-    for worker_idx in range(len(num_items_per_worker) - 1, -1, -1):
+    num_items_per_node: List[int] = [num_items_per_node for _ in range(num_nodes)]
+    reminder = len(user_items) % num_nodes
+
+    for node_idx in range(len(num_items_per_node) - 1, -1, -1):
         if reminder == 0:
             break
-        num_items_per_worker[worker_idx] += 1
+        num_items_per_node[node_idx] += 1
         reminder -= 1
 
-    num_items_cumsum_per_worker = np.cumsum([0] + num_items_per_worker)
+    num_items_cumsum_per_node = np.cumsum([0] + num_items_per_node)
 
-    out = []
-    node_rank = _get_node_rank()
-    worker_idx_start = node_rank * num_workers
-    worker_idx_end = (node_rank + 1) * num_workers
+    start = num_items_cumsum_per_node[node_rank]
+    end = num_items_cumsum_per_node[node_rank + 1]
 
-    for worker_idx in range(world_size):
-        if worker_idx_start <= worker_idx and worker_idx < worker_idx_end:
-            start = num_items_cumsum_per_worker[worker_idx]
-            end = num_items_cumsum_per_worker[worker_idx + 1]
-            out.append(user_items[start:end])
-
-    if len(out) != num_workers:
-        raise RuntimeError("The items didn't haven't been assigned properly. Please, open an issue on Github.")
-
-    return out
+    return user_items[start:end]
 
 
-def _map_items_to_workers_weighted(
-    num_workers: int,
+def _map_items_to_nodes_weighted(
     user_items: List[Any],
     weights: Optional[List[int]] = None,
     file_size: bool = True,
-) -> List[List[Any]]:
-    """Map the items to the workers based on the weights.
+) -> List[Any]:
+    """Map the items to the nodes based on the weights.
 
-    >>> workers_user_items = _map_items_to_workers_weighted(2, list(range(5)), weights=[1, 2, 3, 4, 5])
-    >>> assert workers_user_items == [[1, 4, 0], [3, 2]]
+    - with 1 node:
+    >>> workers_user_items = _map_items_to_nodes_weighted(list(range(5)), weights=[1, 2, 3, 4, 5])
+    >>> assert workers_user_items == [0,1,2,3,4]
+
+    - with 2 node:
+    >>> workers_user_items = _map_items_to_nodes_weighted(list(range(5)), weights=[1, 2, 3, 4, 5])
+    >>> assert workers_user_items == [0,1,4] # for node 0 (total weight: 1+2+5=8)
+    >>> assert workers_user_items == [2,3] # for node 1 (total weight: 3+4=7)
     """
     weights = [1] * len(user_items) if weights is None else weights
     num_nodes = _get_num_nodes()
     node_rank = _get_node_rank()
-    world_size = num_nodes * num_workers
 
-    worker_items, worker_weights = _pack_greedily(items=user_items, weights=weights, num_bins=world_size)
-    worker_ids_this_node = range(node_rank * num_workers, (node_rank + 1) * num_workers)
-
-    for worker_id, size in worker_weights.items():
-        if worker_id not in worker_ids_this_node:
-            continue
-
-        if file_size:
-            print(f"Worker {worker_id} gets {size / 1e6:.1f} MB ({len(worker_items[worker_id])} files)")
-        else:
-            print(f"Worker {worker_id} gets ({len(worker_items[worker_id])}) items for a total weight of {size}.")
-
-    return [np.random.permutation(worker_items[worker_id]).tolist() for worker_id in worker_ids_this_node]
+    node_items, node_weights = _pack_greedily(items=user_items, weights=weights, num_bins=num_nodes)
+    return node_items[node_rank]
 
 
 def _get_num_bytes(item: Any, base_path: str) -> int:
@@ -1124,18 +1113,18 @@ class DataProcessor:
         if self.weights is not None:
             if len(self.weights) != len(user_items):
                 raise ValueError("The provided weights length should match the inputs' length.")
-            workers_user_items = _map_items_to_workers_weighted(
+            workers_user_items = _map_items_to_nodes_weighted(
                 num_workers=self.num_workers, user_items=user_items, weights=self.weights, file_size=False
             )
 
         elif self.reorder_files and self.input_dir.path:
             # TODO: Only do this on node 0, and broadcast the item sizes to the other nodes.
             item_sizes = _get_item_filesizes(user_items, base_path=self.input_dir.path)
-            workers_user_items = _map_items_to_workers_weighted(
+            workers_user_items = _map_items_to_nodes_weighted(
                 num_workers=self.num_workers, user_items=user_items, weights=item_sizes
             )
         else:
-            workers_user_items = _map_items_to_workers_sequentially(num_workers=self.num_workers, user_items=user_items)
+            workers_user_items = _map_items_to_node_sequentially(user_items=user_items)
 
         print(f"Setup finished in {round(time() - t0, 3)} seconds. Found {len(user_items)} items to process.")
 
