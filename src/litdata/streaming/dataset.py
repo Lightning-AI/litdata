@@ -428,7 +428,7 @@ class StreamingDataset(IterableDataset):
         # Lazily re-populate the interval to reduce memory usage.
         if len(self.upcoming_indexes) == 0:
             # check if it's not the end of the epoch
-            if self.worker_next_chunks_index >= self.num_chunks:
+            if self.num_chunks is not None and self.worker_next_chunks_index >= self.num_chunks:
                 self.current_epoch += 1
                 self.reset_state_dict()
                 raise StopIteration
