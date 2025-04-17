@@ -64,7 +64,6 @@ def subsample_streaming_dataset(
             downloader = get_downloader(input_dir.url, input_dir.path, [], storage_options)
             downloader.download_file(os.path.join(input_dir.url, _INDEX_FILENAME), cache_index_filepath)
 
-
     time.sleep(0.5)  # Give some time for the file to be created
 
     if not os.path.exists(input_dir.path):

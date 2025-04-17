@@ -140,7 +140,6 @@ class PrepareChunksThread(Thread):
     #         return curr_count
     #     return 0
 
-
     def _apply_delete(self, chunk_index: int) -> None:
         """Inform the item loader of the chunk to delete."""
         # TODO: Fix the can_delete method

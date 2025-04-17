@@ -16,7 +16,6 @@ import os
 from collections import defaultdict
 from typing import Any, Dict, List, Optional, Tuple
 
-
 from litdata.constants import _INDEX_FILENAME, _SUPPORTED_DOWNLOADERS
 from litdata.debugger import ChromeTraceColors, _get_log_msg
 from litdata.streaming.compression import _COMPRESSORS, Compressor
