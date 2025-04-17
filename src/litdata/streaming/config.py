@@ -11,11 +11,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
 import os
 from collections import defaultdict
 from typing import Any, Dict, List, Optional, Tuple
 
+
 from litdata.constants import _INDEX_FILENAME, _SUPPORTED_DOWNLOADERS
+from litdata.debugger import ChromeTraceColors, _get_log_msg
 from litdata.streaming.compression import _COMPRESSORS, Compressor
 from litdata.streaming.downloader import get_downloader
 from litdata.streaming.item_loader import BaseItemLoader, Interval, PyTreeLoader, TokensLoader
@@ -24,6 +27,8 @@ from litdata.streaming.serializers import Serializer
 from litdata.utilities._pytree import tree_unflatten, treespec_loads
 from litdata.utilities.dataset_utilities import load_index_file
 from litdata.utilities.file_utils import increment_file_count
+
+logger = logging.getLogger("litdata.streaming.config")
 
 
 class ChunksConfig:
@@ -237,6 +242,15 @@ class ChunksConfig:
 
     def __getitem__(self, index: ChunkedIndex) -> Tuple[str, int, int]:
         """Find the associated chunk metadata."""
+        logger.debug(
+            _get_log_msg(
+                {
+                    "name": f"get_item_for_chunk_index_{index.chunk_index}_and_index_{index.index}",
+                    "ph": "B",
+                    "cname": ChromeTraceColors.LIGHT_GREEN,
+                }
+            )
+        )
         assert self._chunks is not None
         chunk = self._chunks[index.chunk_index]
 
@@ -248,6 +262,16 @@ class ChunksConfig:
         begin = self._intervals[index.chunk_index][0]
 
         filesize_bytes = chunk["chunk_bytes"]
+
+        logger.debug(
+            _get_log_msg(
+                {
+                    "name": f"get_item_for_chunk_index_{index.chunk_index}_and_index_{index.index}",
+                    "ph": "E",
+                    "cname": ChromeTraceColors.LIGHT_GREEN,
+                }
+            )
+        )
 
         return local_chunkpath, begin, filesize_bytes
 

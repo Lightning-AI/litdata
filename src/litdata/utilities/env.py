@@ -24,6 +24,8 @@ class _DistributedEnv:
     Args:
         world_size: The number of total distributed training processes
         global_rank: The rank of the current process within this pool of training processes
+        num_nodes: The number of nodes used for distributed training
+            (e.g. the number of GPUs(devices) per node * the number of nodes = world_size)
 
     """
 

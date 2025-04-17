@@ -19,17 +19,19 @@ from abc import ABC, abstractmethod
 from collections import OrderedDict
 from contextlib import suppress
 from copy import deepcopy
-from typing import Any, Dict, Optional, Tuple
+from itertools import chain
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 import tifffile
 import torch
-from lightning_utilities.core.imports import RequirementCache
 
-from litdata.constants import _NUMPY_DTYPES_MAPPING, _TORCH_DTYPES_MAPPING
-
-_PIL_AVAILABLE = RequirementCache("PIL")
-_AV_AVAILABLE = RequirementCache("av")
+from litdata.constants import (
+    _AV_AVAILABLE,
+    _NUMPY_DTYPES_MAPPING,
+    _PIL_AVAILABLE,
+    _TORCH_DTYPES_MAPPING,
+)
 
 
 class Serializer(ABC):
@@ -150,6 +152,75 @@ class JPEGSerializer(Serializer):
         from PIL.JpegImagePlugin import JpegImageFile
 
         return isinstance(item, JpegImageFile)
+
+
+class JPEGArraySerializer(Serializer):
+    """The JPEGArraySerializer serializes and deserializes lists of JPEG images to and from bytes."""
+
+    def serialize(self, item: Any) -> Tuple[bytes, Optional[str]]:
+        # Store number of images as first 4 bytes
+        n_images_bytes = np.uint32(len(item)).tobytes()
+
+        # create a instance of JPEGSerializer
+        if not hasattr(self, "_jpeg_serializer"):
+            self._jpeg_serializer = JPEGSerializer()
+
+        # convert each image to bytes and store in a list
+        image_bytes = []
+        for image in item:
+            image_bytes.append(self._jpeg_serializer.serialize(image)[0])
+
+        # Store all image sizes as uint32 array and convert to bytes
+        image_sizes_bytes = np.array([len(elem) for elem in image_bytes], dtype=np.uint32).tobytes()
+
+        # Concatenate all data: n_images + sizes + image bytes
+        return b"".join(chain([n_images_bytes, image_sizes_bytes], image_bytes)), None
+
+    def deserialize(self, data: bytes) -> List[torch.Tensor]:
+        if len(data) < 4:
+            raise ValueError("Input data is too short to contain valid list of images")
+
+        # Extract number of images from the first 4 bytes
+        n_images = np.frombuffer(data[:4], dtype=np.uint32)[0]
+
+        # Ensure the number of images is positive
+        if n_images <= 0:
+            raise ValueError("Number of images must be positive")
+
+        # Calculate the offset where image bytes start
+        image_bytes_offset = 4 + 4 * n_images
+
+        if len(data) < image_bytes_offset:
+            raise ValueError("Data is too short for the number of images specified")
+
+        # Extract the sizes of each image
+        image_sizes = np.frombuffer(data[4:image_bytes_offset], dtype=np.uint32)
+
+        # Calculate offsets for each image's data
+        offsets = np.cumsum(np.concatenate(([image_bytes_offset], image_sizes)))
+
+        if len(offsets) != n_images + 1:
+            raise ValueError("Mismatch between number of images and offsets")
+
+        if not hasattr(self, "_jpeg_serializer"):
+            self._jpeg_serializer = JPEGSerializer()
+
+        # Extract and decode each image data
+        images = []
+        for i in range(n_images):
+            # Extract the image data using the offsets
+            image_data = data[offsets[i] : offsets[i + 1]]
+            # Convert the image data to a tensor
+            images.append(self._jpeg_serializer.deserialize(image_data))
+        return images
+
+    def can_serialize(self, item: Any) -> bool:
+        """Check if the item is a list of JPEG images."""
+        if not _PIL_AVAILABLE:
+            return False
+        from PIL.JpegImagePlugin import JpegImageFile
+
+        return isinstance(item, (list, tuple)) and all(isinstance(elem, JpegImageFile) for elem in item)
 
 
 class BytesSerializer(Serializer):
@@ -452,6 +523,7 @@ _SERIALIZERS = OrderedDict(
         "file": FileSerializer(),
         "pil": PILSerializer(),
         "jpeg": JPEGSerializer(),
+        "jpeg_array": JPEGArraySerializer(),
         "bytes": BytesSerializer(),
         "no_header_numpy": NoHeaderNumpySerializer(),
         "numpy": NumpySerializer(),

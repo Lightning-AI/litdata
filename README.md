@@ -1144,7 +1144,76 @@ class CustomEncryption(Encryption):
 This allows the data to remain secure while maintaining flexibility in the encryption method.
 </details>
 
+<details>
+  <summary> ✅ Debug & Profile LitData with logs & Litracer</summary>
+
 &nbsp;
+
+LitData comes with built-in logging and profiling capabilities to help you debug and profile your data streaming workloads.
+
+<img width="1439" alt="431247797-0e955e71-2f9a-4aad-b7c1-a8218fed2e2e" src="https://github.com/user-attachments/assets/4e40676c-ba0b-49af-acac-975977173669" />
+
+- e.g., with LitData Streaming
+
+```python
+import litdata as ld
+from litdata.debugger import enable_tracer
+
+# WARNING: Remove existing trace `litdata_debug.log` file if it exists before re-tracing
+enable_tracer()
+
+if __name__ == "__main__":
+    dataset = ld.StreamingDataset("s3://my-bucket/my-data", shuffle=True)
+    dataloader = ld.StreamingDataLoader(dataset, batch_size=64)
+
+    for batch in dataloader:
+        print(batch)  # Replace with your data processing logic
+```
+
+1. Generate Debug Log:
+
+    - Run your Python program and it'll create a log file containing detailed debug information.
+
+    ```bash
+      python main.py
+    ```
+
+2. Install [Litracer](https://github.com/deependujha/litracer/):
+
+    - Option 1: Using Go (recommended)
+        - Install Go on your system.
+        - Run the following command to install Litracer:
+
+        ```bash
+          go install github.com/deependujha/litracer@latest
+        ```
+
+    - Option 2: Download Binary
+        - Visit the [LitRacer GitHub Releases](https://github.com/deependujha/litracer/releases) page.
+        - Download the appropriate binary for your operating system and follow the installation instructions.
+
+3. Convert Debug Log to trace JSON:
+
+    - Use litracer to convert the generated log file into a trace JSON file. This command uses 100 workers for conversion:
+
+    ```bash
+      litracer litdata_debug.log -o litdata_trace.json -w 100
+    ```
+
+4. Visualize the trace:
+
+    - Use either `chrome://tracing` in the Chrome browser or `ui.perfetto.dev` to view the `litdata_trace.json` file for in-depth performance insights. You can also use `SQL queries` to analyze the logs.
+    - `Perfetto` is recommended over `chrome://tracing` for visualization & analyzing.
+
+- Key Points:
+
+    - For very large trace.json files (`> 2GB`), refer to the [Perfetto documentation](https://perfetto.dev/docs/visualization/large-traces) for using native accelerators.
+    - If you are trying to connect Perfetto to the RPC server, it is recommended to use Chrome over Brave, as it has been observed that Perfetto in Brave does not autodetect the RPC server.
+
+</details>
+
+&nbsp;
+
 
 ## Features for transforming datasets
 
@@ -1208,6 +1277,13 @@ Speed to stream Imagenet 1.2M from AWS S3:
 - To align with other benchmarks, we measured the streaming speed (`images per second`) loaded from [AWS S3](https://aws.amazon.com/s3/) for several frameworks.
 
 </details>
+&nbsp;
+
+Speed to stream Imagenet 1.2M from other cloud storage providers:
+
+| Storage Provider | Framework | Images / sec 1st Epoch (float32) | Images / sec 2nd Epoch (float32) |
+|---|---|---|---|
+| Cloudflare R2 | LitData | **5335** | **5630** |
 
 &nbsp;
 
@@ -1307,6 +1383,28 @@ LitData is a community project accepting contributions -  Let's make the world's
 
 💬 [Get help on Discord](https://discord.com/invite/XncpTy7DSt)    
 📋 [License: Apache 2.0](https://github.com/Lightning-AI/litdata/blob/main/LICENSE)
+
+
+----
+
+## Citation
+
+```
+@misc{litdata2023,
+  author       = {Thomas Chaton and Lightning AI},
+  title        = {LitData: Transform datasets at scale. Optimize datasets for fast AI model training.},
+  year         = {2023},
+  howpublished = {\url{https://github.com/Lightning-AI/litdata}},
+  note         = {Accessed: 2025-04-09}
+}
+```
+
+----
+
+## Papers with LitData
+
+* [Towards Interpretable Protein Structure
+Prediction with Sparse Autoencoders](https://arxiv.org/pdf/2503.08764) | [Github](https://github.com/johnyang101/reticular-sae) | (Nithin Parsan, David J. Yang and John J. Yang)
 
 ----
 
