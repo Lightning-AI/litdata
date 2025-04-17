@@ -293,15 +293,15 @@ def _upload_fn(
             remove_queue.put([local_filepath])
 
 
-def _map_items_to_node_sequentially(user_items: List[Any]) -> List[Any]:
+def _map_items_to_nodes_sequentially(user_items: List[Any]) -> List[Any]:
     """Map the items to the nodes sequentially, and return the items for current node.
 
     - with 1 node:
-    >>> workers_user_items = _map_items_to_node_sequentially(2, list(range(5)))
+    >>> workers_user_items = _map_items_to_nodes_sequentially(2, list(range(5)))
     >>> assert workers_user_items == [0,1,2,3,4]
 
     - with 2 node:
-    >>> workers_user_items = _map_items_to_node_sequentially(2, list(range(5)))
+    >>> workers_user_items = _map_items_to_nodes_sequentially(2, list(range(5)))
     >>> assert workers_user_items == [0,1] # for node 0
     >>> assert workers_user_items == [2,3,4] # for node 1
     """
@@ -445,7 +445,7 @@ class BaseWorker:
         data_recipe: "DataRecipe",
         input_dir: Dir,
         output_dir: Dir,
-        items: List[Any],
+        items_queue: multiprocessing.Queue,
         progress_queue: Queue,
         error_queue: Queue,
         stop_queue: Queue,
@@ -467,8 +467,7 @@ class BaseWorker:
         self.data_recipe = data_recipe
         self.input_dir = input_dir
         self.output_dir = output_dir
-        self.items = items
-        self.num_items = len(self.items)
+        self.items_queue = items_queue
         self.num_downloaders = num_downloaders
         self.num_uploaders = num_uploaders
         self.remove = remove
@@ -481,7 +480,7 @@ class BaseWorker:
         self.to_upload_queues: List[Queue] = []
         self.stop_queue = stop_queue
         self.no_downloaders = self.input_dir.path is None or self.reader is not None
-        self.ready_to_process_queue: Union[Queue, FakeQueue] = FakeQueue() if self.no_downloaders else Queue()
+        self.ready_to_process_queue: Optional[Queue] = None
         self.remove_queue: Queue = Queue()
         self.progress_queue: Queue = progress_queue
         self.error_queue: Queue = error_queue
@@ -534,9 +533,12 @@ class BaseWorker:
         finally, it will upload and remove the data depending on the recipe type.
         """
         num_downloader_finished = 0
-
+        assert self.ready_to_process_queue is not None
         while True:
-            index = self.ready_to_process_queue.get()
+            try:
+                index = self.ready_to_process_queue.get()
+            except Empty:
+                index = None
 
             if index is None:
                 num_downloader_finished += 1
@@ -572,8 +574,7 @@ class BaseWorker:
 
             self._counter += 1
 
-            # Don't send the last progress update, so the main thread awaits for the uploader and remover
-            if self.progress_queue and (time() - self._last_time) > 1 and self._counter < (self.num_items - 2):
+            if self.progress_queue and (time() - self._last_time) > 1:
                 self.progress_queue.put((self.worker_index, self._counter))
                 self._last_time = time()
 
@@ -635,15 +636,13 @@ class BaseWorker:
 
     def _collect_paths(self) -> None:
         if self.no_downloaders:
-            if isinstance(self.ready_to_process_queue, FakeQueue):
-                self.ready_to_process_queue.add_items(list(range(len(self.items))))
-            else:
-                for index in range(len(self.items)):
-                    self.ready_to_process_queue.put(index)
+            self.ready_to_process_queue = self.items_queue
             return
 
-        items = []
-        for item in self.items:
+        self.ready_to_process_queue = Queue()
+
+        while not self.items_queue.empty():
+            item = self.items_queue.get(0.001)
             flattened_item, spec = tree_flatten(item)
 
             # For speed reasons, we assume starting with `self.input_dir` is enough to be a real file.
@@ -673,9 +672,8 @@ class BaseWorker:
 
             self.paths.append(paths)
 
-            items.append(tree_unflatten(flattened_item, spec))
-
-        self.items = items
+            unflattened_item = tree_unflatten(flattened_item, spec)
+            self.ready_to_process_queue.put(unflattened_item)
 
     def _start_downloaders(self) -> None:
         if self.no_downloaders:
@@ -737,12 +735,12 @@ class BaseWorker:
             self.uploaders.append(p)
             self.to_upload_queues.append(to_upload_queue)
 
-    def _handle_data_chunk_recipe(self, index: int) -> None:
+    def _handle_data_chunk_recipe(self, current_item: Any) -> None:
         """Used by `optimize fn` to run the user provided fn on each item of the input data,
         and save (write) the output in the cache.
         """
         try:
-            current_item = self.items[index] if self.reader is None else self.reader.read(self.items[index])
+            current_item = current_item if self.reader is None else self.reader.read(current_item)
             item_data_or_generator = self.data_recipe.prepare_item(current_item)
             if self.data_recipe.is_generator:
                 for item_data in item_data_or_generator:
@@ -758,7 +756,7 @@ class BaseWorker:
                     checkpoint_filepath = self.cache.save_checkpoint()
                     self._try_upload(checkpoint_filepath)
         except Exception as e:
-            raise RuntimeError(f"Failed processing {self.items[index]=}; {index=}") from e
+            raise RuntimeError(f"Failed processing {current_item=}") from e
 
     def _handle_data_chunk_recipe_end(self) -> None:
         """Called when the `optimize fn` is done.
@@ -776,15 +774,15 @@ class BaseWorker:
             checkpoint_filepath = self.cache.save_checkpoint()
             self._try_upload(checkpoint_filepath)
 
-    def _handle_data_transform_recipe(self, index: int) -> None:
+    def _handle_data_transform_recipe(self, current_item: Any) -> None:
         """Used by map fn to run the user provided fn on each item of the input data.
 
         It should not return anything and write directly to the output directory.
         """
         # Don't use a context manager to avoid deleting files that are being uploaded.
         output_dir = tempfile.mkdtemp()
-        item = self.items[index] if self.reader is None else self.reader.read(self.items[index])
-        item_data = self.data_recipe.prepare_item(item, str(output_dir), len(self.items) - 1 == index)
+        item = current_item if self.reader is None else self.reader.read(current_item)
+        item_data = self.data_recipe.prepare_item(item, str(output_dir))
         if item_data is not None:
             raise ValueError(
                 "When using a `MapRecipe`, the `prepare_item` shouldn't return anything."
@@ -1114,17 +1112,15 @@ class DataProcessor:
             if len(self.weights) != len(user_items):
                 raise ValueError("The provided weights length should match the inputs' length.")
             workers_user_items = _map_items_to_nodes_weighted(
-                num_workers=self.num_workers, user_items=user_items, weights=self.weights, file_size=False
+                user_items=user_items, weights=self.weights, file_size=False
             )
 
         elif self.reorder_files and self.input_dir.path:
             # TODO: Only do this on node 0, and broadcast the item sizes to the other nodes.
             item_sizes = _get_item_filesizes(user_items, base_path=self.input_dir.path)
-            workers_user_items = _map_items_to_nodes_weighted(
-                num_workers=self.num_workers, user_items=user_items, weights=item_sizes
-            )
+            workers_user_items = _map_items_to_nodes_weighted(user_items=user_items, weights=item_sizes)
         else:
-            workers_user_items = _map_items_to_node_sequentially(user_items=user_items)
+            workers_user_items = _map_items_to_nodes_sequentially(user_items=user_items)
 
         print(f"Setup finished in {round(time() - t0, 3)} seconds. Found {len(user_items)} items to process.")
 
@@ -1154,7 +1150,11 @@ class DataProcessor:
             workers_user_items = [w[:items_to_keep] for w in workers_user_items]
             print(f"Fast dev run is enabled. Limiting to {items_to_keep} items per process.")
 
-        num_items = sum([len(items) for items in workers_user_items])
+        workers_user_items_queue = Queue()
+        for worker_user_items in workers_user_items:
+            workers_user_items_queue.put(worker_user_items)
+
+        num_items = len(workers_user_items)
 
         self._cleanup_cache()
 
@@ -1169,7 +1169,7 @@ class DataProcessor:
 
         signal.signal(signal.SIGINT, self._signal_handler)
 
-        self._create_process_workers(data_recipe, workers_user_items)
+        self._create_process_workers(data_recipe, workers_user_items_queue)
 
         print("Workers are ready ! Starting data processing...")
 
@@ -1227,6 +1227,7 @@ class DataProcessor:
                 except Empty:
                     continue
 
+        workers_user_items_queue.join()
         if _TQDM_AVAILABLE:
             pbar.close()
 
@@ -1261,11 +1262,11 @@ class DataProcessor:
             w.terminate()  # already error has occurred. So, no benefit of processing further.
         raise RuntimeError(f"We found the following error {error}.")
 
-    def _create_process_workers(self, data_recipe: DataRecipe, workers_user_items: List[List[Any]]) -> None:
+    def _create_process_workers(self, data_recipe: DataRecipe, workers_user_items_queue: multiprocessing.Queue) -> None:
         self.progress_queue = Queue()
         workers: List[DataWorkerProcess] = []
         stop_queues: List[Queue] = []
-        for worker_idx, worker_user_items in enumerate(workers_user_items):
+        for worker_idx in range(self.num_workers):
             stop_queues.append(Queue())
             worker = DataWorkerProcess(
                 worker_idx,
@@ -1274,7 +1275,7 @@ class DataProcessor:
                 data_recipe,
                 self.input_dir,
                 self.output_dir,
-                worker_user_items,
+                workers_user_items_queue,
                 self.progress_queue,
                 self.error_queue,
                 stop_queues[-1],
