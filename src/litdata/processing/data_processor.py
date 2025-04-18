@@ -479,7 +479,8 @@ class BaseWorker:
         self.to_download_queues: List[Queue] = []
         self.to_upload_queues: List[Queue] = []
         self.stop_queue = stop_queue
-        self.no_downloaders = self.input_dir.path is None or self.reader is not None
+        self.no_downloaders = self.input_dir.url is None and self.reader is None
+        print(f"baseworker: {self.no_downloaders=}; {self.input_dir.url=}; {self.reader=}")
         self.ready_to_process_queue: Optional[Queue] = None
         self.remove_queue: Queue = Queue()
         self.progress_queue: Queue = progress_queue
@@ -514,6 +515,7 @@ class BaseWorker:
 
     def _terminate(self) -> None:
         """Make sure all the uploaders, downloaders and removers are terminated."""
+        print(f"Worker {str(_get_node_rank() * self.num_workers + self.worker_index)} is terminating.")
         for uploader in self.uploaders:
             if uploader.is_alive():
                 uploader.join()
@@ -536,9 +538,8 @@ class BaseWorker:
         assert self.ready_to_process_queue is not None
         while True:
             try:
-                index = self.ready_to_process_queue.get()
-                print(f"Worker {str(_get_node_rank() * self.num_workers + self.worker_index)} is processing {index}")
-            except Exception:
+                index = self.ready_to_process_queue.get(timeout=0.01)
+            except Empty:
                 index = None
 
             if index is None:
@@ -580,7 +581,7 @@ class BaseWorker:
                 self._last_time = time()
 
             if self.remove and self.input_dir.path is not None and self.reader is None:
-                self.remove_queue.put(self.paths[index])
+                self.remove_queue.put(index)
 
             try:
                 self.stop_queue.get(timeout=0.0001)
