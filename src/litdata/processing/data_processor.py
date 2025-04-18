@@ -137,13 +137,13 @@ def _download_data_target(
             return
 
         # 4. Unpack
-        index, paths = r
+        item, paths = r
 
         # 5. Check whether all the files are already downloaded
         if input_dir.path and all(
             os.path.exists(p.replace(input_dir.path, cache_dir) if input_dir else p) for p in paths
         ):
-            queue_out.put(index)
+            queue_out.put((item, paths))
             continue
 
         if input_dir.url is not None or input_dir.path is not None:
@@ -176,7 +176,7 @@ def _download_data_target(
                     raise ValueError(f"The provided {input_dir.url} isn't supported.")
 
         # 7. Inform the worker the current files are available
-        queue_out.put(index)
+        queue_out.put((item, paths))
 
 
 #
@@ -472,16 +472,15 @@ class BaseWorker:
         self.num_uploaders = num_uploaders
         self.remove = remove
         self.reader = reader
-        self.paths: List[List[str]] = []
+        self.paths_and_items: List[List[str]] = []
         self.remover: Optional[Process] = None
         self.downloaders: List[Process] = []
         self.uploaders: List[Process] = []
         self.to_download_queues: List[Queue] = []
         self.to_upload_queues: List[Queue] = []
         self.stop_queue = stop_queue
-        self.no_downloaders = self.input_dir.url is None and self.reader is None
-        print(f"baseworker: {self.no_downloaders=}; {self.input_dir.url=}; {self.reader=}")
-        self.ready_to_process_queue: Optional[Queue] = None
+        self.no_downloaders = self.input_dir.path is None or self.reader is not None
+        self.ready_to_process_queue: Union[Queue, FakeQueue] = None
         self.remove_queue: Queue = Queue()
         self.progress_queue: Queue = progress_queue
         self.error_queue: Queue = error_queue
@@ -494,6 +493,7 @@ class BaseWorker:
         self.checkpoint_chunks_info: Optional[List[Dict[str, Any]]] = checkpoint_chunks_info
         self.checkpoint_next_index: Optional[int] = checkpoint_next_index
         self.storage_options = storage_options
+        self.contains_items_and_paths = False
 
     def run(self) -> None:
         try:
@@ -515,7 +515,6 @@ class BaseWorker:
 
     def _terminate(self) -> None:
         """Make sure all the uploaders, downloaders and removers are terminated."""
-        print(f"Worker {str(_get_node_rank() * self.num_workers + self.worker_index)} is terminating.")
         for uploader in self.uploaders:
             if uploader.is_alive():
                 uploader.join()
@@ -527,6 +526,8 @@ class BaseWorker:
         if self.remover and self.remover.is_alive():
             self.remover.join()
 
+        self.progress_queue.put((self.worker_index, self._counter))  # send the last progress just to be sure
+
     def _loop(self) -> None:
         """The main loop of the worker.
 
@@ -537,14 +538,18 @@ class BaseWorker:
         num_downloader_finished = 0
         assert self.ready_to_process_queue is not None
         while True:
-            try:
-                index = self.ready_to_process_queue.get(timeout=0.01)
-            except Empty:
-                index = None
+            item = self.ready_to_process_queue.get()
+            paths = None
 
-            if index is None:
+            if self.contains_items_and_paths and item is not None:
+                item = item[0]
+                paths = item[1]
+            # print(f"Worker {self.worker_index} ready to process {item=} {self.num_downloaders=}", flush=True)
+
+            if item is None:
                 num_downloader_finished += 1
-                if num_downloader_finished == self.num_downloaders:
+                # if no_downloaders, we don't need to wait for the downloader to finish
+                if num_downloader_finished == self.num_downloaders or self.no_downloaders:
                     print(f"Worker {str(_get_node_rank() * self.num_workers + self.worker_index)} is terminating.")
 
                     if isinstance(self.data_recipe, DataChunkRecipe):
@@ -570,18 +575,18 @@ class BaseWorker:
                 continue
 
             if isinstance(self.data_recipe, DataChunkRecipe):
-                self._handle_data_chunk_recipe(index)
+                self._handle_data_chunk_recipe(item)
             else:
-                self._handle_data_transform_recipe(index)
+                self._handle_data_transform_recipe(item)
 
             self._counter += 1
 
-            if self.progress_queue and (time() - self._last_time) > 1:
+            if self.progress_queue:
                 self.progress_queue.put((self.worker_index, self._counter))
                 self._last_time = time()
 
-            if self.remove and self.input_dir.path is not None and self.reader is None:
-                self.remove_queue.put(index)
+            if self.remove and self.input_dir.path is not None and self.reader is None and paths is not None:
+                self.remove_queue.put(paths)
 
             try:
                 self.stop_queue.get(timeout=0.0001)
@@ -642,9 +647,15 @@ class BaseWorker:
             return
 
         self.ready_to_process_queue = Queue()
-
+        self.contains_items_and_paths = True
+        # items = []
         while not self.items_queue.empty():
-            item = self.items_queue.get(0.001)
+            try:
+                item = self.items_queue.get(0.1)
+                if item is None:
+                    break
+            except Empty:
+                break
             flattened_item, spec = tree_flatten(item)
 
             # For speed reasons, we assume starting with `self.input_dir` is enough to be a real file.
@@ -672,10 +683,11 @@ class BaseWorker:
                     path = path.replace(self.input_dir.path, self.cache_data_dir)
                 flattened_item[index] = path
 
-            self.paths.append(paths)
+            self.paths_and_items.append((item, paths))
 
-            unflattened_item = tree_unflatten(flattened_item, spec)
-            self.ready_to_process_queue.put(unflattened_item)
+            # items.append(tree_unflatten(flattened_item, spec))
+
+        # self.items = Queue()
 
     def _start_downloaders(self) -> None:
         if self.no_downloaders:
@@ -697,8 +709,8 @@ class BaseWorker:
             self.downloaders.append(p)
             self.to_download_queues.append(to_download_queue)
 
-        for index, paths in enumerate(self.paths):
-            self.to_download_queues[index % self.num_downloaders].put((index, paths))
+        for index, paths_n_items in enumerate(self.paths_and_items):
+            self.to_download_queues[index % self.num_downloaders].put((paths_n_items[0], paths_n_items[1]))
 
         for downloader_index in range(self.num_downloaders):
             self.to_download_queues[downloader_index].put(None)
@@ -1149,12 +1161,17 @@ class DataProcessor:
 
         if self.fast_dev_run:
             items_to_keep = self.fast_dev_run if isinstance(self.fast_dev_run, int) else _DEFAULT_FAST_DEV_RUN_ITEMS
-            workers_user_items = [w[:items_to_keep] for w in workers_user_items]
+            # workers_user_items = [w[:items_to_keep] for w in workers_user_items]
+            workers_user_items = workers_user_items[:items_to_keep]
             print(f"Fast dev run is enabled. Limiting to {items_to_keep} items per process.")
 
         workers_user_items_queue = Queue()
         for worker_user_items in workers_user_items:
             workers_user_items_queue.put(worker_user_items)
+
+        # put extra None to signal the end of the queue
+        for _ in range(self.num_workers):
+            workers_user_items_queue.put(None)  # each worker will get one and stop the process
 
         num_items = len(workers_user_items)
 
@@ -1209,7 +1226,8 @@ class DataProcessor:
                 pbar.update(new_total - current_total)
 
             current_total = new_total
-            if current_total == num_items or workers_user_items_queue.empty():
+            print(f"Current total: {current_total} / {num_items}", flush=True)
+            if current_total == num_items:
                 # make sure all processes are terminated
                 for w in self.workers:
                     if w.is_alive():
