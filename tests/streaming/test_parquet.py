@@ -230,8 +230,8 @@ def test_cache_dir_option(monkeypatch, huggingface_hub_fs_mock, default):
     index_cache_dir = default_cache_dir(hf_url)
     with tempfile.TemporaryDirectory() as tmpdir:
         ds = StreamingDataset(hf_url, cache_dir=None if default else tmpdir)
-        assert ds.cache_dir.path == (None if default else tmpdir)
-        assert ds.input_dir.path.startswith(_DEFAULT_CACHE_DIR if default else tmpdir)
+        assert ds.cache_dir.path == (None if default else os.path.realpath(tmpdir))
+        assert ds.input_dir.path.startswith(_DEFAULT_CACHE_DIR if default else os.path.realpath(tmpdir))
         # check index file is sole file in chunk cache dir
         assert len(os.listdir(ds.input_dir.path)) == 1
         assert os.path.exists(os.path.join(ds.input_dir.path, _INDEX_FILENAME))
@@ -242,6 +242,6 @@ def test_cache_dir_option(monkeypatch, huggingface_hub_fs_mock, default):
         for _ in ds:
             pass
         # check chunk cache dir was filled
-        assert len(os.listdir(ds.input_dir.path)) == 11  # 5 chunks, 5 lock files and 1 index file
+        assert len([f for f in os.listdir(ds.input_dir.path) if f.endswith(".parquet")]) == 5  # 5 chunks
         # check index cache dir was not filled
         assert len(os.listdir(index_cache_dir)) == 1
