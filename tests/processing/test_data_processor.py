@@ -820,7 +820,7 @@ def test_data_processing_optimize_class_yield(monkeypatch, tmpdir):
     optimize(OptimizeYield(), inputs, output_dir=output_dir, chunk_size=2, num_workers=1)
 
     # for only 1 worker, we can guess the number of chunks and names
-    assert os.listdir(output_dir) == ["chunk-0-0.bin", "chunk-0-1.bin", "chunk-0-2.bin", "index.json"]
+    assert sorted(os.listdir(output_dir)) == ["chunk-0-0.bin", "chunk-0-1.bin", "chunk-0-2.bin", "index.json"]
 
     cache = Cache(output_dir, chunk_size=1)
     assert len(cache) == 5

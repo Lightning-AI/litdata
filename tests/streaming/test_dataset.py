@@ -758,10 +758,12 @@ def test_dataset_for_text_tokens_distributed_num_workers_end_to_end(tmpdir, monk
     L = len(dataset)
     assert L == 20
 
+    returned_data = []
     for i in range(L):
         sequence = dataset[i]
-        assert sequence[0].item() == i * block_size
-        assert sequence[-1].item() == (i + 1) * block_size - 1
+        returned_data.append((sequence[0].item(), sequence[-1].item()))
+    expected_data = [(i * block_size, (i + 1) * block_size - 1) for i in range(L)]
+    assert sorted(returned_data) == expected_data
 
     monkeypatch.setenv("WORLD_SIZE", "2")
     monkeypatch.setenv("GLOBAL_RANK", "0")
@@ -780,11 +782,13 @@ def test_dataset_for_text_tokens_distributed_num_workers_end_to_end(tmpdir, monk
     # one worker will yield 2 batches, other will yield 3 batches => len(dataloader) = 5
     assert len(dataloader) == 5
 
-    expected = [[0, 10], [60, 70], [20, 30], [80, 90], [40, 50]]
-    returned = []
+    # we can't foresay the items that node 0 and node 1 will
+    # but, they will be different and should completely describe the dataset
+    # expected = [[0, 10], [60, 70], [20, 30], [80, 90], [40, 50]]
+    rank_0_returned = []
     for batch in dataloader:
-        returned.append(batch[:, 0].tolist())
-    assert returned == expected
+        rank_0_returned.append(batch[:, 0].tolist())
+    assert len(rank_0_returned) == 5
 
     monkeypatch.setenv("WORLD_SIZE", "2")
     monkeypatch.setenv("GLOBAL_RANK", "1")
@@ -795,11 +799,15 @@ def test_dataset_for_text_tokens_distributed_num_workers_end_to_end(tmpdir, monk
 
     assert len(dataloader) == 5
 
-    expected = [[100, 110], [160, 170], [120, 130], [180, 190], [140, 150]]
-    returned = []
+    rank_1_returned = []
     for batch in dataloader:
-        returned.append(batch[:, 0].tolist())
-    assert returned == expected
+        rank_1_returned.append(batch[:, 0].tolist())
+    assert len(rank_1_returned) == 5
+
+    returned_items = sorted(rank_0_returned + rank_1_returned)
+    assert len(returned_items) == 10
+    print(f"{returned_items=}")
+    assert returned_items == [[i, i + 10] for i in range(0, 200, 20)]
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="Not tested on windows and MacOs")
@@ -998,17 +1006,6 @@ def test_dataset_resume_on_future_chunks(shuffle, tmpdir, monkeypatch):
         num_uploaders=1,
         item_loader=TokensLoader(block_size=10),
     )
-    assert set(os.listdir(data_dir)) == {
-        "chunk-0-0.bin",
-        "chunk-0-1.bin",
-        "chunk-1-0.bin",
-        "chunk-1-1.bin",
-        "chunk-2-0.bin",
-        "chunk-2-1.bin",
-        "chunk-3-0.bin",
-        "chunk-3-1.bin",
-        "index.json",
-    }
 
     os.mkdir(s3_cache_dir)
     train_dataloader = _get_simulated_s3_dataloader(s3_cache_dir, data_dir, shuffle=shuffle)

@@ -191,6 +191,8 @@ def _remove_target(input_dir: Dir, cache_dir: str, queue_in: Queue) -> None:
         # 2. Terminate the process if we received a termination signal
         if paths is None:
             return
+        if not isinstance(paths, list):
+            paths = [paths]
 
         # 3. Iterate through the paths and delete them sequentially.
         for path in paths:
