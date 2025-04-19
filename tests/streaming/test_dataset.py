@@ -997,6 +997,16 @@ def test_dataset_resume_on_future_chunks(shuffle, tmpdir, monkeypatch):
     monkeypatch.setenv("DATA_OPTIMIZER_DATA_CACHE_FOLDER", optimize_data_cache_dir)
     monkeypatch.setenv("DATA_OPTIMIZER_CACHE_FOLDER", optimize_cache_dir)
 
+    # 8*10*10 = 800 items will be stored in chunks of max_size = 190 with 4 workers
+    # so, if 4 chunks of 190 items = 760 items can be packed in 4 chunks
+    # left chunks = 800 - 760 = 140 chunks
+    # these 140 chunks can be stored in any random order, so we can't predict the exact count
+    # but we can put a `min-max` value.
+    # min => 140 can be stored in a single chunk by a single worker = 4 + 1 = 5 chunks minimum
+    # max => 140 items can be picked by each of the 4 works = 4 chunks with (~35 items)
+    #                                               (can't be 35, some will've 30 or 40)
+    # so, max chunk count = 4 + 4 = 8 chunks maximum
+
     optimize(
         fn=_simple_preprocess,
         inputs=list(range(8)),
@@ -1006,6 +1016,19 @@ def test_dataset_resume_on_future_chunks(shuffle, tmpdir, monkeypatch):
         num_uploaders=1,
         item_loader=TokensLoader(block_size=10),
     )
+    # print(f"{os.listdir(data_dir)=}")
+    # # print items in head of each
+    # for file_name in os.listdir(data_dir):
+    #     file_path = os.path.join(data_dir, file_name)
+
+    #     with open(file_path, "rb") as f:
+    #         head_bytes = f.read(4)  # read first 4 bytes
+    #         if len(head_bytes) < 4:
+    #             print(f"{file_name}: File too short")
+    #             continue
+    #         val = np.frombuffer(head_bytes, dtype=np.int32)[0]
+    #         print(f"{file_name}: {val}")
+    assert 6 <= len(os.listdir(data_dir)) <= 9  # +1 for index.json file
 
     os.mkdir(s3_cache_dir)
     train_dataloader = _get_simulated_s3_dataloader(s3_cache_dir, data_dir, shuffle=shuffle)
@@ -1026,8 +1049,12 @@ def test_dataset_resume_on_future_chunks(shuffle, tmpdir, monkeypatch):
     assert dataloader_state is not None
     assert batch_to_resume_from is not None
     train_dataloader.load_state_dict(dataloader_state)
+    print(f"{dataloader_state=}")
+    print(f"{batch_to_resume_from=}")
+    next_batch_data = next(iter(train_dataloader))
+    print(f"{next_batch_data=}")
     # The next batch after resuming must match what we should have gotten next in the initial loop
-    assert torch.equal(next(iter(train_dataloader)), batch_to_resume_from)
+    assert torch.equal(next_batch_data, batch_to_resume_from)
 
 
 @pytest.mark.timeout(60)

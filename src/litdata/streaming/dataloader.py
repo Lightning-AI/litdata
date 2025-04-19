@@ -478,6 +478,9 @@ class _StreamingMultiProcessingDataLoaderIter(_MultiProcessingDataLoaderIter):
 
     def _try_put_index(self) -> None:
         # Used to restart on the right DataLoader worker
+        print("-" * 100)
+        print("try put index called")
+        print("-" * 100)
         if self._loader.restore and self._indexes:
             assert self._tasks_outstanding < self._prefetch_factor * self._num_workers
 
@@ -491,6 +494,7 @@ class _StreamingMultiProcessingDataLoaderIter(_MultiProcessingDataLoaderIter):
             self._task_info[self._send_idx] = (worker_queue_idx,)
             self._tasks_outstanding += 1
             self._send_idx += 1
+            print(f"{self._send_idx=}, {worker_queue_idx=}, {index=}, {worker_queue_idx=} {self._tasks_outstanding=}")
         else:
             super()._try_put_index()
 
@@ -647,6 +651,7 @@ class StreamingDataLoader(DataLoader):
             for batch in super().__iter__():
                 self._latest_worker_idx = next(self._worker_idx_iter)  # type: ignore
                 self._num_samples_yielded_streaming += self.batch_size
+                print(f"got the {batch=}")
                 yield batch
         else:
             self.dataset._set_use_streaming_dataloader(True)
@@ -720,6 +725,7 @@ class StreamingDataLoader(DataLoader):
 
         # Used to restart on the next DataLoader worker from the previous run.
         self._latest_worker_idx = obj["latest_worker_idx"] + 1
+        print(f"restarting dataloader from statedict with {self._latest_worker_idx=}")
         self._worker_idx_iter = iter(self._worker_idx)
         for _ in range(self._latest_worker_idx):
             next(self._worker_idx_iter)
