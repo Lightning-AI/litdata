@@ -25,11 +25,14 @@ def teardown_process_group():
 
 @pytest.fixture(autouse=True)
 def isolated_cache_dirs(tmp_path_factory, monkeypatch):
-    """Give every test its own cache dirs so tests (even on parallel xdist workers) never share them.
+    """Isolate cache directories for each test to prevent cross-test interference.
 
-    ``optimize()`` wipes the optimizer cache dirs and the streaming/HF index cache lives under
-    ``get_default_cache_dir()``; without isolation concurrent tests delete each other's files.
-    Env vars are used (not module attributes) so spawned worker processes inherit them.
+    ``optimize()`` clears optimizer cache directories, while streaming and Hugging Face
+    index caches live under ``get_default_cache_dir()``. Without isolation, concurrent
+    tests can delete or overwrite each other's cache files.
+
+    Use environment variables rather than module attributes so spawned worker
+    processes inherit the isolated cache configuration.
     """
     root = tmp_path_factory.mktemp("litdata-cache")  # not ``tmp_path``: tests list/compare its contents
     monkeypatch.setenv("LITDATA_CACHE_DIR", str(root / "litdata-cache" / "chunks"))
