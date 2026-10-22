@@ -306,7 +306,8 @@ def get_default_cache_dir() -> str:
     Returns:
         str: The resolved default cache root directory.
     """
-    # read lazily so changes to the env var after import are honoured
+    # Read lazily so changes to the environment variable after import are honored.
+    # Useful in tests that modify the variable via monkeypatch.
     litdata_cache_dir = os.getenv("LITDATA_CACHE_DIR")
     if litdata_cache_dir is not None:
         return litdata_cache_dir
