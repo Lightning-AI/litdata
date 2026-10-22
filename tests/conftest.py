@@ -34,7 +34,8 @@ def isolated_cache_dirs(tmp_path_factory, monkeypatch):
     Use environment variables rather than module attributes so spawned worker
     processes inherit the isolated cache configuration.
     """
-    root = tmp_path_factory.mktemp("litdata-cache")  # not ``tmp_path``: tests list/compare its contents
+    root = tmp_path_factory.mktemp("litdata-cache")
+
     monkeypatch.setenv("LITDATA_CACHE_DIR", str(root / "litdata-cache" / "chunks"))
     monkeypatch.delenv("LITDATA_HF_CACHE_DIR", raising=False)
     monkeypatch.setenv("DATA_OPTIMIZER_CACHE_FOLDER", str(root / "optimizer-chunks"))
