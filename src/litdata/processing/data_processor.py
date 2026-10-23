@@ -19,7 +19,6 @@ import multiprocessing
 import multiprocessing.queues
 import os
 import pickle
-import random
 import shutil
 import signal
 import sys
@@ -40,7 +39,6 @@ from typing import Any, TypeVar
 from urllib import parse
 
 import numpy as np
-import torch
 
 from litdata.constants import (
     _DEFAULT_FAST_DEV_RUN_ITEMS,
@@ -711,8 +709,12 @@ def _map_items_to_workers_weighted(
     user_items: list[Any],
     weights: list[int] | None = None,
     file_size: bool = True,
+    rng: np.random.RandomState | None = None,
 ) -> list[list[Any]]:
     """Map the items to the workers based on the weights.
+
+    ``rng`` shuffles each worker's items. Pass a local ``np.random.RandomState`` to keep the global NumPy
+    generator untouched; ``None`` falls back to ``np.random``.
 
     >>> workers_user_items = _map_items_to_workers_weighted(2, list(range(5)), weights=[1, 2, 3, 4, 5])
     >>> assert workers_user_items == [[1, 4, 0], [3, 2]]
@@ -735,7 +737,8 @@ def _map_items_to_workers_weighted(
         else:
             print(f"{label} {worker_id} gets ({len(worker_items[worker_id])}) items for a total weight of {size}.")
 
-    return [np.random.permutation(worker_items[worker_id]).tolist() for worker_id in worker_ids_this_node]
+    rng = np.random if rng is None else rng
+    return [rng.permutation(worker_items[worker_id]).tolist() for worker_id in worker_ids_this_node]
 
 
 def _get_num_bytes(item: Any, base_path: str) -> int:
@@ -1827,7 +1830,8 @@ class DataProcessor:
             num_uploaders: The number of file uploaders to use.
             delete_cached_files: Whether to delete the cached files.
             fast_dev_run: Whether to run a quick dev run.
-            random_seed: The random seed to be set before shuffling the data.
+            random_seed: Seed for the local generator that shuffles the items assigned to each worker. The global
+                ``random`` / NumPy / torch generators are not touched, so seed those yourself if ``fn`` needs it.
             reorder_files: By default, reorders the files by file size to distribute work equally among all workers.
                 Set this to ``False`` if the order in which samples are processed should be preserved.
             weights: Provide a list of weights associated to the inputs.
@@ -1946,28 +1950,14 @@ class DataProcessor:
             # clean up checkpoints if not using checkpoints
             self._cleanup_checkpoints()
 
-        # `optimize` runs in the caller's process, so the seeding below must not outlive it: seed for the
-        # duration of the work only and hand the caller's own global states back untouched (#944).
-        random_state = random.getstate()
-        np_random_state = np.random.get_state()
-        torch_random_state = torch.random.get_rng_state()
-        cuda_random_states = torch.cuda.get_rng_state_all() if torch.cuda.is_initialized() else None
-
-        # Force random seed to be fixed
-        random.seed(self.random_seed)
-        np.random.seed(self.random_seed)
-        torch.manual_seed(self.random_seed)
-        try:
-            self._run(data_recipe)
-        finally:
-            random.setstate(random_state)
-            np.random.set_state(np_random_state)
-            torch.random.set_rng_state(torch_random_state)
-            if cuda_random_states is not None:
-                torch.cuda.set_rng_state_all(cuda_random_states)
+        self._run(data_recipe)
 
     def _run(self, data_recipe: DataRecipe) -> None:
-        """Do the work of :meth:`run`, with the global random generators already seeded."""
+        """Do the work of :meth:`run`.
+
+        The only randomness litdata needs is the worker shuffle, which draws from a local generator seeded with
+        ``random_seed``, so the caller's global ``random`` / NumPy / torch (CPU and GPU) state is left alone (#944).
+        """
         t0 = time()
         os.environ["DATA_OPTIMIZER_NUM_WORKERS"] = str(self.num_workers)
         if self.verbose:
@@ -1993,6 +1983,7 @@ class DataProcessor:
         # Unordered: one bin per node; workers steal from a shared node queue.
         map_workers = 1 if not self.keep_data_ordered else self.num_workers
 
+        rng = np.random.RandomState(self.random_seed)
         if isinstance(user_items, list):
             assert isinstance(user_items, list)
 
@@ -2000,7 +1991,7 @@ class DataProcessor:
                 if len(self.weights) != len(user_items):
                     raise ValueError("The provided weights length should match the inputs' length.")
                 workers_user_items = _map_items_to_workers_weighted(
-                    num_workers=map_workers, user_items=user_items, weights=self.weights, file_size=False
+                    num_workers=map_workers, user_items=user_items, weights=self.weights, file_size=False, rng=rng
                 )
 
             elif self.reorder_files and self.input_dir.path and not _is_studio_fuse_path(self.input_dir.path):
@@ -2008,7 +1999,7 @@ class DataProcessor:
                 # Skip FUSE mounts: ``stat`` / ``getsize`` on those paths is extremely slow.
                 item_sizes = _get_item_filesizes(user_items, base_path=self.input_dir.path)
                 workers_user_items = _map_items_to_workers_weighted(
-                    num_workers=map_workers, user_items=user_items, weights=item_sizes
+                    num_workers=map_workers, user_items=user_items, weights=item_sizes, rng=rng
                 )
             else:
                 if self.align_chunking and data_recipe.chunk_size is None:

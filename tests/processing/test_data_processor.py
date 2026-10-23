@@ -2720,3 +2720,22 @@ def test_optimize_preserves_the_callers_random_state(tmpdir, seed):
 
     # Without the fix the draw after `optimize` is the one for `random_seed`, not for `seed`.
     assert (random.random(), np.random.rand(), torch.rand(1).item()) == pytest.approx(expected)
+
+
+def test_optimize_does_not_seed_the_global_generators(tmpdir, monkeypatch):
+    """Only the worker shuffle needs randomness, and it uses a local generator (#944).
+
+    Seeding torch globally would also queue a seed for CUDA / MPS / XPU, which torch applies lazily on first use and
+    which a CPU-only save/restore cannot undo, so ``optimize`` must not call any of the global seeders.
+    """
+    for target in ("random.seed", "numpy.random.seed", "torch.manual_seed"):
+        monkeypatch.setattr(target, mock.MagicMock(side_effect=AssertionError(f"{target} was called")))
+
+    functions.optimize(
+        fn=_identity_optimize_fn,
+        inputs=list(range(4)),
+        output_dir=os.path.join(tmpdir, "optimized"),
+        chunk_bytes="1MB",
+        num_workers=0,
+        random_seed=7,
+    )
